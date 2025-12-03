@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import MetaIcon from '../components/icons/MetaIcon';
 import GoogleIcon from '../components/icons/GoogleIcon';
 import TikTokIcon from '../components/icons/TikTokIcon';

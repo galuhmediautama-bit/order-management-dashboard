@@ -6,7 +6,7 @@ import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import EyeIcon from '../components/icons/EyeIcon';
 import LinkIcon from '../components/icons/LinkIcon';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import ChatBubbleIcon from '../components/icons/ChatBubbleIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
 import XIcon from '../components/icons/XIcon';
@@ -242,7 +242,7 @@ const FormsPage: React.FC = () => {
         if (!searchTerm.trim()) return brandFiltered;
         
         const term = searchTerm.toLowerCase();
-        return brandFiltered.filter(form => 
+        return brandFiltered.filter((form: Form) => 
             form.title.toLowerCase().includes(term) ||
             form.slug?.toLowerCase().includes(term) ||
             form.customSlug?.toLowerCase().includes(term)

@@ -14,7 +14,7 @@ import FilterIcon from '../components/icons/FilterIcon';
 import UserIcon from '../components/icons/UserIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { capitalizeWords } from '../utils';
 import { useToast } from '../contexts/ToastContext';
 
@@ -417,111 +417,111 @@ const CustomersPage: React.FC = () => {
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                            <UserIcon className="w-6 h-6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <UserIcon className="w-5 h-5" />
                         </div>
                         <span className="text-2xl font-bold">{stats.total}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-blue-100">Total Pelanggan</h3>
-                    <p className="text-xs text-blue-200 mt-1">Semua database</p>
+                    <h3 className="text-sm font-medium text-blue-100 mt-2">Total Pelanggan</h3>
+                    <p className="text-xs text-blue-200">Semua database</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white shadow-xl shadow-purple-500/30 hover:scale-105 transition-transform">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                             </svg>
                         </div>
                         <span className="text-2xl font-bold">{stats.vip}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-purple-100">VIP Customers</h3>
-                    <p className="text-xs text-purple-200 mt-1">Skor ≥ 4.5</p>
+                    <h3 className="text-sm font-medium text-purple-100 mt-2">VIP Customers</h3>
+                    <p className="text-xs text-purple-200">Skor ≥ 4.5</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-xl shadow-green-500/30 hover:scale-105 transition-transform">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                            <BanknotesIcon className="w-6 h-6" />
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <BanknotesIcon className="w-5 h-5" />
                         </div>
                         <span className="text-2xl font-bold">Rp {(stats.totalRevenue / 1000000).toFixed(1)}M</span>
                     </div>
-                    <h3 className="text-sm font-medium text-green-100">Total Revenue</h3>
-                    <p className="text-xs text-green-200 mt-1">Lifetime value</p>
+                    <h3 className="text-sm font-medium text-green-100 mt-2">Total Revenue</h3>
+                    <p className="text-xs text-green-200">Lifetime value</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                             </svg>
                         </div>
                         <span className="text-2xl font-bold">Rp {(stats.avgOrderValue / 1000).toFixed(0)}K</span>
                     </div>
-                    <h3 className="text-sm font-medium text-amber-100">Avg Order Value</h3>
-                    <p className="text-xs text-amber-200 mt-1">Per transaksi</p>
+                    <h3 className="text-sm font-medium text-amber-100 mt-2">Avg Order Value</h3>
+                    <p className="text-xs text-amber-200">Per transaksi</p>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                        <FilterIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Segmentasi Pelanggan</span>
-                    </div>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                        {[
-                            { value: 'all', label: 'Semua', count: customers.length },
-                            { value: 'vip', label: 'VIP (≥4.5)', count: customers.filter(c => calculateCustomerScore(c) >= 4.5).length },
-                            { value: 'good', label: 'Baik (3.5-4.4)', count: customers.filter(c => { const s = calculateCustomerScore(c); return s >= 3.5 && s < 4.5; }).length },
-                            { value: 'average', label: 'Cukup (2.5-3.4)', count: customers.filter(c => { const s = calculateCustomerScore(c); return s >= 2.5 && s < 3.5; }).length },
-                            { value: 'poor', label: 'Perlu Perhatian (<2.5)', count: customers.filter(c => calculateCustomerScore(c) < 2.5).length }
-                        ].map(segment => {
-                            const isActive = scoreFilter === segment.value;
-                            
-                            return (
-                                <button
-                                    key={segment.value}
-                                    onClick={() => setScoreFilter(segment.value as any)}
-                                    className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2.5 border shadow-sm hover:shadow-md ${
-                                        isActive 
-                                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 border-transparent text-white shadow-lg shadow-indigo-500/30 scale-105' 
-                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                    }`}
-                                >
-                                    {segment.label}
-                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                        isActive ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400'
-                                    }`}>
-                                        {segment.count}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-                    <div className="flex items-center gap-3 mb-3">
-                        <SearchIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pencarian</span>
-                    </div>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <SearchIcon className="h-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+                <div className="flex items-center gap-4">
+                    {/* Segmentasi */}
+                    <div className="flex items-center gap-2 flex-1">
+                        <FilterIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Segmentasi Pelanggan</span>
+                        <div className="flex items-center gap-2 overflow-x-auto">
+                            {[
+                                { value: 'all', label: 'Semua', count: customers.length },
+                                { value: 'vip', label: 'VIP (≥4.5)', count: customers.filter(c => calculateCustomerScore(c) >= 4.5).length },
+                                { value: 'good', label: 'Baik (3.5-4.4)', count: customers.filter(c => { const s = calculateCustomerScore(c); return s >= 3.5 && s < 4.5; }).length },
+                                { value: 'average', label: 'Cukup (2.5-3.4)', count: customers.filter(c => { const s = calculateCustomerScore(c); return s >= 2.5 && s < 3.5; }).length },
+                                { value: 'poor', label: 'Perlu Perhatian (<2.5)', count: customers.filter(c => calculateCustomerScore(c) < 2.5).length }
+                            ].map(segment => {
+                                const isActive = scoreFilter === segment.value;
+                                
+                                return (
+                                    <button
+                                        key={segment.value}
+                                        onClick={() => setScoreFilter(segment.value as any)}
+                                        className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                            isActive 
+                                                ? 'bg-indigo-600 text-white' 
+                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        {segment.label}
+                                        <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                                            isActive ? 'bg-white/20 text-white' : 'bg-indigo-100 dark:bg-slate-600 text-indigo-600 dark:text-indigo-400'
+                                        }`}>
+                                            {segment.count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Cari nama, email, atau nomor telepon..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="block w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                        />
+                    </div>
+
+                    {/* Pencarian */}
+                    <div className="flex items-center gap-2 w-80">
+                        <SearchIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Pencarian</span>
+                        <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-4 w-4 text-slate-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Cari nama, email, atau nomor telepon..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-sm placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

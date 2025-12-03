@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import ToggleSwitch from '../components/ToggleSwitch';
 import { uploadFileAndGetURL } from '../fileUploader';
 import type { User } from '../types';

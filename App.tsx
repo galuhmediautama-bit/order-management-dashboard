@@ -3,7 +3,7 @@ import React, { useState, useEffect, Suspense, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { supabase } from './firebase';
+import { supabase } from './supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import SpinnerIcon from './components/icons/SpinnerIcon';
 import { SettingsProvider, SettingsContext } from './contexts/SettingsContext';

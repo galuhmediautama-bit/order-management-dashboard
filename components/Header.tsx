@@ -13,7 +13,7 @@ import LogoutIcon from './icons/LogoutIcon';
 import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to Supabase type
 import type { Notification } from '../types';
 import BellIcon from './icons/BellIcon';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { useLanguage } from '../contexts/LanguageContext';
 
 

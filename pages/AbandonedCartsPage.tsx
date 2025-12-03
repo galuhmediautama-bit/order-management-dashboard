@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import type { AbandonedCart, User, UserRole } from '../types';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import SpinnerIcon from '../components/icons/SpinnerIcon';

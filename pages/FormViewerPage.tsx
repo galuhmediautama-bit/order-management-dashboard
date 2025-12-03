@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import type { Form, Order, ShippingSettings, PaymentSettings, ShippingSetting, PaymentSetting, BankTransferSetting, CSAgent, VariantDisplayStyle, QRISSettings, FormPixelSetting, RankLevel } from '../types';
 import CODIcon from '../components/icons/CODIcon';
 import QRIcon from '../components/icons/QRIcon';
@@ -692,13 +692,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 console.warn("Commission columns may not exist yet:", e);
             }
 
-            console.log("Attempting to insert order:", newOrderData);
+            // Insert order ke database
             const { data, error } = await supabase.from('orders').insert(newOrderData).select().single();
             if (error) {
-                console.error("Supabase insert error:", error);
+                console.error("Error inserting order:", error.message);
                 throw error;
             }
-            console.log("Order inserted successfully:", data);
 
             await supabase.from('forms').update({
                 submissionCount: (form.submissionCount || 0) + 1

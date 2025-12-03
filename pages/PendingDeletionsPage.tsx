@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { useLanguage } from '../contexts/LanguageContext';
 import TrashIcon from '../components/icons/TrashIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';

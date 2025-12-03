@@ -89,6 +89,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string; // WhatsApp / kontak
+  whatsapp?: string; // WhatsApp number (alternative field name)
   address?: string; // Alamat lengkap
   role: UserRole;
   status: UserStatus;
@@ -359,6 +360,7 @@ export interface AbandonedCart {
   selectedVariant: string;
   timestamp: any; // Supabase returns ISO string, but we can manage
   status: AbandonedCartStatus;
+  totalPrice?: number; // Total value of abandoned cart
 }
 
 

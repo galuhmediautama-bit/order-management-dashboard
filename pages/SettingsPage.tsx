@@ -9,7 +9,7 @@ import TrackingPage from './TrackingPage';
 import CustomerServicePage from './CustomerServicePage';
 import DeletionRequestsPage from './DeletionRequestsPage';
 import CuanRankPage from './CuanRankPage';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { uploadFileAndGetURL } from '../fileUploader'; // Import file uploader
 import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
@@ -704,8 +704,7 @@ const UserManagement: React.FC = () => {
                     }
                 });
 
-                console.log('Updating user with data:', updateData);
-
+                // Update user data
                 const { error } = await supabase
                     .from('users')
                     .update(updateData)

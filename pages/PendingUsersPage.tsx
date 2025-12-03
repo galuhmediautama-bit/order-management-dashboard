@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { useToast } from '../contexts/ToastContext';
 import { User } from '../types';
 import { Link, useNavigate } from 'react-router-dom';

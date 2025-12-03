@@ -1,11 +1,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import type { AdCampaignReport, AdPlatform, CampaignObjective, CampaignStatus, AdFormat, User } from '../types';
+import type { AdCampaignReport, AdPlatform, CampaignObjective, CampaignStatus, AdFormat, User, Brand } from '../types';
 import type { User as FirebaseUser } from '@supabase/supabase-js';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import CustomTooltip from '../components/CustomTooltip';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import ReportsIcon from '../components/icons/ReportsIcon';
 import CursorClickIcon from '../components/icons/CursorClickIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
@@ -22,23 +22,26 @@ const AdReportModal: React.FC<{
     onClose: () => void; 
     onSave: (report: Omit<AdCampaignReport, 'id'>) => void; 
     users: User[];
+    brands: Brand[];
     currentUser: FirebaseUser;
-}> = ({ onClose, onSave, users, currentUser }) => {
+}> = ({ onClose, onSave, users, brands, currentUser }) => {
     const [activeTab, setActiveTab] = useState('umum');
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     const [formData, setFormData] = useState<Partial<Omit<AdCampaignReport, 'id'>>>({
         platform: 'Meta',
         objective: 'Konversi',
         status: 'Aktif',
         gender: 'Semua',
         format: 'Gambar',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
-        amountSpent: 0,
-        impressions: 0,
-        reach: 0,
-        clicks: 0,
-        conversions: 0,
-        roas: 0,
+        adDate: yesterday.toISOString().split('T')[0],
+        brandId: brands.length > 0 ? brands[0].id : '',
+        amountSpent: undefined,
+        impressions: undefined,
+        reach: undefined,
+        clicks: undefined,
+        conversions: undefined,
+        roas: undefined,
         responsibleUserId: currentUser.id,
         responsibleUserName: currentUser.user_metadata?.full_name || currentUser.email || 'Unknown User',
     });
@@ -61,10 +64,10 @@ const AdReportModal: React.FC<{
 
     const handleSave = () => {
         // Simple validation
-        if (formData.campaignName && formData.budget) {
+        if (formData.campaignId && formData.adDate) {
             onSave(formData as Omit<AdCampaignReport, 'id'>);
         } else {
-            alert('Nama Kampanye dan Anggaran harus diisi.');
+            alert('ID Kampanye dan Tanggal Iklan harus diisi.');
         }
     }
 
@@ -72,9 +75,9 @@ const AdReportModal: React.FC<{
         <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="-mb-px flex space-x-4" aria-label="Tabs">
                 <button type="button" onClick={() => setActiveTab('umum')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'umum' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'}`}>Info Umum</button>
-                <button type="button" onClick={() => setActiveTab('audiens')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'audiens' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'}`}>Audiens</button>
                 <button type="button" onClick={() => setActiveTab('kreatif')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'kreatif' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'}`}>Kreatif</button>
-                <button type="button" onClick={() => setActiveTab('kinerja')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'kinerja' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'}`}>Kinerja</button>
+                <button type="button" onClick={() => setActiveTab('landingpage')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'landingpage' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'}`}>Landingpage</button>
+                <button type="button" onClick={() => setActiveTab('funneling')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'funneling' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100'}`}>Funneling</button>
             </nav>
         </div>
     );
@@ -82,6 +85,14 @@ const AdReportModal: React.FC<{
     const renderGeneralInfo = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="text-sm text-gray-700 dark:text-gray-300">Platform</label><select name="platform" onChange={handleChange} value={formData.platform} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600"><option>Meta</option><option>Google</option><option>TikTok</option><option>Snack</option></select></div>
+            <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300">Brand*</label>
+                <select name="brandId" value={formData.brandId} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                    {brands.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                </select>
+            </div>
             <div>
                 <label className="text-sm text-gray-700 dark:text-gray-300">Penanggung Jawab Iklan</label>
                 <select 
@@ -95,43 +106,197 @@ const AdReportModal: React.FC<{
                     ))}
                 </select>
             </div>
-            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">Nama Kampanye*</label><input type="text" name="campaignName" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Tujuan Kampanye</label><select name="objective" onChange={handleChange} value={formData.objective} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600"><option>Konversi</option><option>Lalu Lintas</option><option>Brand Awareness</option><option>Prospek</option></select></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Tujuan</label><select name="objective" onChange={handleChange} value={formData.objective} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600"><option>Konversi</option><option>Interaksi</option><option>Tayangan Video</option><option>Lalu Lintas</option><option>Brand Awareness</option><option>Prospek</option></select></div>
+            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">ID Kampanye*</label><input type="text" name="campaignId" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" placeholder="Masukkan ID kampanye dari platform iklan" /></div>
             <div><label className="text-sm text-gray-700 dark:text-gray-300">Status</label><select name="status" onChange={handleChange} value={formData.status} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600"><option>Aktif</option><option>Dijeda</option><option>Selesai</option></select></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Tanggal Mulai</label><input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Tanggal Selesai</label><input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">Total Anggaran (Rp)*</label><input type="number" name="budget" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
+            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">Tanggal Iklan*</label><input type="date" name="adDate" value={formData.adDate} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
         </div>
     );
     
-    const renderAudience = () => (
+    const renderCreativeTab = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Lokasi</label><input type="text" name="location" placeholder="e.g., Indonesia" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Rentang Usia</label><input type="text" name="ageRange" placeholder="e.g., 25-45" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Gender</label><select name="gender" onChange={handleChange} value={formData.gender} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600"><option>Semua</option><option>Pria</option><option>Wanita</option></select></div>
-            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">Minat/Perilaku</label><textarea name="interests" placeholder="e.g., Skincare, Fashion, Olahraga" onChange={handleChange} rows={3} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
+            <div className="md:col-span-2">
+                <label className="text-sm text-gray-700 dark:text-gray-300">Total Spend</label>
+                <div className="relative mt-1">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">Rp</span>
+                    <input type="number" name="amountSpent" value={formData.amountSpent} onChange={handleChange} className="w-full pl-10 pr-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Total biaya terpakai di tanggal tersebut" />
+                </div>
+            </div>
+            <div className="md:col-span-2">
+                <label className="text-sm text-gray-700 dark:text-gray-300">Foto/Video</label>
+                <select name="creativeMedia" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                    <option value="">Pilih jenis konten</option>
+                    <option value="Foto">Foto</option>
+                    <option value="Video">Video</option>
+                    <option value="Carousel">Carousel</option>
+                    <option value="Slideshow">Slideshow</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300">CPM (Cost per 1000 Impressions)</label>
+                <div className="relative mt-1">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">Rp</span>
+                    <input type="number" step="0.01" name="cpm" placeholder="0.00" onChange={handleChange} className="w-full pl-10 pr-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                </div>
+            </div>
+            <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300">CTR (Click-Through Rate)</label>
+                <div className="relative mt-1">
+                    <input type="number" step="0.01" name="ctr" placeholder="0.00" onChange={handleChange} className="w-full pl-3 pr-10 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400">%</span>
+                </div>
+            </div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Reaction</label><input type="number" name="reactions" placeholder="Jumlah reaction" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Komen</label><input type="number" name="comments" placeholder="Jumlah komentar" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
         </div>
     );
 
-    const renderCreative = () => (
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Format Iklan</label><select name="format" onChange={handleChange} value={formData.format} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600"><option>Gambar</option><option>Video</option><option>Carousel</option><option>Lainnya</option></select></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Call to Action (CTA)</label><input type="text" name="cta" placeholder="e.g., Belanja Sekarang" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">Judul Iklan (Headline)</label><input type="text" name="headline" onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div className="md:col-span-2"><label className="text-sm text-gray-700 dark:text-gray-300">Teks Iklan (Copy)</label><textarea name="adCopy" rows={3} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
+    const renderLandingpage = () => {
+        // Calculate OCLV (Outbound Click Landing Page View)
+        const linkClicks = formData.linkClicks || 0;
+        const lpViews = formData.lpViews || 0;
+        const oclv = linkClicks > 0 ? ((lpViews / linkClicks) * 100).toFixed(2) : '0.00';
+        
+        // Calculate Cost per Landing Page View
+        const totalSpend = formData.amountSpent || 0;
+        const costPerLPView = lpViews > 0 ? (totalSpend / lpViews).toFixed(2) : '0.00';
+        
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Link Klik</label>
+                    <input 
+                        type="number" 
+                        name="linkClicks" 
+                        value={formData.linkClicks || ''} 
+                        onChange={handleChange} 
+                        placeholder="Jumlah link klik"
+                        className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Landing Page View</label>
+                    <input 
+                        type="number" 
+                        name="lpViews" 
+                        value={formData.lpViews || ''} 
+                        onChange={handleChange} 
+                        placeholder="Jumlah LP view"
+                        className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Scroll 25%</label>
+                    <input 
+                        type="number" 
+                        name="scroll25" 
+                        value={formData.scroll25 || ''} 
+                        onChange={handleChange} 
+                        placeholder="Jumlah scroll 25%"
+                        className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Scroll 50%</label>
+                    <input 
+                        type="number" 
+                        name="scroll50" 
+                        value={formData.scroll50 || ''} 
+                        onChange={handleChange} 
+                        placeholder="Jumlah scroll 50%"
+                        className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Scroll 75%</label>
+                    <input 
+                        type="number" 
+                        name="scroll75" 
+                        value={formData.scroll75 || ''} 
+                        onChange={handleChange} 
+                        placeholder="Jumlah scroll 75%"
+                        className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Scroll 99%</label>
+                    <input 
+                        type="number" 
+                        name="scroll99" 
+                        value={formData.scroll99 || ''} 
+                        onChange={handleChange} 
+                        placeholder="Jumlah scroll 99%"
+                        className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">OCLV (Outbound Click LP View)</label>
+                    <div className="relative mt-1">
+                        <input 
+                            type="text" 
+                            value={oclv} 
+                            readOnly
+                            className="w-full pl-3 pr-10 py-2 border rounded-md bg-gray-100 dark:bg-gray-900 dark:border-gray-600 text-gray-700 dark:text-gray-300 cursor-not-allowed" 
+                        />
+                        <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400">%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">LP View / Link Klik × 100</p>
+                </div>
+                <div>
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Cost per Landing Page View</label>
+                    <div className="relative mt-1">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">Rp</span>
+                        <input 
+                            type="text" 
+                            value={costPerLPView} 
+                            readOnly
+                            className="w-full pl-10 pr-3 py-2 border rounded-md bg-gray-100 dark:bg-gray-900 dark:border-gray-600 text-gray-700 dark:text-gray-300 cursor-not-allowed" 
+                        />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Spend / LP View</p>
+                </div>
+            </div>
+        );
+    };
+
+    const renderLPStruktur = () => (
+         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Biaya Terpakai (Rp)</label><input type="number" name="amountSpent" value={formData.amountSpent} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Impresi</label><input type="number" name="impressions" value={formData.impressions} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Jangkauan (Reach)</label><input type="number" name="reach" value={formData.reach} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Klik</label><input type="number" name="clicks" value={formData.clicks} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">Konversi</label><input type="number" name="conversions" value={formData.conversions} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
+            <div><label className="text-sm text-gray-700 dark:text-gray-300">ROAS</label><input type="number" step="0.1" name="roas" value={formData.roas} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></div>
          </div>
     );
 
-    const renderPerformance = () => (
-         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Biaya Terpakai (Rp)</label><input type="number" name="amountSpent" value={formData.amountSpent} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Impresi</label><input type="number" name="impressions" value={formData.impressions} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Jangkauan (Reach)</label><input type="number" name="reach" value={formData.reach} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Klik</label><input type="number" name="clicks" value={formData.clicks} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">Konversi</label><input type="number" name="conversions" value={formData.conversions} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-            <div><label className="text-sm text-gray-700 dark:text-gray-300">ROAS</label><input type="number" step="0.1" name="roas" value={formData.roas} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600" /></div>
-         </div>
-    );
+    const renderFunneling = () => {
+        const totalSpend = formData.amountSpent || 0;
+        const thanksPage = formData.thanksPage || 0;
+        const costPerResult = thanksPage > 0 ? (totalSpend / thanksPage).toFixed(2) : '0.00';
+        
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-700 dark:text-gray-300">Landingpage</label><input type="number" name="funnelingLandingpage" value={formData.funnelingLandingpage || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Jumlah landingpage" /></div>
+                <div><label className="text-sm text-gray-700 dark:text-gray-300">Form Page</label><input type="number" name="formPage" value={formData.formPage || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Jumlah form page" /></div>
+                <div><label className="text-sm text-gray-700 dark:text-gray-300">Thanks Page</label><input type="number" name="thanksPage" value={formData.thanksPage || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Jumlah thanks page" /></div>
+                <div><label className="text-sm text-gray-700 dark:text-gray-300">Leads</label><input type="number" name="leads" value={formData.leads || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Jumlah leads" /></div>
+                <div className="md:col-span-2">
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Cost Per Result</label>
+                    <div className="relative mt-1">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">Rp</span>
+                        <input 
+                            type="text" 
+                            value={costPerResult} 
+                            readOnly
+                            className="w-full pl-10 pr-3 py-2 border rounded-md bg-gray-100 dark:bg-gray-900 dark:border-gray-600 text-gray-700 dark:text-gray-300 cursor-not-allowed" 
+                        />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Spend / Thanks Page</p>
+                </div>
+            </div>
+        );
+    };
 
 
     return (
@@ -144,9 +309,9 @@ const AdReportModal: React.FC<{
                     {renderTabs()}
                     <div className="mt-6">
                         {activeTab === 'umum' && renderGeneralInfo()}
-                        {activeTab === 'audiens' && renderAudience()}
-                        {activeTab === 'kreatif' && renderCreative()}
-                        {activeTab === 'kinerja' && renderPerformance()}
+                        {activeTab === 'kreatif' && renderCreativeTab()}
+                        {activeTab === 'landingpage' && renderLandingpage()}
+                        {activeTab === 'funneling' && renderFunneling()}
                     </div>
                 </div>
                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-lg">
@@ -161,6 +326,7 @@ const AdReportModal: React.FC<{
 const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
   const [reports, setReports] = useState<AdCampaignReport[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('Semua');
@@ -196,6 +362,8 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
         await fetchReports();
         const { data: usersData } = await supabase.from('users').select('*');
         setUsers((usersData || []).map(u => ({ ...u }) as User));
+        const { data: brandsData } = await supabase.from('brands').select('*');
+        setBrands((brandsData || []).map(b => ({ ...b }) as Brand));
         setLoading(false);
       }
       fetchAllData();
@@ -367,7 +535,7 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      {isModalOpen && <AdReportModal onClose={() => setModalOpen(false)} onSave={handleSaveReport} users={users} currentUser={user} />}
+      {isModalOpen && <AdReportModal onClose={() => setModalOpen(false)} onSave={handleSaveReport} users={users} brands={brands} currentUser={user} />}
       
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">

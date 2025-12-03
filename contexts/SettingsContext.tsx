@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 
 export interface GlobalPixel {
     id: string;

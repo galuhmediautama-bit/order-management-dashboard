@@ -24,7 +24,7 @@ import DownloadIcon from '../components/icons/DownloadIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import SpinnerIcon from '../components/icons/SpinnerIcon';

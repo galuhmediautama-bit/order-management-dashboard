@@ -13,7 +13,7 @@ import TrendingUpIcon from '../components/icons/TrendingUpIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
-import { supabase } from '../firebase';
+import { supabase } from '../supabase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 
 
@@ -188,8 +188,8 @@ const DashboardPage: React.FC = () => {
         const totalOrders = dateFilteredOrders.length;
         const uniqueCustomers = new Set(dateFilteredOrders.map(order => order.customer)).size;
         const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
-        const pendingOrders = dateFilteredOrders.filter(o => o.status === 'Pending' || o.status === 'Proses').length;
-        const completedOrders = dateFilteredOrders.filter(o => o.status === 'Selesai' || o.status === 'Terkirim').length;
+        const pendingOrders = dateFilteredOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length;
+        const completedOrders = dateFilteredOrders.filter(o => o.status === 'Shipped' || o.status === 'Delivered').length;
         const conversionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
         
         // Daily data for chart
@@ -228,7 +228,7 @@ const DashboardPage: React.FC = () => {
         // Top products
         const productCounts: { [key: string]: number } = {};
         dateFilteredOrders.forEach(order => {
-            const product = order.product || 'Unknown';
+            const product = order.productName || 'Unknown';
             productCounts[product] = (productCounts[product] || 0) + 1;
         });
         const topProducts = Object.entries(productCounts)
