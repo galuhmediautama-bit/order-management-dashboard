@@ -48,3 +48,5 @@ jobs:
           npm ci --production
           pm2 restart order-management || pm2 start npm --name "order-management" -- start
           pm2 save
+          nginx -t && systemctl reload nginx
+          echo "✅ Deployed to https://form.cuanmax.digital"

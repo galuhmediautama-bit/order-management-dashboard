@@ -34,6 +34,9 @@ const ProfilePage: React.FC = () => {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<User | null>(null);
     const [displayName, setDisplayName] = useState('');
+    const [email, setEmail] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
+    const [address, setAddress] = useState('');
     const [avatarPreview, setAvatarPreview] = useState('');
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
@@ -62,9 +65,13 @@ const ProfilePage: React.FC = () => {
                     const profileData = data as User;
                     setUserData(profileData);
                     setDisplayName(profileData.name || user.user_metadata?.full_name || '');
+                    setEmail(profileData.email || user.email || '');
+                    setWhatsapp(profileData.whatsapp || '');
+                    setAddress(profileData.address || '');
                     setAvatarPreview(profileData.avatar || user.user_metadata?.avatar_url || '');
                 } else {
                     setDisplayName(user.user_metadata?.full_name || '');
+                    setEmail(user.email || '');
                     setAvatarPreview(user.user_metadata?.avatar_url || '');
                 }
             }
@@ -88,9 +95,11 @@ const ProfilePage: React.FC = () => {
         setProfileMessage({ type: '', text: '' });
 
         const nameChanged = displayName !== (userData?.name || user.user_metadata?.full_name);
+        const whatsappChanged = whatsapp !== (userData?.whatsapp || '');
+        const addressChanged = address !== (userData?.address || '');
         const avatarChanged = !!avatarFile;
 
-        if (!nameChanged && !avatarChanged) {
+        if (!nameChanged && !whatsappChanged && !addressChanged && !avatarChanged) {
             setProfileMessage({ type: 'info', text: 'Tidak ada perubahan yang dilakukan.' });
             setLoadingProfile(false);
             return;
@@ -102,12 +111,18 @@ const ProfilePage: React.FC = () => {
                 newAvatarUrl = await uploadFileAndGetURL(avatarFile);
             }
 
-            const dbUpdateData: { name?: string; avatar?: string } = {};
+            const dbUpdateData: { name?: string; whatsapp?: string; address?: string; avatar?: string } = {};
             const authUpdateData: { full_name?: string; avatar_url?: string } = {};
 
             if (nameChanged) {
                 dbUpdateData.name = displayName;
                 authUpdateData.full_name = displayName;
+            }
+            if (whatsappChanged) {
+                dbUpdateData.whatsapp = whatsapp;
+            }
+            if (addressChanged) {
+                dbUpdateData.address = address;
             }
             if (avatarChanged && newAvatarUrl) {
                 dbUpdateData.avatar = newAvatarUrl;
@@ -258,9 +273,31 @@ const ProfilePage: React.FC = () => {
                                     <input
                                         id="email"
                                         type="email"
-                                        value={user.email || ''}
+                                        value={email}
                                         disabled
                                         className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="whatsapp" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Nomor WhatsApp</label>
+                                    <input
+                                        id="whatsapp"
+                                        type="tel"
+                                        value={whatsapp}
+                                        onChange={(e) => setWhatsapp(e.target.value)}
+                                        placeholder="08xx xxxxxxx"
+                                        className="w-full p-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="address" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Alamat Lengkap</label>
+                                    <textarea
+                                        id="address"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        placeholder="Jl. ..., RT/RW ..., Kelurahan ..., Kecamatan ..."
+                                        rows={3}
+                                        className="w-full p-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                                     />
                                 </div>
                             </div>

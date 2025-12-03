@@ -20,6 +20,7 @@ const LoginPage: React.FC = () => {
     
     const [showPassword, setShowPassword] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false); // Toggle Login/Register
+    const [isForgotPassword, setIsForgotPassword] = useState(false); // Toggle Forgot Password
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
@@ -31,6 +32,20 @@ const LoginPage: React.FC = () => {
         setSuccessMsg('');
 
         try {
+            if (isForgotPassword) {
+                // --- LOGIKA RESET PASSWORD ---
+                const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                });
+
+                if (resetError) throw resetError;
+
+                setSuccessMsg('✅ Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.');
+                setEmail('');
+                setIsForgotPassword(false);
+                return;
+            }
+
             if (isRegistering) {
                 // --- LOGIKA PENDAFTARAN ---
                 const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -163,8 +178,10 @@ const LoginPage: React.FC = () => {
                     <div className="relative z-10">
                         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
                             <p className="text-white italic mb-4 text-lg">"Platform ini mengubah cara kami mengelola bisnis. Efisiensi meningkat 40% dalam sebulan pertama."</p>
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white font-bold text-lg">BD</div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+                                    BD
+                                </div>
                                 <div>
                                     <p className="text-white font-semibold">Budi Darma</p>
                                     <p className="text-indigo-200 text-sm">CEO, Tokoshop Indonesia</p>
@@ -180,10 +197,10 @@ const LoginPage: React.FC = () => {
                         {/* Form Header */}
                         <div className="mb-10">
                             <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-3">
-                                {isRegistering ? '🎯 Daftar Sekarang' : '👋 Selamat Datang'}
+                                {isForgotPassword ? '🔑 Reset Password' : (isRegistering ? '🎯 Daftar Sekarang' : '👋 Selamat Datang')}
                             </h2>
                             <p className="text-lg text-slate-600 dark:text-slate-400">
-                                {isRegistering ? 'Bergabunglah dengan ribuan pengguna kami' : 'Masuk ke dashboard Anda'}
+                                {isForgotPassword ? 'Masukkan email Anda untuk reset password' : (isRegistering ? 'Bergabunglah dengan ribuan pengguna kami' : 'Masuk ke dashboard Anda')}
                             </p>
                         </div>
 
@@ -203,7 +220,7 @@ const LoginPage: React.FC = () => {
 
                         {/* Auth Form */}
                         <form onSubmit={handleAuth} className="space-y-5">
-                            {isRegistering && (
+                            {!isForgotPassword && isRegistering && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
                                         Nama Lengkap
@@ -218,7 +235,7 @@ const LoginPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {isRegistering && (
+                            {!isForgotPassword && isRegistering && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
                                         Peran Anda
@@ -234,7 +251,7 @@ const LoginPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {isRegistering && (
+                            {!isForgotPassword && isRegistering && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
                                         Nomor WhatsApp
@@ -249,7 +266,7 @@ const LoginPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {isRegistering && (
+                            {!isForgotPassword && isRegistering && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
                                         Alamat Lengkap
@@ -286,6 +303,7 @@ const LoginPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {!isForgotPassword && (
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
                                     Kata Sandi
@@ -310,49 +328,83 @@ const LoginPage: React.FC = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
                                     >
-                                        {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                                        {showPassword ? (
+                                            <EyeOffIcon className="h-5 w-5" />
+                                        ) : (
+                                            <EyeIcon className="h-5 w-5" />
+                                        )}
                                     </button>
                                 </div>
                                 {isRegistering && <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Minimal 6 karakter, kombinasi huruf dan angka</p>}
                             </div>
+                            )}
 
-                            {!isRegistering && (
+                            {!isRegistering && !isForgotPassword && (
                                 <div className="flex items-center justify-between text-sm">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                                         <span className="text-slate-600 dark:text-slate-400">Ingat saya</span>
                                     </label>
-                                    <a href="#" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">Lupa kata sandi?</a>
+                                    <button 
+                                        type="button"
+                                        onClick={() => {
+                                            setIsForgotPassword(true);
+                                            setError('');
+                                            setSuccessMsg('');
+                                        }}
+                                        className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                                    >
+                                        Lupa kata sandi?
+                                    </button>
                                 </div>
                             )}
 
-                            <button
-                                type="submit"
+                            <button 
+                                type="submit" 
                                 disabled={loading}
                                 className="w-full py-3 px-4 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                             >
                                 {loading && <SpinnerIcon className="h-5 w-5 animate-spin"/>}
-                                {loading ? 'Memproses...' : (isRegistering ? '🚀 Daftar Sekarang' : '✨ Masuk')}
+                                {loading ? 'Memproses...' : (isForgotPassword ? '📧 Kirim Link Reset' : (isRegistering ? '🚀 Daftar Sekarang' : '✨ Masuk'))}
                             </button>
                         </form>
 
                         {/* Auth Toggle */}
-                        <div className="mt-8 text-center">
-                            <p className="text-slate-600 dark:text-slate-400">
-                                {isRegistering ? 'Sudah punya akun? ' : 'Belum punya akun? '}
-                                <button 
-                                    type="button"
-                                    onClick={() => {
-                                        setIsRegistering(!isRegistering);
-                                        setError('');
-                                        setSuccessMsg('');
-                                    }}
-                                    className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
-                                >
-                                    {isRegistering ? 'Masuk di sini' : 'Daftar di sini'}
-                                </button>
-                            </p>
-                        </div>
+                        {isForgotPassword ? (
+                            <div className="mt-8 text-center">
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    Sudah ingat password? 
+                                    <button 
+                                        type="button"
+                                        onClick={() => {
+                                            setIsForgotPassword(false);
+                                            setError('');
+                                            setSuccessMsg('');
+                                        }}
+                                        className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition ml-1"
+                                    >
+                                        Kembali ke Login
+                                    </button>
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="mt-8 text-center">
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    {isRegistering ? 'Sudah punya akun? ' : 'Belum punya akun? '}
+                                    <button 
+                                        type="button"
+                                        onClick={() => {
+                                            setIsRegistering(!isRegistering);
+                                            setError('');
+                                            setSuccessMsg('');
+                                        }}
+                                        className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
+                                    >
+                                        {isRegistering ? 'Masuk di sini' : 'Daftar di sini'}
+                                    </button>
+                                </p>
+                            </div>
+                        )}
 
                         {/* Info Box */}
                         <div className="mt-10 p-5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl">
