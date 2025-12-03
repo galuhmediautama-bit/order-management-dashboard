@@ -1,0 +1,1080 @@
+
+import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import { supabase } from '../firebase';
+import type { Form, Order, ShippingSettings, PaymentSettings, ShippingSetting, PaymentSetting, BankTransferSetting, CSAgent, VariantDisplayStyle, QRISSettings, FormPixelSetting, RankLevel } from '../types';
+import CODIcon from '../components/icons/CODIcon';
+import QRIcon from '../components/icons/QRIcon';
+import BankTransferIcon from '../components/icons/BankTransferIcon';
+import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
+import WhatsAppIcon from '../components/icons/WhatsAppIcon';
+import SpinnerIcon from '../components/icons/SpinnerIcon';
+import { capitalizeWords, normalizeForm } from '../utils';
+import { SettingsContext } from '../contexts/SettingsContext';
+import CustomScriptInjector from '../components/CustomScriptInjector';
+import MetaPixelScript from '../components/MetaPixelScript';
+
+const SHIPPING_LABELS: Record<keyof ShippingSettings, string> = {
+    regular: 'Regular',
+    free: 'Gratis Ongkir',
+    flat_jawa: 'Flat Ongkir Pulau Jawa',
+    flat_bali: 'Flat Ongkir Pulau Bali',
+    flat_sumatra: 'Flat Ongkir Pulau Sumatra',
+};
+
+const PAYMENT_CONFIG: Record<keyof PaymentSettings, { label: string; icon: React.FC<{ className?: string }> }> = {
+    cod: { label: 'Bayar di Tempat (COD)', icon: CODIcon },
+    qris: { label: 'QRIS', icon: QRIcon },
+    bankTransfer: { label: 'Transfer Bank', icon: BankTransferIcon },
+};
+
+// Helper Component for Staggered Animation
+const FadeInBlock = ({ children, delay }: { children?: React.ReactNode; delay: number }) => {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsVisible(true);
+        }, delay);
+        return () => clearTimeout(timer);
+    }, [delay]);
+
+    return (
+        <div className={`transition-all duration-700 ease-out transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            {children}
+        </div>
+    );
+};
+
+// Skeleton Loader Component
+const FormSkeleton: React.FC = () => (
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 py-8 px-4">
+        <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md border dark:border-gray-700 animate-pulse">
+            <div className="w-full h-64 bg-slate-200 dark:bg-slate-700 rounded-lg mb-6"></div>
+            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4"></div>
+            <div className="space-y-2 mb-6">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
+            </div>
+            <div className="mb-6">
+                 <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-2"></div>
+                 <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+            </div>
+            <div className="space-y-4 mb-6">
+                <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+            </div>
+             <div className="h-14 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+        </div>
+    </div>
+);
+
+const SocialProofPopup: React.FC<{
+    settings: Form['socialProofSettings'];
+    productName: string;
+}> = ({ settings, productName }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const [currentProof, setCurrentProof] = useState({ name: '', city: '' });
+
+    useEffect(() => {
+        if (!settings || !settings.active || !settings.customerNames || !settings.customerCities) {
+            setIsVisible(false);
+            return;
+        }
+
+        const names = settings.customerNames.split('\n').filter(n => n.trim() !== '');
+        const cities = settings.customerCities.split('\n').filter(c => c.trim() !== '');
+
+        if (names.length === 0 || cities.length === 0) {
+            return;
+        }
+
+        let intervalId: number;
+
+        const showNextProof = () => {
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            const randomCity = cities[Math.floor(Math.random() * cities.length)];
+            setCurrentProof({ name: randomName, city: randomCity });
+            setIsVisible(true);
+
+            setTimeout(() => {
+                setIsVisible(false);
+            }, settings.displayDurationSeconds * 1000);
+        };
+        
+        const cycleTime = (settings.intervalSeconds + settings.displayDurationSeconds) * 1000;
+
+        const initialTimeout = setTimeout(() => {
+            showNextProof();
+            if (cycleTime > 0) {
+                 intervalId = window.setInterval(showNextProof, cycleTime);
+            }
+        }, settings.initialDelaySeconds * 1000);
+
+        return () => {
+            clearTimeout(initialTimeout);
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [settings, productName]);
+
+    if (!settings || !settings.active) {
+        return null;
+    }
+
+    const positionClasses: Record<NonNullable<Form['socialProofSettings']>['position'], string> = {
+        'bottom-left': 'bottom-4 left-4',
+        'bottom-right': 'bottom-4 right-4',
+        'top-left': 'top-4 left-4',
+        'top-right': 'top-4 right-4',
+    };
+    
+    const animationClasses: Record<NonNullable<Form['socialProofSettings']>['animation'], string> = {
+        'slide-up': `transition-all duration-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`,
+        'slide-down': `transition-all duration-500 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0'}`,
+        'fade-in': `transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`,
+    };
+
+    return (
+        <div className={`fixed ${positionClasses[settings.position]} z-50 ${animationClasses[settings.animation]}`}>
+             <div className="bg-slate-800/90 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg max-w-xs text-sm">
+                <p><span className="font-bold">{currentProof.name}</span> dari <span className="font-semibold">{currentProof.city}</span></p>
+                <p className="text-slate-300">baru saja membeli <strong>{productName}</strong></p>
+            </div>
+        </div>
+    );
+};
+
+
+const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order }) => {
+    const { thankYouPage } = form;
+    const [csPhoneNumber, setCsPhoneNumber] = useState<string | null>(null);
+
+    useEffect(() => {
+        const originalTitle = document.title;
+        document.title = thankYouPage.title || 'Pesanan Diterima!';
+        return () => {
+            document.title = originalTitle;
+        };
+    }, [thankYouPage.title]);
+    
+    useEffect(() => {
+        const fetchCsPhone = async () => {
+            if (thankYouPage.whatsappConfirmation.active && thankYouPage.whatsappConfirmation.destination === 'assigned_cs' && order.assignedCsId) {
+                try {
+                    const { data } = await supabase.from('cs_agents').select('*').eq('id', order.assignedCsId).single();
+                    if (data && data.phone) {
+                        setCsPhoneNumber(data.phone);
+                    }
+                } catch (error) {
+                    console.error("Error fetching CS agent phone:", error);
+                }
+            }
+        };
+
+        fetchCsPhone();
+    }, [thankYouPage, order.assignedCsId]);
+
+    const formatWaNumber = (num: string | null | undefined) => {
+        if (!num) return '';
+        let cleaned = num.replace(/\D/g, '');
+        if (cleaned.startsWith('0')) {
+            return '62' + cleaned.substring(1);
+        }
+        return cleaned;
+    };
+
+    let whatsappLink = '#';
+    if (thankYouPage.whatsappConfirmation.active) {
+        const message = thankYouPage.whatsappConfirmation.messageTemplate
+            .replace('[ORDER_ID]', order.id)
+            .replace('[CUSTOMER_NAME]', capitalizeWords(order.customer))
+            .replace('[TOTAL_PRICE]', `Rp ${order.totalPrice?.toLocaleString('id-ID')}`);
+
+        let destinationNumber = '';
+        if (thankYouPage.whatsappConfirmation.destination === 'assigned_cs') {
+            destinationNumber = formatWaNumber(csPhoneNumber);
+        } else {
+            destinationNumber = formatWaNumber(thankYouPage.whatsappConfirmation.number);
+        }
+        
+        if (destinationNumber) {
+            whatsappLink = `https://wa.me/${destinationNumber}?text=${encodeURIComponent(message)}`;
+        }
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md text-center">
+                <FadeInBlock delay={0}>
+                    <CheckCircleFilledIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{thankYouPage.title}</h1>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-wrap">{thankYouPage.message}</p>
+                </FadeInBlock>
+
+                {thankYouPage.showOrderSummary && (
+                    <FadeInBlock delay={300}>
+                        <div className="border-t border-b dark:border-gray-700 py-4 my-6 text-left">
+                            <h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">ID Pesanan:</span><span className="font-medium text-slate-700 dark:text-slate-300" title={order.id}>#{order.id.substring(0, 6)}...</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Produk:</span><span className="font-medium text-slate-700 dark:text-slate-300">{order.productName}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Total Pembayaran:</span><span className="font-bold text-lg text-slate-800 dark:text-slate-200">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</span></div>
+                            </div>
+                        </div>
+                    </FadeInBlock>
+                )}
+
+                {thankYouPage.whatsappConfirmation.active && (
+                        <FadeInBlock delay={600}>
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="w-full mt-4 bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
+                            <WhatsAppIcon className="w-5 h-5" />
+                            Konfirmasi via WhatsApp
+                        </a>
+                    </FadeInBlock>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
+    const { trackingSettings: globalTrackingSettings, loading: settingsLoading } = useContext(SettingsContext);
+    const [form, setForm] = useState<Form | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submission, setSubmission] = useState<{success: boolean, order?: Order, error?: string}>({success: false});
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [currentGalleryImage, setCurrentGalleryImage] = useState<string>('');
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [variantStock, setVariantStock] = useState<Record<string, number>>({});
+    const [checkoutCount, setCheckoutCount] = useState(0);
+    
+    // Pixel State
+    const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
+    
+    // Form state
+    const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '' });
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+    const [selectedShippingKey, setSelectedShippingKey] = useState<keyof ShippingSettings | undefined>();
+    const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
+    
+    const debounceTimer = useRef<number | null>(null);
+
+    // --- TRACKING CALCULATOR ---
+    useEffect(() => {
+        if (!form) {
+            console.log('[FormViewer] Form not loaded yet');
+            return;
+        }
+
+        const isThankYouPage = submission.success && !!submission.order;
+        const pageType = isThankYouPage ? 'thankYouPage' : 'formPage';
+        
+        console.log('[FormViewer] Calculating pixels for page:', pageType);
+        console.log('[FormViewer] Form tracking settings:', form.trackingSettings);
+        
+        const specificSettings = form.trackingSettings?.[pageType]?.meta;
+        const specificIds = specificSettings?.pixelIds || [];
+        
+        console.log('[FormViewer] Specific pixel IDs from form:', specificIds);
+        console.log('[FormViewer] Global tracking settings:', globalTrackingSettings);
+        
+        let finalIds: string[] = [];
+
+        // Priority: Specific Form Pixels > Global Pixels
+        if (specificIds && specificIds.length > 0) {
+            finalIds = specificIds;
+            console.log('[FormViewer] Using specific form pixels:', finalIds);
+        } else if (!settingsLoading && globalTrackingSettings?.meta?.active && globalTrackingSettings.meta?.pixels) {
+            // Fallback to global only if loaded and active
+            finalIds = globalTrackingSettings.meta.pixels.map(p => p.id);
+            console.log('[FormViewer] Using global pixels:', finalIds);
+        } else {
+            console.warn('[FormViewer] No pixels found. Settings loading:', settingsLoading, 'Global meta:', globalTrackingSettings?.meta);
+        }
+
+        console.log(`[FormViewer] Final IDs: ${finalIds.length > 0 ? finalIds.join(', ') : 'NONE'} | Page: ${pageType}`);
+        setActivePixelIds(finalIds);
+
+    }, [form, globalTrackingSettings, submission, settingsLoading]);
+
+
+    // --- Rest of your component logic ---
+    const saveAbandonedCart = async () => {
+        if (!form || (!customerData.name && !customerData.whatsapp)) {
+            return;
+        }
+
+        const cartData = {
+            formId: form.id,
+            formTitle: form.title,
+            brandId: form.brandId || '',
+            customerName: customerData.name,
+            customerPhone: customerData.whatsapp,
+            selectedVariant: Object.values(selectedOptions).join(' / ') || 'Produk Tunggal',
+            timestamp: new Date().toISOString(),
+            status: 'New' as const,
+        };
+        
+        try {
+            const cartId = sessionStorage.getItem(`abandonedCart_${form.id}`);
+            if (cartId) {
+                // Update existing
+                await supabase.from('abandoned_carts').update(cartData).eq('id', cartId);
+            } else {
+                // Create new
+                const { data } = await supabase.from('abandoned_carts').insert(cartData).select().single();
+                if (data) {
+                    sessionStorage.setItem(`abandonedCart_${form.id}`, data.id);
+                }
+            }
+        } catch (error) {
+            console.error("Error saving abandoned cart:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+        debounceTimer.current = window.setTimeout(() => {
+            saveAbandonedCart();
+        }, 5000); 
+
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, [customerData, selectedOptions, form]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            saveAbandonedCart();
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        }
+    }, [customerData, selectedOptions, form]);
+
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+
+        const timer = setInterval(() => {
+            setTimeLeft(prevTime => (prevTime > 0 ? prevTime - 1 : 0));
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [timeLeft]);
+
+    useEffect(() => {
+        if (form?.stockCountdownSettings?.active) {
+            const simpleHash = (str: string) => {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                    hash |= 0;
+                }
+                return Math.abs(hash) % 5;
+            };
+    
+            const initialStocks: Record<string, number> = {};
+            const baseStock = form.stockCountdownSettings.initialStock;
+            form.productOptions.forEach(option => {
+                option.values.forEach(val => {
+                    initialStocks[val] = Math.max(5, baseStock - simpleHash(val));
+                });
+            });
+            setVariantStock(initialStocks);
+    
+            const interval = setInterval(() => {
+                setVariantStock(prevStocks => {
+                    const newStocks = { ...prevStocks };
+                    for (const key in newStocks) {
+                        if (newStocks[key] > 2) {
+                            newStocks[key]--;
+                        }
+                    }
+                    return newStocks;
+                });
+            }, (form.stockCountdownSettings.intervalSeconds || 5) * 1000);
+    
+            return () => clearInterval(interval);
+        }
+    }, [form?.stockCountdownSettings]);
+    
+    useEffect(() => {
+        if (form?.ctaSettings) {
+            setCheckoutCount(form.ctaSettings.initialCount);
+            const interval = setInterval(() => {
+                setCheckoutCount(prev => prev + 1);
+            }, (form.ctaSettings.increaseIntervalSeconds || 8) * 1000);
+            return () => clearInterval(interval);
+        }
+    }, [form?.ctaSettings]);
+
+    useEffect(() => {
+        const fetchForm = async () => {
+            if (!identifier) {
+                setNotFound(true);
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            setNotFound(false);
+            let foundForm: Form | null = null;
+
+            try {
+                // 1. Try fetching by slug
+                const { data: formBySlug } = await supabase.from("forms").select('*').eq("slug", identifier).single();
+
+                if (formBySlug) {
+                    foundForm = formBySlug as Form;
+                } else {
+                    // 2. If not found by slug, try fetching by ID
+                    const { data: formById } = await supabase.from("forms").select('*').eq("id", identifier).single();
+                    if (formById) {
+                        foundForm = formById as Form;
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching form:", error);
+            }
+
+            if (foundForm) {
+                const normalizedForm = normalizeForm(foundForm);
+                setForm(normalizedForm);
+
+                if (normalizedForm.countdownSettings?.active) {
+                    setTimeLeft(normalizedForm.countdownSettings.duration);
+                }
+
+                // Initialize form state based on fetched data
+                const initialSelection: Record<string, string> = {};
+                normalizedForm.productOptions.forEach(option => {
+                    if (option.values.length > 0) {
+                        initialSelection[option.name] = option.values[0];
+                    }
+                });
+                setSelectedOptions(initialSelection);
+
+                const visibleShipping = (Object.keys(normalizedForm.shippingSettings) as Array<keyof ShippingSettings>).filter(
+                    key => normalizedForm!.shippingSettings[key]?.visible
+                );
+                setSelectedShippingKey(visibleShipping[0]);
+
+                const sortedVisiblePayment = (Object.keys(normalizedForm.paymentSettings) as Array<keyof PaymentSettings>)
+                    .filter(key => normalizedForm!.paymentSettings[key].visible)
+                    .sort((a, b) => (normalizedForm!.paymentSettings[a].order || 99) - (normalizedForm!.paymentSettings[b].order || 99));
+                setSelectedPaymentKey(sortedVisiblePayment[0]);
+            } else {
+                setNotFound(true);
+            }
+            setLoading(false);
+        };
+        fetchForm();
+    }, [identifier]);
+
+    useEffect(() => {
+        const originalTitle = document.title;
+        if (form) {
+            document.title = form.title || 'Formulir Pemesanan';
+        }
+        return () => {
+            document.title = originalTitle;
+        };
+    }, [form]);
+    
+    
+    const currentCombination = useMemo(() => {
+        if (!form) return null;
+        if (form.productOptions.length === 0) return form.variantCombinations.length > 0 ? form.variantCombinations[0] : null;
+        return form.variantCombinations.find(combo => {
+            return Object.entries(selectedOptions).every(([key, value]) => combo.attributes[key] === value);
+        });
+    }, [selectedOptions, form]);
+
+    const subtotal = currentCombination?.sellingPrice ?? 0;
+    
+    const shippingCost = useMemo(() => {
+        if (!form || !selectedShippingKey) return 0;
+    
+        const setting = form.shippingSettings[selectedShippingKey];
+        if (!setting || !setting.visible) return 0;
+    
+        if (selectedShippingKey.startsWith('flat_')) {
+            const costPerKg = setting.cost || 0;
+            const weightInGrams = currentCombination?.weight || 0;
+            
+            if (weightInGrams > 0) {
+                const weightInKg = weightInGrams / 1000;
+                return Math.ceil(weightInKg) * costPerKg;
+            } else {
+                return costPerKg; // Default to 1kg cost if weight is not set
+            }
+        } else {
+            return setting.cost || 0;
+        }
+    }, [form, selectedShippingKey, currentCombination]);
+
+    const codFee = useMemo(() => {
+        if (form && selectedPaymentKey === 'cod' && form.paymentSettings.cod.handlingFeePercentage) {
+            const feePercent = form.paymentSettings.cod.handlingFeePercentage / 100;
+            const base = form.paymentSettings.cod.handlingFeeBase === 'product_and_shipping' ? subtotal + shippingCost : subtotal;
+            return base * feePercent;
+        }
+        return 0;
+    }, [selectedPaymentKey, form, subtotal, shippingCost]);
+    const total = subtotal + shippingCost + codFee;
+
+    const handleCustomerDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setCustomerData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const assignCs = async (): Promise<string | undefined> => {
+        try {
+            if (!form?.thankYouPage.csAssignment) return undefined;
+
+            const { mode, singleAgentId, roundRobinAgents } = form.thankYouPage.csAssignment;
+            
+            if (mode === 'single' && singleAgentId) {
+                return singleAgentId;
+            }
+            
+            if (mode === 'round_robin' && roundRobinAgents && roundRobinAgents.length > 0) {
+                // 1. Fetch Candidates Info
+                const agentIds = roundRobinAgents.map(a => a.csAgentId);
+                const { data: agentsData } = await supabase.from('cs_agents').select('*').in('id', agentIds);
+                if (!agentsData) return undefined;
+
+                // 2. Fetch Rank Rules & Today's Orders Count
+                const { data: rankSettingsDoc } = await supabase.from('settings').select('*').eq('id', 'cuanRank').single();
+                
+                // Get start of today (UTC)
+                const today = new Date();
+                today.setUTCHours(0,0,0,0);
+                const { data: todayOrders } = await supabase
+                    .from('orders')
+                    .select('assignedCsId')
+                    .gte('date', today.toISOString())
+                    .in('assignedCsId', agentIds);
+
+                const rankOrder: RankLevel[] = ['SSS', 'SS', 'S+', 'S', 'A+', 'A', 'B', 'C', 'D', 'E'];
+
+                // 3. Filter Eligible Agents based on Limit
+                let eligibleAgents = roundRobinAgents.filter(rrAgent => {
+                    const agent = agentsData.find(a => a.id === rrAgent.csAgentId);
+                    if (!agent || agent.status !== 'Aktif') return false;
+
+                    // Determine Rank roughly based on closing rate snapshot
+                    let rank: RankLevel = 'E'; // Default
+                    if (rankSettingsDoc && rankSettingsDoc.csRules) {
+                        const validRule = rankOrder.find(r => {
+                            const rule = rankSettingsDoc.csRules.find((rule: any) => rule.rank === r);
+                            if (!rule) return false;
+                            return agent.closingRate >= rule.minClosingRate;
+                        });
+                        if (validRule) rank = validRule;
+                    }
+
+                    // Get Limit for this Rank
+                    const rule = rankSettingsDoc?.csRules?.find((r: any) => r.rank === rank);
+                    
+                    // If no rule or limit is undefined/null/0, treat as unlimited or check specific implementation
+                    // Here we assume explicit limit.
+                    if (!rule || rule.maxDailyLeads === undefined || rule.maxDailyLeads === null) return true;
+
+                    // Count Today's Orders
+                    const agentTodayCount = todayOrders?.filter(o => o.assignedCsId === agent.id).length || 0;
+                    
+                    return agentTodayCount < rule.maxDailyLeads;
+                });
+                
+                // --- OVERFLOW LOGIC ---
+                // If ALL agents are full (eligibleAgents is empty), ignore limits and distribute to ALL active agents.
+                // This prevents losing leads when traffic > capacity.
+                if (eligibleAgents.length === 0) {
+                    console.log("All agents reached daily limit. Activating Overflow Mode.");
+                    eligibleAgents = roundRobinAgents.filter(rrAgent => {
+                        const agent = agentsData.find(a => a.id === rrAgent.csAgentId);
+                        return agent && agent.status === 'Aktif';
+                    });
+                }
+
+                if (eligibleAgents.length === 0) return undefined; // Should only happen if NO agents are active at all
+
+                // Weighted Random Selection
+                let cumulativePercentage = 0;
+                const ranges = eligibleAgents.map(agent => {
+                    const range = { ...agent, start: cumulativePercentage };
+                    cumulativePercentage += agent.percentage;
+                    return range;
+                });
+
+                // Normalize random if total percentage < 100 due to filtering
+                const rand = Math.random() * cumulativePercentage;
+                const assigned = ranges.find(range => rand >= range.start && rand < (range.start + range.percentage));
+                
+                return assigned?.csAgentId;
+            }
+        } catch (error) {
+            console.warn("Failed to assign CS (likely permission issue), continuing without CS:", error);
+            return undefined;
+        }
+
+        return undefined;
+    };
+
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!form || !currentCombination) return;
+        setIsSubmitting(true);
+        setSubmission({ success: false });
+
+        if (form.customerFields.name.required && !customerData.name) { alert("Nama harus diisi."); setIsSubmitting(false); return; }
+        if (form.customerFields.whatsapp.required && !customerData.whatsapp) { alert("No. WhatsApp harus diisi."); setIsSubmitting(false); return; }
+        if (form.customerFields.email.required && !customerData.email) { alert("Email harus diisi."); setIsSubmitting(false); return; }
+        if (form.customerFields.address.required && !customerData.address) { alert("Alamat harus diisi."); setIsSubmitting(false); return; }
+        
+        try {
+            const assignedCsId = await assignCs();
+            
+            // Get both commission values
+            const csCommissionValue = currentCombination.csCommission || 0;
+            const advCommissionValue = currentCombination.advCommission || 0;
+            // Legacy support: if old commissionPrice exists but new ones don't, use it as CS commission
+            const legacyCommission = currentCombination.commissionPrice || 0;
+            const finalCsCommission = csCommissionValue || legacyCommission;
+            const finalAdvCommission = advCommissionValue;
+
+            const shippingMethodLabel = selectedShippingKey ? SHIPPING_LABELS[selectedShippingKey] : 'N/A';
+
+            const newOrderData: any = {
+                customer: capitalizeWords(customerData.name),
+                customerPhone: customerData.whatsapp,
+                customerEmail: customerData.email || '',
+                shippingAddress: customerData.address || '',
+                productName: `${form.title} ${Object.values(selectedOptions).join(' / ')}`.trim(),
+                productPrice: subtotal,
+                shippingMethod: shippingMethodLabel,
+                paymentMethod: selectedPaymentKey ? PAYMENT_CONFIG[selectedPaymentKey].label : 'N/A',
+                totalPrice: total,
+                status: 'Pending',
+                urgency: 'Low',
+                followUps: 0,
+                date: new Date().toISOString(), 
+                formId: form.id || null,
+                formTitle: form.title,
+                assignedCsId: assignedCsId || null,
+                commissionSnapshot: finalCsCommission, // Legacy field for backwards compatibility
+                brandId: form.brandId || null,
+            };
+
+            // Add commission fields only if they exist in database schema
+            // This prevents errors if columns are not yet added
+            try {
+                // Try to include new commission fields
+                newOrderData.csCommission = finalCsCommission;
+                newOrderData.advCommission = finalAdvCommission;
+            } catch (e) {
+                console.warn("Commission columns may not exist yet:", e);
+            }
+
+            console.log("Attempting to insert order:", newOrderData);
+            const { data, error } = await supabase.from('orders').insert(newOrderData).select().single();
+            if (error) {
+                console.error("Supabase insert error:", error);
+                throw error;
+            }
+            console.log("Order inserted successfully:", data);
+
+            await supabase.from('forms').update({
+                submissionCount: (form.submissionCount || 0) + 1
+            }).eq('id', form.id);
+            
+            const newOrder = data as Order;
+            
+            sessionStorage.removeItem(`abandonedCart_${form.id}`);
+
+            if (form.thankYouPage.submissionAction === 'redirect_to_url' && form.thankYouPage.redirectUrl) {
+                let finalUrl = form.thankYouPage.redirectUrl;
+                
+                finalUrl = finalUrl.replace(/\[ORDER_ID\]/g, newOrder.id);
+                finalUrl = finalUrl.replace(/\[TOTAL_PRICE\]/g, String(newOrder.totalPrice || 0));
+                finalUrl = finalUrl.replace(/\[CUSTOMER_NAME\]/g, encodeURIComponent(newOrder.customer));
+                finalUrl = finalUrl.replace(/\[CUSTOMER_EMAIL\]/g, encodeURIComponent(newOrder.customerEmail));
+                finalUrl = finalUrl.replace(/\[CUSTOMER_PHONE\]/g, encodeURIComponent(newOrder.customerPhone));
+                
+                window.location.replace(finalUrl);
+            } else {
+                setSubmission({ success: true, order: newOrder });
+            }
+        } catch (error) {
+            console.error("Error creating order:", error);
+            console.error("Error details:", JSON.stringify(error, null, 2));
+            
+            // More detailed error message
+            let errorMessage = 'Terjadi kesalahan saat mengirim pesanan. Silakan coba lagi.';
+            if (error instanceof Error) {
+                errorMessage = `Error: ${error.message}`;
+            } else if (typeof error === 'object' && error !== null && 'message' in error) {
+                errorMessage = `Error: ${(error as any).message}`;
+            }
+            
+            setSubmission({ success: false, error: errorMessage });
+            alert(errorMessage);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    // ... rest of the existing rendering logic ...
+
+    if (loading) {
+        return <FormSkeleton />;
+    }
+    if (notFound) {
+        return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400"><h1>404 | Formulir tidak ditemukan.</h1></div>;
+    }
+    if (!form) {
+         return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-red-500">Terjadi kesalahan saat memuat formulir.</div>;
+    }
+
+    if (submission.success && submission.order) {
+        return (
+            <>
+                <MetaPixelScript 
+                    pixelIds={activePixelIds} 
+                    eventName="Purchase" 
+                    order={submission.order} 
+                    contentName={form.title} 
+                />
+                <CustomScriptInjector scriptContent={form.customScripts?.thankYouPage || ''} />
+                <ThankYouDisplay form={form} order={submission.order} />
+            </>
+        );
+    }
+
+    // Default View (Form Page)
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    };
+
+    const descriptionClasses = `text-gray-600 dark:text-gray-300 mb-4 text-sm whitespace-pre-wrap text-${form.descriptionAlign}`;
+
+    const shippingKeys = Object.keys(form.shippingSettings) as Array<keyof ShippingSettings>;
+    const hasVisibleShipping = shippingKeys.some(key => form.shippingSettings[key]?.visible);
+
+    const sortedPaymentKeys = (Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>)
+        .filter(key => form.paymentSettings[key].visible)
+        .sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99));
+    
+    const hasVisiblePayment = sortedPaymentKeys.length > 0;
+
+    return (
+        <>
+            <MetaPixelScript 
+                pixelIds={activePixelIds} 
+                eventName="ViewContent" 
+                contentName={form.title} 
+            />
+            <CustomScriptInjector scriptContent={form.customScripts?.formPage || ''} />
+            
+            <div className="min-h-screen bg-slate-100 dark:bg-slate-900 py-8 px-4">
+                <div className="w-full max-w-lg mx-auto">
+                    <form onSubmit={handleSubmit}>
+                        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md border dark:border-gray-700 text-slate-900 dark:text-slate-100">
+                            {/* ... (Existing Form UI JSX remains exactly the same) ... */}
+                            <FadeInBlock delay={0}>
+                                <div className="mb-4">
+                                    {(currentGalleryImage || form.mainImage) && (
+                                        <img
+                                            src={currentGalleryImage || form.mainImage}
+                                            alt={form.title}
+                                            className={`w-full aspect-square object-cover rounded-lg transition-all duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                            onLoad={() => setImageLoaded(true)}
+                                            loading="eager" 
+                                            fetchPriority="high"
+                                        />
+                                    )}
+                                    {!form.mainImage && <div className="h-8"></div>}
+                                </div>
+                                
+                                {form.productImages && form.productImages.length > 0 && (
+                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                        <div 
+                                            onClick={() => {
+                                                setCurrentGalleryImage(form.mainImage);
+                                                setImageLoaded(false);
+                                            }}
+                                            className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${
+                                                (currentGalleryImage === form.mainImage || (!currentGalleryImage && form.mainImage))
+                                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' 
+                                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                                            }`}
+                                        >
+                                            <img src={form.mainImage} alt="Main" className="w-full h-full object-cover rounded-lg" />
+                                        </div>
+                                        {form.productImages.map((img, idx) => (
+                                            <div 
+                                                key={idx}
+                                                onClick={() => {
+                                                    setCurrentGalleryImage(img);
+                                                    setImageLoaded(false);
+                                                }}
+                                                className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${
+                                                    currentGalleryImage === img 
+                                                    ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' 
+                                                    : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                                                }`}
+                                            >
+                                                <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </FadeInBlock>
+                            
+                            <FadeInBlock delay={150}>
+                                {(form.showTitle ?? true) && <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{form.title}</h1>}
+                                {(form.showDescription ?? true) && <p className={descriptionClasses}>{form.description}</p>}
+                                
+                                {form.countdownSettings?.active && (
+                                    <div className="my-4 text-center bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg shadow-sm font-medium">
+                                        ⏳ Pesanan Anda akan di-hold selama <span className="font-bold tabular-nums">{formatTime(timeLeft)}</span>.
+                                    </div>
+                                )}
+                            </FadeInBlock>
+                            
+                            <FadeInBlock delay={300}>
+                                {form.productOptions.length > 0 && (
+                                    <div className="mb-4 space-y-4">
+                                    {form.productOptions.map((option, index) => {
+                                        const displayStyle = option.displayStyle || 'dropdown';
+                                        return (
+                                            <div key={option.id}>
+                                                <div className="flex justify-between items-baseline mb-2">
+                                                    <label className="font-semibold block text-sm text-slate-900 dark:text-slate-100">{option.name}:</label>
+                                                </div>
+                                                {displayStyle === 'dropdown' && (
+                                                    <select
+                                                        onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))}
+                                                        value={selectedOptions[option.name] || ''}
+                                                        className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
+                                                    >
+                                                        {option.values.map(val => <option key={val} value={val}>{val}</option>)}
+                                                    </select>
+                                                )}
+                                                {displayStyle === 'radio' && (
+                                                    <div className="space-y-2">
+                                                        {option.values.map(val => (
+                                                            <label 
+                                                                key={val} 
+                                                                className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                                                                    selectedOptions[option.name] === val 
+                                                                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]' 
+                                                                        : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                                                        selectedOptions[option.name] === val ? 'border-white' : 'border-gray-400'
+                                                                    }`}>
+                                                                        {selectedOptions[option.name] === val && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                                    </div>
+                                                                    <input 
+                                                                        type="radio" 
+                                                                        name={option.name} 
+                                                                        value={val} 
+                                                                        checked={selectedOptions[option.name] === val} 
+                                                                        onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))} 
+                                                                        className="hidden" 
+                                                                    />
+                                                                    <span className="font-medium">{val}</span>
+                                                                </div>
+                                                                {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
+                                                                    <span className={`text-sm font-medium animate-pulse ${
+                                                                        selectedOptions[option.name] === val ? 'text-red-200' : 'text-red-600 dark:text-red-400'
+                                                                    }`}>
+                                                                        Stok: {variantStock[val]} pcs
+                                                                    </span>
+                                                                )}
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {displayStyle === 'modern' && (
+                                                    <div className="flex flex-col gap-2">
+                                                        {option.values.map(val => (
+                                                            <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({...prev, [option.name]: val}))} className={`w-full flex justify-between items-center px-3 py-1.5 border rounded-lg text-sm transition-colors ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
+                                                                <span>{val}</span>
+                                                                {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
+                                                                    <span className="text-xs font-medium opacity-80 animate-pulse">
+                                                                        Stok: {variantStock[val]}
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    </div>
+                                )}
+                            </FadeInBlock>
+                                
+                            <FadeInBlock delay={450}>
+                                <div className="mb-4 space-y-3">
+                                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
+                                    {form.customerFields.name.visible && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
+                                            <input type="text" name="name" value={customerData.name} onChange={handleCustomerDataChange} placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.name.required} />
+                                        </div>
+                                    )}
+                                    {form.customerFields.whatsapp.visible && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
+                                            <input type="tel" name="whatsapp" value={customerData.whatsapp} onChange={handleCustomerDataChange} placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.whatsapp.required} />
+                                        </div>
+                                    )}
+                                    {form.customerFields.email.visible && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email {form.customerFields.email.required && <span className="text-red-500">*</span>}</label>
+                                            <input type="email" name="email" value={customerData.email} onChange={handleCustomerDataChange} placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.email.required} />
+                                        </div>
+                                    )}
+                                    {form.customerFields.address.visible && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
+                                            <textarea name="address" value={customerData.address} onChange={handleCustomerDataChange} rows={3} placeholder="Sertakan nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota/kabupaten, dan kode pos" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.address.required} />
+                                        </div>
+                                    )}
+                                </div>
+                            </FadeInBlock>
+
+                            <FadeInBlock delay={600}>
+                                {hasVisibleShipping && (
+                                    <div className="mb-4">
+                                        <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Metode Pengiriman:</h3>
+                                        <div className="space-y-2">
+                                            {shippingKeys.map(key => {
+                                                const setting = form.shippingSettings[key] as ShippingSetting;
+                                                if (!setting || !setting.visible) return null;
+
+                                                const isFlatRate = key.startsWith('flat_');
+                                                const costLabel = setting.cost > 0
+                                                    ? `${setting.cost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}${isFlatRate ? ' / kg' : ''}`
+                                                    : 'Gratis';
+
+                                                return (
+                                                    <div key={key}>
+                                                        <label htmlFor={`shipping-${key}`} className={`p-3 border rounded-lg flex justify-between items-center cursor-pointer ${selectedShippingKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                                                            <div className="flex items-center gap-3">
+                                                                <input type="radio" id={`shipping-${key}`} name="shippingMethod" value={key} checked={selectedShippingKey === key} onChange={() => setSelectedShippingKey(key)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"/>
+                                                                <span>{SHIPPING_LABELS[key as keyof typeof SHIPPING_LABELS]}</span>
+                                                            </div>
+                                                            <span className="font-semibold">{costLabel}</span>
+                                                        </label>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {hasVisiblePayment && (
+                                    <div className="mb-4">
+                                        <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Metode Pembayaran:</h3>
+                                        <div className="space-y-2">
+                                            {sortedPaymentKeys.map(key => {
+                                                const setting = form.paymentSettings[key];
+                                                const config = PAYMENT_CONFIG[key];
+                                                const Icon = config.icon;
+                                                
+                                                const accounts = (setting as BankTransferSetting).accounts;
+                                                const qrImageUrl = (setting as QRISSettings).qrImageUrl;
+
+                                                return (
+                                                    <div key={key}>
+                                                        <label htmlFor={`payment-${key}`} className={`p-3 border rounded-lg flex items-center gap-3 cursor-pointer ${selectedPaymentKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                                                            <input type="radio" id={`payment-${key}`} name="paymentMethod" value={key} checked={selectedPaymentKey === key} onChange={() => setSelectedPaymentKey(key)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"/>
+                                                            <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+                                                            <span className="font-medium">{config.label}</span>
+                                                        </label>
+                                                        {key === 'bankTransfer' && selectedPaymentKey === 'bankTransfer' && accounts?.length > 0 && (
+                                                            <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2">
+                                                                <p className="font-semibold">Silakan transfer ke salah satu rekening berikut:</p>
+                                                                {accounts.map(acc => (
+                                                                    <div key={acc.id}><p><strong>{acc.bankName}:</strong> {acc.accountNumber} (a/n {acc.accountHolder})</p></div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                         {key === 'qris' && selectedPaymentKey === 'qris' && qrImageUrl && (
+                                                            <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2 text-center">
+                                                                <p className="font-semibold">Pindai kode QRIS berikut:</p>
+                                                                <img src={qrImageUrl} alt="QRIS" className="max-w-[200px] mx-auto rounded-md" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </FadeInBlock>
+                                
+                            <FadeInBlock delay={750}>
+                                <div className="border-t dark:border-gray-700 pt-4 mt-4 space-y-2">
+                                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
+                                    <div className="flex justify-between items-baseline text-sm">
+                                        <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
+                                        <div className="flex items-baseline gap-2">
+                                            {currentCombination?.strikethroughPrice && currentCombination.strikethroughPrice > subtotal && <span className="text-gray-400 line-through">{currentCombination.strikethroughPrice.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span>}
+                                            <span className="font-medium">{subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Pengiriman</span><span className="font-medium">{shippingCost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
+                                    {codFee > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Biaya Penanganan COD</span><span className="font-medium">{codFee.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>}
+                                    <div className="flex justify-between font-bold text-lg text-slate-900 dark:text-slate-100"><span>Total</span><span>{total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={!currentCombination || isSubmitting}
+                                    className="w-full mt-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed flex flex-col items-center justify-center p-2 min-h-[4rem] transition-all shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/40"
+                                >
+                                    {isSubmitting ? (
+                                        <SpinnerIcon className="w-6 h-6 animate-spin" />
+                                    ) : currentCombination ? (
+                                        <>
+                                            <span className="text-lg leading-tight">{form.ctaSettings?.mainText || 'Kirim Pesanan'}</span>
+                                            {form.ctaSettings && (
+                                                 <span className="text-xs font-normal opacity-80 leading-tight">
+                                                    {form.ctaSettings.urgencyText.replace('{count}', String(checkoutCount))}
+                                                </span>
+                                            )}
+                                        </>
+                                    ) : (
+                                        'Varian tidak tersedia'
+                                    )}
+                                </button>
+                            </FadeInBlock>
+                        </div>
+                    </form>
+                </div>
+            </div>
+             {form.socialProofSettings && <SocialProofPopup settings={form.socialProofSettings} productName={form.title} />}
+        </>
+    );
+};
+
+export default FormViewerPage;

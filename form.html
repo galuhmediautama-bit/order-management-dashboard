@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Memuat Formulir...</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f1f5f9; color: #475569; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { text-align: center; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <script>
+        (function() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const formId = params.get('id');
+                if (formId) {
+                    // Construct the new URL with a hash.
+                    // It replaces 'form.html' from the path, or just adds the hash if it's not present.
+                    const newUrl = window.location.href.replace(/form\.html.*/, '#/f/' + formId);
+                    window.location.replace(newUrl);
+                } else {
+                    document.body.innerHTML = '<h1>Formulir tidak ditemukan. Tautan tidak valid.</h1>';
+                }
+            } catch (e) {
+                 document.body.innerHTML = '<h1>Gagal memuat formulir.</h1>';
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <p>Membuka formulir Anda, harap tunggu...</p>
+    </div>
+</body>
+</html>

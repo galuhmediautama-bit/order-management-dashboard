@@ -1,0 +1,25 @@
+name: order-dashboard
+services:
+- name: web
+  github:
+    repo: username/order-management-dashboard
+    branch: main
+  build_command: npm install && npm run build
+  run_command: npx vite preview --host 0.0.0.0 --port 8080
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: VITE_SUPABASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${SUPABASE_URL}
+  - key: VITE_SUPABASE_ANON_KEY
+    scope: RUN_AND_BUILD_TIME
+    value: ${SUPABASE_ANON_KEY}
+  http_port: 8080
+  source_dir: /
+
+envs:
+- key: SUPABASE_URL
+  value: "" # Replace with your Supabase URL
+- key: SUPABASE_ANON_KEY
+  value: "" # Replace with your Supabase Anon Key

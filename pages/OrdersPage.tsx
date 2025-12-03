@@ -1,0 +1,1196 @@
+
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import type { Order, OrderStatus, MessageTemplates, Form, ShippingSettings, PaymentSettings, UserRole, User } from '../types';
+import PlusIcon from '../components/icons/PlusIcon';
+import CalendarIcon from '../components/icons/CalendarIcon';
+import ShipIcon from '../components/icons/ShipIcon';
+import DotsHorizontalIcon from '../components/icons/DotsHorizontalIcon';
+import StatusBadge from '../components/StatusBadge';
+import EyeIcon from '../components/icons/EyeIcon';
+import XCircleIcon from '../components/icons/XCircleIcon';
+import TrashIcon from '../components/icons/TrashIcon';
+import SearchIcon from '../components/icons/SearchIcon';
+import PhoneIcon from '../components/icons/PhoneIcon';
+import MailIcon from '../components/icons/MailIcon';
+import LocationMarkerIcon from '../components/icons/LocationMarkerIcon';
+import XIcon from '../components/icons/XIcon';
+import UserIcon from '../components/icons/UserIcon';
+import PlayIcon from '../components/icons/PlayIcon';
+import WhatsAppIcon from '../components/icons/WhatsAppIcon';
+import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
+import CreditCardIcon from '../components/icons/CreditCardIcon';
+import ShieldCheckIcon from '../components/icons/ShieldCheckIcon';
+import DownloadIcon from '../components/icons/DownloadIcon';
+import BanknotesIcon from '../components/icons/BanknotesIcon';
+import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
+import { supabase } from '../firebase';
+import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
+import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
+import SpinnerIcon from '../components/icons/SpinnerIcon';
+import { Link } from 'react-router-dom';
+import ChevronDownIcon from '../components/icons/ChevronDownIcon';
+import FilterIcon from '../components/icons/FilterIcon'; 
+import ConfirmationModal from '../components/ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
+
+// --- Helper Components & Functions ---
+
+const TABS: ('All' | OrderStatus)[] = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled', 'Pending Deletion'];
+
+const formatWaNumber = (num: string | null | undefined) => {
+    if (!num) return '';
+    let cleaned = num.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+        return '62' + cleaned.substring(1);
+    }
+    if (cleaned.startsWith('62')) {
+        return cleaned;
+    }
+    return '62' + cleaned;
+};
+
+// ... Modals will be updated below ...
+
+const OrdersPage: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [forms, setForms] = useState<Form[]>([]); // For manual order
+  const [csUsers, setCsUsers] = useState<User[]>([]); // List of CS agents for assignment
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
+  
+  // State for Filters
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'All' | OrderStatus>('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null });
+  const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
+  const [selectedPaymentFilter, setSelectedPaymentFilter] = useState<string>('all');
+  
+  // Bulk Actions
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Modal States
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
+  
+  // Action Modal States
+  const [orderToProcess, setOrderToProcess] = useState<Order | null>(null); 
+  const [orderToShip, setOrderToShip] = useState<Order | null>(null); 
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null); 
+  const [orderToNotify, setOrderToNotify] = useState<Order | null>(null); 
+  const [orderToChangePayment, setOrderToChangePayment] = useState<Order | null>(null);
+
+  const [templates, setTemplates] = useState<MessageTemplates | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+    // Assignment state for inline CS assign
+    const [assignTargetOrderId, setAssignTargetOrderId] = useState<string | null>(null);
+    const [assignSelectedCsId, setAssignSelectedCsId] = useState<string>('');
+
+  // Fetch Data
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+        // 1. User & Role
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+             const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
+             if (userDoc) {
+                 const role = getNormalizedRole(userDoc.role, user.email);
+                 setCurrentUser({ id: user.id, ...userDoc, role } as User);
+             } else {
+                 const role = getNormalizedRole(undefined, user.email);
+                 setCurrentUser({ id: user.id, role, name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
+             }
+        }
+
+        // 2. Orders
+        const { data: ordersData, error: ordersError } = await supabase
+            .from('orders')
+            .select('*')
+            .order('date', { ascending: false });
+        
+        if (ordersError) throw ordersError;
+        
+        const ordersList = (ordersData || []).map(data => {
+            return { ...data } as Order;
+        });
+        setOrders(ordersList);
+
+        // 3. Forms (for manual order dropdown)
+        const { data: formsData } = await supabase.from('forms').select('*');
+        setForms((formsData || []).map(f => ({ ...f }) as Form));
+
+        // 4. CS Users (for Manual Order Assignment)
+        const { data: usersData } = await supabase.from('users').select('*');
+        if (usersData) {
+            const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
+            setCsUsers(cs as User[]);
+        }
+
+        // 5. Templates
+        const { data: templatesData } = await supabase.from('settings').select('*').eq('id', 'messageTemplates').single();
+        if (templatesData) {
+            setTemplates(templatesData as MessageTemplates);
+        }
+
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        showToast("Gagal memuat data pesanan.", "error");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // --- Actions ---
+
+  const handleSaveManualOrder = async (newOrderData: Omit<Order, 'id'>) => {
+      try {
+          const dataWithTimestamp = {
+              ...newOrderData,
+              date: new Date().toISOString()
+          };
+          const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
+          if (error) throw error;
+          
+          const newOrder = data as Order;
+          setOrders(prev => [newOrder, ...prev]);
+          setIsManualOrderModalOpen(false);
+          showToast("Pesanan manual berhasil dibuat.", "success");
+      } catch (error) {
+          console.error("Error creating order:", error);
+          showToast("Gagal membuat pesanan.", "error");
+      }
+  };
+
+  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus, extraData?: Partial<Order>) => {
+      try {
+          const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
+          if (error) throw error;
+
+          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, ...extraData } : o));
+          
+          // Close modals if open
+          setOrderToProcess(null);
+          setOrderToShip(null);
+          setOrderToDelete(null);
+
+          showToast(`Status pesanan diperbarui menjadi ${newStatus}.`, "success");
+
+          // Trigger notification modal if shipped
+          if (newStatus === 'Shipped') {
+              const updatedOrder = orders.find(o => o.id === orderId);
+              if (updatedOrder) setOrderToNotify({ ...updatedOrder, status: 'Shipped', ...extraData });
+          }
+
+      } catch (error) {
+          console.error("Error updating status:", error);
+          showToast("Gagal memperbarui status.", "error");
+      }
+  };
+
+  const handleFollowUp = async (orderId: string) => {
+      // Just update the counter locally and in DB, the WhatsApp link is handled in the component
+      try {
+          const order = orders.find(o => o.id === orderId);
+          if (!order) return;
+          const newCount = (order.followUps || 0) + 1;
+          await supabase.from('orders').update({ followUps: newCount }).eq('id', orderId);
+          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, followUps: newCount } : o));
+      } catch (error) {
+          console.error("Error updating follow up:", error);
+      }
+  };
+
+  const handleChangePayment = async (method: string) => {
+      if (!orderToChangePayment) return;
+      try {
+          await supabase.from('orders').update({ paymentMethod: method }).eq('id', orderToChangePayment.id);
+          setOrders(prev => prev.map(o => o.id === orderToChangePayment.id ? { ...o, paymentMethod: method } : o));
+          setOrderToChangePayment(null);
+          showToast("Metode pembayaran berhasil diubah.", "success");
+      } catch (error) {
+          console.error("Error changing payment:", error);
+          showToast("Gagal mengubah metode pembayaran.", "error");
+      }
+  };
+
+  // --- CS Assignment Handlers ---
+  const handleOpenAssign = (orderId: string) => {
+      setAssignTargetOrderId(orderId);
+      setAssignSelectedCsId(csUsers[0]?.id || '');
+  };
+
+  const handleCancelAssign = () => {
+      setAssignTargetOrderId(null);
+      setAssignSelectedCsId('');
+  };
+
+  const handleSaveAssign = async (orderId: string) => {
+      if (!assignSelectedCsId) {
+          showToast('Pilih CS terlebih dahulu.', 'error');
+          return;
+      }
+
+      try {
+          const { error } = await supabase.from('orders').update({ assignedCsId: assignSelectedCsId }).eq('id', orderId);
+          if (error) throw error;
+
+          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, assignedCsId: assignSelectedCsId } : o));
+          showToast('CS berhasil ditugaskan.', 'success');
+          setAssignTargetOrderId(null);
+          setAssignSelectedCsId('');
+      } catch (err) {
+          console.error('Error assigning CS:', err);
+          showToast('Gagal menugaskan CS.', 'error');
+      }
+  };
+
+  // Export to Excel Function
+  const handleExportExcel = () => {
+    setIsExporting(true);
+    try {
+      const dataToExport = filteredOrders.map(order => ({
+        'ID Pesanan': order.id,
+        'Tanggal': new Date(order.date).toLocaleString('id-ID'),
+        'Pelanggan': order.customer,
+        'WhatsApp': order.customerPhone,
+        'Email': order.customerEmail,
+        'Alamat': order.shippingAddress,
+        'Produk': order.productName,
+        'Harga Produk': order.productPrice,
+        'Total': order.totalPrice,
+        'Status': order.status,
+        'Pembayaran': order.paymentMethod || 'COD',
+        'Pengiriman': order.shippingMethod || '-',
+        'Resi': order.shippingResi || '-',
+        'CS': csUsers.find(u => u.id === order.assignedCsId)?.name || 'Unassigned',
+        'Follow Up': order.followUps
+      }));
+
+      const csv = [
+        Object.keys(dataToExport[0] || {}).join(','),
+        ...dataToExport.map(row => Object.values(row).map(v => `"${v}"`).join(','))
+      ].join('\\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `pesanan_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      
+      showToast('Data berhasil diekspor!', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showToast('Gagal mengekspor data', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Bulk Delete
+  const handleBulkDelete = async () => {
+    if (selectedOrders.size === 0) return;
+    
+    try {
+      for (const orderId of selectedOrders) {
+        await handleUpdateStatus(orderId, 'Pending Deletion');
+      }
+      setSelectedOrders(new Set());
+      showToast(`${selectedOrders.size} pesanan berhasil dipindahkan ke sampah`, 'success');
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      showToast('Gagal menghapus pesanan', 'error');
+    }
+  };
+
+  const openDeleteConfirmation = (order: Order) => {
+      setOrderToDelete(order);
+  };
+
+  const confirmDeleteOrder = () => {
+      if (orderToDelete) {
+          handleUpdateStatus(orderToDelete.id, 'Pending Deletion');
+      }
+  };
+
+  // --- Filtering Logic ---
+  const statusCounts = useMemo(() => {
+        const baseOrders = filterDataByBrand<Order>(orders, currentUser);
+        
+        const counts: Record<string, number> = {
+            All: baseOrders.filter(o => o.status !== 'Pending Deletion').length,
+            Pending: 0,
+            Processing: 0,
+            Shipped: 0,
+            Delivered: 0,
+            Canceled: 0,
+            'Pending Deletion': 0
+        };
+
+        baseOrders.forEach(order => {
+            const statusKey = order.status;
+            if (counts[statusKey] !== undefined) {
+                counts[statusKey]++;
+            }
+        });
+
+        return counts;
+  }, [orders, currentUser]);
+
+  const filteredOrders = useMemo(() => {
+      // 1. Brand Filter
+      let result = filterDataByBrand<Order>(orders, currentUser);
+
+      // 2. Status Filter
+      if (activeStatusFilter !== 'All') {
+          result = result.filter(o => o.status === activeStatusFilter);
+      } else {
+          // Hide 'Pending Deletion' from 'All' view
+          result = result.filter(o => o.status !== 'Pending Deletion');
+      }
+
+      // 3. Brand Filter
+      if (selectedBrandFilter !== 'all') {
+          result = result.filter(o => o.brandId === selectedBrandFilter);
+      }
+
+      // 4. Payment Filter
+      if (selectedPaymentFilter !== 'all') {
+          result = result.filter(o => o.paymentMethod === selectedPaymentFilter);
+      }
+
+      // 5. Date Range
+      if (dateRange.startDate && dateRange.endDate) {
+          // Create start and end dates in UTC to avoid timezone mismatch
+          const start = new Date(dateRange.startDate);
+          const end = new Date(dateRange.endDate);
+          start.setUTCHours(0,0,0,0);
+          end.setUTCHours(23,59,59,999);
+          result = result.filter(o => {
+              const d = new Date(o.date);
+              return d >= start && d <= end;
+          });
+      }
+
+      // 6. Search
+      if (searchTerm) {
+          const lower = searchTerm.toLowerCase();
+          result = result.filter(o => 
+              o.customer.toLowerCase().includes(lower) ||
+              o.id.toLowerCase().includes(lower) ||
+              o.customerPhone.includes(lower)
+          );
+      }
+
+      return result;
+  }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedPaymentFilter, currentUser]);
+
+  // Statistics Cards Data
+  const stats = useMemo(() => {
+    const filtered = filterDataByBrand<Order>(orders, currentUser).filter(o => o.status !== 'Pending Deletion');
+    
+    return {
+      totalOrders: filtered.length,
+      totalRevenue: filtered.reduce((sum, o) => sum + (o.totalPrice || 0), 0),
+      pendingCount: filtered.filter(o => o.status === 'Pending').length,
+      processingCount: filtered.filter(o => o.status === 'Processing').length,
+      shippedCount: filtered.filter(o => o.status === 'Shipped').length,
+      deliveredCount: filtered.filter(o => o.status === 'Delivered').length,
+      canceledCount: filtered.filter(o => o.status === 'Canceled').length,
+    };
+  }, [orders, currentUser]);
+
+  // Get unique brands for filter
+  const uniqueBrands = useMemo(() => {
+    const brands = new Set<string>();
+    orders.forEach(o => {
+      if (o.brandId) brands.add(o.brandId);
+    });
+    return Array.from(brands);
+  }, [orders]);
+
+  // Get unique payment methods for filter
+  const uniquePaymentMethods = useMemo(() => {
+    const methods = new Set<string>();
+    orders.forEach(o => {
+      if (o.paymentMethod) methods.add(o.paymentMethod);
+    });
+    return Array.from(methods);
+  }, [orders]);
+
+    // --- Pagination State ---
+    const [pageSize, setPageSize] = useState<number>(10); // default 10 per page
+    const [page, setPage] = useState<number>(1);
+
+    const pageSizeEffective = pageSize === 0 ? filteredOrders.length || 1 : pageSize;
+    const totalPages = Math.max(1, Math.ceil((filteredOrders.length || 0) / pageSizeEffective));
+
+    useEffect(() => {
+        // reset to first page when filters/search/pageSize change
+        setPage(1);
+    }, [searchTerm, activeStatusFilter, dateRange, pageSize, orders]);
+
+    const paginatedOrders = useMemo(() => {
+        if (!filteredOrders || filteredOrders.length === 0) return [];
+        if (pageSize === 0) return filteredOrders;
+        const start = (page - 1) * pageSizeEffective;
+        return filteredOrders.slice(start, start + pageSizeEffective);
+    }, [filteredOrders, page, pageSize, pageSizeEffective]);
+
+  // Toggle Select All (defined after paginatedOrders)
+  const handleToggleSelectAll = () => {
+    if (selectedOrders.size === paginatedOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(paginatedOrders.map(o => o.id)));
+    }
+  };
+
+  // Toggle Individual Selection
+  const handleToggleSelect = (orderId: string) => {
+    const newSet = new Set(selectedOrders);
+    if (newSet.has(orderId)) {
+      newSet.delete(orderId);
+    } else {
+      newSet.add(orderId);
+    }
+    setSelectedOrders(newSet);
+  };
+
+
+  return (
+    <div className="space-y-6">
+      {/* Header Actions */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-indigo-100 dark:border-slate-700">
+        <div>
+            <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Daftar Pesanan</h1>
+            </div>
+            <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Kelola semua pesanan masuk, proses, dan pengiriman.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <button 
+              onClick={handleExportExcel} 
+              disabled={isExporting || filteredOrders.length === 0}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isExporting ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
+                <span>Ekspor CSV</span>
+            </button>
+            <button onClick={() => setIsManualOrderModalOpen(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:scale-105 transition-all">
+                <PlusIcon className="w-5 h-5" />
+                <span>Pesanan Manual</span>
+            </button>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <ShoppingCartIcon className="w-6 h-6" />
+            </div>
+            <span className="text-2xl font-bold">{stats.totalOrders}</span>
+          </div>
+          <h3 className="text-sm font-medium text-blue-100">Total Pesanan</h3>
+          <p className="text-xs text-blue-200 mt-1">Semua status</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-xl shadow-green-500/30 hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <BanknotesIcon className="w-6 h-6" />
+            </div>
+            <span className="text-2xl font-bold">Rp {(stats.totalRevenue / 1000000).toFixed(1)}M</span>
+          </div>
+          <h3 className="text-sm font-medium text-green-100">Total Omzet</h3>
+          <p className="text-xs text-green-200 mt-1">Revenue keseluruhan</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <span className="text-2xl font-bold">{stats.pendingCount}</span>
+          </div>
+          <h3 className="text-sm font-medium text-amber-100">Pending</h3>
+          <p className="text-xs text-amber-200 mt-1">Menunggu diproses</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white shadow-xl shadow-purple-500/30 hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <span className="text-2xl font-bold">{stats.deliveredCount}</span>
+          </div>
+          <h3 className="text-sm font-medium text-purple-100">Delivered</h3>
+          <p className="text-xs text-purple-200 mt-1">Pesanan selesai</p>
+        </div>
+      </div>
+
+      {/* --- Filter Tabs Section --- */}
+      <div className="flex flex-col gap-4">
+          {/* Status Filter as Pills */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+            <div className="flex items-center gap-3 mb-4">
+                <FilterIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter Status</span>
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+            {TABS.map(status => {
+                if (status === 'Pending Deletion' && statusCounts['Pending Deletion'] === 0 && activeStatusFilter !== 'Pending Deletion') return null;
+                const isActive = activeStatusFilter === status;
+                
+                return (
+                    <button
+                        key={status}
+                        onClick={() => setActiveStatusFilter(status)}
+                        className={`
+                            whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2.5 border shadow-sm hover:shadow-md
+                            ${isActive 
+                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 border-transparent text-white shadow-lg shadow-indigo-500/30 scale-105' 
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'}
+                        `}
+                    >
+                        {status === 'All' ? 'Semua' : status === 'Pending Deletion' ? 'Sampah' : status}
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                            isActive 
+                                ? 'bg-white/20 text-white' 
+                                : 'bg-indigo-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400'
+                        }`}>
+                            {statusCounts[status] || 0}
+                        </span>
+                    </button>
+                )
+            })}
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+              <div className="flex items-center gap-3 mb-3">
+                  <SearchIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pencarian & Filter Lanjutan</span>
+              </div>
+              
+              {/* Search Input */}
+              <div className="relative flex-grow group mb-4">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <SearchIcon className="h-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Cari ID Order, Nama Pelanggan, atau No. WhatsApp..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="block w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  />
+              </div>
+
+              {/* Advanced Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {uniquePaymentMethods.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Metode Pembayaran</label>
+                    <select
+                      value={selectedPaymentFilter}
+                      onChange={e => setSelectedPaymentFilter(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="all">Semua Metode</option>
+                      {uniquePaymentMethods.map(method => (
+                        <option key={method} value={method}>{method}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {uniqueBrands.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Filter Brand</label>
+                    <select
+                      value={selectedBrandFilter}
+                      onChange={e => setSelectedBrandFilter(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="all">Semua Brand</option>
+                      {uniqueBrands.map(brandId => (
+                        <option key={brandId} value={brandId}>{brandId}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                      <span className="font-medium">Jumlah per halaman:</span>
+                      <select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value, 10))} className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                          <option value={0}>Tampilkan Semua</option>
+                      </select>
+                      <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Total: {filteredOrders.length}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
+                      <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Halaman {page} / {totalPages}</div>
+                      <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      {/* Bulk Actions Toolbar */}
+      {selectedOrders.size > 0 && (
+        <div className="bg-indigo-600 text-white rounded-2xl shadow-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-semibold">{selectedOrders.size} pesanan terpilih</span>
+              <button
+                onClick={() => setSelectedOrders(new Set())}
+                className="text-sm underline hover:no-underline"
+              >
+                Batal Pilihan
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Hapus Terpilih
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Orders Table */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="overflow-x-auto">
+              {loading ? (
+                  <div className="flex flex-col justify-center items-center py-20">
+                      <SpinnerIcon className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                      <p className="text-slate-500 dark:text-slate-400 font-medium">Memuat data pesanan...</p>
+                  </div>
+              ) : filteredOrders.length === 0 ? (
+                  <div className="text-center py-20">
+                      <div className="mx-auto w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+                          <SearchIcon className="w-10 h-10 text-slate-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tidak ada pesanan ditemukan</h3>
+                      <p className="text-slate-500 dark:text-slate-400">Coba ubah filter status atau kata kunci pencarian Anda.</p>
+                  </div>
+              ) : (
+                  <table className="w-full text-left border-collapse">
+                      <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
+                          <tr>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0}
+                                  onChange={handleToggleSelectAll}
+                                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                />
+                              </th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>
+                              {currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                          </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                          {paginatedOrders.map(order => {
+                              // Find CS info if viewing as admin
+                              const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
+                              
+                              return (
+                              <tr key={order.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                                  <td className="px-6 py-5 align-middle">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedOrders.has(order.id)}
+                                      onChange={() => handleToggleSelect(order.id)}
+                                      className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                    />
+                                  </td>
+                                  <td className="px-6 py-5 align-top">
+                                      <div className="flex flex-col">
+                                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">#{order.id.substring(0, 8)}</span>
+                                          <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                              <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                          </span>
+                                      </div>
+                                  </td>
+                                  <td className="px-6 py-5 align-top">
+                                      <div className="flex flex-col">
+                                          <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
+                                          <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                                              <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
+                                              {order.customerPhone}
+                                          </div>
+                                      </div>
+                                  </td>
+                                  <td className="px-6 py-5 align-top">
+                                      <div className="max-w-xs">
+                                          <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-1" title={order.productName}>{order.productName}</p>
+                                          <p className="font-bold text-slate-900 dark:text-white">Rp {order.totalPrice?.toLocaleString('id-ID')}</p>
+                                      </div>
+                                  </td>
+                                  <td className="px-6 py-5 align-top">
+                                      <div className="flex flex-col gap-2 items-start">
+                                          <StatusBadge status={order.status} />
+                                          <button 
+                                            onClick={() => setOrderToChangePayment(order)}
+                                            className="text-xs flex items-center gap-1 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 transition-colors"
+                                          >
+                                              <CreditCardIcon className="w-3 h-3" />
+                                              {order.paymentMethod || 'COD'}
+                                          </button>
+                                      </div>
+                                  </td>
+                                  {currentUser?.role !== 'Customer service' && (
+                                      <td className="px-6 py-5 align-top">
+                                          {assignedCS ? (
+                                              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                  <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs font-bold">
+                                                      {assignedCS.name.charAt(0).toUpperCase()}
+                                                  </div>
+                                                  <span className="truncate max-w-[80px]">{assignedCS.name.split(' ')[0]}</span>
+                                              </div>
+                                          ) : (
+                                              <div>
+                                                  {assignTargetOrderId === order.id ? (
+                                                      <div className="flex items-center gap-2">
+                                                          <select value={assignSelectedCsId} onChange={e => setAssignSelectedCsId(e.target.value)} className="p-1 border rounded bg-white dark:bg-slate-800 text-sm">
+                                                              <option value="">Pilih CS...</option>
+                                                              {csUsers.map(cs => (
+                                                                  <option key={cs.id} value={cs.id}>{cs.name}</option>
+                                                              ))}
+                                                          </select>
+                                                          <button onClick={() => handleSaveAssign(order.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Simpan</button>
+                                                          <button onClick={handleCancelAssign} className="px-2 py-1 border rounded text-sm">Batal</button>
+                                                      </div>
+                                                  ) : (
+                                                      <div className="flex items-center gap-2">
+                                                          <span className="text-xs text-slate-400 italic">Unassigned</span>
+                                                          <button onClick={() => handleOpenAssign(order.id)} className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded">Assign</button>
+                                                      </div>
+                                                  )}
+                                              </div>
+                                          )}
+                                      </td>
+                                  )}
+                                  <td className="px-6 py-5 align-middle">
+                                      <div className="flex justify-center">
+                                          <FollowUpIndicator order={order} onFollowUp={handleFollowUp} templates={templates} />
+                                      </div>
+                                  </td>
+                                  <td className="px-6 py-5 align-middle text-right">
+                                      <div className="flex items-center justify-end gap-2">
+                                          <button onClick={() => { setSelectedOrder(order); setIsDetailModalOpen(true); }} className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all hover:scale-110" title="Detail">
+                                              <EyeIcon className="w-5 h-5" />
+                                          </button>
+                                          
+                                          {order.status === 'Pending' && (
+                                              <button onClick={() => setOrderToProcess(order)} className="p-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all hover:scale-110" title="Proses">
+                                                  <PlayIcon className="w-5 h-5" />
+                                              </button>
+                                          )}
+                                          
+                                          {order.status === 'Processing' && (
+                                              <button onClick={() => setOrderToShip(order)} className="p-2.5 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 rounded-xl transition-all hover:scale-110" title="Kirim (Input Resi)">
+                                                  <ShipIcon className="w-5 h-5" />
+                                              </button>
+                                          )}
+
+                                          {order.status === 'Shipped' && (
+                                               <button onClick={() => handleUpdateStatus(order.id, 'Delivered')} className="p-2.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-xl transition-all hover:scale-110" title="Selesai (Delivered)">
+                                                  <CheckCircleFilledIcon className="w-5 h-5" />
+                                               </button>
+                                          )}
+
+                                          {order.status !== 'Pending Deletion' && (
+                                              <button onClick={() => openDeleteConfirmation(order)} className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all hover:scale-110" title="Hapus">
+                                                  <TrashIcon className="w-5 h-5" />
+                                              </button>
+                                          )}
+                                      </div>
+                                  </td>
+                              </tr>
+                          )})}
+                      </tbody>
+                  </table>
+              )}
+          </div>
+      </div>
+
+      {/* --- MODALS --- */}
+      {isDetailModalOpen && selectedOrder && (
+          <OrderDetailModal order={selectedOrder} onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }} />
+      )}
+
+      {isManualOrderModalOpen && (
+          <ManualOrderModal 
+            forms={forms} 
+            csUsers={csUsers}
+            currentUser={currentUser}
+            onClose={() => setIsManualOrderModalOpen(false)} 
+            onSave={handleSaveManualOrder} 
+          />
+      )}
+
+      {orderToProcess && (
+          <ConfirmProcessModal 
+            orderToAction={orderToProcess} 
+            onClose={() => setOrderToProcess(null)} 
+            onConfirm={() => handleUpdateStatus(orderToProcess.id, 'Processing')} 
+            isVerification={orderToProcess.paymentMethod !== 'Bayar di Tempat (COD)'}
+          />
+      )}
+
+      {orderToShip && (
+          <ResiInputModal 
+            orderToAction={orderToShip} 
+            onClose={() => setOrderToShip(null)} 
+            onSave={(resi) => handleUpdateStatus(orderToShip.id, 'Shipped', { shippingResi: resi })}
+          />
+      )}
+
+      {orderToNotify && (
+          <ShippingNotificationModal 
+            order={orderToNotify} 
+            templates={templates}
+            onClose={() => setOrderToNotify(null)}
+          />
+      )}
+
+      {orderToChangePayment && (
+          <ChangePaymentMethodModal 
+            order={orderToChangePayment}
+            onClose={() => setOrderToChangePayment(null)}
+            onSave={handleChangePayment}
+          />
+      )}
+
+      {orderToDelete && (
+          <ConfirmationModal
+            isOpen={!!orderToDelete}
+            title="Pindahkan ke Sampah"
+            message={`Apakah Anda yakin ingin memindahkan pesanan #${orderToDelete.id.substring(0, 8)} ke sampah?`}
+            confirmLabel="Ya, Pindahkan"
+            cancelLabel="Batal"
+            variant="danger"
+            onConfirm={confirmDeleteOrder}
+            onClose={() => setOrderToDelete(null)}
+          />
+      )}
+
+    </div>
+  );
+};
+
+// --- Sub Components Definition ---
+
+const FollowUpIndicator: React.FC<{
+  order: Order;
+  onFollowUp: (orderId: string) => void;
+  templates: MessageTemplates | null;
+}> = ({ order, onFollowUp, templates }) => {
+  const { id, followUps, status, customerPhone } = order;
+  const totalFollowUps = 5;
+  const isActionable = status === 'Pending' || status === 'Processing';
+
+  return (
+    <div className="flex items-center space-x-1.5">
+      {Array.from({ length: totalFollowUps }).map((_, i) => {
+        const followUpNumber = i + 1;
+        const isCompleted = followUpNumber <= followUps;
+        const isNext = followUpNumber === followUps + 1;
+
+        const handleClick = async () => {
+          const waNumber = formatWaNumber(customerPhone);
+          if (!waNumber) return;
+
+          const followUpTemplateKey = `followUp${followUpNumber}` as keyof MessageTemplates;
+          let messageTemplate = templates?.[followUpTemplateKey] || `Halo [CUSTOMER_NAME], ini follow up ke-${followUpNumber} untuk pesanan Anda dengan ID [ORDER_ID].`;
+          
+          const message = messageTemplate
+              .replace(/\[CUSTOMER_NAME\]/g, capitalizeWords(order.customer))
+              .replace(/\[ORDER_ID\]/g, order.id)
+              .replace(/\[PRODUCT_NAME\]/g, order.productName)
+              .replace(/\[TOTAL_PRICE\]/g, `Rp ${order.totalPrice?.toLocaleString('id-ID') || '0'}`);
+
+          window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+          
+          if (isNext && isActionable) {
+            onFollowUp(id);
+          }
+        };
+
+        let bgClass = 'bg-slate-100 dark:bg-slate-700 text-slate-400';
+        if (isCompleted) bgClass = 'bg-green-500 text-white';
+        else if (isNext && isActionable) bgClass = 'bg-indigo-600 text-white ring-2 ring-indigo-200 dark:ring-indigo-900';
+
+        return (
+          <button
+            key={followUpNumber}
+            onClick={handleClick}
+            disabled={(!isNext && !isCompleted) || !customerPhone}
+            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all ${bgClass} ${isNext && isActionable ? 'hover:scale-110 cursor-pointer' : ''}`}
+            title={`Follow Up ${followUpNumber}`}
+          >
+            {isCompleted ? <CheckCircleFilledIcon className="w-5 h-5" /> : followUpNumber}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ order, onClose }) => (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b dark:border-slate-700 flex justify-between">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Detail Pesanan</h2>
+                <button onClick={onClose}><XIcon className="w-6 h-6 text-slate-500" /></button>
+            </div>
+            <div className="p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-4 text-base">
+                    <div><p className="text-slate-500">ID Pesanan</p><p className="font-mono font-bold">{order.id}</p></div>
+                    <div><p className="text-slate-500">Tanggal</p><p className="font-medium">{order.date}</p></div>
+                    <div><p className="text-slate-500">Status</p><StatusBadge status={order.status} /></div>
+                    <div><p className="text-slate-500">Metode Bayar</p><p className="font-medium">{order.paymentMethod}</p></div>
+                </div>
+                <div className="border-t dark:border-slate-700 pt-4">
+                    <h3 className="font-bold text-lg mb-3">Pelanggan</h3>
+                    <p className="text-base"><span className="font-semibold">Nama:</span> {order.customer}</p>
+                    <p className="text-base"><span className="font-semibold">WhatsApp:</span> {order.customerPhone}</p>
+                    <p className="text-base"><span className="font-semibold">Alamat:</span> {order.shippingAddress}</p>
+                </div>
+                <div className="border-t dark:border-slate-700 pt-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg">
+                    <h3 className="font-bold text-lg mb-3">Produk</h3>
+                    <p className="text-base">{order.productName}</p>
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <span className="text-lg font-bold">Total</span>
+                        <span className="text-2xl font-bold text-indigo-600">Rp {order.totalPrice?.toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const ManualOrderModal: React.FC<{ 
+    forms: Form[]; 
+    csUsers: User[]; 
+    currentUser: User | null;
+    onClose: () => void; 
+    onSave: (o: Omit<Order, 'id'>) => void 
+}> = ({ forms, csUsers, currentUser, onClose, onSave }) => {
+    const [selectedFormId, setSelectedFormId] = useState(forms[0]?.id || '');
+    const [customerData, setCustomerData] = useState({ name: '', phone: '', address: '' });
+    const [orderTotal, setOrderTotal] = useState<number>(0);
+    const [selectedCsId, setSelectedCsId] = useState<string>('');
+
+    // Pre-select CS if user is CS
+    useEffect(() => {
+        if (currentUser && currentUser.role === 'Customer service') {
+            setSelectedCsId(currentUser.id);
+        }
+    }, [currentUser]);
+    
+    const handleSubmit = () => {
+        const form = forms.find(f => f.id === selectedFormId);
+        if (!form) return;
+        
+        onSave({
+            customer: customerData.name,
+            customerPhone: customerData.phone,
+            customerEmail: '',
+            shippingAddress: customerData.address,
+            productName: form.title,
+            productPrice: orderTotal,
+            totalPrice: orderTotal, // Simplified for manual entry
+            status: 'Pending',
+            urgency: 'Low',
+            followUps: 0,
+            date: new Date().toISOString(),
+            formId: form.id,
+            formTitle: form.title,
+            brandId: form.brandId || '',
+            assignedCsId: selectedCsId || undefined // Assign CS
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
+                <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Buat Pesanan Manual</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs text-slate-500 mb-1">Produk (Formulir)</label>
+                        <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" onChange={e => setSelectedFormId(e.target.value)}>
+                            {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                        </select>
+                    </div>
+                    
+                    {/* CS Assignment Field - Only for non-CS roles */}
+                    {currentUser?.role !== 'Customer service' && (
+                        <div>
+                            <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
+                            <select 
+                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                value={selectedCsId}
+                                onChange={e => setSelectedCsId(e.target.value)}
+                            >
+                                <option value="">Pilih CS...</option>
+                                {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
+                            </select>
+                        </div>
+                    )}
+
+                    <input className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Nama Pelanggan" onChange={e => setCustomerData({...customerData, name: e.target.value})} />
+                    <input className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="WhatsApp (e.g. 0812...)" onChange={e => setCustomerData({...customerData, phone: e.target.value})} />
+                    <input type="number" className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Total Harga (Rp)" onChange={e => setOrderTotal(parseFloat(e.target.value) || 0)} />
+                    <textarea className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Alamat Lengkap" rows={3} onChange={e => setCustomerData({...customerData, address: e.target.value})} />
+                </div>
+                <div className="mt-6 flex justify-end gap-2">
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg">Batal</button>
+                    <button onClick={handleSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Simpan</button>
+                </div>
+            </div>
+        </div>
+    )
+};
+
+const ConfirmProcessModal: React.FC<any> = ({ onClose, onConfirm, isVerification }) => (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">{isVerification ? 'Verifikasi Pembayaran' : 'Proses Pesanan'}</h3>
+            <p className="mb-6 text-slate-600 dark:text-slate-400">Lanjutkan proses pesanan ini?</p>
+            <div className="flex justify-end gap-3">
+                <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg font-medium">Batal</button>
+                <button onClick={onConfirm} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Ya, Lanjut</button>
+            </div>
+        </div>
+    </div>
+);
+
+const ResiInputModal: React.FC<any> = ({ onClose, onSave }) => {
+    const [resi, setResi] = useState('');
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full">
+                <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Input Resi</h3>
+                <input autoFocus value={resi} onChange={e => setResi(e.target.value)} className="w-full p-3 border rounded-lg mb-6 dark:bg-slate-700 dark:border-slate-600" placeholder="Nomor Resi" />
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg">Batal</button>
+                    <button onClick={() => onSave(resi)} disabled={!resi} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">Simpan</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ShippingNotificationModal: React.FC<{
+    onClose: () => void;
+    order: Order;
+    templates: MessageTemplates | null;
+}> = ({ onClose, order, templates }) => {
+    const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        let template = templates?.shipped || 'Halo [CUSTOMER_NAME], pesanan Anda [ORDER_ID] telah dikirim! Resi: [RESI_NUMBER].';
+        const msg = template
+            .replace(/\[CUSTOMER_NAME\]/g, capitalizeWords(order.customer))
+            .replace(/\[ORDER_ID\]/g, order.id)
+            .replace(/\[RESI_NUMBER\]/g, order.shippingResi || '-')
+            .replace(/\[PRODUCT_NAME\]/g, order.productName)
+            .replace(/\[TOTAL_PRICE\]/g, `Rp ${order.totalPrice?.toLocaleString('id-ID') || '0'}`);
+        setMessage(msg);
+    }, [order, templates]);
+
+    const handleSend = () => {
+        window.open(`https://wa.me/${formatWaNumber(order.customerPhone)}?text=${encodeURIComponent(message)}`, '_blank');
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <WhatsAppIcon className="w-5 h-5 text-green-600 dark:text-green-400"/>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Kirim Notifikasi Resi</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Pratinjau pesan sebelum dikirim.</p>
+                    </div>
+                </div>
+                
+                <textarea 
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full h-32 p-3 border border-slate-300 dark:border-slate-600 rounded-lg mb-4 text-sm bg-slate-50 dark:bg-slate-700/50 dark:text-slate-200 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none"
+                />
+
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium">Nanti</button>
+                    <button onClick={handleSend} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 shadow-lg shadow-green-500/30">Buka WhatsApp</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ChangePaymentMethodModal: React.FC<any> = ({ onClose, onSave }) => {
+    const [method, setMethod] = useState('COD');
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Ubah Metode Bayar</h3>
+                <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-3 border rounded-lg mb-6 dark:bg-slate-700 dark:border-slate-600">
+                    <option value="Bayar di Tempat (COD)">COD</option>
+                    <option value="Transfer Bank">Transfer Bank</option>
+                    <option value="QRIS">QRIS</option>
+                </select>
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg">Batal</button>
+                    <button onClick={() => onSave(method)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">Simpan</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default OrdersPage;

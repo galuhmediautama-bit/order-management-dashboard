@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memuat Formulir...</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <div id="loadingState" class="text-center mt-20">
+        <div class="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+        <p class="text-slate-500">Memuat data formulir...</p>
+    </div>
+
+    <div id="errorState" class="hidden text-center mt-20 max-w-md">
+        <div class="text-red-500 text-5xl mb-4">⚠️</div>
+        <h1 class="text-xl font-bold text-slate-900 mb-2">Formulir Tidak Ditemukan</h1>
+        <p class="text-slate-600">Pastikan URL yang Anda akses benar atau formulir belum dihapus.</p>
+    </div>
+
+    <div id="formContainer" class="hidden w-full max-w-lg bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
+        <!-- Image -->
+        <img id="mainImage" src="" alt="Product" class="w-full h-64 object-cover hidden">
+        
+        <!-- Header -->
+        <div class="p-6 border-b border-slate-100">
+            <h1 id="formTitle" class="text-2xl font-bold text-slate-900"></h1>
+            <p id="formDescription" class="text-slate-600 text-sm mt-2 whitespace-pre-wrap"></p>
+        </div>
+
+        <!-- Form -->
+        <form id="orderForm" class="p-6 space-y-6">
+            
+            <!-- Product Options Container -->
+            <div id="optionsContainer" class="space-y-4">
+                <!-- Options will be injected here -->
+            </div>
+
+            <!-- Price Display -->
+            <div class="bg-slate-50 p-4 rounded-lg flex justify-between items-center border border-slate-200">
+                <span class="text-sm font-medium text-slate-600">Total Harga</span>
+                <span id="totalPrice" class="text-xl font-bold text-indigo-600">Rp 0</span>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Customer Info -->
+            <div class="space-y-4">
+                <h3 class="font-semibold text-slate-900">Data Pemesan</h3>
+                
+                <div id="field-name">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap <span class="text-red-500">*</span></label>
+                    <input type="text" id="input-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+
+                <div id="field-whatsapp">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nomor WhatsApp <span class="text-red-500">*</span></label>
+                    <input type="tel" id="input-whatsapp" required placeholder="Contoh: 08123456789" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+
+                <div id="field-email" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" id="input-email" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+
+                <div id="field-address">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Alamat Pengiriman <span class="text-red-500">*</span></label>
+                    <textarea id="input-address" rows="3" required placeholder="Jalan, Nomor Rumah, Kecamatan, Kota..." class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"></textarea>
+                </div>
+            </div>
+
+            <!-- Tombol Submit -->
+            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-lg shadow-indigo-200">
+                <span id="btnText">Pesan Sekarang via WhatsApp</span>
+                <div id="loadingSpinner" class="spinner hidden"></div>
+            </button>
+
+        </form>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successMessage" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-8 max-w-sm text-center shadow-2xl transform transition-all scale-100">
+            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">Pesanan Diterima!</h2>
+            <p class="text-slate-600 mb-6 text-sm">Terima kasih. Data Anda telah kami terima. Anda akan dialihkan ke WhatsApp untuk konfirmasi.</p>
+            <button onclick="window.location.reload()" class="w-full bg-slate-900 text-white font-medium py-2.5 rounded-lg hover:bg-slate-800">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // PENTING: Ganti dengan URL dan Anon Key Anda
+        const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // State
+        let formData = null;
+        let selectedOptions = {};
+        let currentVariant = null;
+
+        // Get Form ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const formId = urlParams.get('id');
+
+        if (!formId) {
+            showError();
+        } else {
+            loadFormData(formId);
+        }
+
+        function showError() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        async function loadFormData(id) {
+            try {
+                const { data, error } = await supabase
+                    .from('forms')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (data) {
+                    formData = data;
+                    renderForm(formData);
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error("Error loading form:", error);
+                showError();
+            }
+        }
+
+        function renderForm(data) {
+            document.title = data.title;
+            
+            // Header
+            document.getElementById('formTitle').textContent = data.title;
+            document.getElementById('formDescription').textContent = data.description || '';
+            
+            if (data.mainImage) {
+                const img = document.getElementById('mainImage');
+                img.src = data.mainImage;
+                img.classList.remove('hidden');
+            }
+
+            // Customer Fields Config
+            const fields = data.customerFields || {};
+            if (!fields.email?.visible) document.getElementById('field-email').remove();
+            else if (fields.email?.required) document.getElementById('input-email').required = true;
+            
+            if (!fields.address?.visible) document.getElementById('field-address').remove();
+            
+            // Product Options
+            const container = document.getElementById('optionsContainer');
+            if (data.productOptions && data.productOptions.length > 0) {
+                data.productOptions.forEach(option => {
+                    const wrapper = document.createElement('div');
+                    
+                    const label = document.createElement('label');
+                    label.className = "block text-sm font-medium text-slate-700 mb-1";
+                    label.textContent = option.name;
+                    
+                    const select = document.createElement('select');
+                    select.className = "w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white";
+                    select.dataset.optionName = option.name;
+                    
+                    option.values.forEach(val => {
+                        const opt = document.createElement('option');
+                        opt.value = val;
+                        opt.textContent = val;
+                        select.appendChild(opt);
+                    });
+
+                    // Set initial selection
+                    selectedOptions[option.name] = option.values[0];
+
+                    select.addEventListener('change', (e) => {
+                        selectedOptions[option.name] = e.target.value;
+                        updatePrice();
+                    });
+
+                    wrapper.appendChild(label);
+                    wrapper.appendChild(select);
+                    container.appendChild(wrapper);
+                });
+            }
+
+            updatePrice(); // Initial calculation
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('formContainer').classList.remove('hidden');
+        }
+
+        function updatePrice() {
+            if (!formData.variantCombinations) return;
+
+            currentVariant = formData.variantCombinations.find(combo => {
+                return Object.entries(selectedOptions).every(([key, value]) => combo.attributes[key] === value);
+            });
+
+            const priceDisplay = document.getElementById('totalPrice');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (currentVariant) {
+                const price = currentVariant.sellingPrice || 0;
+                priceDisplay.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('btnText').textContent = "Pesan Sekarang";
+            } else {
+                priceDisplay.textContent = "Stok Kosong";
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('btnText').textContent = "Varian Tidak Tersedia";
+            }
+        }
+
+        // Handle Submit
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentVariant) return;
+
+            const submitBtn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            const btnText = document.getElementById('btnText');
+
+            // UI Loading
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75');
+            btnText.textContent = 'Memproses...';
+            spinner.classList.remove('hidden');
+
+            // Collect Data
+            const customerData = {
+                customer: document.getElementById('input-name').value,
+                customerPhone: document.getElementById('input-whatsapp').value,
+                customerEmail: document.getElementById('input-email')?.value || '',
+                shippingAddress: document.getElementById('input-address')?.value || '',
+                productName: `${formData.title} ${Object.values(selectedOptions).join(' / ')}`,
+                productPrice: currentVariant.sellingPrice,
+                totalPrice: currentVariant.sellingPrice, // Basic logic
+                status: 'Pending',
+                urgency: 'Low',
+                followUps: 0,
+                date: new Date().toISOString(),
+                formId: formData.id,
+                formTitle: formData.title,
+                brandId: formData.brandId || '',
+                commissionSnapshot: currentVariant.commissionPrice || 0,
+                paymentMethod: 'Manual/WA', 
+                shippingMethod: 'Regular'
+            };
+
+            try {
+                // 1. Save to Supabase
+                const { data, error } = await supabase
+                    .from('orders')
+                    .insert([customerData])
+                    .select();
+
+                if (error) throw error;
+                
+                const newOrderId = data[0].id;
+                
+                // 2. Update count
+                await supabase.rpc('increment_form_submission', { form_id: formData.id });
+
+                // 3. Redirect to WhatsApp
+                const waNumber = formatWaNumber(document.getElementById('input-whatsapp').value);
+                const message = `Halo, saya ingin konfirmasi pesanan saya:\n\nID: ${newOrderId}\nNama: ${customerData.customer}\nProduk: ${customerData.productName}\nTotal: Rp ${customerData.totalPrice.toLocaleString('id-ID')}`;
+                
+                // 4. Show Success (Optional, or just redirect)
+                document.getElementById('successMessage').classList.remove('hidden');
+                
+                // Delay redirect slightly for UX
+                setTimeout(() => {
+                    window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+                }, 2000);
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Gagal membuat pesanan. Cek koneksi internet.");
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75');
+                btnText.textContent = 'Coba Lagi';
+                spinner.classList.add('hidden');
+            }
+        });
+
+        function formatWaNumber(num) {
+            let cleaned = num.replace(/\D/g, '');
+            if (cleaned.startsWith('0')) return '62' + cleaned.substring(1);
+            if (cleaned.startsWith('62')) return cleaned;
+            return '62' + cleaned;
+        }
+    </script>
+</body>
+</html>

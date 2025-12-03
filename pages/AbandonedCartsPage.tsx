@@ -1,0 +1,531 @@
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../firebase';
+import type { AbandonedCart, User, UserRole } from '../types';
+import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
+import SpinnerIcon from '../components/icons/SpinnerIcon';
+import WhatsAppIcon from '../components/icons/WhatsAppIcon';
+import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
+import TrashIcon from '../components/icons/TrashIcon';
+import SearchIcon from '../components/icons/SearchIcon';
+import DownloadIcon from '../components/icons/DownloadIcon';
+import FilterIcon from '../components/icons/FilterIcon';
+import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
+import CalendarIcon from '../components/icons/CalendarIcon';
+import { useToast } from '../contexts/ToastContext';
+import ConfirmationModal from '../components/ConfirmationModal';
+import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
+
+const formatWaNumber = (num: string | null | undefined) => {
+    if (!num) return '';
+    let cleaned = num.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+        return '62' + cleaned.substring(1);
+    }
+    if (cleaned.startsWith('62')) {
+        return cleaned;
+    }
+    return '62' + cleaned;
+};
+
+const AbandonedCartsPage: React.FC = () => {
+    const [carts, setCarts] = useState<AbandonedCart[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const { showToast } = useToast();
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [cartToDelete, setCartToDelete] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'New' | 'Contacted'>('all');
+    const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null });
+    const [selectedCarts, setSelectedCarts] = useState<Set<string>>(new Set());
+    const [isExporting, setIsExporting] = useState(false);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
+                if (userDoc) {
+                    const userData = userDoc as User;
+                    const role = getNormalizedRole(userData.role, user.email);
+                    setCurrentUser({ id: user.id, ...userData, role });
+                } else {
+                    const role = getNormalizedRole(undefined, user.email);
+                    setCurrentUser({ id: user.id, role, name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
+                }
+            }
+
+            const { data: cartsData } = await supabase.from('abandoned_carts').select('*').order('timestamp', { ascending: false });
+            
+            const cartsList = (cartsData || []).map(cart => {
+                return {
+                    ...cart,
+                    timestamp: cart.timestamp // already string or Date object handled by JS
+                } as AbandonedCart;
+            });
+            setCarts(cartsList);
+        } catch (error) {
+            console.error("Error fetching abandoned carts:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleFollowUp = (cart: AbandonedCart) => {
+        const waNumber = formatWaNumber(cart.customerPhone);
+        if (!waNumber) {
+            showToast("Nomor WhatsApp tidak valid.", 'warning');
+            return;
+        }
+        const message = `Halo ${capitalizeWords(cart.customerName)}, kami melihat Anda tertarik dengan produk ${cart.formTitle} (${cart.selectedVariant}). Apakah ada yang bisa kami bantu untuk menyelesaikan pesanan Anda?`;
+        window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
+    const handleMarkAsContacted = async (cartId: string) => {
+        try {
+            await supabase.from('abandoned_carts').update({ status: 'Contacted' }).eq('id', cartId);
+            setCarts(prev => prev.map(c => c.id === cartId ? { ...c, status: 'Contacted' } : c));
+            showToast("Status berhasil diperbarui.", 'success');
+        } catch (error) {
+            console.error("Error updating status:", error);
+            showToast("Gagal memperbarui status.", 'error');
+        }
+    };
+
+    const confirmDelete = async () => {
+        if (!cartToDelete) return;
+        try {
+            await supabase.from('abandoned_carts').delete().eq('id', cartToDelete);
+            setCarts(prev => prev.filter(c => c.id !== cartToDelete));
+            showToast("Data berhasil dihapus.", 'success');
+        } catch (error) {
+            console.error("Error deleting cart:", error);
+            showToast("Gagal menghapus data.", 'error');
+        } finally {
+            setDeleteModalOpen(false);
+            setCartToDelete(null);
+        }
+    };
+
+    const handleDeleteClick = (cartId: string) => {
+        setCartToDelete(cartId);
+        setDeleteModalOpen(true);
+    };
+
+    const handleExportCSV = () => {
+        setIsExporting(true);
+        try {
+            const dataToExport = filteredCarts.map(cart => ({
+                'Tanggal': new Date(cart.timestamp).toLocaleString('id-ID'),
+                'Nama Pelanggan': cart.customerName,
+                'No. WhatsApp': cart.customerPhone,
+                'Email': cart.customerEmail || '-',
+                'Formulir': cart.formTitle,
+                'Varian': cart.selectedVariant,
+                'Total': cart.totalPrice || 0,
+                'Status': cart.status === 'New' ? 'Baru' : 'Dihubungi'
+            }));
+
+            const csv = [
+                Object.keys(dataToExport[0] || {}).join(','),
+                ...dataToExport.map(row => Object.values(row).map(v => `"${v}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `keranjang-terabaikan_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            
+            showToast('Data berhasil diekspor!', 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            showToast('Gagal mengekspor data', 'error');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedCarts.size === 0) return;
+        
+        try {
+            for (const cartId of selectedCarts) {
+                await supabase.from('abandoned_carts').delete().eq('id', cartId);
+            }
+            setCarts(prev => prev.filter(c => !selectedCarts.has(c.id)));
+            setSelectedCarts(new Set());
+            showToast(`${selectedCarts.size} data berhasil dihapus`, 'success');
+        } catch (error) {
+            console.error('Bulk delete error:', error);
+            showToast('Gagal menghapus data', 'error');
+        }
+    };
+
+    const handleToggleSelect = (cartId: string) => {
+        const newSet = new Set(selectedCarts);
+        if (newSet.has(cartId)) {
+            newSet.delete(cartId);
+        } else {
+            newSet.add(cartId);
+        }
+        setSelectedCarts(newSet);
+    };
+
+    const handleToggleSelectAll = () => {
+        if (selectedCarts.size === filteredCarts.length) {
+            setSelectedCarts(new Set());
+        } else {
+            setSelectedCarts(new Set(filteredCarts.map(c => c.id)));
+        }
+    };
+
+    const filteredCarts = useMemo(() => {
+        let results = filterDataByBrand<AbandonedCart>(carts, currentUser);
+        
+        // Status filter
+        if (statusFilter !== 'all') {
+            results = results.filter(cart => cart.status === statusFilter);
+        }
+        
+        // Date range filter
+        if (dateRange.startDate && dateRange.endDate) {
+            const start = new Date(dateRange.startDate);
+            const end = new Date(dateRange.endDate);
+            start.setUTCHours(0,0,0,0);
+            end.setUTCHours(23,59,59,999);
+            results = results.filter(cart => {
+                const d = new Date(cart.timestamp);
+                return d >= start && d <= end;
+            });
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            results = results.filter(cart =>
+                cart.customerName.toLowerCase().includes(lowercasedTerm) ||
+                cart.customerPhone.toLowerCase().includes(lowercasedTerm) ||
+                cart.formTitle.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+        return results;
+    }, [carts, currentUser, searchTerm, statusFilter, dateRange]);
+
+    // Statistics
+    const stats = useMemo(() => {
+        const brandFiltered = filterDataByBrand<AbandonedCart>(carts, currentUser);
+        return {
+            total: brandFiltered.length,
+            new: brandFiltered.filter(c => c.status === 'New').length,
+            contacted: brandFiltered.filter(c => c.status === 'Contacted').length,
+            totalValue: brandFiltered.reduce((sum, c) => sum + (c.totalPrice || 0), 0)
+        };
+    }, [carts, currentUser]);
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-amber-100 dark:border-slate-700">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <ShoppingCartIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Keranjang Terabaikan</h1>
+                    </div>
+                    <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Hubungi calon pelanggan yang belum menyelesaikan pesanan.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                    <DateRangePicker value={dateRange} onChange={setDateRange} />
+                    <button 
+                        onClick={handleExportCSV}
+                        disabled={isExporting || filteredCarts.length === 0}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50"
+                    >
+                        {isExporting ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
+                        <span>Ekspor CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                            <ShoppingCartIcon className="w-6 h-6" />
+                        </div>
+                        <span className="text-2xl font-bold">{stats.total}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-blue-100">Total Keranjang</h3>
+                    <p className="text-xs text-blue-200 mt-1">Semua data</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span className="text-2xl font-bold">{stats.new}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-amber-100">Belum Dihubungi</h3>
+                    <p className="text-xs text-amber-200 mt-1">Perlu follow up</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-xl shadow-green-500/30 hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                            <CheckCircleFilledIcon className="w-6 h-6" />
+                        </div>
+                        <span className="text-2xl font-bold">{stats.contacted}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-green-100">Sudah Dihubungi</h3>
+                    <p className="text-xs text-green-200 mt-1">Follow up selesai</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white shadow-xl shadow-purple-500/30 hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span className="text-2xl font-bold">Rp {(stats.totalValue / 1000000).toFixed(1)}M</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-purple-100">Potensi Revenue</h3>
+                    <p className="text-xs text-purple-200 mt-1">Total nilai keranjang</p>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                        <FilterIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter Status</span>
+                    </div>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                        {['all', 'New', 'Contacted'].map(status => {
+                            const isActive = statusFilter === status;
+                            const label = status === 'all' ? 'Semua' : status === 'New' ? 'Belum Dihubungi' : 'Sudah Dihubungi';
+                            const count = status === 'all' ? stats.total : status === 'New' ? stats.new : stats.contacted;
+                            
+                            return (
+                                <button
+                                    key={status}
+                                    onClick={() => setStatusFilter(status as any)}
+                                    className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2.5 border shadow-sm hover:shadow-md ${
+                                        isActive 
+                                            ? 'bg-gradient-to-r from-amber-600 to-orange-600 border-transparent text-white shadow-lg shadow-amber-500/30 scale-105' 
+                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {label}
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                        isActive ? 'bg-white/20 text-white' : 'bg-amber-50 dark:bg-slate-700 text-amber-600 dark:text-amber-400'
+                                    }`}>
+                                        {count}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                        <SearchIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pencarian</span>
+                    </div>
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <SearchIcon className="h-5 h-5 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Cari nama pelanggan, nomor WhatsApp, atau produk..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="block w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Bulk Actions Toolbar */}
+            {selectedCarts.size > 0 && (
+                <div className="bg-amber-600 text-white rounded-2xl shadow-xl p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <span className="font-semibold">{selectedCarts.size} data terpilih</span>
+                            <button onClick={() => setSelectedCarts(new Set())} className="text-sm underline hover:no-underline">
+                                Batal Pilihan
+                            </button>
+                        </div>
+                        <button
+                            onClick={handleBulkDelete}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                            Hapus Terpilih
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Table */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                    {loading ? (
+                        <div className="flex flex-col justify-center items-center py-20">
+                            <SpinnerIcon className="w-12 h-12 text-amber-500 animate-spin mb-4" />
+                            <p className="text-slate-500 dark:text-slate-400 font-medium">Memuat data...</p>
+                        </div>
+                    ) : filteredCarts.length === 0 ? (
+                        <div className="text-center py-20">
+                            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+                                <ShoppingCartIcon className="w-10 h-10 text-slate-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tidak ada data ditemukan</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Coba ubah filter atau kata kunci pencarian.</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-amber-100 dark:border-amber-900/30">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedCarts.size === filteredCarts.length && filteredCarts.length > 0}
+                                            onChange={handleToggleSelectAll}
+                                            className="w-4 h-4 text-amber-600 border-slate-300 rounded focus:ring-amber-500"
+                                        />
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tanggal</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk / Varian</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {filteredCarts.map(cart => (
+                                    <tr key={cart.id} className="hover:bg-amber-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                                        <td className="px-6 py-5 align-middle">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedCarts.has(cart.id)}
+                                                onChange={() => handleToggleSelect(cart.id)}
+                                                className="w-4 h-4 text-amber-600 border-slate-300 rounded focus:ring-amber-500"
+                                            />
+                                        </td>
+                                        <td className="px-6 py-5 align-top">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-slate-900 dark:text-white text-sm">
+                                                    {new Date(cart.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </span>
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    {new Date(cart.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5 align-top">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(cart.customerName)}</span>
+                                                <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                                                    <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
+                                                    {cart.customerPhone}
+                                                </div>
+                                                {cart.customerEmail && (
+                                                    <div className="text-xs text-slate-400 mt-1">{cart.customerEmail}</div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5 align-top">
+                                            <div className="max-w-xs">
+                                                <p className="font-medium text-slate-900 dark:text-white text-sm mb-1">{cart.formTitle}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">{cart.selectedVariant}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5 align-top">
+                                            <span className="font-bold text-slate-900 dark:text-white">Rp {cart.totalPrice?.toLocaleString('id-ID')}</span>
+                                        </td>
+                                        <td className="px-6 py-5 align-top">
+                                            {cart.status === 'New' ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"></path>
+                                                    </svg>
+                                                    Baru
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                                    <CheckCircleFilledIcon className="w-3 h-3" />
+                                                    Dihubungi
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-5 align-middle text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button 
+                                                    onClick={() => handleFollowUp(cart)} 
+                                                    className="p-2.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-all hover:scale-110" 
+                                                    title="Hubungi via WhatsApp"
+                                                >
+                                                    <WhatsAppIcon className="w-5 h-5" />
+                                                </button>
+                                                {cart.status === 'New' && (
+                                                    <button 
+                                                        onClick={() => handleMarkAsContacted(cart.id)} 
+                                                        className="p-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all hover:scale-110" 
+                                                        title="Tandai sudah dihubungi"
+                                                    >
+                                                        <CheckCircleFilledIcon className="w-5 h-5" />
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => handleDeleteClick(cart.id)} 
+                                                    className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all hover:scale-110" 
+                                                    title="Hapus"
+                                                >
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            </div>
+            
+            {deleteModalOpen && (
+                <ConfirmationModal 
+                    isOpen={deleteModalOpen}
+                    title="Hapus Data"
+                    message="Anda yakin ingin menghapus data ini?"
+                    confirmLabel="Ya, Hapus"
+                    variant="danger"
+                    onConfirm={confirmDelete}
+                    onClose={() => setDeleteModalOpen(false)}
+                />
+            )}
+        </div>
+    );
+};
+
+export default AbandonedCartsPage;

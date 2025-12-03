@@ -1,0 +1,5 @@
+{
+  "name": "Order Management Dashboard",
+  "description": "A comprehensive dashboard for managing orders, reports, and various settings. It features a clean, modern interface with a sidebar for easy navigation between different sections like Dashboard, Orders, Reports, and Settings.",
+  "requestFramePermissions": []
+}
