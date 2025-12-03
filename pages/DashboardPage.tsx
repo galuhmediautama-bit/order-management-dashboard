@@ -14,7 +14,7 @@ import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
 import { supabase } from '../firebase';
-import { capitalizeWords, filterDataByBrand } from '../utils';
+import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 
 
 const StatCard: React.FC<{
@@ -57,6 +57,7 @@ const DashboardPage: React.FC = () => {
     });
     
     const [allOrders, setAllOrders] = useState<Order[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -102,6 +103,12 @@ const DashboardPage: React.FC = () => {
 
                 setAllOrders(allOrdersList);
 
+                // Fetch Users for CS ranking
+                const { data: usersData } = await supabase.from('users').select('*');
+                if (usersData) {
+                    setUsers(usersData as User[]);
+                }
+
             } catch (error) {
                 console.error("Error fetching orders: ", error);
             } finally {
@@ -113,7 +120,7 @@ const DashboardPage: React.FC = () => {
     }, []);
 
     const filteredDashboardData = useMemo(() => {
-        if (!allOrders.length || !dateRange.startDate || !dateRange.endDate || !currentUser) {
+        if (!allOrders.length || !dateRange.startDate || !dateRange.endDate || !currentUser || !users.length) {
             return {
                 stats: { 
                     totalSales: 0, 
@@ -128,6 +135,8 @@ const DashboardPage: React.FC = () => {
                 recentOrders: [],
                 statusBreakdown: [],
                 topProducts: [],
+                topAdvertisers: [],
+                topCS: [],
                 previousStats: { totalSales: 0, totalOrders: 0 }
             };
         }
@@ -227,6 +236,52 @@ const DashboardPage: React.FC = () => {
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
         
+        // Top Advertisers (by total sales)
+        // FITUR DINONAKTIFKAN - Order tidak punya field 'advertiser' atau 'assignedAdvId'
+        // Butuh penambahan field ke Order type untuk mengaktifkan ranking advertiser
+        const topAdvertisers: { name: string; sales: number; orders: number }[] = [];
+        
+        /* CODE ASLI - DINONAKTIFKAN
+        const advertiserStats: { [key: string]: { sales: number; orders: number } } = {};
+        dateFilteredOrders.forEach(order => {
+            if (order.advertiser) { // Field ini tidak ada di Order type
+                if (!advertiserStats[order.advertiser]) {
+                    advertiserStats[order.advertiser] = { sales: 0, orders: 0 };
+                }
+                advertiserStats[order.advertiser].sales += (order.totalPrice || 0);
+                advertiserStats[order.advertiser].orders += 1;
+            }
+        });
+        const topAdvertisers = Object.entries(advertiserStats)
+            .map(([name, stats]) => ({ name, sales: stats.sales, orders: stats.orders }))
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, 5);
+        */
+
+
+        // Top CS Stats - menggunakan assignedCsId dan join dengan users table
+        const csStats: { [key: string]: { orders: number; sales: number; name: string } } = {};
+        
+        dateFilteredOrders.forEach(order => {
+            if (order.assignedCsId) {
+                // Cari nama CS dari users
+                const csUser = users.find(u => u.id === order.assignedCsId && getNormalizedRole(u.role) === 'Customer service');
+                if (csUser) {
+                    const csName = csUser.name;
+                    if (!csStats[csName]) {
+                        csStats[csName] = { orders: 0, sales: 0, name: csName };
+                    }
+                    csStats[csName].orders += 1;
+                    csStats[csName].sales += (order.totalPrice || 0);
+                }
+            }
+        });
+        
+        const topCS = Object.entries(csStats)
+            .map(([name, stats]) => ({ name: stats.name, orders: stats.orders, sales: stats.sales }))
+            .sort((a, b) => b.orders - a.orders)
+            .slice(0, 5);
+        
         const recent = brandFilteredOrders.slice(0, 5).map(order => {
             const avatarSeed = order.customer ? order.customer.split(' ')[0] : order.id;
             return { ...order, avatar: `https://i.pravatar.cc/150?u=${avatarSeed}` };
@@ -238,9 +293,11 @@ const DashboardPage: React.FC = () => {
             recentOrders: recent,
             statusBreakdown,
             topProducts,
+            topAdvertisers,
+            topCS,
             previousStats: { totalSales: previousTotalSales, totalOrders: previousTotalOrders }
         };
-    }, [allOrders, dateRange, currentUser]);
+    }, [allOrders, dateRange, currentUser, users]);
 
     // Derived: filtered recent orders by search and pagination
     const filteredRecentOrders = useMemo(() => {
@@ -506,6 +563,65 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Top Advertiser & Top CS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Advertiser */}
+        {filteredDashboardData.topAdvertisers.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">🏆 Top 5 Advertiser</h2>
+            <div className="space-y-4">
+              {filteredDashboardData.topAdvertisers.map((adv, idx) => (
+                <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-700 rounded-xl">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                      idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-600' : 'bg-indigo-500'
+                    }`}>
+                      #{idx + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900 dark:text-white">{adv.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{adv.orders} pesanan</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">Rp {adv.sales.toLocaleString('id-ID')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Total Penjualan</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Top Customer Service */}
+        {filteredDashboardData.topCS.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">⭐ Top 5 Customer Service</h2>
+            <div className="space-y-4">
+              {filteredDashboardData.topCS.map((cs, idx) => (
+                <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-700 dark:to-slate-700 rounded-xl">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                      idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-600' : 'bg-green-500'
+                    }`}>
+                      #{idx + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900 dark:text-white">{cs.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Rp {cs.sales.toLocaleString('id-ID')}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400">{cs.orders}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Total Pesanan</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 gap-4">

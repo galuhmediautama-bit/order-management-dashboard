@@ -118,7 +118,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
         ...formToEdit,
         slug: formToEdit.slug || '',
         brandId: formToEdit.brandId || '', // Ensure brandId exists
-        customDomain: formToEdit.customDomain || '', // Initialize customDomain
+        customSlug: formToEdit.customSlug || '', // Initialize custom URL slug
         productImages: formToEdit.productImages || [], // Ensure productImages array exists
         showTitle: formToEdit.showTitle ?? true,
         showDescription: formToEdit.showDescription ?? true,

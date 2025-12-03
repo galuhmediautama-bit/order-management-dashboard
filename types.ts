@@ -281,7 +281,7 @@ export interface Form {
     title: string;
     slug?: string;
     brandId?: string;
-    customDomain?: string; // Added for external form links
+    customSlug?: string; // Custom URL slug for form (e.g., 'promo-ramadan' instead of UUID)
     mainImage: string;
     productImages?: string[]; // Multiple product images
     description: string;

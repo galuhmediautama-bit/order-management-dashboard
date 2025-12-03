@@ -46,6 +46,7 @@ const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const MyProfilePage = lazyWithRetry(() => import('./pages/MyProfilePage'));
 const EarningsPage = lazyWithRetry(() => import('./pages/EarningsPage'));
+const PendingDeletionsPage = lazyWithRetry(() => import('./pages/PendingDeletionsPage'));
 
 
 const FormViewerWrapper: React.FC = () => {
@@ -114,7 +115,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/pengaturan/pelacakan" element={<SettingsPage subPage="Pelacakan" />} />
                 <Route path="/pengaturan/pending-users" element={<PendingUsersPage />} />
                 <Route path="/pengaturan/template-pesan" element={<SettingsPage subPage="Template Pesan" />} />
-                <Route path="/pengaturan/permintaan-hapus" element={<SettingsPage subPage="Permintaan Hapus" />} />
+                <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
                 <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />
             </Routes>

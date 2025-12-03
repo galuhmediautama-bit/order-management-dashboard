@@ -196,23 +196,16 @@ const FormsPage: React.FC = () => {
         }
     };
     
-    // Helper to get the correct URL based on custom domain setting
+    // Helper to get the correct URL using custom slug or UUID
     const getFormUrl = (form: Form) => {
-        let baseUrl = window.location.origin;
-        if (form.customDomain && form.customDomain.trim() !== '') {
-            // Strip trailing slash from custom domain to avoid double slashes
-            baseUrl = form.customDomain.replace(/\/$/, '');
-        }
-        // Construct URL: {baseUrl}/?form_id={slug}
-        return `${baseUrl}/?form_id=${form.slug || form.id}`;
+        const baseUrl = window.location.origin;
+        const formSlug = form.customSlug || form.id;
+        return `${baseUrl}/#/f/${formSlug}`;
     };
 
     // Helper for standalone URL
     const getStandaloneUrl = (form: Form) => {
-        let baseUrl = window.location.origin;
-        if (form.customDomain && form.customDomain.trim() !== '') {
-            baseUrl = form.customDomain.replace(/\/$/, '');
-        }
+        const baseUrl = window.location.origin;
         return `${baseUrl}/standalone_form.html?id=${form.id}`;
     }
 
@@ -252,7 +245,7 @@ const FormsPage: React.FC = () => {
         return brandFiltered.filter(form => 
             form.title.toLowerCase().includes(term) ||
             form.slug?.toLowerCase().includes(term) ||
-            form.customDomain?.toLowerCase().includes(term)
+            form.customSlug?.toLowerCase().includes(term)
         );
     }, [forms, currentUser, searchTerm]);
 
@@ -359,10 +352,10 @@ const FormsPage: React.FC = () => {
                                                 />
                                                 <div>
                                                     <h3 className="font-semibold text-slate-900 dark:text-white text-base mb-1">{form.title}</h3>
-                                                    {form.customDomain && (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-semibold">
+                                                    {form.customSlug && (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-semibold">
                                                             <LinkIcon className="w-3 h-3" />
-                                                            Custom Domain
+                                                            Custom URL
                                                         </span>
                                                     )}
                                                 </div>
@@ -375,16 +368,18 @@ const FormsPage: React.FC = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {form.slug ? (
+                                            {form.customSlug || form.slug ? (
                                                 <div className="flex flex-col gap-1">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-slate-500 dark:text-slate-400">Slug:</span>
-                                                        <code className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-xs font-mono text-slate-700 dark:text-slate-300">{form.slug}</code>
+                                                        <span className="text-xs text-slate-500 dark:text-slate-400">URL:</span>
+                                                        <code className="px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded text-xs font-mono text-purple-700 dark:text-purple-300">
+                                                            /f/{form.customSlug || form.id}
+                                                        </code>
                                                     </div>
-                                                    {form.customDomain && (
+                                                    {form.slug && (
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-xs text-slate-500 dark:text-slate-400">Domain:</span>
-                                                            <code className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded text-xs font-mono text-indigo-700 dark:text-indigo-300">{form.customDomain}</code>
+                                                            <span className="text-xs text-slate-500 dark:text-slate-400">Slug:</span>
+                                                            <code className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-xs font-mono text-slate-700 dark:text-slate-300">{form.slug}</code>
                                                         </div>
                                                     )}
                                                 </div>

@@ -78,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                         setCurrentUserRole('Super Admin');
                     } else {
                         const normalized = getNormalizedRole(userDoc.role, user.email);
+                        console.log('🔍 Sidebar - User role from DB:', userDoc.role, '→ Normalized:', normalized);
                         setCurrentUserRole(normalized);
                     }
                 } catch (error) {
@@ -117,7 +118,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
         // If specific roles are defined for the item, check them
         if (item.allowedRoles && item.allowedRoles.length > 0) {
-            return item.allowedRoles.includes(currentUserRole);
+            const canAccess = item.allowedRoles.includes(currentUserRole);
+            if (item.name === 'Permintaan Hapus') {
+                console.log('🔍 Checking Permintaan Hapus:', { currentUserRole, allowedRoles: item.allowedRoles, canAccess });
+            }
+            return canAccess;
         }
 
         // Default to visible if no roles specified

@@ -428,16 +428,23 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             let foundForm: Form | null = null;
 
             try {
-                // 1. Try fetching by slug
-                const { data: formBySlug } = await supabase.from("forms").select('*').eq("slug", identifier).single();
+                // 1. Try fetching by custom slug first
+                const { data: formByCustomSlug } = await supabase.from("forms").select('*').eq("customSlug", identifier).single();
 
-                if (formBySlug) {
-                    foundForm = formBySlug as Form;
+                if (formByCustomSlug) {
+                    foundForm = formByCustomSlug as Form;
                 } else {
-                    // 2. If not found by slug, try fetching by ID
-                    const { data: formById } = await supabase.from("forms").select('*').eq("id", identifier).single();
-                    if (formById) {
-                        foundForm = formById as Form;
+                    // 2. Try fetching by slug
+                    const { data: formBySlug } = await supabase.from("forms").select('*').eq("slug", identifier).single();
+
+                    if (formBySlug) {
+                        foundForm = formBySlug as Form;
+                    } else {
+                        // 3. If not found by slug, try fetching by ID (UUID)
+                        const { data: formById } = await supabase.from("forms").select('*').eq("id", identifier).single();
+                        if (formById) {
+                            foundForm = formById as Form;
+                        }
                     }
                 }
             } catch (error) {

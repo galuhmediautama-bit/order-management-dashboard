@@ -1540,15 +1540,15 @@ const FormEditorPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Custom Domain (Opsional)</label>
+                        <label className="block text-sm font-medium mb-1">Custom URL Slug (Opsional)</label>
                         <input 
                             type="text" 
-                            value={form.customDomain || ''} 
-                            onChange={e => handleFieldChange('customDomain', e.target.value)} 
-                            placeholder="https://tokosaya.com" 
+                            value={form.customSlug || ''} 
+                            onChange={e => handleFieldChange('customSlug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} 
+                            placeholder="promo-ramadan" 
                             className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"
                         />
-                        <p className="text-xs text-slate-500 mt-1">Jika diisi, link pratinjau dan salin link akan menggunakan domain ini (e.g., https://tokosaya.com/?form_id=...).</p>
+                        <p className="text-xs text-slate-500 mt-1">URL akan menjadi: https://form.cuanmax.digital/#/f/<strong>{form.customSlug || 'id-formulir'}</strong></p>
                     </div>
 
                     <div>

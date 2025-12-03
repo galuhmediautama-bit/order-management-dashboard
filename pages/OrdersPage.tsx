@@ -23,6 +23,7 @@ import ShieldCheckIcon from '../components/icons/ShieldCheckIcon';
 import DownloadIcon from '../components/icons/DownloadIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
+import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 import { supabase } from '../firebase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
@@ -35,7 +36,7 @@ import { useToast } from '../contexts/ToastContext';
 
 // --- Helper Components & Functions ---
 
-const TABS: ('All' | OrderStatus)[] = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled', 'Pending Deletion'];
+const TABS: ('All' | OrderStatus)[] = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'];
 
 const formatWaNumber = (num: string | null | undefined) => {
     if (!num) return '';
@@ -59,15 +60,25 @@ const OrdersPage: React.FC = () => {
   const { showToast } = useToast();
   
   // State for Filters
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'All' | OrderStatus>('All');
+  const [activeStatusFilter, setActiveStatusFilter] = useState<Set<OrderStatus>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null });
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 30);
+    return { startDate, endDate };
+  });
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
-  const [selectedPaymentFilter, setSelectedPaymentFilter] = useState<string>('all');
+  const [selectedPaymentFilter, setSelectedPaymentFilter] = useState<Set<string>>(new Set());
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [paymentDropdownOpen, setPaymentDropdownOpen] = useState(false);
   
   // Bulk Actions
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Pending Deletions
+  const [pendingDeletionsCount, setPendingDeletionsCount] = useState<number>(0);
   
   // Modal States
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -87,6 +98,19 @@ const OrdersPage: React.FC = () => {
     const [assignTargetOrderId, setAssignTargetOrderId] = useState<string | null>(null);
     const [assignSelectedCsId, setAssignSelectedCsId] = useState<string>('');
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.payment-dropdown') && !target.closest('.status-dropdown')) {
+        setPaymentDropdownOpen(false);
+        setStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Fetch Data
   const fetchData = async () => {
     setLoading(true);
@@ -98,6 +122,22 @@ const OrdersPage: React.FC = () => {
              if (userDoc) {
                  const role = getNormalizedRole(userDoc.role, user.email);
                  setCurrentUser({ id: user.id, ...userDoc, role } as User);
+                 
+                 // Fetch pending deletions count for admin
+                 if (role === 'Admin' || role === 'Super Admin') {
+                     console.log('🔍 Fetching pending deletions for role:', role);
+                     const { count, error: pendingError } = await supabase
+                         .from('pending_deletions')
+                         .select('*', { count: 'exact', head: true })
+                         .eq('status', 'pending');
+                     console.log('🔍 Pending deletions result:', { count, error: pendingError });
+                     if (!pendingError && count !== null) {
+                         setPendingDeletionsCount(count);
+                         console.log('✅ Set pending deletions count:', count);
+                     } else if (pendingError) {
+                         console.error('❌ Error fetching pending deletions:', pendingError);
+                     }
+                 }
              } else {
                  const role = getNormalizedRole(undefined, user.email);
                  setCurrentUser({ id: user.id, role, name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
@@ -294,14 +334,55 @@ const OrdersPage: React.FC = () => {
 
   // Bulk Delete
   const handleBulkDelete = async () => {
-    if (selectedOrders.size === 0) return;
+    if (selectedOrders.size === 0 || !currentUser) return;
+    
+    const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Super Admin';
     
     try {
-      for (const orderId of selectedOrders) {
-        await handleUpdateStatus(orderId, 'Pending Deletion');
+      if (isAdmin) {
+        // Admin can delete directly
+        for (const orderId of selectedOrders) {
+          await supabase.from('orders').delete().eq('id', orderId);
+        }
+        setOrders(prev => prev.filter(o => !selectedOrders.has(o.id)));
+        showToast(`${selectedOrders.size} pesanan berhasil dihapus`, 'success');
+      } else {
+        // Non-admin: create deletion request
+        const deletionRequests = Array.from(selectedOrders).map(orderId => {
+          const order = orders.find(o => o.id === orderId);
+          if (!order) return null;
+          
+          return {
+            orderId: order.id,
+            orderNumber: order.id.substring(0, 8),
+            customerName: order.customer,
+            customerPhone: order.customerPhone,
+            totalPrice: order.totalPrice,
+            requestedBy: currentUser.name,
+            requestedByEmail: currentUser.email,
+            reason: 'Bulk deletion request',
+            status: 'pending'
+          };
+        }).filter(Boolean);
+        
+        const { error: insertError } = await supabase
+          .from('pending_deletions')
+          .insert(deletionRequests);
+        
+        if (insertError) throw insertError;
+        
+        showToast(`${selectedOrders.size} permintaan hapus berhasil dikirim ke Admin`, 'success');
+        
+        // Refresh pending deletions count
+        const { count } = await supabase
+          .from('pending_deletions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        if (count !== null) setPendingDeletionsCount(count);
       }
+      
       setSelectedOrders(new Set());
-      showToast(`${selectedOrders.size} pesanan berhasil dipindahkan ke sampah`, 'success');
+      
     } catch (error) {
       console.error('Bulk delete error:', error);
       showToast('Gagal menghapus pesanan', 'error');
@@ -312,24 +393,65 @@ const OrdersPage: React.FC = () => {
       setOrderToDelete(order);
   };
 
-  const confirmDeleteOrder = () => {
-      if (orderToDelete) {
-          handleUpdateStatus(orderToDelete.id, 'Pending Deletion');
+  const confirmDeleteOrder = async () => {
+      if (!orderToDelete || !currentUser) return;
+      
+      const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Super Admin';
+      
+      try {
+          if (isAdmin) {
+              // Admin can delete directly
+              await supabase.from('orders').delete().eq('id', orderToDelete.id);
+              setOrders(prev => prev.filter(o => o.id !== orderToDelete.id));
+              showToast('Pesanan berhasil dihapus', 'success');
+          } else {
+              // Non-admin: create deletion request
+              const { error: insertError } = await supabase
+                  .from('pending_deletions')
+                  .insert({
+                      orderId: orderToDelete.id,
+                      orderNumber: orderToDelete.id.substring(0, 8),
+                      customerName: orderToDelete.customer,
+                      customerPhone: orderToDelete.customerPhone,
+                      totalPrice: orderToDelete.totalPrice,
+                      requestedBy: currentUser.name,
+                      requestedByEmail: currentUser.email,
+                      status: 'pending'
+                  });
+              
+              if (insertError) throw insertError;
+              
+              showToast('Permintaan hapus pesanan berhasil dikirim ke Admin', 'success');
+              
+              // Refresh pending deletions count
+              const { count } = await supabase
+                  .from('pending_deletions')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('status', 'pending');
+              if (count !== null) setPendingDeletionsCount(count);
+          }
+          
+          setOrderToDelete(null);
+          
+      } catch (error) {
+          console.error('Error deleting order:', error);
+          showToast('Gagal menghapus pesanan', 'error');
       }
   };
+
+
 
   // --- Filtering Logic ---
   const statusCounts = useMemo(() => {
         const baseOrders = filterDataByBrand<Order>(orders, currentUser);
         
         const counts: Record<string, number> = {
-            All: baseOrders.filter(o => o.status !== 'Pending Deletion').length,
+            All: baseOrders.length,
             Pending: 0,
             Processing: 0,
             Shipped: 0,
             Delivered: 0,
-            Canceled: 0,
-            'Pending Deletion': 0
+            Canceled: 0
         };
 
         baseOrders.forEach(order => {
@@ -347,11 +469,8 @@ const OrdersPage: React.FC = () => {
       let result = filterDataByBrand<Order>(orders, currentUser);
 
       // 2. Status Filter
-      if (activeStatusFilter !== 'All') {
-          result = result.filter(o => o.status === activeStatusFilter);
-      } else {
-          // Hide 'Pending Deletion' from 'All' view
-          result = result.filter(o => o.status !== 'Pending Deletion');
+      if (activeStatusFilter.size > 0) {
+          result = result.filter(o => activeStatusFilter.has(o.status));
       }
 
       // 3. Brand Filter
@@ -360,8 +479,8 @@ const OrdersPage: React.FC = () => {
       }
 
       // 4. Payment Filter
-      if (selectedPaymentFilter !== 'all') {
-          result = result.filter(o => o.paymentMethod === selectedPaymentFilter);
+      if (selectedPaymentFilter.size > 0) {
+          result = result.filter(o => o.paymentMethod && selectedPaymentFilter.has(o.paymentMethod));
       }
 
       // 5. Date Range
@@ -496,204 +615,204 @@ const OrdersPage: React.FC = () => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <ShoppingCartIcon className="w-6 h-6" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <ShoppingCartIcon className="w-5 h-5" />
             </div>
             <span className="text-2xl font-bold">{stats.totalOrders}</span>
           </div>
-          <h3 className="text-sm font-medium text-blue-100">Total Pesanan</h3>
-          <p className="text-xs text-blue-200 mt-1">Semua status</p>
+          <h3 className="text-sm font-medium text-blue-100 mt-2">Total Pesanan</h3>
+          <p className="text-xs text-blue-200">Semua status</p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-xl shadow-green-500/30 hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <BanknotesIcon className="w-6 h-6" />
+        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <BanknotesIcon className="w-5 h-5" />
             </div>
             <span className="text-2xl font-bold">Rp {(stats.totalRevenue / 1000000).toFixed(1)}M</span>
           </div>
-          <h3 className="text-sm font-medium text-green-100">Total Omzet</h3>
-          <p className="text-xs text-green-200 mt-1">Revenue keseluruhan</p>
+          <h3 className="text-sm font-medium text-green-100 mt-2">Total Omzet</h3>
+          <p className="text-xs text-green-200">Revenue keseluruhan</p>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
             <span className="text-2xl font-bold">{stats.pendingCount}</span>
           </div>
-          <h3 className="text-sm font-medium text-amber-100">Pending</h3>
-          <p className="text-xs text-amber-200 mt-1">Menunggu diproses</p>
+          <h3 className="text-sm font-medium text-amber-100 mt-2">Pending</h3>
+          <p className="text-xs text-amber-200">Menunggu diproses</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white shadow-xl shadow-purple-500/30 hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
             <span className="text-2xl font-bold">{stats.deliveredCount}</span>
           </div>
-          <h3 className="text-sm font-medium text-purple-100">Delivered</h3>
-          <p className="text-xs text-purple-200 mt-1">Pesanan selesai</p>
+          <h3 className="text-sm font-medium text-purple-100 mt-2">Delivered</h3>
+          <p className="text-xs text-purple-200">Pesanan selesai</p>
         </div>
       </div>
 
-      {/* --- Filter Tabs Section --- */}
-      <div className="flex flex-col gap-4">
-          {/* Status Filter as Pills */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-            <div className="flex items-center gap-3 mb-4">
-                <FilterIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter Status</span>
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {TABS.map(status => {
-                if (status === 'Pending Deletion' && statusCounts['Pending Deletion'] === 0 && activeStatusFilter !== 'Pending Deletion') return null;
-                const isActive = activeStatusFilter === status;
-                
-                return (
-                    <button
-                        key={status}
-                        onClick={() => setActiveStatusFilter(status)}
-                        className={`
-                            whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2.5 border shadow-sm hover:shadow-md
-                            ${isActive 
-                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 border-transparent text-white shadow-lg shadow-indigo-500/30 scale-105' 
-                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'}
-                        `}
-                    >
-                        {status === 'All' ? 'Semua' : status === 'Pending Deletion' ? 'Sampah' : status}
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                            isActive 
-                                ? 'bg-white/20 text-white' 
-                                : 'bg-indigo-50 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400'
-                        }`}>
-                            {statusCounts[status] || 0}
-                        </span>
-                    </button>
-                )
-            })}
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-              <div className="flex items-center gap-3 mb-3">
-                  <SearchIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pencarian & Filter Lanjutan</span>
-              </div>
-              
-              {/* Search Input */}
-              <div className="relative flex-grow group mb-4">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <SearchIcon className="h-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                  </div>
+      {/* --- Filter & Search Section --- */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-3">
+          <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="flex-1 relative">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Cari ID Order, Nama Pelanggan, atau No. WhatsApp..."
+                    placeholder="Cari ID, Nama, atau No. WA..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="block w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                    className="w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
               </div>
 
-              {/* Advanced Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {uniquePaymentMethods.length > 0 && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Metode Pembayaran</label>
-                    <select
-                      value={selectedPaymentFilter}
-                      onChange={e => setSelectedPaymentFilter(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    >
-                      <option value="all">Semua Metode</option>
-                      {uniquePaymentMethods.map(method => (
-                        <option key={method} value={method}>{method}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {uniqueBrands.length > 0 && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Filter Brand</label>
-                    <select
-                      value={selectedBrandFilter}
-                      onChange={e => setSelectedBrandFilter(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    >
-                      <option value="all">Semua Brand</option>
-                      {uniqueBrands.map(brandId => (
-                        <option key={brandId} value={brandId}>{brandId}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+              {/* Payment Method Multi-Select */}
+              <div className="relative payment-dropdown">
+                  <button
+                    onClick={() => setPaymentDropdownOpen(!paymentDropdownOpen)}
+                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
+                  >
+                    <span className="flex-1 text-left">
+                      {selectedPaymentFilter.size === 0 ? 'Metode Bayar' : `${selectedPaymentFilter.size} dipilih`}
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </button>
+                  {paymentDropdownOpen && (
+                    <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                      <div className="p-2">
+                        {uniquePaymentMethods.map(method => (
+                          <label key={method} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedPaymentFilter.has(method)}
+                              onChange={(e) => {
+                                const newSet = new Set(selectedPaymentFilter);
+                                if (e.target.checked) {
+                                  newSet.add(method);
+                                } else {
+                                  newSet.delete(method);
+                                }
+                                setSelectedPaymentFilter(newSet);
+                              }}
+                              className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="text-sm">{method}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
               </div>
-          </div>
 
-          {/* Pagination Controls */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                      <span className="font-medium">Jumlah per halaman:</span>
-                      <select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value, 10))} className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
-                          <option value={10}>10</option>
-                          <option value={25}>25</option>
-                          <option value={50}>50</option>
-                          <option value={100}>100</option>
-                          <option value={0}>Tampilkan Semua</option>
-                      </select>
-                      <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Total: {filteredOrders.length}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
-                      <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Halaman {page} / {totalPages}</div>
-                      <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
-                  </div>
+              {/* Status Multi-Select */}
+              <div className="relative status-dropdown">
+                  <button
+                    onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
+                  >
+                    <span className="flex-1 text-left">
+                      {activeStatusFilter.size === 0 ? 'Status' : `${activeStatusFilter.size} dipilih`}
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </button>
+                  {statusDropdownOpen && (
+                    <div className="absolute top-full mt-1 right-0 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                      <div className="p-2">
+                        {TABS.filter(s => s !== 'All').map(status => (
+                          <label key={status} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={activeStatusFilter.has(status as OrderStatus)}
+                              onChange={(e) => {
+                                const newSet = new Set(activeStatusFilter);
+                                if (e.target.checked) {
+                                  newSet.add(status as OrderStatus);
+                                } else {
+                                  newSet.delete(status as OrderStatus);
+                                }
+                                setActiveStatusFilter(newSet);
+                              }}
+                              className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="text-sm">{status}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
               </div>
           </div>
       </div>
 
-      {/* Bulk Actions Toolbar */}
-      {selectedOrders.size > 0 && (
-        <div className="bg-indigo-600 text-white rounded-2xl shadow-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="font-semibold">{selectedOrders.size} pesanan terpilih</span>
-              <button
-                onClick={() => setSelectedOrders(new Set())}
-                className="text-sm underline hover:no-underline"
-              >
-                Batal Pilihan
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
-              >
-                <TrashIcon className="w-4 h-4" />
-                Hapus Terpilih
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Pending Deletions Alert */}
+          {pendingDeletionsCount > 0 && (currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-l-4 border-orange-500 rounded-xl shadow-sm p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                              <TrashIcon className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                              <p className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                                  Ada {pendingDeletionsCount} pesanan menunggu konfirmasi hapus
+                              </p>
+                              <p className="text-xs text-orange-700 dark:text-orange-300">Tinjau dan proses permintaan penghapusan</p>
+                          </div>
+                      </div>
+                      <Link 
+                          to="/pengaturan/permintaan-hapus" 
+                          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+                      >
+                          Lihat Permintaan
+                          <ArrowRightIcon className="w-4 h-4" />
+                      </Link>
+                  </div>
+              </div>
+          )}
 
-      {/* Orders Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Bulk Actions Toolbar */}
+          {selectedOrders.size > 0 && (
+            <div className="bg-indigo-600 text-white rounded-2xl shadow-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="font-semibold">{selectedOrders.size} pesanan terpilih</span>
+                  <button
+                    onClick={() => setSelectedOrders(new Set())}
+                    className="text-sm underline hover:no-underline"
+                  >
+                    Batal Pilihan
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleBulkDelete}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                    Hapus Terpilih
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Orders Table */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="overflow-x-auto">
               {loading ? (
                   <div className="flex flex-col justify-center items-center py-20">
                       <SpinnerIcon className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
@@ -839,11 +958,9 @@ const OrdersPage: React.FC = () => {
                                                </button>
                                           )}
 
-                                          {order.status !== 'Pending Deletion' && (
-                                              <button onClick={() => openDeleteConfirmation(order)} className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all hover:scale-110" title="Hapus">
-                                                  <TrashIcon className="w-5 h-5" />
-                                              </button>
-                                          )}
+                                          <button onClick={() => openDeleteConfirmation(order)} className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all hover:scale-110" title="Hapus">
+                                              <TrashIcon className="w-5 h-5" />
+                                          </button>
                                       </div>
                                   </td>
                               </tr>
@@ -852,7 +969,29 @@ const OrdersPage: React.FC = () => {
                   </table>
               )}
           </div>
-      </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                  <span className="font-medium">Jumlah per halaman:</span>
+                  <select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value, 10))} className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                  </select>
+                  <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Total: {filteredOrders.length}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
+                  <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Halaman {page} / {totalPages}</div>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
+              </div>
+          </div>
+          </div>
 
       {/* --- MODALS --- */}
       {isDetailModalOpen && selectedOrder && (
