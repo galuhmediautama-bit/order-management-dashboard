@@ -985,8 +985,11 @@ const FormEditorPage: React.FC = () => {
                         supabase.from('users').select('*').eq('role', 'Advertiser').eq('status', 'Aktif'),
                         15000
                     );
-                    setAdvertisers((advertisersData || []).map(doc => ({ ...doc } as User)));
-                    console.log('✅ Loaded', (advertisersData || []).length, 'advertisers');
+                    const filteredAdvertisers = (advertisersData || [])
+                        .filter(doc => doc.name && doc.name.trim() && !doc.name.includes('Pilih')) // Exclude empty or placeholder names
+                        .map(doc => ({ ...doc } as User));
+                    setAdvertisers(filteredAdvertisers);
+                    console.log('✅ Loaded', filteredAdvertisers.length, 'advertisers:', filteredAdvertisers.map(a => a.name));
                 } catch (advErr) {
                     console.warn("Advertisers fetch timeout/error:", advErr);
                     setAdvertisers([]);
@@ -1698,7 +1701,9 @@ const FormEditorPage: React.FC = () => {
                             className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId ? 'border-red-500' : 'dark:border-slate-600'}`}
                         >
                             <option value="">-- Pilih Advertiser --</option>
-                            {advertisers.map(advertiser => (
+                            {advertisers
+                                .filter(advertiser => advertiser.name && advertiser.name.trim() && !advertiser.name.includes('Pilih'))
+                                .map(advertiser => (
                                 <option key={advertiser.id} value={advertiser.id}>
                                     {advertiser.name} {currentUser?.id === advertiser.id ? '(Anda)' : ''}
                                 </option>
