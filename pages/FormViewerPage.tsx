@@ -305,8 +305,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             snack: { ids: [], eventName: 'ViewContent' },
         };
         
-        let firstEventName = pageType === 'thankYouPage' ? 'Purchase' : 'ViewContent';
-        
         // Extract from form tracking settings
         if (trackingSettings) {
             Object.entries(trackingSettings).forEach(([platform, settings]) => {
@@ -316,11 +314,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                         eventName: settings.eventName || newPixelsByPlatform[platform].eventName
                     };
                     console.log(`[FormViewer] ${platform} - IDs: ${settings.pixelIds.join(', ')}, Event: ${settings.eventName}`);
-                    
-                    // Use first platform's event as primary
-                    if (firstEventName === (pageType === 'thankYouPage' ? 'Purchase' : 'ViewContent')) {
-                        firstEventName = settings.eventName || firstEventName;
-                    }
                 }
             });
         }
@@ -344,10 +337,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         console.log(`[FormViewer] Final Meta IDs: ${metaIds.length > 0 ? metaIds.join(', ') : 'NONE'}`);
         setActivePixelIds(metaIds);
         
-        // Update event names
+        // Update event names - use Meta platform event as primary
+        const metaEventName = newPixelsByPlatform.meta.eventName;
+        console.log(`[FormViewer] Setting ${pageType} event to: ${metaEventName}`);
         setEventNames(prev => ({
             ...prev,
-            [pageType]: firstEventName
+            [pageType]: metaEventName
         }));
 
     }, [form, globalTrackingSettings, submission, settingsLoading]);
