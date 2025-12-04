@@ -782,6 +782,10 @@ const UserManagement: React.FC = () => {
                     }
                 } else {
                     showToast("Pengguna berhasil diperbarui.", 'success');
+                    // ✅ Refresh data after successful update
+                    setIsModalOpen(false);
+                    setEditingUser(null);
+                    setTimeout(() => fetchUsersAndBrands(), 300); // Small delay to ensure DB updated
                 }
             } else { // Adding new user via Supabase Auth
                 // Generate a temporary password
