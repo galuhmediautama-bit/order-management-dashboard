@@ -53,22 +53,37 @@ const MetaPixelScript: React.FC<MetaPixelScriptProps> = ({ pixelIds, eventName, 
                 fbq('track', 'PageView');
 
                 // 4. Track Event Khusus (ViewContent / Purchase) dengan delay
-                setTimeout(() => {
+                const eventTimeoutId = setTimeout(() => {
                     console.log(`[Meta Pixel] Tracking ${eventName}:`, params);
                     fbq('track', eventName, params);
                 }, 100);
                 
+                // Store untuk cleanup
+                return eventTimeoutId;
+                
             } else {
                 console.error("[Meta Pixel] window.fbq tidak ditemukan. Pastikan Meta Pixel code sudah ada di index.html");
+                return null;
             }
         };
 
         // Dengan delay untuk memastikan fbq sudah siap
         const timeoutId = setTimeout(() => {
-            firePixel();
+            const eventTimeoutId = firePixel();
+            // Simpan untuk cleanup
+            if (eventTimeoutId) {
+                (window as any)._current_pixel_timeout = eventTimeoutId;
+            }
         }, 300);
 
-        return () => clearTimeout(timeoutId);
+        return () => {
+            clearTimeout(timeoutId);
+            // Cancel event timeout jika masih pending
+            if ((window as any)._current_pixel_timeout) {
+                clearTimeout((window as any)._current_pixel_timeout);
+                console.log('[Meta Pixel] Cleaned up pending event');
+            }
+        };
 
     }, [pixelIds, eventName, order, contentName]);
 

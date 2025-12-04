@@ -838,6 +838,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         return (
             <>
                 <MetaPixelScript 
+                    key="thankYouPage-pixel"
                     pixelIds={activePixelIds} 
                     eventName={eventNames.thankYouPage} 
                     order={submission.order} 
@@ -870,6 +871,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     return (
         <>
             <MetaPixelScript 
+                key="formPage-pixel"
                 pixelIds={activePixelIds} 
                 eventName={eventNames.formPage} 
                 contentName={form.title} 
