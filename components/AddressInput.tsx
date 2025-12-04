@@ -14,6 +14,12 @@ interface City {
   postal_code: string;
 }
 
+interface District {
+  district_id: string;
+  city_id: string;
+  district_name: string;
+}
+
 export interface AddressData {
   province: string;
   city: string;
@@ -26,11 +32,26 @@ export interface AddressData {
 interface AddressInputProps {
   value: AddressData;
   onChange: (data: AddressData) => void;
-  required?: boolean;
   disabled?: boolean;
+  showProvince?: boolean;
+  showCity?: boolean;
+  showDistrict?: boolean;
+  requiredProvince?: boolean;
+  requiredCity?: boolean;
+  requiredDistrict?: boolean;
 }
 
-const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required = false, disabled = false }) => {
+const AddressInput: React.FC<AddressInputProps> = ({ 
+  value, 
+  onChange, 
+  disabled = false, 
+  showProvince = true, 
+  showCity = true, 
+  showDistrict = true,
+  requiredProvince = false,
+  requiredCity = false,
+  requiredDistrict = false
+}) => {
   const [selectedProvince, setSelectedProvince] = useState(value.province || '');
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
   const [selectedCity, setSelectedCity] = useState(value.city || '');
@@ -41,8 +62,10 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
 
   const RAJAONGKIR_API_KEY = '936fe1a7af6d32b2a198781789b07ae7';
   const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
@@ -129,6 +152,41 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
     }
   };
 
+  // Fetch districts from Raja Ongkir
+  const fetchDistricts = async (cityId: string) => {
+    const startTime = Date.now();
+    console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] 🔄 Mulai fetching districts untuk city: ${cityId}`);
+    setLoadingDistricts(true);
+    try {
+      const url = `${RAJAONGKIR_BASE_URL}/subdistrict?city=${cityId}`;
+      console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] 📡 Calling API: ${url}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'key': RAJAONGKIR_API_KEY
+        }
+      });
+      const elapsed = Date.now() - startTime;
+      console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] ✅ Response received in ${elapsed}ms`);
+      
+      const data = await response.json();
+      console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] 📦 Response status:`, response.status);
+      
+      if (data.rajaongkir && data.rajaongkir.results) {
+        setDistricts(data.rajaongkir.results);
+        console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] ✅ Districts loaded successfully: ${data.rajaongkir.results.length} items`);
+      } else {
+        console.warn(`[${new Date().toLocaleTimeString()}] [AddressInput] ⚠️ Unexpected response format:`, data);
+      }
+    } catch (error) {
+      const elapsed = Date.now() - startTime;
+      console.error(`[${new Date().toLocaleTimeString()}] [AddressInput] ❌ Error fetching districts after ${elapsed}ms:`, error);
+    } finally {
+      setLoadingDistricts(false);
+      console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] 🏁 Districts fetch completed`);
+    }
+  };
+
   // Handle province change
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] 👤 User memilih provinsi:`, e.target.value);
@@ -139,8 +197,10 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
       setSelectedProvinceId(selectedOption.province_id);
       setSelectedCity('');
       setSelectedCityId('');
+      setSelectedDistrict('');
       setPostalCode('');
       setCities([]);
+      setDistricts([]);
       fetchCities(selectedOption.province_id);
     }
   };
@@ -153,8 +213,17 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
       console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] ✅ Kota ditemukan, ID: ${selectedOption.city_id}, Kode Pos: ${selectedOption.postal_code}`);
       setSelectedCity(`${selectedOption.type} ${selectedOption.city_name}`);
       setSelectedCityId(selectedOption.city_id);
+      setSelectedDistrict('');
       setPostalCode(selectedOption.postal_code);
+      setDistricts([]);
+      fetchDistricts(selectedOption.city_id);
     }
+  };
+
+  // Handle district change
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    console.log(`[${new Date().toLocaleTimeString()}] [AddressInput] 👤 User memilih kecamatan:`, e.target.value);
+    setSelectedDistrict(e.target.value);
   };
 
   // Update parent component when any field changes
@@ -179,17 +248,17 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Provinsi */}
+      {/* Provinsi */}
+      {showProvince && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Provinsi {required && <span className="text-red-500">*</span>}
+            Provinsi {requiredProvince && <span className="text-red-500">*</span>}
           </label>
           <select
             value={selectedProvince}
             onChange={handleProvinceChange}
             disabled={disabled || loadingProvinces}
-            required={required}
+            required={requiredProvince}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="">
@@ -202,17 +271,19 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
             ))}
           </select>
         </div>
+      )}
 
-        {/* Kota/Kabupaten */}
+      {/* Kota/Kabupaten */}
+      {showCity && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Kota/Kabupaten {required && <span className="text-red-500">*</span>}
+            Kota/Kabupaten {requiredCity && <span className="text-red-500">*</span>}
           </label>
           <select
             value={selectedCity}
             onChange={handleCityChange}
             disabled={disabled || !selectedProvinceId || loadingCities}
-            required={required}
+            required={requiredCity}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
           >
             <option value="">
@@ -225,55 +296,32 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
             ))}
           </select>
         </div>
+      )}
 
-        {/* Kecamatan */}
+      {/* Kecamatan */}
+      {showDistrict && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Kecamatan {required && <span className="text-red-500">*</span>}
+            Kecamatan {requiredDistrict && <span className="text-red-500">*</span>}
           </label>
-          <input
-            type="text"
+          <select
             value={selectedDistrict}
-            onChange={(e) => setSelectedDistrict(e.target.value)}
-            disabled={disabled || !selectedCityId}
-            required={required}
-            placeholder={selectedCityId ? "Masukkan kecamatan" : "Pilih kota terlebih dahulu"}
+            onChange={handleDistrictChange}
+            disabled={disabled || !selectedCityId || loadingDistricts}
+            required={requiredDistrict}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-          />
+          >
+            <option value="">
+              {loadingDistricts ? 'Memuat...' : selectedCityId ? 'Pilih Kecamatan' : 'Pilih kota terlebih dahulu'}
+            </option>
+            {districts.map((district) => (
+              <option key={district.district_id} value={district.district_name}>
+                {district.district_name}
+              </option>
+            ))}
+          </select>
         </div>
-
-        {/* Kode Pos */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Kode Pos {required && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="text"
-            value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
-            disabled={disabled}
-            required={required}
-            placeholder="Otomatis dari kota"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-          />
-        </div>
-      </div>
-
-      {/* Detail Alamat */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Detail Alamat (Jalan, RT/RW, No. Rumah) {required && <span className="text-red-500">*</span>}
-        </label>
-        <textarea
-          value={detailAddress}
-          onChange={(e) => setDetailAddress(e.target.value)}
-          disabled={disabled}
-          required={required}
-          rows={3}
-          placeholder="Contoh: Jl. Sudirman No. 123, RT 01/RW 05"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-        />
-      </div>
+      )}
     </div>
   );
 };

@@ -574,6 +574,30 @@ const FormPreview: React.FC<{ form: Form }> = ({ form }) => {
                             <input type="email" placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                     )}
+                     {form.customerFields.province?.visible && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Provinsi {form.customerFields.province.required && <span className="text-red-500">*</span>}</label>
+                            <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">Pilih Provinsi</option>
+                            </select>
+                        </div>
+                    )}
+                     {form.customerFields.city?.visible && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Kota/Kabupaten {form.customerFields.city.required && <span className="text-red-500">*</span>}</label>
+                            <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">Pilih Kota/Kabupaten</option>
+                            </select>
+                        </div>
+                    )}
+                     {form.customerFields.district?.visible && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Kecamatan {form.customerFields.district.required && <span className="text-red-500">*</span>}</label>
+                            <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">Pilih Kecamatan</option>
+                            </select>
+                        </div>
+                    )}
                      {form.customerFields.address.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
@@ -921,7 +945,7 @@ const FormEditorPage: React.FC = () => {
                 } else {
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, address: { visible: true, required: true },},
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, province: { visible: true, required: true }, city: { visible: true, required: true }, district: { visible: true, required: true }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
@@ -936,7 +960,7 @@ const FormEditorPage: React.FC = () => {
                 if (!formId) {
                      const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, address: { visible: true, required: true },},
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, province: { visible: true, required: true }, city: { visible: true, required: true }, district: { visible: true, required: true }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
@@ -1362,7 +1386,23 @@ const FormEditorPage: React.FC = () => {
     };
     
     const handleFieldChange = <T extends keyof Form>(field: T, value: Form[T]) => {
-        setForm(prev => prev ? ({ ...prev, [field]: value }) : null);
+        // Auto-generate slug dari judul jika field yang berubah adalah title
+        if (field === 'title') {
+            const autoSlug = (value as string)
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            setForm(prev => prev ? ({ ...prev, [field]: value, slug: autoSlug || prev.slug }) : null);
+            // Check slug availability
+            if (autoSlug) {
+                setSlugAvailable(null);
+                const timer = setTimeout(() => { checkSlugAvailability(autoSlug); }, 500);
+                return () => clearTimeout(timer);
+            }
+        } else {
+            setForm(prev => prev ? ({ ...prev, [field]: value }) : null);
+        }
     };
     
     const handleSubFieldChange = (mainField: keyof Form, subField: any, value: any) => {
@@ -1382,7 +1422,34 @@ const FormEditorPage: React.FC = () => {
         setForm(prev => {
             if (!prev) return null;
             const mainFieldValue = (prev as any)[mainField] || {};
-            const subFieldValue = mainFieldValue[subField] || {};
+            
+            // Special handling for province/city/district package
+            if (mainField === 'customerFields' && subField === 'province') {
+                if (prop === 'visible') {
+                    // When province visibility changes, city and district follow
+                    return {
+                        ...prev,
+                        customerFields: {
+                            ...prev.customerFields,
+                            province: { ...prev.customerFields.province, visible: val },
+                            city: { ...prev.customerFields.city, visible: val },
+                            district: { ...prev.customerFields.district, visible: val }
+                        }
+                    };
+                } else if (prop === 'required') {
+                    // When province required changes, city and district follow
+                    return {
+                        ...prev,
+                        customerFields: {
+                            ...prev.customerFields,
+                            province: { ...prev.customerFields.province, required: val },
+                            city: { ...prev.customerFields.city, required: val },
+                            district: { ...prev.customerFields.district, required: val }
+                        }
+                    };
+                }
+            }
+            
             if (mainField === 'thankYouPage' && subField === 'showOrderSummary') {
                 return {
                     ...prev,
@@ -1392,6 +1459,19 @@ const FormEditorPage: React.FC = () => {
                     }
                 }
             }
+            
+            // If subField is null, update mainField directly
+            if (subField === null) {
+                return {
+                    ...prev,
+                    [mainField]: {
+                        ...mainFieldValue,
+                        [prop]: val
+                    }
+                };
+            }
+            
+            const subFieldValue = mainFieldValue[subField] || {};
             return {
                 ...prev,
                 [mainField]: {
@@ -1522,7 +1602,7 @@ const FormEditorPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Slug URL</label>
+                        <label className="block text-sm font-medium mb-1">URL Slug</label>
                          <div className="relative">
                             <input
                                 type="text"
@@ -1537,18 +1617,7 @@ const FormEditorPage: React.FC = () => {
                                  slugAvailable === false ? <span className="text-red-500 flex items-center gap-1"><XIcon className="w-4 h-4" /> Diambil</span> : null}
                             </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Custom URL Slug (Opsional)</label>
-                        <input 
-                            type="text" 
-                            value={form.customSlug || ''} 
-                            onChange={e => handleFieldChange('customSlug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} 
-                            placeholder="promo-ramadan" 
-                            className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"
-                        />
-                        <p className="text-xs text-slate-500 mt-1">URL akan menjadi: https://form.cuanmax.digital/#/f/<strong>{form.customSlug || 'id-formulir'}</strong></p>
+                        <p className="text-xs text-slate-500 mt-1">URL: https://form.cuanmax.digital/#/f/<strong>{form.slug || 'id-formulir'}</strong></p>
                     </div>
 
                     <div>
@@ -1695,6 +1764,7 @@ const FormEditorPage: React.FC = () => {
                                     <th className="p-2 text-left font-medium text-slate-500">Komisi CS</th>
                                     <th className="p-2 text-left font-medium text-slate-500">Komisi Adv</th>
                                     <th className="p-2 text-left font-medium text-slate-500">Berat (gr)</th>
+                                    <th className="p-2 text-left font-medium text-slate-500">Stok Awal</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -1709,6 +1779,7 @@ const FormEditorPage: React.FC = () => {
                                         <td className="p-1"><input type="number" value={combo.csCommission ?? ''} onChange={e => handleCombinationChange(index, 'csCommission', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" placeholder="0" /></td>
                                         <td className="p-1"><input type="number" value={combo.advCommission ?? ''} onChange={e => handleCombinationChange(index, 'advCommission', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" placeholder="0" /></td>
                                         <td className="p-1"><input type="number" value={combo.weight ?? ''} onChange={e => handleCombinationChange(index, 'weight', e.target.value)} onFocus={e => e.target.select()} className="w-20 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" /></td>
+                                        <td className="p-1"><input type="number" value={combo.initialStock ?? ''} onChange={e => handleCombinationChange(index, 'initialStock', e.target.value)} onFocus={e => e.target.select()} className="w-20 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" placeholder={form.stockCountdownSettings?.initialStock?.toString() || '10'} title="Kosongkan untuk gunakan default global" /></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -1717,15 +1788,44 @@ const FormEditorPage: React.FC = () => {
                 </EditorCard>
                 
                 <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
-                    {Object.keys(form.customerFields).map(key => (
-                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                            <span className="capitalize text-sm">{key}</span>
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
-                                <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].required} onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)} className="rounded" /> Wajib</label>
+                    {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
+                        // Skip city and district as they're controlled by province
+                        if (key === 'city' || key === 'district') return null;
+                        
+                        const isProvince = key === 'province';
+                        
+                        return (
+                            <div key={key}>
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                                    <span className="capitalize text-sm">{key}</span>
+                                    <div className="flex items-center gap-4">
+                                        <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
+                                        <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].required} onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)} className="rounded" /> Wajib</label>
+                                    </div>
+                                </div>
+                                
+                                {/* Show City and District as children of Province */}
+                                {isProvince && form.customerFields.province.visible && (
+                                    <div className="ml-6 mt-1 space-y-1">
+                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">↳ City (Kota/Kabupaten)</span>
+                                            <div className="flex items-center gap-4">
+                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.city.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.city.required} disabled className="rounded opacity-50" /> Wajib</label>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">↳ District (Kecamatan)</span>
+                                            <div className="flex items-center gap-4">
+                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.required} disabled className="rounded opacity-50" /> Wajib</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </EditorCard>
 
                 <EditorCard icon={ShipIcon} title="Pengaturan Pengiriman">
@@ -2128,6 +2228,79 @@ const FormEditorPage: React.FC = () => {
                         </div>
                         {form.socialProofSettings?.active && (
                             <div className="space-y-3 mt-3 pl-2 border-l-2 border-slate-200 dark:border-slate-700">
+                                <div>
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Posisi Popup</label>
+                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                        {(['bottom-left', 'bottom-right', 'top-left', 'top-right'] as const).map(pos => (
+                                            <button
+                                                key={pos}
+                                                onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'position', pos)}
+                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${
+                                                    form.socialProofSettings?.position === pos
+                                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                }`}
+                                            >
+                                                {pos === 'bottom-left' && '↙ Bawah Kiri'}
+                                                {pos === 'bottom-right' && '↘ Bawah Kanan'}
+                                                {pos === 'top-left' && '↖ Atas Kiri'}
+                                                {pos === 'top-right' && '↗ Atas Kanan'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Animasi</label>
+                                    <div className="grid grid-cols-3 gap-2 mt-1">
+                                        {(['slide-up', 'slide-down', 'fade-in'] as const).map(anim => (
+                                            <button
+                                                key={anim}
+                                                onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'animation', anim)}
+                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${
+                                                    form.socialProofSettings?.animation === anim
+                                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                }`}
+                                            >
+                                                {anim === 'slide-up' && '↑ Geser'}
+                                                {anim === 'slide-down' && '↓ Turun'}
+                                                {anim === 'fade-in' && '✦ Muncul'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Mulai Setelah (detik)</label>
+                                        <input 
+                                            type="number" 
+                                            value={form.socialProofSettings.initialDelaySeconds || 5}
+                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'initialDelaySeconds', parseInt(e.target.value))}
+                                            className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Durasi Tampil (detik)</label>
+                                        <input 
+                                            type="number" 
+                                            value={form.socialProofSettings.displayDurationSeconds || 5}
+                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'displayDurationSeconds', parseInt(e.target.value))}
+                                            className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
+                                            min="1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Interval Tampil (detik)</label>
+                                        <input 
+                                            type="number" 
+                                            value={form.socialProofSettings.intervalSeconds || 10}
+                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'intervalSeconds', parseInt(e.target.value))}
+                                            className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
+                                            min="1"
+                                        />
+                                    </div>
+                                </div>
                                 <textarea 
                                     placeholder="Daftar Nama (pisahkan dengan baris baru)" 
                                     value={form.socialProofSettings.customerNames}

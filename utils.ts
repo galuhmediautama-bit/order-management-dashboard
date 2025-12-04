@@ -118,7 +118,6 @@ export const normalizeForm = (formToEdit: Form): Form => {
         ...formToEdit,
         slug: formToEdit.slug || '',
         brandId: formToEdit.brandId || '', // Ensure brandId exists
-        customSlug: formToEdit.customSlug || '', // Initialize custom URL slug
         productImages: formToEdit.productImages || [], // Ensure productImages array exists
         showTitle: formToEdit.showTitle ?? true,
         showDescription: formToEdit.showDescription ?? true,
@@ -131,11 +130,14 @@ export const normalizeForm = (formToEdit: Form): Form => {
             csCommission: combo.csCommission !== undefined ? combo.csCommission : (combo.commissionPrice ?? undefined),
             advCommission: combo.advCommission !== undefined ? combo.advCommission : undefined,
         })),
-        customerFields: formToEdit.customerFields || {
-            name: { visible: true, required: true },
-            whatsapp: { visible: true, required: true },
-            email: { visible: true, required: false },
-            address: { visible: true, required: true },
+        customerFields: {
+            name: formToEdit.customerFields?.name || { visible: true, required: true },
+            whatsapp: formToEdit.customerFields?.whatsapp || { visible: true, required: true },
+            email: formToEdit.customerFields?.email || { visible: true, required: false },
+            province: formToEdit.customerFields?.province || { visible: true, required: true },
+            city: formToEdit.customerFields?.city || { visible: true, required: true },
+            district: formToEdit.customerFields?.district || { visible: true, required: true },
+            address: formToEdit.customerFields?.address || { visible: true, required: true },
         },
         shippingSettings: formToEdit.shippingSettings || defaultShippingSettings,
         paymentSettings: formToEdit.paymentSettings || {
@@ -159,7 +161,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
         trackingSettings: formToEdit.trackingSettings || createDefaultTrackingSettings(),
         customMessageTemplates: formToEdit.customMessageTemplates || { active: false, templates: {} },
         countdownSettings: formToEdit.countdownSettings || { active: true, duration: 600 },
-        stockCountdownSettings: formToEdit.stockCountdownSettings || { active: false, initialStock: 10, intervalSeconds: 5 },
+        stockCountdownSettings: formToEdit.stockCountdownSettings || { active: true, initialStock: 10, intervalSeconds: 5 },
         socialProofSettings: formToEdit.socialProofSettings || {
             active: false,
             position: 'bottom-left',

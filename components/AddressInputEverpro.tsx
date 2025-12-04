@@ -335,4 +335,3 @@ const AddressInput: React.FC<AddressInputProps> = ({ value, onChange, required =
 };
 
 export default AddressInput;
-export type { AddressData };

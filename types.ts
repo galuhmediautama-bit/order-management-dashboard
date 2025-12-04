@@ -186,6 +186,7 @@ export interface VariantCombination {
   commissionPrice?: number; // Commission specifically for this variant (DEPRECATED - use csCommission + advCommission)
   csCommission?: number; // Commission for Customer Service per sale
   advCommission?: number; // Commission for Advertiser per sale
+  initialStock?: number; // Initial stock for fake stock countdown per variant
 }
 
 export interface ShippingSetting {
@@ -285,9 +286,8 @@ export interface FormPageTrackingSettings {
 export interface Form {
     id: string;
     title: string;
-    slug?: string;
+    slug: string; // URL slug (auto-generated dari judul, bisa di-edit manual)
     brandId?: string;
-    customSlug?: string; // Custom URL slug for form (e.g., 'promo-ramadan' instead of UUID)
     mainImage: string;
     productImages?: string[]; // Multiple product images
     description: string;
@@ -298,6 +298,9 @@ export interface Form {
         name: CustomerFieldSetting;
         whatsapp: CustomerFieldSetting;
         email: CustomerFieldSetting;
+        province: CustomerFieldSetting;
+        city: CustomerFieldSetting;
+        district: CustomerFieldSetting;
         address: CustomerFieldSetting;
     };
     shippingSettings: ShippingSettings;
@@ -325,7 +328,7 @@ export interface Form {
     };
     stockCountdownSettings?: {
         active: boolean;
-        initialStock: number;
+        initialStock: number; // Global default if variant doesn't have initialStock
         intervalSeconds: number;
     };
     socialProofSettings?: {

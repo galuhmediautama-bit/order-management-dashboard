@@ -25,24 +25,26 @@ const StatCard: React.FC<{
     changeType?: 'increase' | 'decrease' | 'neutral';
 }> = ({ title, value, icon: Icon, change, changeType = 'neutral' }) => {
     return (
-      <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-start gap-3 sm:gap-6 transition-all hover:shadow-md hover:-translate-y-1 w-full max-w-[340px] mx-auto">
-            <div className="p-4 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex-shrink-0">
-                <Icon className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div className="flex-grow">
-                <p className="text-base font-medium text-slate-600 dark:text-slate-400 truncate">{title}</p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{value}</p>
-                {change && (
-                    <p className={`text-sm mt-2 flex items-center gap-1 ${
-                        changeType === 'increase' ? 'text-green-600 dark:text-green-400' :
-                        changeType === 'decrease' ? 'text-red-600 dark:text-red-400' :
-                        'text-slate-600 dark:text-slate-400'
-                    }`}>
-                        {changeType === 'increase' && '↑'}
-                        {changeType === 'decrease' && '↓'}
-                        {change}
-                    </p>
-                )}
+      <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-3 sm:gap-3">
+                <div className="p-2 sm:p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex-shrink-0">
+                    <Icon className="w-5 sm:w-5 md:w-6 h-5 sm:h-5 md:h-6 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div className="flex-grow min-w-0">
+                    <p className="text-xs sm:text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{title}</p>
+                    <p className="text-lg sm:text-lg md:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">{value}</p>
+                    {change && (
+                        <p className={`text-xs mt-0.5 sm:mt-1 flex items-center gap-1 ${
+                            changeType === 'increase' ? 'text-green-600 dark:text-green-400' :
+                            changeType === 'decrease' ? 'text-red-600 dark:text-red-400' :
+                            'text-slate-500 dark:text-slate-400'
+                        }`}>
+                            {changeType === 'increase' && '↑'}
+                            {changeType === 'decrease' && '↓'}
+                            {change}
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -340,21 +342,21 @@ const DashboardPage: React.FC = () => {
     };
 
   return (
-    <div className="space-y-8 sm:space-y-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-        <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Dashboard Analytics</h1>
-            <p className="mt-2 text-base sm:text-lg text-slate-600 dark:text-slate-400">Pantau performa bisnis Anda secara real-time</p>
+    <div className="space-y-6 sm:space-y-6 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:gap-3 md:flex-row md:justify-between md:items-center">
+        <div className="min-w-0">
+            <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Dashboard Analytics</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Pantau performa bisnis Anda secara real-time</p>
         </div>
-        <div className="w-full md:w-auto mt-4 md:mt-0"><DateRangePicker value={dateRange} onChange={setDateRange} /></div>
+        <div className="w-full md:w-auto"><DateRangePicker value={dateRange} onChange={setDateRange} /></div>
       </div>
       {loading ? (
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 animate-pulse">
-            {Array(4).fill(0).map((_, i) => <div key={i} className="h-28 sm:h-36 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3 md:gap-4 animate-pulse">
+            {Array(4).fill(0).map((_, i) => <div key={i} className="h-20 sm:h-20 md:h-20 bg-slate-200 dark:bg-slate-700 rounded-lg sm:rounded-xl"></div>)}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3 md:gap-4">
             <StatCard 
               title="Total Penjualan" 
               value={`Rp ${filteredDashboardData.stats.totalSales.toLocaleString('id-ID')}`} 
@@ -390,41 +392,47 @@ const DashboardPage: React.FC = () => {
           </div>
 
           {/* Quick Stats Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg">
-              <div className="flex items-center justify-between">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3 md:gap-4">
+            <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircleFilledIcon className="w-5 h-5 text-green-200 opacity-60" />
+                  <p className="text-green-100 text-xs sm:text-xs md:text-sm font-medium">Pesanan Selesai</p>
+                </div>
                 <div>
-                  <p className="text-green-100 text-sm font-medium">Pesanan Selesai</p>
-                  <p className="text-3xl font-bold mt-2">{filteredDashboardData.stats.completedOrders}</p>
-                  <p className="text-green-100 text-sm mt-1">
+                  <p className="text-xl sm:text-xl md:text-2xl font-bold">{filteredDashboardData.stats.completedOrders}</p>
+                  <p className="text-green-100 text-xs mt-0.5">
                     {filteredDashboardData.stats.totalOrders > 0 
                       ? `${((filteredDashboardData.stats.completedOrders / filteredDashboardData.stats.totalOrders) * 100).toFixed(1)}%`
                       : '0%'} dari total
                   </p>
                 </div>
-                <CheckCircleFilledIcon className="w-16 h-16 text-green-200 opacity-20" />
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-yellow-500 to-orange-600 text-white p-6 rounded-2xl shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100 text-sm font-medium">Pesanan Pending</p>
-                  <p className="text-3xl font-bold mt-2">{filteredDashboardData.stats.pendingOrders}</p>
-                  <p className="text-yellow-100 text-sm mt-1">Perlu ditindaklanjuti</p>
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <ClockIcon className="w-5 h-5 text-orange-200 opacity-60" />
+                  <p className="text-orange-100 text-xs sm:text-xs md:text-sm font-medium">Pesanan Pending</p>
                 </div>
-                <ClockIcon className="w-16 h-16 text-yellow-200 opacity-20" />
+                <div>
+                  <p className="text-xl sm:text-xl md:text-2xl font-bold">{filteredDashboardData.stats.pendingOrders}</p>
+                  <p className="text-orange-100 text-xs mt-0.5">Perlu ditindaklanjuti</p>
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-2xl shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Conversion Rate</p>
-                  <p className="text-3xl font-bold mt-2">{filteredDashboardData.stats.conversionRate.toFixed(1)}%</p>
-                  <p className="text-purple-100 text-sm mt-1">Tingkat penyelesaian</p>
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm sm:col-span-2 lg:col-span-1">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUpIcon className="w-5 h-5 text-indigo-200 opacity-60" />
+                  <p className="text-indigo-100 text-xs sm:text-xs md:text-sm font-medium">Conversion Rate</p>
                 </div>
-                <TrendingUpIcon className="w-16 h-16 text-purple-200 opacity-20" />
+                <div>
+                  <p className="text-xl sm:text-xl md:text-2xl font-bold">{filteredDashboardData.stats.conversionRate.toFixed(1)}%</p>
+                  <p className="text-indigo-100 text-xs mt-0.5">Tingkat penyelesaian</p>
+                </div>
               </div>
             </div>
           </div>
@@ -432,35 +440,35 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-4 md:gap-4">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-4 sm:p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Ringkasan Penjualan</h2>
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+            <h2 className="text-base sm:text-base md:text-lg font-bold text-slate-900 dark:text-white">Ringkasan Penjualan</h2>
             <div className="flex gap-2">
               <button 
                 onClick={() => setViewType('bar')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 rounded-lg text-xs sm:text-xs md:text-sm font-medium transition ${
                   viewType === 'bar' 
                     ? 'bg-indigo-600 text-white' 
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                 }`}
               >
                 Bar
               </button>
               <button 
                 onClick={() => setViewType('line')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 rounded-lg text-xs sm:text-xs md:text-sm font-medium transition ${
                   viewType === 'line' 
                     ? 'bg-indigo-600 text-white' 
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                 }`}
               >
                 Line
               </button>
             </div>
           </div>
-          <div style={{ width: '100%', height: 350 }}>
+          <div style={{ width: '100%', height: '250px' }}>
             <ResponsiveContainer>
               {viewType === 'bar' ? (
                 <BarChart data={filteredDashboardData.chartData}>
@@ -490,11 +498,11 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Status Breakdown Pie Chart */}
-        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Status Pesanan</h2>
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <h2 className="text-base sm:text-base md:text-lg font-bold mb-4 text-slate-900 dark:text-white">Status Pesanan</h2>
           {filteredDashboardData.statusBreakdown.length > 0 ? (
             <>
-              <div style={{ width: '100%', height: 250 }}>
+              <div style={{ width: '100%', height: '180px' }}>
                 <ResponsiveContainer>
                   <PieChart>
                     <Pie
@@ -516,16 +524,16 @@ const DashboardPage: React.FC = () => {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 space-y-1.5">
                 {filteredDashboardData.statusBreakdown.map((item, idx) => {
-                  const colors = ['bg-indigo-600', 'bg-green-600', 'bg-yellow-600', 'bg-red-600', 'bg-purple-600'];
+                  const colors = ['bg-indigo-600', 'bg-green-600', 'bg-orange-600', 'bg-red-600', 'bg-purple-600'];
                   return (
-                    <div key={idx} className="flex items-center justify-between text-sm">
+                    <div key={idx} className="flex items-center justify-between text-xs sm:text-xs md:text-sm">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${colors[idx % colors.length]}`}></div>
-                        <span className="text-slate-600 dark:text-slate-300">{item.name}</span>
+                        <div className={`w-2.5 h-2.5 rounded-full ${colors[idx % colors.length]}`}></div>
+                        <span className="text-slate-600 dark:text-slate-300 truncate text-xs">{item.name}</span>
                       </div>
-                      <span className="font-semibold text-slate-900 dark:text-white">{item.value}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white flex-shrink-0 text-xs">{item.value}</span>
                     </div>
                   );
                 })}
@@ -539,16 +547,16 @@ const DashboardPage: React.FC = () => {
 
       {/* Top Products */}
       {filteredDashboardData.topProducts.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Top 5 Produk Terlaris</h2>
-          <div className="space-y-4">
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <h2 className="text-base sm:text-base md:text-lg font-bold mb-4 text-slate-900 dark:text-white">Top 5 Produk Terlaris</h2>
+          <div className="space-y-2.5 sm:space-y-2.5 md:space-y-3">
             {filteredDashboardData.topProducts.map((product, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <span className="text-2xl font-bold text-slate-400 dark:text-slate-600">#{idx + 1}</span>
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900 dark:text-white">{product.name}</p>
-                    <div className="mt-1 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+              <div key={idx} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className="text-sm sm:text-sm md:text-base font-bold text-slate-400 dark:text-slate-600 flex-shrink-0">#{idx + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-900 dark:text-white text-xs sm:text-xs md:text-sm truncate">{product.name}</p>
+                    <div className="mt-1 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                       <div 
                         className="bg-indigo-600 h-full rounded-full transition-all"
                         style={{ width: `${(product.count / filteredDashboardData.topProducts[0].count) * 100}%` }}
@@ -556,7 +564,7 @@ const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 ml-4">{product.count} order</span>
+                <span className="text-xs sm:text-xs md:text-sm font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0">{product.count}</span>
               </div>
             ))}
           </div>
@@ -564,28 +572,27 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Top Advertiser & Top CS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-4 md:gap-4">
         {/* Top Advertiser */}
         {filteredDashboardData.topAdvertisers.length > 0 && (
-          <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">🏆 Top 5 Advertiser</h2>
-            <div className="space-y-4">
+          <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+            <h2 className="text-base sm:text-base md:text-lg font-bold mb-3 text-slate-900 dark:text-white">🏆 Top Advertiser</h2>
+            <div className="space-y-2">
               {filteredDashboardData.topAdvertisers.map((adv, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-700 rounded-xl">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                <div key={idx} className="flex items-center justify-between gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700/50 dark:to-slate-700/50 rounded-lg border border-blue-100 dark:border-slate-600/50">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-xs flex-shrink-0 ${
                       idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-600' : 'bg-indigo-500'
                     }`}>
-                      #{idx + 1}
+                      {idx + 1}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900 dark:text-white">{adv.name}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{adv.orders} pesanan</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-white text-xs sm:text-xs md:text-sm truncate">{adv.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{adv.orders} pesanan</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">Rp {adv.sales.toLocaleString('id-ID')}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Total Penjualan</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs sm:text-xs md:text-sm font-bold text-indigo-600 dark:text-indigo-400">Rp {adv.sales.toLocaleString('id-ID')}</p>
                   </div>
                 </div>
               ))}

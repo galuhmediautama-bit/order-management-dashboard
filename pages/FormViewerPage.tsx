@@ -12,6 +12,7 @@ import { capitalizeWords, normalizeForm } from '../utils';
 import { SettingsContext } from '../contexts/SettingsContext';
 import CustomScriptInjector from '../components/CustomScriptInjector';
 import MetaPixelScript from '../components/MetaPixelScript';
+import ProvinceInput from '../components/ProvinceInput';
 import AddressInput, { type AddressData } from '../components/AddressInput';
 
 const SHIPPING_LABELS: Record<keyof ShippingSettings, string> = {
@@ -256,7 +257,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
     
     // Form state
-    const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '' });
+    const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '', province: '', city: '', district: '' });
     const [addressData, setAddressData] = useState<AddressData>({
         province: '',
         city: '',
@@ -381,22 +382,44 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
     useEffect(() => {
         if (form?.stockCountdownSettings?.active) {
-            const simpleHash = (str: string) => {
-                let hash = 0;
-                for (let i = 0; i < str.length; i++) {
-                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                    hash |= 0;
-                }
-                return Math.abs(hash) % 5;
+            const getRandomStock = (seed: number) => {
+                // More aggressive pseudo-random with larger range
+                let x = Math.abs(seed);
+                x = (x * 2654435761) >>> 0; // Knuth's multiplicative hash
+                x = x ^ (x >>> 15);
+                x = (x * 2246822519) >>> 0;
+                x = x ^ (x >>> 13);
+                return x >>> 0;
             };
     
             const initialStocks: Record<string, number> = {};
-            const baseStock = form.stockCountdownSettings.initialStock;
-            form.productOptions.forEach(option => {
-                option.values.forEach(val => {
-                    initialStocks[val] = Math.max(5, baseStock - simpleHash(val));
-                });
+            const maxStock = form.stockCountdownSettings.initialStock; // This is now the MAX, not base
+            
+            // Build stock map for each variant combination with random values below max
+            form.variantCombinations.forEach((combo, index) => {
+                const variantKey = Object.values(combo.attributes).join(' / ') || 'Produk Tunggal';
+                
+                // Create unique seed with more aggressive mixing
+                let seed = index * 73856093; // Large prime
+                for (let i = 0; i < variantKey.length; i++) {
+                    seed = seed ^ ((variantKey.charCodeAt(i) << (i % 16)) >>> 0);
+                }
+                seed = (seed * 19349663) >>> 0; // Additional mixing
+                
+                const hashValue = getRandomStock(seed);
+                
+                if (combo.initialStock) {
+                    // If variant has custom initialStock, use it as max and get random below it
+                    const maxForVariant = combo.initialStock;
+                    const randomPercent = (hashValue % 60) + 20; // 20-79% of max (wider range)
+                    initialStocks[variantKey] = Math.max(2, Math.floor(maxForVariant * randomPercent / 100));
+                } else {
+                    // Use global max with random variation per variant (20-79% of max)
+                    const randomPercent = (hashValue % 60) + 20; // 20-79% of max (wider range)
+                    initialStocks[variantKey] = Math.max(2, Math.floor(maxStock * randomPercent / 100));
+                }
             });
+            
             setVariantStock(initialStocks);
     
             const interval = setInterval(() => {
@@ -413,7 +436,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
             return () => clearInterval(interval);
         }
-    }, [form?.stockCountdownSettings]);
+    }, [form?.stockCountdownSettings, form?.variantCombinations]);
     
     useEffect(() => {
         if (form?.ctaSettings) {
@@ -425,11 +448,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
     }, [form?.ctaSettings]);
 
-    // Update customerData.address when addressData changes
+    // Sync addressData to customerData
     useEffect(() => {
         setCustomerData(prev => ({
             ...prev,
-            address: addressData.fullAddress
+            province: addressData.province,
+            city: addressData.city,
+            district: addressData.district
         }));
     }, [addressData]);
 
@@ -445,23 +470,16 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             let foundForm: Form | null = null;
 
             try {
-                // 1. Try fetching by custom slug first
-                const { data: formByCustomSlug } = await supabase.from("forms").select('*').eq("customSlug", identifier).single();
+                // 1. Try fetching by slug first
+                const { data: formBySlug } = await supabase.from("forms").select('*').eq("slug", identifier).single();
 
-                if (formByCustomSlug) {
-                    foundForm = formByCustomSlug as Form;
+                if (formBySlug) {
+                    foundForm = formBySlug as Form;
                 } else {
-                    // 2. Try fetching by slug
-                    const { data: formBySlug } = await supabase.from("forms").select('*').eq("slug", identifier).single();
-
-                    if (formBySlug) {
-                        foundForm = formBySlug as Form;
-                    } else {
-                        // 3. If not found by slug, try fetching by ID (UUID)
-                        const { data: formById } = await supabase.from("forms").select('*').eq("id", identifier).single();
-                        if (formById) {
-                            foundForm = formById as Form;
-                        }
+                    // 2. If not found by slug, try fetching by ID (UUID)
+                    const { data: formById } = await supabase.from("forms").select('*').eq("id", identifier).single();
+                    if (formById) {
+                        foundForm = formById as Form;
                     }
                 }
             } catch (error) {
@@ -470,6 +488,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
             if (foundForm) {
                 const normalizedForm = normalizeForm(foundForm);
+                console.log('Normalized form customerFields:', normalizedForm.customerFields);
                 setForm(normalizedForm);
 
                 if (normalizedForm.countdownSettings?.active) {
@@ -520,6 +539,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             return Object.entries(selectedOptions).every(([key, value]) => combo.attributes[key] === value);
         });
     }, [selectedOptions, form]);
+
+    // Get current variant stock based on selected options
+    const currentVariantStock = useMemo(() => {
+        if (!currentCombination) return undefined;
+        const variantKey = Object.values(currentCombination.attributes).join(' / ') || 'Produk Tunggal';
+        return variantStock[variantKey];
+    }, [currentCombination, variantStock]);
 
     const subtotal = currentCombination?.sellingPrice ?? 0;
     
@@ -663,6 +689,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         if (form.customerFields.name.required && !customerData.name) { alert("Nama harus diisi."); setIsSubmitting(false); return; }
         if (form.customerFields.whatsapp.required && !customerData.whatsapp) { alert("No. WhatsApp harus diisi."); setIsSubmitting(false); return; }
         if (form.customerFields.email.required && !customerData.email) { alert("Email harus diisi."); setIsSubmitting(false); return; }
+        if (form.customerFields.province?.required && !customerData.province) { alert("Provinsi harus diisi."); setIsSubmitting(false); return; }
+        if (form.customerFields.city?.required && !customerData.city) { alert("Kota/Kabupaten harus diisi."); setIsSubmitting(false); return; }
+        if (form.customerFields.district?.required && !customerData.district) { alert("Kecamatan harus diisi."); setIsSubmitting(false); return; }
         if (form.customerFields.address.required && !customerData.address) { alert("Alamat harus diisi."); setIsSubmitting(false); return; }
         
         try {
@@ -922,11 +951,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                                     />
                                                                     <span className="font-medium">{val}</span>
                                                                 </div>
-                                                                {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
+                                                                {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
                                                                     <span className={`text-sm font-medium animate-pulse ${
                                                                         selectedOptions[option.name] === val ? 'text-red-200' : 'text-red-600 dark:text-red-400'
                                                                     }`}>
-                                                                        Stok: {variantStock[val]} pcs
+                                                                        Stok: {currentVariantStock} pcs
                                                                     </span>
                                                                 )}
                                                             </label>
@@ -938,9 +967,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                         {option.values.map(val => (
                                                             <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({...prev, [option.name]: val}))} className={`w-full flex justify-between items-center px-3 py-1.5 border rounded-lg text-sm transition-colors ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
                                                                 <span>{val}</span>
-                                                                {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
+                                                                {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
                                                                     <span className="text-xs font-medium opacity-80 animate-pulse">
-                                                                        Stok: {variantStock[val]}
+                                                                        Stok: {currentVariantStock}
                                                                     </span>
                                                                 )}
                                                             </button>
@@ -975,13 +1004,24 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                             <input type="email" name="email" value={customerData.email} onChange={handleCustomerDataChange} placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.email.required} />
                                         </div>
                                     )}
-                                    {form.customerFields.address.visible && (
+                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible) && (
                                         <div>
                                             <AddressInput
                                                 value={addressData}
                                                 onChange={setAddressData}
-                                                required={form.customerFields.address.required}
+                                                showProvince={form.customerFields.province?.visible || false}
+                                                showCity={form.customerFields.city?.visible || false}
+                                                showDistrict={form.customerFields.district?.visible || false}
+                                                requiredProvince={form.customerFields.province?.required || false}
+                                                requiredCity={form.customerFields.city?.required || false}
+                                                requiredDistrict={form.customerFields.district?.required || false}
                                             />
+                                        </div>
+                                    )}
+                                    {form.customerFields.address.visible && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
+                                            <textarea name="address" value={customerData.address} onChange={handleCustomerDataChange} placeholder="Jl. Sudirman No. 123, RT 01/RW 05, Kecamatan, Kota" rows={3} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.address.required} />
                                         </div>
                                     )}
                                 </div>
