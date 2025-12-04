@@ -36,7 +36,7 @@ interface ProductFormData {
     isFeatured: boolean;
     seoTitle: string;
     seoDescription: string;
-    brandId?: string;
+    brandId: string;
     // TANPA VARIANT
     basePrice?: number | null;
     comparePrice?: number | null;
@@ -468,22 +468,35 @@ const ProductFormPage: React.FC = () => {
 
                 {/* Brand */}
                 <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                        Brand *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            Brand
+                        </label>
+                        <span className="text-xs text-red-500 font-medium">Wajib</span>
+                    </div>
                     {isLoadingBrands ? (
                         <div className="px-4 py-2 text-slate-500">Loading...</div>
                     ) : (
-                        <select
-                            value={formData.brandId}
-                            onChange={e => setFormData(prev => ({ ...prev, brandId: e.target.value }))}
-                            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                        >
-                            <option value="">-- Pilih Brand --</option>
-                            {brands.map(brand => (
-                                <option key={brand.id} value={brand.id}>{brand.name}</option>
-                            ))}
-                        </select>
+                        <>
+                            <select
+                                value={formData.brandId}
+                                onChange={e => setFormData(prev => ({ ...prev, brandId: e.target.value }))}
+                                className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${
+                                    !formData.brandId ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
+                                }`}
+                            >
+                                <option value="">-- Pilih Brand --</option>
+                                {brands.map(brand => (
+                                    <option key={brand.id} value={brand.id}>{brand.name}</option>
+                                ))}
+                            </select>
+                            {!formData.brandId && (
+                                <p className="text-xs text-red-500 mt-1">Brand harus dipilih. Produk harus terikat dengan brand.</p>
+                            )}
+                            {brands.length === 0 && (
+                                <p className="text-xs text-orange-500 mt-1">⚠️ Belum ada brand. Buat brand terlebih dahulu di menu Pengaturan → Merek.</p>
+                            )}
+                        </>
                     )}
                 </div>
 

@@ -429,6 +429,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
 
     return (
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md border dark:border-gray-700 text-slate-900 dark:text-slate-100">
+            {/* Main Gallery */}
             <div className="mb-4">
                 {currentGalleryImage && <img src={currentGalleryImage} alt={form.title} className="w-full aspect-square object-cover rounded-lg transition-opacity duration-300" />}
                 {!currentGalleryImage && <div className="w-full aspect-square bg-slate-200 dark:bg-slate-700 flex items-center justify-center rounded-lg text-slate-500">Gambar Utama</div>}
@@ -688,6 +689,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
 
             <div className="border-t dark:border-gray-700 pt-4 mt-4 space-y-2">
                 <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
+                
                 <div className="flex justify-between items-baseline text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                     <div className="flex items-baseline gap-2">
@@ -853,9 +855,13 @@ const FormEditorPage: React.FC = () => {
     const [csAgents, setCsAgents] = useState<CSAgent[]>([]);
     const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings>({ meta: [], google: [], tiktok: [], snack: [] });
     const [products, setProducts] = useState<Product[]>([]);
+    const [advertisers, setAdvertisers] = useState<User[]>([]); // Advertisers list
     
     const [form, setForm] = useState<Form | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [loadingProductDetails, setLoadingProductDetails] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
 
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const [mainImagePreview, setMainImagePreview] = useState('');
@@ -872,27 +878,80 @@ const FormEditorPage: React.FC = () => {
 
      useEffect(() => {
         const fetchData = async () => {
-            try {
-                // Set a 30-second timeout for all requests
-                const fetchWithTimeout = (promise: Promise<any>, timeout = 30000) => {
-                    return Promise.race([
-                        promise,
-                        new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error('Request timeout after ' + timeout + 'ms')), timeout)
-                        )
-                    ]);
-                };
+            const fetchWithTimeout = (promise: Promise<any>, timeout = 30000) => {
+                return Promise.race([
+                    promise,
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Request timeout after ' + timeout + 'ms')), timeout)
+                    )
+                ]);
+            };
 
-                // Check user role for permissions
+            try {
+                // STEP 1: Initialize form IMMEDIATELY (untuk tampilkan judul dulu)
+                if (formId) {
+                    try {
+                        const { data: docSnap } = await fetchWithTimeout(
+                            supabase.from("forms").select('*').eq('id', formId).single(),
+                            20000
+                        );
+                        
+                        if (docSnap) {
+                            console.log('Loaded form from DB:', {
+                                id: docSnap.id,
+                                variantCombinations: docSnap.variantCombinations
+                            });
+                            const formToEdit = { ...docSnap } as Form;
+                            const normalized = normalizeForm(formToEdit);
+                            console.log('After normalize:', {
+                                variantCombinations: normalized.variantCombinations
+                            });
+                            setForm(normalized);
+                            setMainImagePreview(normalized.mainImage);
+                            setQrisImagePreview(normalized.paymentSettings.qris.qrImageUrl || '');
+                            setLoading(false); // ✅ Form loaded, tampilkan UI
+                        } else {
+                            console.error("Form not found!");
+                            navigate('/formulir');
+                            return;
+                        }
+                    } catch (formErr) {
+                        console.error("Form fetch timeout/error:", formErr);
+                        showToast(`Gagal memuat formulir: ${formErr}`, 'error');
+                        navigate('/formulir');
+                        return;
+                    }
+                } else {
+                    // Buat form baru - langsung set dan tampilkan
+                    const newForm = normalizeForm({
+                        id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, province: { visible: true, required: true }, city: { visible: true, required: true }, district: { visible: true, required: true }, address: { visible: true, required: true } },
+                        shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
+                        paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
+                        submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
+                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah memesan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman.\n\nTerima kasih! 🙏' }},
+                        trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
+                    });
+                    setForm(newForm);
+                    setLoading(false); // ✅ Form baru ready, tampilkan UI
+                }
+
+                // STEP 2: Check user role for permissions dan fetch current user data (di background)
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
                     const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
                     if (userDoc) {
+                        setCurrentUser(userDoc as User);
                         setCurrentUserRole((userDoc as User).role);
+                        
+                        // Jika form baru dan user adalah advertiser, auto-select mereka
+                        if (!formId && (userDoc as User).role === 'Advertiser') {
+                            setForm(prev => prev ? { ...prev, assignedAdvertiserId: user.id } : prev);
+                        }
                     }
                 }
 
-                // Fetch Brands with LocalStorage Fallback (Robust implementation)
+                // STEP 3: Fetch Brands with LocalStorage Fallback (di background)
                 let brandsList: Brand[] = [];
                 const localBrandsRaw = localStorage.getItem('brands_local_data');
                 if (localBrandsRaw) {
@@ -920,7 +979,20 @@ const FormEditorPage: React.FC = () => {
                 }
                 setBrands(brandsList);
 
-                // Fetch CS Agents with timeout
+                // STEP 4: Fetch Advertisers (di background)
+                try {
+                    const { data: advertisersData } = await fetchWithTimeout(
+                        supabase.from('users').select('*').eq('role', 'Advertiser').eq('status', 'Aktif'),
+                        15000
+                    );
+                    setAdvertisers((advertisersData || []).map(doc => ({ ...doc } as User)));
+                    console.log('✅ Loaded', (advertisersData || []).length, 'advertisers');
+                } catch (advErr) {
+                    console.warn("Advertisers fetch timeout/error:", advErr);
+                    setAdvertisers([]);
+                }
+
+                // STEP 5: Fetch CS Agents (di background)
                 try {
                     const { data: csAgentsData } = await fetchWithTimeout(
                         supabase.from('cs_agents').select('*'),
@@ -932,19 +1004,11 @@ const FormEditorPage: React.FC = () => {
                     setCsAgents([]);
                 }
                 
-                // Fetch products with timeout
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                        const productsData = await productService.getProductsByBrand(user.id);
-                        setProducts(productsData || []);
-                    }
-                } catch (prodErr) {
-                    console.warn("Products fetch timeout/error:", prodErr);
-                    setProducts([]);
-                }
+                // STEP 6: JANGAN LOAD PRODUCTS DI SINI! Load hanya saat brand dipilih untuk performa lebih cepat
+                // Products akan di-fetch secara on-demand saat user memilih brand
+                console.log('ℹ️ Products will be loaded on-demand when brand is selected');
                 
-                // Fetch tracking pixels with timeout
+                // STEP 7: Fetch tracking pixels (di background)
                 try {
                     const { data: pixelsDoc } = await fetchWithTimeout(
                         supabase.from('settings').select('*').eq('id', 'trackingPixels').single(),
@@ -971,65 +1035,11 @@ const FormEditorPage: React.FC = () => {
                     setGlobalPixels({ meta: [], google: [], tiktok: [], snack: [] });
                 }
 
-                if (formId) {
-                    try {
-                        const { data: docSnap } = await fetchWithTimeout(
-                            supabase.from("forms").select('*').eq('id', formId).single(),
-                            20000
-                        );
-                        
-                        if (docSnap) {
-                            console.log('Loaded form from DB:', {
-                                id: docSnap.id,
-                                variantCombinations: docSnap.variantCombinations
-                            });
-                            const formToEdit = { ...docSnap } as Form;
-                            const normalized = normalizeForm(formToEdit);
-                            console.log('After normalize:', {
-                                variantCombinations: normalized.variantCombinations
-                            });
-                            setForm(normalized);
-                            setMainImagePreview(normalized.mainImage);
-                            setQrisImagePreview(normalized.paymentSettings.qris.qrImageUrl || '');
-                        } else {
-                            console.error("Form not found!");
-                            navigate('/formulir');
-                        }
-                    } catch (formErr) {
-                        console.error("Form fetch timeout/error:", formErr);
-                        showToast(`Gagal memuat formulir: ${formErr}`, 'error');
-                        navigate('/formulir');
-                    }
-                } else {
-                    const newForm = normalizeForm({
-                        id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, province: { visible: true, required: true }, city: { visible: true, required: true }, district: { visible: true, required: true }, address: { visible: true, required: true } },
-                        shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
-                        paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
-                        submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
-                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah memesan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman.\n\nTerima kasih! 🙏' }},
-                        trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
-                    });
-                    setForm(newForm);
-                }
+                // Form sudah di-load di STEP 1, skip duplikasi
             } catch (error: any) {
-                console.error("Error fetching dependencies:", error);
-                
-                if (!formId) {
-                     const newForm = normalizeForm({
-                        id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, province: { visible: true, required: true }, city: { visible: true, required: true }, district: { visible: true, required: true }, address: { visible: true, required: true } },
-                        shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
-                        paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
-                        submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
-                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah memesan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman.\n\nTerima kasih! 🙏' }},
-                        trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
-                    });
-                    setForm(newForm);
-                } else {
-                    showToast(`Gagal memuat formulir: ${error.message || JSON.stringify(error)}`, 'error');
-                    navigate('/formulir');
-                }
+                console.error("Error in background data fetch:", error);
+                // Form sudah di-load di STEP 1, error ini hanya untuk dependencies
+                // Tidak perlu navigate atau create form di sini
             }
         };
 
@@ -1044,6 +1054,33 @@ const FormEditorPage: React.FC = () => {
             if (qrisImagePreview && qrisImagePreview.startsWith('blob:')) URL.revokeObjectURL(qrisImagePreview);
         }
     }, [mainImagePreview, qrisImagePreview]);
+
+    
+    // Load products ONLY when brand is selected (on-demand loading)
+    useEffect(() => {
+        if (!form?.brandId) {
+            setProducts([]);
+            return;
+        }
+
+        const loadProductsByBrand = async () => {
+            setLoadingProductDetails(true);
+            try {
+                console.log('🔄 Loading products for brand:', form.brandId);
+                const result = await productService.getAllProducts();
+                const filtered = (result || []).filter(p => p.brandId === form.brandId);
+                setProducts(filtered);
+                console.log('✅ Loaded', filtered.length, 'products for brand:', form.brandId);
+            } catch (error) {
+                console.error('❌ Error loading products:', error);
+                setProducts([]);
+            } finally {
+                setLoadingProductDetails(false);
+            }
+        };
+
+        loadProductsByBrand();
+    }, [form?.brandId]);
     
     useEffect(() => {
         if (!form) return;
@@ -1235,8 +1272,16 @@ const FormEditorPage: React.FC = () => {
 
     const handleSave = useCallback(async () => {
         if (!form || isSaving) return;
+        if (!form.assignedAdvertiserId) {
+            showToast("Advertiser harus dipilih.", 'error');
+            return;
+        }
         if (!form.title || form.title.trim() === '') {
             showToast("Judul formulir tidak boleh kosong.", 'error');
+            return;
+        }
+        if (!form.brandId) {
+            showToast("Merek harus dipilih.", 'error');
             return;
         }
         if (!form.productId) {
@@ -1262,6 +1307,22 @@ const FormEditorPage: React.FC = () => {
             return;
         }
 
+        // Validate CS Assignment
+        if (!form.thankYouPage.csAssignment) {
+            showToast("Distribusi CS harus diatur.", 'error');
+            return;
+        }
+        if (form.thankYouPage.csAssignment.mode === 'single') {
+            if (!form.thankYouPage.csAssignment.singleAgentId) {
+                showToast("CS harus dipilih untuk mode Satu CS.", 'error');
+                return;
+            }
+        } else if (form.thankYouPage.csAssignment.mode === 'round_robin') {
+            if (!form.thankYouPage.csAssignment.roundRobinAgents || form.thankYouPage.csAssignment.roundRobinAgents.length === 0) {
+                showToast("Minimal 1 CS harus ditambahkan untuk mode Round Robin.", 'error');
+                return;
+            }
+        }
 
         // Validate thank you page settings
         if (!form.thankYouPage.title || form.thankYouPage.title.trim() === '') {
@@ -1570,8 +1631,28 @@ const FormEditorPage: React.FC = () => {
         });
     };
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center space-y-4">
+                    <SpinnerIcon className="w-12 h-12 animate-spin text-indigo-600 mx-auto" />
+                    <p className="text-slate-600 dark:text-slate-400">Memuat formulir...</p>
+                </div>
+            </div>
+        );
+    }
+
     if (!form) {
-        return <div className="flex justify-center p-10"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center space-y-4">
+                    <p className="text-slate-600 dark:text-slate-400">Formulir tidak ditemukan</p>
+                    <button onClick={() => navigate('/formulir')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Kembali
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -1608,13 +1689,36 @@ const FormEditorPage: React.FC = () => {
                 <EditorCard icon={PencilAltIcon} title="Informasi Umum">
                     <div>
                         <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium">Assign Advertiser</label>
+                            <span className="text-xs text-red-500 font-medium">Wajib</span>
+                        </div>
+                        <select
+                            value={form.assignedAdvertiserId || ''}
+                            onChange={(e) => handleFieldChange('assignedAdvertiserId', e.target.value)}
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId ? 'border-red-500' : 'dark:border-slate-600'}`}
+                        >
+                            <option value="">-- Pilih Advertiser --</option>
+                            {advertisers.map(advertiser => (
+                                <option key={advertiser.id} value={advertiser.id}>
+                                    {advertiser.name} {currentUser?.id === advertiser.id ? '(Anda)' : ''}
+                                </option>
+                            ))}
+                        </select>
+                        {!form.assignedAdvertiserId && <p className="text-xs text-red-500 mt-1">Advertiser harus dipilih</p>}
+                        <p className="text-xs text-slate-500 mt-1">Pilih advertiser yang akan mengelola formulir ini.</p>
+                    </div>
+
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
                             <label className="block text-sm font-medium">Judul Formulir</label>
                             <div className="flex items-center gap-2">
+                                <span className="text-xs text-red-500 font-medium">Wajib</span>
                                 <span className="text-xs text-slate-500">Tampilkan di formulir</span>
                                 <ToggleSwitch checked={form.showTitle} onChange={v => handleFieldChange('showTitle', v)} />
                             </div>
                         </div>
-                        <input type="text" value={form.title} onChange={e => handleFieldChange('title', e.target.value)} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600" />
+                        <input type="text" value={form.title} onChange={e => handleFieldChange('title', e.target.value)} className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.title ? 'border-red-500' : 'dark:border-slate-600'}`} />
+                        {!form.title && <p className="text-xs text-red-500 mt-1">Judul formulir harus diisi</p>}
                     </div>
 
                     <div>
@@ -1627,24 +1731,37 @@ const FormEditorPage: React.FC = () => {
                         </div>
                         <textarea value={form.description} onChange={e => handleFieldChange('description', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"></textarea>
                         <div className="flex items-center gap-2 mt-2">
-                             <span className="text-sm">Perataan:</span>
-                             <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'left')} className={`p-1 rounded ${form.descriptionAlign === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignLeftIcon className="w-5 h-5"/></button>
-                             <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'center')} className={`p-1 rounded ${form.descriptionAlign === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignCenterIcon className="w-5 h-5"/></button>
-                             <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'right')} className={`p-1 rounded ${form.descriptionAlign === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignRightIcon className="w-5 h-5"/></button>
+                            <span className="text-sm">Perataan:</span>
+                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'left')} className={`p-1 rounded ${form.descriptionAlign === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignLeftIcon className="w-5 h-5"/></button>
+                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'center')} className={`p-1 rounded ${form.descriptionAlign === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignCenterIcon className="w-5 h-5"/></button>
+                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'right')} className={`p-1 rounded ${form.descriptionAlign === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignRightIcon className="w-5 h-5"/></button>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Merek</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium">Merek</label>
+                            <span className="text-xs text-red-500 font-medium">Wajib</span>
+                        </div>
                         <select
                             value={form.brandId || ''}
-                            onChange={e => handleFieldChange('brandId', e.target.value)}
-                            className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"
+                            onChange={(e) => {
+                                const newBrandId = e.target.value;
+                                handleFieldChange('brandId', newBrandId);
+                                // Reset product karena brand berubah - products akan di-load saat useEffect trigger
+                                if (form.productId) {
+                                    handleFieldChange('productId', '');
+                                    setForm(prev => prev ? { ...prev, productVariants: [] } : prev);
+                                    showToast('Produk di-reset karena merek berubah. Tunggu produk dimuat...', 'info');
+                                }
+                            }}
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.brandId ? 'border-red-500' : 'dark:border-slate-600'}`}
                         >
-                            <option value="">Tidak ada merek</option>
+                            <option value="">-- Pilih Merek --</option>
                             {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
                         </select>
-                        <p className="text-xs text-slate-500 mt-1">Mengaitkan formulir ini ke merek akan membatasi visibilitasnya sesuai peran pengguna.</p>
+                        {!form.brandId && <p className="text-xs text-red-500 mt-1">Merek harus dipilih</p>}
+                        <p className="text-xs text-slate-500 mt-1">Pilih merek terlebih dahulu sebelum memilih produk.</p>
                     </div>
 
                     <div>
@@ -1675,17 +1792,37 @@ const FormEditorPage: React.FC = () => {
                                     }
                                 }
                             }}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.productId ? 'border-red-500' : 'dark:border-slate-600'}`}
+                            disabled={!form.brandId || loadingProductDetails}
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${
+                                !form.productId ? 'border-red-500' : 'dark:border-slate-600'
+                            } ${loadingProductDetails ? 'opacity-50 cursor-wait' : ''}`}
                         >
-                            <option value="">-- Pilih Produk --</option>
-                            {products.map(product => (
-                                <option key={product.id} value={product.id}>
-                                    {product.name} {product.sku ? `(${product.sku})` : ''}
-                                </option>
-                            ))}
+                            <option value="">{loadingProductDetails ? '⏳ Memuat produk...' : '-- Pilih Produk --'}</option>
+                            {products
+                                .filter(product => !form.brandId || product.brandId === form.brandId)
+                                .map(product => {
+                                    let displayText = product.name;
+                                    if (product.sku) displayText += ` (${product.sku})`;
+                                    if (product.category) displayText += ` - ${product.category}`;
+                                    if (product.basePrice) displayText += ` • Rp ${product.basePrice.toLocaleString('id-ID')}`;
+                                    return (
+                                        <option key={product.id} value={product.id}>
+                                            {displayText}
+                                        </option>
+                                    );
+                                })
+                            }
                         </select>
-                        {!form.productId && <p className="text-xs text-red-500 mt-1">Produk harus dipilih</p>}
-                        <p className="text-xs text-slate-500 mt-1">Formulir akan otomatis menggunakan varian dari produk yang dipilih.</p>
+                        {!form.productId && form.brandId && <p className="text-xs text-red-500 mt-1">Produk harus dipilih</p>}
+                        {!form.brandId && <p className="text-xs text-orange-500 mt-1">⚠️ Silakan pilih merek terlebih dahulu untuk melihat daftar produk</p>}
+                        {loadingProductDetails && <p className="text-xs text-blue-500 mt-1">⏳ Memuat data produk...</p>}
+                        {!loadingProductDetails && form.brandId && products.length > 0 && products.filter(p => p.brandId === form.brandId).length === 0 && (
+                            <p className="text-xs text-orange-500 mt-1">⚠️ Tidak ada produk untuk merek yang dipilih. Buat produk terlebih dahulu di menu Produk Induk.</p>
+                        )}
+                        {!loadingProductDetails && form.brandId && products.length === 0 && (
+                            <p className="text-xs text-slate-500 mt-1">✓ Tidak ada produk untuk merek ini</p>
+                        )}
+                        <p className="text-xs text-slate-500 mt-1">Pilih produk dari menu Produk Induk. Formulir akan otomatis menggunakan varian dari produk yang dipilih.</p>
                         
                         {/* Display loaded variants info */}
                         {form.productId && form.productVariants && form.productVariants.length > 0 && (
@@ -1728,98 +1865,30 @@ const FormEditorPage: React.FC = () => {
                         <p className="text-xs text-slate-500 mt-1">URL: https://form.cuanmax.digital/#/f/<strong>{form.slug || 'id-formulir'}</strong></p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Gambar Utama</label>
-                        <div className="flex items-start gap-4">
-                            <div 
-                                className="relative w-32 h-32 flex-shrink-0 border-2 border-dashed rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors cursor-pointer"
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleDrop(e, 'main')}
-                            >
-                                {mainImagePreview ? (
-                                    <>
-                                        <img src={mainImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                                        {mainImageUploading && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                                                <SpinnerIcon className="w-8 h-8 text-white animate-spin" />
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-black/0 hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                                            <label className="cursor-pointer">
-                                                <PencilIcon className="w-6 h-6 text-white" />
-                                                <input type="file" className="hidden" accept="image/*" onChange={e => handleImageChange(e, 'main')} disabled={mainImageUploading} />
-                                            </label>
+                    {form.productId && (
+                        <div>
+                            <label className="block text-sm font-medium mb-2">📸 Gambar dari Produk</label>
+                            <p className="text-xs text-slate-500 mb-3">Gambar formulir akan otomatis menggunakan gambar dari produk yang dipilih.</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {form.productImages && form.productImages.length > 0 ? (
+                                    form.productImages.slice(0, 4).map((img, idx) => (
+                                        <div key={idx} className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-indigo-200 dark:border-indigo-800">
+                                            <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                                            <div className="absolute bottom-1 right-1 bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded">#{idx + 1}</div>
                                         </div>
-                                    </>
+                                    ))
                                 ) : (
-                                    <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center">
-                                        <PhotoIcon className="w-8 h-8 text-slate-400 mb-1" />
-                                        <span className="text-xs text-slate-500">Upload</span>
-                                        <input type="file" className="hidden" accept="image/*" onChange={e => handleImageChange(e, 'main')} disabled={mainImageUploading} />
-                                    </label>
+                                    <div className="col-span-2 md:col-span-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
+                                        <p className="text-sm text-slate-500">Produk ini tidak memiliki gambar</p>
+                                    </div>
                                 )}
                             </div>
-                            <div className="flex-1">
-                                <div className="text-sm text-slate-700 dark:text-slate-300 mb-2">
-                                    <p className="font-medium mb-1">Panduan Upload Gambar:</p>
-                                    <ul className="text-xs text-slate-500 space-y-1">
-                                        <li>• Ukuran maksimal: 10MB</li>
-                                        <li>• Format: JPG, PNG, GIF</li>
-                                        <li>• Rasio 1:1 atau 4:3 direkomendasikan</li>
-                                    </ul>
-                                </div>
-                                <label className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 cursor-pointer transition-colors">
-                                    <PhotoIcon className="w-4 h-4" />
-                                    <span>Pilih dari Komputer</span>
-                                    <input type="file" className="hidden" accept="image/*" onChange={e => handleImageChange(e, 'main')} disabled={mainImageUploading} />
-                                </label>
-                            </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Gambar Produk</label>
-                        <div 
-                            className="relative border-2 border-dashed rounded-lg p-4 bg-slate-50 dark:bg-slate-800 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, 'product')}
-                        >
-                            <div className="flex flex-wrap gap-3">
-                                {form?.productImages && form.productImages.length > 0 && form.productImages.map((img, idx) => (
-                                    <div key={idx} className="relative w-24 h-24 group">
-                                        <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg border-2 border-slate-200 dark:border-slate-600" />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveProductImage(idx)}
-                                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg"
-                                        >
-                                            <XIcon className="w-3 h-3" />
-                                        </button>
-                                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
-                                            {idx + 1}
-                                        </div>
-                                    </div>
-                                ))}
-                                
-                                <label className="w-24 h-24 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                    {productImagesUploading ? (
-                                        <SpinnerIcon className="w-8 h-8 text-indigo-600 animate-spin" />
-                                    ) : (
-                                        <>
-                                            <PhotoIcon className="w-6 h-6 text-slate-400 mb-1" />
-                                            <span className="text-xs text-slate-500">Tambah</span>
-                                        </>
-                                    )}
-                                    <input type="file" className="hidden" accept="image/*" multiple onChange={e => handleImageChange(e, 'product')} disabled={productImagesUploading} />
-                                </label>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-3">Maksimal 9 gambar. Drag untuk mengubah urutan. Gambar pertama akan menjadi thumbnail.</p>
-                        </div>
-                    </div>
+                    )}
                 </EditorCard>
-                
 
                 <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
+                    <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
                     {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
                         // Skip city and district as they're controlled by province
                         if (key === 'city' || key === 'district') return null;
@@ -1870,6 +1939,10 @@ const FormEditorPage: React.FC = () => {
                 </EditorCard>
 
                 <EditorCard icon={ShipIcon} title="Pengaturan Pengiriman">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-slate-500">Minimal 1 metode pengiriman harus ditampilkan</p>
+                        <span className="text-xs text-red-500 font-medium">Wajib</span>
+                    </div>
                     {(Object.keys(SHIPPING_LABELS) as Array<keyof ShippingSettings>).map(key => (
                         <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
                             <label htmlFor={`shipping-toggle-${key}`} className="flex-grow flex items-center gap-2 cursor-pointer">
@@ -1893,6 +1966,10 @@ const FormEditorPage: React.FC = () => {
                 </EditorCard>
 
                 <EditorCard icon={CreditCardIcon} title="Pengaturan Pembayaran">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-slate-500">Minimal 1 metode pembayaran harus ditampilkan</p>
+                        <span className="text-xs text-red-500 font-medium">Wajib</span>
+                    </div>
                      {(Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>).sort((a,b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99)).map(key => {
                         const setting = form.paymentSettings[key];
                         const config = PAYMENT_CONFIG[key];
@@ -2022,6 +2099,10 @@ const FormEditorPage: React.FC = () => {
                 </EditorCard>
 
                 <EditorCard icon={UserGroupIcon} title="Distribusi CS (Rotator)">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-slate-500">Pilih mode dan assign minimal 1 CS</p>
+                        <span className="text-xs text-red-500 font-medium">Wajib</span>
+                    </div>
                     <div className="space-y-4">
                         <div className="flex gap-4">
                             <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'mode', 'single')} className={`flex-1 py-2 px-3 rounded-lg border text-sm ${form.thankYouPage.csAssignment?.mode === 'single' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Satu CS</button>

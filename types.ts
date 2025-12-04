@@ -13,7 +13,10 @@ export type Page =
   | 'Laporan' // Added
   | 'Laporan Iklan'
   | 'Laporan CS'
-  | 'Formulir'
+  | 'Produk' // Parent Menu (formerly Manajemen Produk)
+  | 'Daftar Produk' // Submenu (formerly Produk)
+  | 'Daftar Formulir' // Submenu (formerly Formulir)
+  | 'Analitik Produk'
   | 'Pengaturan'
   | 'Pengaturan Website'
   | 'Manajemen Pengguna'
@@ -287,6 +290,7 @@ export interface Form {
     id: string;
     title: string;
     slug: string; // URL slug (auto-generated dari judul, bisa di-edit manual)
+    assignedAdvertiserId?: string; // FK ke Users table (assigned advertiser)
     brandId?: string;
     productId?: string; // FK ke Products table (induk produk)
     mainImage: string;

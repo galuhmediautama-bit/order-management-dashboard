@@ -44,8 +44,9 @@ const pageToPath: Record<string, string> = {
     'Laporan': '#',
     'Laporan Iklan': '/laporan-iklan',
     'Laporan CS': '/laporan-cs',
-    'Formulir': '/formulir',
-    'Produk': '/produk',
+    'Produk': '#',
+    'Daftar Produk': '/daftar-produk',
+    'Daftar Formulir': '/formulir',
     'Analitik Produk': '/analitik-produk',
     'Pengaturan': '#',
     'Pengaturan Website': '/pengaturan/website',
@@ -160,6 +161,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           icon: DashboardIcon 
       },
       { 
+        name: 'Produk', 
+        label: 'Produk',
+        icon: Squares2x2Icon,
+        allowedRoles: ['Super Admin', 'Admin', 'Advertiser'],
+        subItems: [
+            { name: 'Daftar Produk', icon: Squares2x2Icon, allowedRoles: ['Super Admin', 'Admin'] },
+            { name: 'Daftar Formulir', icon: FormsIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
+            { name: 'Analitik Produk', icon: TrendingUpIcon, allowedRoles: ['Super Admin', 'Admin'] },
+        ]
+      },
+      { 
         name: 'Pesanan', 
         label: 'Pesanan',
         icon: OrdersIcon,
@@ -189,31 +201,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser']
       },
       { 
-          name: 'Formulir', 
-          icon: FormsIcon,
-          allowedRoles: ['Super Admin', 'Admin', 'Advertiser']
-      },
-      { 
-          name: 'Produk', 
-          icon: Squares2x2Icon,
-          allowedRoles: ['Super Admin', 'Admin']
-      },
-      { 
-          name: 'Analitik Produk', 
-          icon: TrendingUpIcon,
-          allowedRoles: ['Super Admin', 'Admin']
-      },
-      { 
         name: 'Pengaturan', 
         icon: SettingsIcon,
         allowedRoles: ['Super Admin', 'Admin'],
         subItems: [
           { name: 'Pengaturan Website', icon: WebsiteIcon, allowedRoles: ['Super Admin', 'Admin'] },
+          { name: 'Merek', icon: BrandsIcon, allowedRoles: ['Super Admin'] },
           { name: 'Manajemen Pengguna', icon: UsersIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'Manajemen Peran', icon: RoleIcon, allowedRoles: ['Super Admin'] },
           { name: 'Manajemen CS', icon: CustomerServiceIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'CuanRank', icon: TrophyIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'Merek', icon: BrandsIcon, allowedRoles: ['Super Admin'] },
           { name: 'Pelacakan', icon: TrackingIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
           { name: 'Template Pesan', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
         ]

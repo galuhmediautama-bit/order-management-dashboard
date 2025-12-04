@@ -52,7 +52,7 @@ export const productService = {
     async getAllProducts(): Promise<Product[]> {
         const { data, error } = await supabase
             .from('products')
-            .select('*')
+            .select('id, brand_id, name, sku, category, base_price, status, image_url, attributes, created_at')
             .eq('status', 'active')
             .order('created_at', { ascending: false });
 

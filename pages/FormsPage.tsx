@@ -129,6 +129,7 @@ const FormsPage: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
     const actionMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const navigate = useNavigate();
 
@@ -205,12 +206,49 @@ const FormsPage: React.FC = () => {
     const confirmDelete = async () => {
         if (!formToDelete) return;
         try {
-            await supabase.from('forms').delete().eq('id', formToDelete.id);
-            setForms(prev => prev.filter(f => f.id !== formToDelete.id));
+            // Soft delete - set isDeleted to true instead of hard delete
+            await supabase
+                .from('forms')
+                .update({ isDeleted: true, deletedAt: new Date().toISOString() })
+                .eq('id', formToDelete.id);
+            
+            setForms(prev => prev.map(f => 
+                f.id === formToDelete.id ? { ...f, isDeleted: true } : f
+            ));
         } catch (error) {
             console.error("Error deleting form:", error);
         } finally {
             setFormToDelete(null);
+        }
+    };
+    
+    const handleRestoreForm = async (form: Form) => {
+        try {
+            await supabase
+                .from('forms')
+                .update({ isDeleted: false, deletedAt: null })
+                .eq('id', form.id);
+            
+            setForms(prev => prev.map(f => 
+                f.id === form.id ? { ...f, isDeleted: false } : f
+            ));
+            setOpenActionMenuId(null);
+        } catch (error) {
+            console.error("Error restoring form:", error);
+        }
+    };
+    
+    const handlePermanentDelete = async (form: Form) => {
+        if (!window.confirm('Apakah Anda yakin ingin menghapus formulir ini secara permanen? Tindakan ini tidak dapat dibatalkan.')) {
+            return;
+        }
+        
+        try {
+            await supabase.from('forms').delete().eq('id', form.id);
+            setForms(prev => prev.filter(f => f.id !== form.id));
+            setOpenActionMenuId(null);
+        } catch (error) {
+            console.error("Error permanently deleting form:", error);
         }
     };
     
@@ -257,14 +295,20 @@ const FormsPage: React.FC = () => {
     
     const filteredForms = useMemo(() => {
         const brandFiltered = filterDataByBrand(forms, currentUser);
-        if (!searchTerm.trim()) return brandFiltered;
+        
+        // Filter by active/archived status
+        const statusFiltered = brandFiltered.filter((form: Form) => 
+            activeTab === 'active' ? !form.isDeleted : form.isDeleted === true
+        );
+        
+        if (!searchTerm.trim()) return statusFiltered;
         
         const term = searchTerm.toLowerCase();
-        return brandFiltered.filter((form: Form) => 
+        return statusFiltered.filter((form: Form) => 
             form.title.toLowerCase().includes(term) ||
             form.slug.toLowerCase().includes(term)
         );
-    }, [forms, currentUser, searchTerm]);
+    }, [forms, currentUser, searchTerm, activeTab]);
 
     return (
         <div className="space-y-6">
@@ -293,6 +337,32 @@ const FormsPage: React.FC = () => {
                     >
                         <PlusIcon className="w-5 h-5" />
                         <span>Buat Formulir Baru</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <div className="flex border-b border-slate-200 dark:border-slate-700">
+                    <button
+                        onClick={() => setActiveTab('active')}
+                        className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
+                            activeTab === 'active'
+                                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                    >
+                        Formulir Aktif
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('archived')}
+                        className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
+                            activeTab === 'archived'
+                                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                    >
+                        Arsip
                     </button>
                 </div>
             </div>
@@ -335,15 +405,24 @@ const FormsPage: React.FC = () => {
                     <div className="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                         <ClipboardListIcon className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Belum ada formulir</h3>
-                    <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">Buat formulir pemesanan pertama Anda untuk mulai menerima pesanan dari pelanggan</p>
-                    <button 
-                        onClick={handleNewForm} 
-                        className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold inline-flex items-center gap-3 shadow-xl shadow-indigo-500/30 hover:scale-105 transition-all"
-                    >
-                        <PlusIcon className="w-6 h-6" />
-                        <span>Buat Formulir Baru</span>
-                    </button>
+                    {activeTab === 'active' ? (
+                        <>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Belum ada formulir</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">Buat formulir pemesanan pertama Anda untuk mulai menerima pesanan dari pelanggan</p>
+                            <button 
+                                onClick={handleNewForm} 
+                                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold inline-flex items-center gap-3 shadow-xl shadow-indigo-500/30 hover:scale-105 transition-all"
+                            >
+                                <PlusIcon className="w-6 h-6" />
+                                <span>Buat Formulir Baru</span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Tidak ada formulir di arsip</h3>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">Formulir yang dihapus akan muncul di sini dan dapat dipulihkan kembali</p>
+                        </>
+                    )}
                 </div>
             ) : (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -401,49 +480,77 @@ const FormsPage: React.FC = () => {
                                                 </button>
                                                 {openActionMenuId === form.id && (
                                                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl z-50 border border-slate-200 dark:border-slate-700 py-2">
-                                                        <button 
-                                                            onClick={() => { handleViewForm(form); setOpenActionMenuId(null); }}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <EyeIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                                            Lihat Formulir
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleEditForm(form)}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <PencilIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                                                            Edit Formulir
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => { handleViewStandalone(form); setOpenActionMenuId(null); }}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <CodeIcon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                                            Lihat HTML
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => { setEditingTemplatesFor(form); setOpenActionMenuId(null); }}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <ChatBubbleIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                                            Template Pesan
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => { handleCopyLink(form); setOpenActionMenuId(null); }}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <LinkIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                                            Salin Tautan
-                                                        </button>
-                                                        <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
-                                                        <button 
-                                                            onClick={() => handleDeleteForm(form)}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
-                                                        >
-                                                            <TrashIcon className="w-4 h-4" />
-                                                            Hapus
-                                                        </button>
+                                                        {activeTab === 'active' ? (
+                                                            <>
+                                                                <button 
+                                                                    onClick={() => { handleViewForm(form); setOpenActionMenuId(null); }}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+                                                                >
+                                                                    <EyeIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                                                    Lihat Formulir
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleEditForm(form)}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+                                                                >
+                                                                    <PencilIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                                                                    Edit Formulir
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => { handleViewStandalone(form); setOpenActionMenuId(null); }}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+                                                                >
+                                                                    <CodeIcon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                                                    Lihat HTML
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => { setEditingTemplatesFor(form); setOpenActionMenuId(null); }}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+                                                                >
+                                                                    <ChatBubbleIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                                                    Template Pesan
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => { handleCopyLink(form); setOpenActionMenuId(null); }}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+                                                                >
+                                                                    <LinkIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                                                    Salin Tautan
+                                                                </button>
+                                                                <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
+                                                                <button 
+                                                                    onClick={() => handleDeleteForm(form)}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                                                                >
+                                                                    <TrashIcon className="w-4 h-4" />
+                                                                    Hapus
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <button 
+                                                                    onClick={() => handleRestoreForm(form)}
+                                                                    className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-left"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                    </svg>
+                                                                    Pulihkan
+                                                                </button>
+                                                                {currentUser?.role === 'Super Admin' && (
+                                                                    <>
+                                                                        <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
+                                                                        <button 
+                                                                            onClick={() => handlePermanentDelete(form)}
+                                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                                                                        >
+                                                                            <TrashIcon className="w-4 h-4" />
+                                                                            Hapus Permanen
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -474,7 +581,7 @@ const FormsPage: React.FC = () => {
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Hapus Formulir?</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400">Anda yakin ingin menghapus formulir <span className="font-bold text-slate-900 dark:text-white">"{formToDelete.title}"</span>?</p>
-                            <p className="text-xs text-red-600 dark:text-red-400 mt-2">⚠️ Tindakan ini tidak dapat dibatalkan</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Formulir akan dipindahkan ke arsip dan dapat dipulihkan kembali</p>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-700/50 px-6 py-4 flex justify-end gap-3 rounded-b-xl">
                             <button onClick={() => setFormToDelete(null)} className="px-4 py-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors">Batal</button>
