@@ -5,11 +5,12 @@
 DROP POLICY IF EXISTS "Super Admin can update settings" ON settings;
 
 -- Create new policy that allows Super Admin and Admin to update settings
+-- Optimized: Using (select auth.uid()) to prevent row-by-row re-evaluation
 CREATE POLICY "Admin and Super Admin can update settings" ON settings
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE id = auth.uid() 
+      WHERE id = (select auth.uid())
       AND role IN ('Super Admin', 'Admin')
       AND status = 'Aktif'
     )
@@ -22,7 +23,7 @@ CREATE POLICY "Admin and Super Admin can insert settings" ON settings
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE id = auth.uid() 
+      WHERE id = (select auth.uid())
       AND role IN ('Super Admin', 'Admin')
       AND status = 'Aktif'
     )
@@ -35,7 +36,7 @@ CREATE POLICY "Admin and Super Admin can delete settings" ON settings
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE id = auth.uid() 
+      WHERE id = (select auth.uid())
       AND role IN ('Super Admin', 'Admin')
       AND status = 'Aktif'
     )
