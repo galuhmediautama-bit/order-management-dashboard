@@ -1,178 +1,229 @@
--- Supabase RLS Performance Optimization
--- Fixes: Auth RLS Initialization Plan & Multiple Permissive Policies
--- Date: 2025-12-04
-
 -- ============================================================================
--- STEP 1: Fix Auth RLS Initialization Plan
--- Replace auth.uid() with (select auth.uid()) to avoid repeated evaluation
+-- SUPABASE RLS PERFORMANCE OPTIMIZATION
+-- Fix Database Linter Warnings - December 4, 2025
 -- ============================================================================
-
--- Fix for users table
-DROP POLICY IF EXISTS "Enable all for users" ON public.users;
-CREATE POLICY "Enable all for users" ON public.users
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for brands table
-DROP POLICY IF EXISTS "Auth full brands" ON public.brands;
-CREATE POLICY "Auth full brands" ON public.brands
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for forms table
-DROP POLICY IF EXISTS "Auth full forms" ON public.forms;
-CREATE POLICY "Auth full forms" ON public.forms
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for orders table
-DROP POLICY IF EXISTS "Auth full orders" ON public.orders;
-CREATE POLICY "Auth full orders" ON public.orders
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for abandoned_carts table
-DROP POLICY IF EXISTS "Auth full carts" ON public.abandoned_carts;
-CREATE POLICY "Auth full carts" ON public.abandoned_carts
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for settings table
-DROP POLICY IF EXISTS "Auth full settings" ON public.settings;
-CREATE POLICY "Auth full settings" ON public.settings
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for cs_agents table
-DROP POLICY IF EXISTS "Auth full cs_agents" ON public.cs_agents;
-CREATE POLICY "Auth full cs_agents" ON public.cs_agents
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for ad_reports table
-DROP POLICY IF EXISTS "Auth full ad_reports" ON public.ad_reports;
-CREATE POLICY "Auth full ad_reports" ON public.ad_reports
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- Fix for notifications table
-DROP POLICY IF EXISTS "Auth full notifications" ON public.notifications;
-CREATE POLICY "Auth full notifications" ON public.notifications
-  FOR SELECT
-  USING ((select auth.uid()) IS NOT NULL);
-
--- ============================================================================
--- STEP 2: Consolidate Multiple Permissive Policies
--- Combine overlapping policies for same role and action into single policy
+-- This script addresses two types of performance issues:
+-- 1. Auth RLS Initialization Plan warnings (auth.<function>() optimization)
+-- 2. Multiple Permissive Policies warnings (policy consolidation)
 -- ============================================================================
 
--- Consolidate users table policies
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.users;
-DROP POLICY IF EXISTS "Enable all access users" ON public.users;
-CREATE POLICY "users_allow_all_delete" ON public.users
-  FOR DELETE
-  USING (true);
+-- ============================================================================
+-- PART 1: FIX AUTH RLS INITIALIZATION PLAN WARNINGS
+-- ============================================================================
+-- Replace auth.<function>() with (SELECT auth.<function>()) to prevent
+-- re-evaluation for each row, improving query performance at scale.
+-- ============================================================================
 
-CREATE POLICY "users_allow_all_insert" ON public.users
-  FOR INSERT
-  WITH CHECK (true);
+-- ----------------------------------------------------------------------------
+-- TABLE: users (2 policies to fix)
+-- ----------------------------------------------------------------------------
 
-CREATE POLICY "users_allow_all_select" ON public.users
-  FOR SELECT
-  USING (true);
+-- Fix: Users can read own profile
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
+CREATE POLICY "Users can read own profile" ON public.users
+FOR SELECT
+USING (id = (SELECT auth.uid()));
 
-CREATE POLICY "users_allow_all_update" ON public.users
-  FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
+-- Fix: Users can update own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can update own profile" ON public.users
+FOR UPDATE
+USING (id = (SELECT auth.uid()));
 
--- Consolidate orders table policies
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.orders;
-DROP POLICY IF EXISTS "Enable all access orders" ON public.orders;
-DROP POLICY IF EXISTS "Public insert orders" ON public.orders;
-CREATE POLICY "orders_allow_all_access" ON public.orders
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- ----------------------------------------------------------------------------
+-- TABLE: products (5 policies to fix)
+-- ----------------------------------------------------------------------------
 
--- Consolidate forms table policies
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.forms;
-DROP POLICY IF EXISTS "Enable all access forms" ON public.forms;
-DROP POLICY IF EXISTS "Public read forms" ON public.forms;
-CREATE POLICY "forms_allow_all_access" ON public.forms
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Fix: super_admin_all
+DROP POLICY IF EXISTS "super_admin_all" ON public.products;
+CREATE POLICY "super_admin_all" ON public.products
+FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = (SELECT auth.uid())
+    AND role = 'Super Admin'
+  )
+);
 
--- Consolidate abandoned_carts table policies
-DROP POLICY IF EXISTS "Enable all access abandoned_carts" ON public.abandoned_carts;
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.abandoned_carts;
-DROP POLICY IF EXISTS "Public insert carts" ON public.abandoned_carts;
-DROP POLICY IF EXISTS "Public update carts" ON public.abandoned_carts;
-CREATE POLICY "carts_allow_all_access" ON public.abandoned_carts
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Fix: admin_manage_own_products
+DROP POLICY IF EXISTS "admin_manage_own_products" ON public.products;
+CREATE POLICY "admin_manage_own_products" ON public.products
+FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = (SELECT auth.uid())
+    AND role IN ('Admin', 'Super Admin')
+    AND brand_id = products.brand_id
+  )
+);
 
--- Consolidate brands table policies
-DROP POLICY IF EXISTS "Enable all access brands" ON public.brands;
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.brands;
-DROP POLICY IF EXISTS "Public read brands" ON public.brands;
-CREATE POLICY "brands_allow_all_access" ON public.brands
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Fix: Users can view their brand products
+DROP POLICY IF EXISTS "Users can view their brand products" ON public.products;
+CREATE POLICY "Users can view their brand products" ON public.products
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = (SELECT auth.uid())
+    AND brand_id = products.brand_id
+  )
+);
 
--- Consolidate cs_agents table policies
-DROP POLICY IF EXISTS "Enable all access" ON public.cs_agents;
-DROP POLICY IF EXISTS "Enable all access cs_agents" ON public.cs_agents;
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.cs_agents;
-DROP POLICY IF EXISTS "Enable all access for authenticated users" ON public.cs_agents;
-DROP POLICY IF EXISTS "Enable read access for authenticated users" ON public.cs_agents;
-CREATE POLICY "cs_agents_allow_all_access" ON public.cs_agents
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Fix: Users can insert their brand products
+DROP POLICY IF EXISTS "Users can insert their brand products" ON public.products;
+CREATE POLICY "Users can insert their brand products" ON public.products
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = (SELECT auth.uid())
+    AND brand_id = products.brand_id
+  )
+);
 
--- Consolidate ad_reports table policies
-DROP POLICY IF EXISTS "Enable all access" ON public.ad_reports;
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.ad_reports;
-CREATE POLICY "ad_reports_allow_all_access" ON public.ad_reports
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Note: view_products policy will be removed in Part 2 (redundant)
 
--- Consolidate settings table policies
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.settings;
-DROP POLICY IF EXISTS "Enable all access settings" ON public.settings;
-CREATE POLICY "settings_allow_all_access" ON public.settings
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- ----------------------------------------------------------------------------
+-- TABLE: product_form_analytics (1 policy to fix)
+-- ----------------------------------------------------------------------------
 
--- Consolidate notifications table policies
-DROP POLICY IF EXISTS "Enable all access for all users" ON public.notifications;
-DROP POLICY IF EXISTS "Enable all access notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.notifications;
-DROP POLICY IF EXISTS "Enable update for all users" ON public.notifications;
-CREATE POLICY "notifications_allow_all_access" ON public.notifications
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Fix: Authenticated users can view analytics
+DROP POLICY IF EXISTS "Authenticated users can view analytics" ON public.product_form_analytics;
+CREATE POLICY "Authenticated users can view analytics" ON public.product_form_analytics
+FOR SELECT
+USING ((SELECT auth.role()) = 'authenticated');
+
+-- ----------------------------------------------------------------------------
+-- TABLE: product_audit_log (1 policy to fix)
+-- ----------------------------------------------------------------------------
+
+-- Fix: Admins can view audit logs
+DROP POLICY IF EXISTS "Admins can view audit logs" ON public.product_audit_log;
+CREATE POLICY "Admins can view audit logs" ON public.product_audit_log
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = (SELECT auth.uid())
+    AND role IN ('Super Admin', 'Admin')
+  )
+);
 
 -- ============================================================================
--- STEP 3: Verify Policies (Run after applying fixes)
+-- PART 2: FIX MULTIPLE PERMISSIVE POLICIES WARNINGS
 -- ============================================================================
--- SELECT tablename, policyname, qual, with_check
--- FROM pg_policies
--- WHERE schemaname = 'public'
+-- Consolidate overlapping policies to reduce query overhead.
+-- For products table: Use supabase_consolidate_products_policies.sql
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- TABLE: products - IMPORTANT: Use Separate Consolidation Script
+-- ----------------------------------------------------------------------------
+
+-- ⚠️ CRITICAL: The products table has 16 multiple permissive policy warnings
+-- These require a complete policy restructure to consolidate overlapping rules.
+--
+-- SOLUTION: Run the dedicated script: supabase_consolidate_products_policies.sql
+--
+-- That script will:
+-- 1. Drop all 5 existing policies (super_admin_all, admin_manage_own_products, etc.)
+-- 2. Create 4 consolidated policies (one per action: SELECT, INSERT, UPDATE, DELETE)
+-- 3. Use OR conditions to combine role checks into single policies
+-- 4. Eliminate all 16 "multiple permissive policies" warnings
+--
+-- DO NOT apply the policies below - they are kept for reference only:
+
+/*
+-- OLD POLICIES (DO NOT USE - causes multiple permissive policy warnings):
+DROP POLICY IF EXISTS "super_admin_all" ON public.products;
+DROP POLICY IF EXISTS "admin_manage_own_products" ON public.products;
+DROP POLICY IF EXISTS "Users can view their brand products" ON public.products;
+DROP POLICY IF EXISTS "Users can insert their brand products" ON public.products;
+DROP POLICY IF EXISTS "view_products" ON public.products;
+
+-- These will be replaced by consolidated policies in supabase_consolidate_products_policies.sql
+*/
+
+-- ----------------------------------------------------------------------------
+-- TABLE: users - Consolidate duplicate policies
+-- ----------------------------------------------------------------------------
+
+-- Remove redundant "allow_all" policies
+DROP POLICY IF EXISTS "users_allow_all_insert" ON public.users;
+DROP POLICY IF EXISTS "users_allow_all_select" ON public.users;
+DROP POLICY IF EXISTS "users_allow_all_update" ON public.users;
+
+-- Ensure the INSERT policy exists for user registration
+DROP POLICY IF EXISTS "Users can insert with signup" ON public.users;
+CREATE POLICY "Users can insert with signup" ON public.users
+FOR INSERT
+WITH CHECK (true); -- Allow signup, validation handled by application
+
+-- Remaining policies:
+-- ✓ Users can read own profile (optimized SELECT)
+-- ✓ Users can update own profile (optimized UPDATE)
+-- ✓ Users can insert with signup (INSERT for registration)
+
+-- ============================================================================
+-- VERIFICATION QUERIES
+-- ============================================================================
+-- Run these to verify the fixes:
+-- ============================================================================
+
+-- Check all policies and their definitions
+-- SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+-- FROM pg_policies 
+-- WHERE schemaname = 'public' 
+-- AND tablename IN ('users', 'products', 'product_form_analytics', 'product_audit_log')
 -- ORDER BY tablename, policyname;
 
+-- Check for remaining multiple permissive policies
+-- SELECT tablename, cmd, array_agg(policyname) as policies, count(*) as policy_count
+-- FROM pg_policies 
+-- WHERE schemaname = 'public' 
+-- AND permissive = 'PERMISSIVE'
+-- GROUP BY tablename, cmd, roles
+-- HAVING count(*) > 1
+-- ORDER BY tablename, cmd;
+
+-- Check for auth.uid() calls (should find none without SELECT wrapper)
+-- SELECT tablename, policyname, qual
+-- FROM pg_policies 
+-- WHERE schemaname = 'public'
+-- AND (qual LIKE '%auth.uid()%' OR qual LIKE '%auth.role()%')
+-- AND qual NOT LIKE '%(SELECT auth.%';
+
 -- ============================================================================
--- NOTES:
--- 1. This consolidates permissions - adjust rules if you need role-based RLS
--- 2. Test thoroughly before deploying to production
--- 3. Run policies check query after applying fixes
--- 4. Consider implementing role-based access if needed later
--- 5. Backup your current policies before running this script
+-- EXPECTED RESULTS AFTER APPLYING BOTH SCRIPTS
+-- ============================================================================
+-- Execute in this order:
+-- 1. Run this script (supabase_fix_rls_performance.sql)
+-- 2. Run supabase_consolidate_products_policies.sql
+--
+-- Results:
+-- ✅ All auth.<function>() calls wrapped with (SELECT ...) for performance
+-- ✅ Redundant policies removed on users table
+-- ✅ Products table policies consolidated (one per action)
+-- ✅ All 8 "Auth RLS Initialization Plan" warnings resolved
+-- ✅ All 16 "Multiple Permissive Policies" warnings for products resolved
+-- ✅ Users table policy duplication warnings resolved
+-- ✅ Query performance improved at scale
+-- ============================================================================
+
+-- ============================================================================
+-- IMPLEMENTATION NOTES
+-- ============================================================================
+-- 1. Both scripts are safe to run multiple times (use DROP IF EXISTS)
+-- 2. Policies recreated with consistent naming, no app code changes needed
+-- 3. Test in development/staging before applying to production
+-- 4. Run verification queries after applying to confirm success
+-- 5. Monitor query performance before/after to measure improvement
+-- 
+-- EXECUTION ORDER:
+-- Step 1: Copy and run this entire script in Supabase SQL Editor
+-- Step 2: Copy and run supabase_consolidate_products_policies.sql
+-- Step 3: Run verification queries (commented below)
+-- Step 4: Check Supabase Database Linter again (should show significant improvement)
 -- ============================================================================

@@ -46,7 +46,7 @@ const pageToPath: Record<string, string> = {
     'Laporan CS': '/laporan-cs',
     'Produk': '#',
     'Daftar Produk': '/daftar-produk',
-    'Daftar Formulir': '/formulir',
+    'Formulir': '/formulir',
     'Analitik Produk': '/analitik-produk',
     'Pengaturan': '#',
     'Pengaturan Website': '/pengaturan/website',

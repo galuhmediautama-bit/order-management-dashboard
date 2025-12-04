@@ -22,7 +22,11 @@ ADD COLUMN IF NOT EXISTS address TEXT;
 
 -- Step 1: Create function to handle new user registration
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
 DECLARE
   user_name TEXT;
   user_role TEXT;
@@ -79,7 +83,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Step 2: Create trigger on auth.users table
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
