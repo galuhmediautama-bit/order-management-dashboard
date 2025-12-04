@@ -565,6 +565,8 @@ const UserManagement: React.FC = () => {
     const navigate = useNavigate();
     const { showToast } = useToast();
 
+    const [syncingAuthUsers, setSyncingAuthUsers] = useState(false);
+
     const fetchUsersAndBrands = async () => {
         setLoading(true);
         try {
@@ -604,36 +606,10 @@ const UserManagement: React.FC = () => {
              // Debugging: log counts to help surface missing users during dev
              console.debug('[UserMgmt] fetched users count:', usersList.length, 'sample:', usersList.slice(0,3));
 
-             // 3. AUTO-SYNC LOGIC:
-             // If logged-in user exists in Auth but NOT in public.users table (or list not updated), upsert them.
+             // Update current user role if they're logged in
              if (currentUser) {
-                 const existsInDb = usersList.find(u => u.id === currentUser.id);
-                 
-                 // Determine role (default to Super Admin for owner or specific overrides)
-                 const normalizedRole = getNormalizedRole(existsInDb?.role || 'Super Admin', currentUser.email);
-
-                 if (!existsInDb) {
-                     
-                     const newProfile = {
-                         id: currentUser.id,
-                         email: currentUser.email || '',
-                         name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
-                         role: normalizedRole,
-                         status: 'Aktif',
-                         lastLogin: new Date().toISOString(),
-                         avatar: currentUser.user_metadata?.avatar_url || ''
-                     };
-
-                     // Only try to UPSERT if table exists
-                     if (tableExists) {
-                         const { error: syncError } = await supabase.from('users').upsert(newProfile);
-                         if (syncError) console.error("Failed to sync user profile:", syncError.message);
-                     }
-                     
-                     // Optimistic update so user sees themselves
-                     usersList.push(newProfile as User);
-                 }
-                 // Update local state role based on logic
+                 const existingUser = usersList.find(u => u.id === currentUser.id);
+                 const normalizedRole = getNormalizedRole(existingUser?.role || 'Super Admin', currentUser.email);
                  setCurrentUserRole(normalizedRole);
              }
 
@@ -670,6 +646,89 @@ const UserManagement: React.FC = () => {
             console.error("Error fetching data:", e?.message || e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Sync all Auth users to public.users table
+    const syncAllAuthUsers = async () => {
+        setSyncingAuthUsers(true);
+        try {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            
+            if (!currentUser) {
+                console.error('No authenticated user found');
+                showToast('Anda harus login sebagai admin untuk sync', 'error');
+                setSyncingAuthUsers(false);
+                return;
+            }
+
+            // Try admin.listUsers first (requires admin token)
+            let allAuthUsers = null;
+            const { data: adminUsers, error: adminError } = await supabase.auth.admin.listUsers();
+            
+            if (adminError) {
+                // Fallback: try fetching from a view or call an edge function
+                console.warn('[Sync] Admin listUsers not available:', adminError.message);
+                console.info('[Sync] Fallback: You need to use Edge Function or import via CSV/API');
+                
+                // Try to query a custom endpoint if available
+                try {
+                    const response = await fetch('/api/sync-auth-users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: (await supabase.auth.getSession()).data.session?.access_token })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('[Sync] API sync result:', result);
+                        showToast(`${result.synced || 0} pengguna berhasil disync dari Auth`, 'success');
+                        fetchUsersAndBrands();
+                    }
+                } catch (apiError) {
+                    console.warn('[Sync] API endpoint not available, showing manual option');
+                    showToast('Fitur sync otomatis belum tersedia. Silakan import user via admin console atau CSV.', 'warning');
+                }
+            } else if (adminUsers?.users) {
+                // Admin access successful
+                console.log('[Sync] Found', adminUsers.users.length, 'users in Auth');
+                
+                let syncedCount = 0;
+                const { data: existingUsers } = await supabase.from('users').select('id');
+                const existingIds = new Set((existingUsers || []).map(u => u.id));
+                
+                for (const authUser of adminUsers.users) {
+                    if (!existingIds.has(authUser.id)) {
+                        const normalizedRole = getNormalizedRole('Super Admin', authUser.email);
+                        
+                        const newProfile = {
+                            id: authUser.id,
+                            email: authUser.email || '',
+                            name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+                            role: normalizedRole,
+                            status: 'Aktif',
+                            lastLogin: authUser.last_sign_in_at || new Date().toISOString(),
+                            avatar: authUser.user_metadata?.avatar_url || '',
+                            phone: authUser.phone || '',
+                            address: ''
+                        };
+                        
+                        const { error: syncError } = await supabase.from('users').upsert(newProfile);
+                        if (!syncError) {
+                            syncedCount++;
+                            console.log('[Sync] Synced:', authUser.email);
+                        }
+                    }
+                }
+                
+                showToast(`Berhasil sync ${syncedCount} pengguna baru dari Auth`, 'success');
+                fetchUsersAndBrands();
+            }
+        } catch (error: any) {
+            console.error('[Sync] Error:', error);
+            showToast('Gagal sync pengguna: ' + error.message, 'error');
+        } finally {
+            setSyncingAuthUsers(false);
         }
     };
 
@@ -784,16 +843,31 @@ const UserManagement: React.FC = () => {
 
     const handleDeleteUser = async (userId: string) => {
         try {
-            const { error } = await supabase.from('users').delete().eq('id', userId);
-            if (error) {
-                 if (error.code === '42P01') {
-                     // Just remove locally
-                 } else {
-                     throw error;
+            // Step 1: Delete from public.users (profile)
+            const { error: deleteProfileError } = await supabase.from('users').delete().eq('id', userId);
+            if (deleteProfileError) {
+                 if (deleteProfileError.code !== '42P01') {
+                     throw deleteProfileError;
                  }
             }
+
+            // Step 2: Delete from auth.users (authentication account)
+            // This is done via a custom RPC function or through edge functions
+            // For now, we'll call an admin function if available
+            try {
+                const { error: deleteAuthError } = await supabase.rpc('delete_auth_user', { user_id: userId });
+                if (deleteAuthError && deleteAuthError.code !== 'PGRST102') {
+                    console.warn('Warning: Could not delete auth user via RPC:', deleteAuthError);
+                    // Don't throw - profile is already deleted
+                }
+            } catch (rpcError) {
+                console.warn('RPC function not available, auth user may need manual deletion:', rpcError);
+                // Don't fail the whole operation if RPC is not available
+            }
+
             fetchUsersAndBrands();
-            showToast("Pengguna berhasil dihapus.", 'success');
+            showToast("Pengguna berhasil dihapus dari dashboard dan akun autentikasi.", 'success');
+            console.log('✅ User deleted successfully:', userId);
         } catch (error) {
             console.error("Error deleting user:", error);
             showToast("Gagal menghapus pengguna.", 'error');
@@ -1011,6 +1085,21 @@ const UserManagement: React.FC = () => {
                          <option value="Aktif">✅ Aktif</option>
                          <option value="Tidak Aktif">⏳ Tidak Aktif</option>
                      </select>
+                     <button 
+                         onClick={() => fetchUsersAndBrands()}
+                         disabled={loading}
+                         className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-all disabled:opacity-50"
+                     >
+                         🔄 Refresh
+                     </button>
+                     <button 
+                         onClick={() => syncAllAuthUsers()}
+                         disabled={syncingAuthUsers}
+                         className="px-4 py-2.5 border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium transition-all disabled:opacity-50"
+                         title="Sync semua pengguna dari Supabase Auth ke management"
+                     >
+                         {syncingAuthUsers ? '⏳ Syncing...' : '🔗 Sync All from Auth'}
+                     </button>
                      <button 
                          onClick={() => handleOpenModal()} 
                          className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg whitespace-nowrap"

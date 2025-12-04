@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { Form, ProductOption, VariantCombination, ShippingSettings, PaymentSettings, VariantDisplayStyle, CustomerFieldSetting, ShippingSetting, BankTransferSetting, PaymentSetting, BankAccount, CODSettings, QRISSettings, ThankYouPageSettings, TrackingEventName, FormPageTrackingSettings, FormPixelSetting, CSAgent, CSAssignmentMode, CSAssignmentSettings, Brand, MessageTemplates, User } from '../types';
+import type { Form, Product, ShippingSettings, PaymentSettings, CustomerFieldSetting, ShippingSetting, BankTransferSetting, PaymentSetting, BankAccount, CODSettings, QRISSettings, ThankYouPageSettings, TrackingEventName, FormPageTrackingSettings, FormPixelSetting, CSAgent, CSAssignmentMode, CSAssignmentSettings, Brand, MessageTemplates, User } from '../types';
 import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import EyeIcon from '../components/icons/EyeIcon';
@@ -27,20 +27,17 @@ import { supabase } from '../supabase';
 import ToggleSwitch from '../components/ToggleSwitch';
 import { uploadFileAndGetURL } from '../fileUploader';
 import { normalizeForm, createDefaultTrackingSettings } from '../utils';
+import { productService } from '../services/productService';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import CheckIcon from '../components/icons/CheckIcon';
 import XIcon from '../components/icons/XIcon';
 import PencilAltIcon from '../components/icons/PencilAltIcon';
-import TagIcon from '../components/icons/TagIcon';
 import ShipIcon from '../components/icons/ShipIcon';
 import CreditCardIcon from '../components/icons/CreditCardIcon';
 import ChatBubbleIcon from '../components/icons/ChatBubbleIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 import ArchiveIcon from '../components/icons/ArchiveIcon';
 import CursorClickIcon from '../components/icons/CursorClickIcon';
-import Bars3Icon from '../components/icons/Bars3Icon';
-import Bars4Icon from '../components/icons/Bars4Icon';
-import Squares2x2Icon from '../components/icons/Squares2x2Icon';
 import CodeIcon from '../components/icons/CodeIcon';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -244,7 +241,7 @@ const SocialProofPopupPreview: React.FC<{
     );
 };
 
-const FormPreview: React.FC<{ form: Form }> = ({ form }) => {
+const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
     // Sync selectedOptions when form.productOptions changes in the editor
@@ -730,6 +727,9 @@ const FormPreview: React.FC<{ form: Form }> = ({ form }) => {
     );
 };
 
+const FormPreview = React.memo(FormPreviewComponent);
+FormPreview.displayName = 'FormPreview';
+
 // ... (cartesian, PixelMultiSelectDropdown, ThankYouPagePreview remain unchanged)
 const cartesian = (...a: string[][]): string[][] => {
     return a.reduce((acc: string[][], val: string[]) => {
@@ -852,6 +852,7 @@ const FormEditorPage: React.FC = () => {
     const [brands, setBrands] = useState<Brand[]>([]);
     const [csAgents, setCsAgents] = useState<CSAgent[]>([]);
     const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings>({ meta: [], google: [], tiktok: [], snack: [] });
+    const [products, setProducts] = useState<Product[]>([]);
     
     const [form, setForm] = useState<Form | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -872,6 +873,16 @@ const FormEditorPage: React.FC = () => {
      useEffect(() => {
         const fetchData = async () => {
             try {
+                // Set a 30-second timeout for all requests
+                const fetchWithTimeout = (promise: Promise<any>, timeout = 30000) => {
+                    return Promise.race([
+                        promise,
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('Request timeout after ' + timeout + 'ms')), timeout)
+                        )
+                    ]);
+                };
+
                 // Check user role for permissions
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
@@ -892,54 +903,101 @@ const FormEditorPage: React.FC = () => {
                     }
                 }
 
-                const { data: brandsData, error: brandsError } = await supabase.from('brands').select('*');
+                try {
+                    const { data: brandsData, error: brandsError } = await fetchWithTimeout(
+                        supabase.from('brands').select('*')
+                    );
 
-                if (brandsError) {
-                    console.warn("DB Error fetching brands (using local fallback only):", brandsError.message);
-                } else {
-                    if (brandsData && brandsData.length > 0) {
-                        brandsList = brandsData.map(doc => ({ ...doc } as Brand));
+                    if (brandsError) {
+                        console.warn("DB Error fetching brands (using local fallback only):", brandsError.message);
+                    } else {
+                        if (brandsData && brandsData.length > 0) {
+                            brandsList = brandsData.map(doc => ({ ...doc } as Brand));
+                        }
                     }
+                } catch (brandErr) {
+                    console.warn("Brands fetch timeout/error, using local:", brandErr);
                 }
                 setBrands(brandsList);
 
-                const { data: csAgentsData } = await supabase.from('cs_agents').select('*');
-                setCsAgents((csAgentsData || []).map(doc => ({ ...doc } as CSAgent)));
+                // Fetch CS Agents with timeout
+                try {
+                    const { data: csAgentsData } = await fetchWithTimeout(
+                        supabase.from('cs_agents').select('*'),
+                        15000
+                    );
+                    setCsAgents((csAgentsData || []).map(doc => ({ ...doc } as CSAgent)));
+                } catch (csErr) {
+                    console.warn("CS Agents fetch timeout/error:", csErr);
+                    setCsAgents([]);
+                }
                 
-                const { data: pixelsDoc } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').single();
-                if (pixelsDoc) {
-                    const data = pixelsDoc;
-                    const pixels: GlobalPixelSettings = { meta: [], google: [], tiktok: [], snack: [] };
+                // Fetch products with timeout
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const productsData = await productService.getProductsByBrand(user.id);
+                        setProducts(productsData || []);
+                    }
+                } catch (prodErr) {
+                    console.warn("Products fetch timeout/error:", prodErr);
+                    setProducts([]);
+                }
+                
+                // Fetch tracking pixels with timeout
+                try {
+                    const { data: pixelsDoc } = await fetchWithTimeout(
+                        supabase.from('settings').select('*').eq('id', 'trackingPixels').single(),
+                        15000
+                    );
                     
-                    const pixelKeys: (keyof GlobalPixelSettings)[] = ['meta', 'google', 'tiktok', 'snack'];
-                    
-                    pixelKeys.forEach(key => {
-                        const platformData = data[key];
-                        if (platformData && typeof platformData === 'object' && platformData?.active && Array.isArray(platformData?.pixels)) {
-                             pixels[key] = platformData.pixels.map((p: any) => ({ id: p.id, name: p.name }));
-                        }
-                    });
-                    
-                    setGlobalPixels(pixels);
+                    if (pixelsDoc) {
+                        const data = pixelsDoc;
+                        const pixels: GlobalPixelSettings = { meta: [], google: [], tiktok: [], snack: [] };
+                        
+                        const pixelKeys: (keyof GlobalPixelSettings)[] = ['meta', 'google', 'tiktok', 'snack'];
+                        
+                        pixelKeys.forEach(key => {
+                            const platformData = data[key];
+                            if (platformData && typeof platformData === 'object' && platformData?.active && Array.isArray(platformData?.pixels)) {
+                                 pixels[key] = platformData.pixels.map((p: any) => ({ id: p.id, name: p.name }));
+                            }
+                        });
+                        
+                        setGlobalPixels(pixels);
+                    }
+                } catch (pixelErr) {
+                    console.warn("Pixels fetch timeout/error:", pixelErr);
+                    setGlobalPixels({ meta: [], google: [], tiktok: [], snack: [] });
                 }
 
                 if (formId) {
-                    const { data: docSnap } = await supabase.from("forms").select('*').eq('id', formId).single();
-                    if (docSnap) {
-                        console.log('Loaded form from DB:', {
-                            id: docSnap.id,
-                            variantCombinations: docSnap.variantCombinations
-                        });
-                        const formToEdit = { ...docSnap } as Form;
-                        const normalized = normalizeForm(formToEdit);
-                        console.log('After normalize:', {
-                            variantCombinations: normalized.variantCombinations
-                        });
-                        setForm(normalized);
-                        setMainImagePreview(normalized.mainImage);
-                        setQrisImagePreview(normalized.paymentSettings.qris.qrImageUrl || '');
-                    } else {
-                        console.error("Form not found!");
+                    try {
+                        const { data: docSnap } = await fetchWithTimeout(
+                            supabase.from("forms").select('*').eq('id', formId).single(),
+                            20000
+                        );
+                        
+                        if (docSnap) {
+                            console.log('Loaded form from DB:', {
+                                id: docSnap.id,
+                                variantCombinations: docSnap.variantCombinations
+                            });
+                            const formToEdit = { ...docSnap } as Form;
+                            const normalized = normalizeForm(formToEdit);
+                            console.log('After normalize:', {
+                                variantCombinations: normalized.variantCombinations
+                            });
+                            setForm(normalized);
+                            setMainImagePreview(normalized.mainImage);
+                            setQrisImagePreview(normalized.paymentSettings.qris.qrImageUrl || '');
+                        } else {
+                            console.error("Form not found!");
+                            navigate('/formulir');
+                        }
+                    } catch (formErr) {
+                        console.error("Form fetch timeout/error:", formErr);
+                        showToast(`Gagal memuat formulir: ${formErr}`, 'error');
                         navigate('/formulir');
                     }
                 } else {
@@ -949,7 +1007,7 @@ const FormEditorPage: React.FC = () => {
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
-                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: '' }},
+                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah memesan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman.\n\nTerima kasih! 🙏' }},
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
                     });
                     setForm(newForm);
@@ -964,7 +1022,7 @@ const FormEditorPage: React.FC = () => {
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
-                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: '' }},
+                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'custom', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah memesan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman.\n\nTerima kasih! 🙏' }},
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
                     });
                     setForm(newForm);
@@ -1175,16 +1233,42 @@ const FormEditorPage: React.FC = () => {
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!form || isSaving) return;
         if (!form.title || form.title.trim() === '') {
             showToast("Judul formulir tidak boleh kosong.", 'error');
+            return;
+        }
+        if (!form.productId) {
+            showToast("Induk produk harus dipilih.", 'error');
             return;
         }
         if (slugAvailable === false) {
             showToast("Slug URL sudah digunakan. Silakan gunakan yang lain.", 'error');
             return;
         }
+
+        // Validate shipping settings - minimal 1 must be visible
+        const visibleShippings = Object.values(form.shippingSettings).filter(s => s.visible);
+        if (visibleShippings.length === 0) {
+            showToast("Minimal 1 metode pengiriman harus ditampilkan.", 'error');
+            return;
+        }
+
+        // Validate payment settings - minimal 1 must be visible
+        const visiblePayments = Object.values(form.paymentSettings).filter(s => s.visible);
+        if (visiblePayments.length === 0) {
+            showToast("Minimal 1 metode pembayaran harus ditampilkan.", 'error');
+            return;
+        }
+
+
+        // Validate thank you page settings
+        if (!form.thankYouPage.title || form.thankYouPage.title.trim() === '') {
+            showToast("Judul halaman terima kasih tidak boleh kosong.", 'error');
+            return;
+        }
+
         setIsSaving(true);
         try {
             // Check form state before save
@@ -1237,10 +1321,16 @@ const FormEditorPage: React.FC = () => {
                 formToSave.brandId = null;
             }
             
+            // Include productId if selected
+            if (form?.productId) {
+                formToSave.product_id = form.productId;
+            }
+            
             // Debug: Log data yang akan disimpan
             console.log('Saving form data:', {
                 id: formToSave.id,
                 title: formToSave.title,
+                customerFields: formToSave.customerFields,
                 variantCombinationsCount: formToSave.variantCombinations?.length,
                 variantCombinations: formToSave.variantCombinations,
                 firstVariantDetails: formToSave.variantCombinations?.[0] ? {
@@ -1267,6 +1357,23 @@ const FormEditorPage: React.FC = () => {
                 throw error;
             }
             
+            // Create analytics record if product is linked
+            if (form?.productId && form?.id) {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        await productService.createOrGetAnalytics(
+                            form.productId,
+                            form.id,
+                            user.id
+                        );
+                    }
+                } catch (analyticsErr) {
+                    console.warn("Failed to create analytics record:", analyticsErr);
+                    // Don't fail form save if analytics creation fails
+                }
+            }
+            
             showToast("Formulir berhasil disimpan!", 'success');
             navigate('/formulir');
         } catch (error: any) {
@@ -1285,7 +1392,7 @@ const FormEditorPage: React.FC = () => {
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [form, isSaving, slugAvailable, showToast, navigate]);
 
     const handleDelete = () => {
         setShowDeleteConfirmation(true);
@@ -1310,80 +1417,6 @@ const FormEditorPage: React.FC = () => {
     // ... (rest of helper functions: handleClose, handleAddOption, handleOptionChange, handleRemoveOption, handleCombinationChange, handleFieldChange, handleSubFieldChange, handleSubNestedFieldChange, handleBankTransferAccountChange, addBankAccount, removeBankAccount, handleTrackingChange remain identical)
     
     const handleClose = () => navigate('/formulir');
-    
-    const handleAddOption = () => {
-        if (!form) return;
-        const newOption: ProductOption = { id: Date.now(), name: `Opsi ${form.productOptions.length + 1}`, values: [], displayStyle: 'dropdown' };
-        setForm(prev => prev ? ({ ...prev, productOptions: [...prev.productOptions, newOption] }) : null);
-    };
-
-    const handleOptionChange = (id: number, field: 'name' | 'values' | 'displayStyle', value: string | string[] | VariantDisplayStyle) => {
-        setForm(prev => {
-            if (!prev) return null;
-            const oldOption = prev.productOptions.find(opt => opt.id === id);
-            const oldName = oldOption?.name;
-            const newOptions = prev.productOptions.map(opt => opt.id === id ? { ...opt, [field]: value } : opt);
-            let newFormState = { ...prev, productOptions: newOptions };
-            if (field === 'name' && oldName && oldName !== value && typeof value === 'string') {
-                const newName = value;
-                const newCombinations = newFormState.variantCombinations.map(combo => {
-                    if (Object.prototype.hasOwnProperty.call(combo.attributes, oldName)) {
-                        const { [oldName]: renamedValue, ...restAttrs } = combo.attributes;
-                        return {
-                            ...combo,
-                            attributes: {
-                                ...restAttrs,
-                                [newName]: renamedValue
-                            }
-                        };
-                    }
-                    return combo;
-                });
-                newFormState = { ...newFormState, variantCombinations: newCombinations };
-            }
-            return newFormState;
-        });
-    };
-
-    const handleRemoveOption = (id: number) => {
-        if (!form) return;
-        const optionToRemove = form.productOptions.find(opt => opt.id === id);
-        if (!optionToRemove) return;
-        setForm(prev => {
-            if (!prev) return null;
-            const newOptions = prev.productOptions.filter(opt => opt.id !== id);
-            const newCombinations = prev.variantCombinations.map(combo => {
-                const { [optionToRemove.name]: _, ...rest } = combo.attributes;
-                return { ...combo, attributes: rest };
-            });
-            const uniqueCombinations: VariantCombination[] = [];
-            newCombinations.forEach(combo => {
-                if (!uniqueCombinations.some(uc => JSON.stringify(uc.attributes) === JSON.stringify(combo.attributes))) {
-                    uniqueCombinations.push(combo);
-                }
-            });
-            return { ...prev, productOptions: newOptions, variantCombinations: uniqueCombinations };
-        });
-    };
-    
-    const handleCombinationChange = (index: number, field: keyof VariantCombination, value: any) => {
-        if (field === 'sellingPrice' || field === 'strikethroughPrice' || field === 'weight' || field === 'costPrice' || field === 'commissionPrice' || field === 'csCommission' || field === 'advCommission') {
-            const numValue = value === '' ? undefined : parseFloat(value);
-            setForm(prev => {
-                if (!prev) return null;
-                const newCombinations = [...prev.variantCombinations];
-                newCombinations[index] = { ...newCombinations[index], [field]: numValue };
-                return { ...prev, variantCombinations: newCombinations };
-            });
-        } else {
-            setForm(prev => {
-                if (!prev) return null;
-                const newCombinations = [...prev.variantCombinations];
-                newCombinations[index] = { ...newCombinations[index], [field]: value };
-                return { ...prev, variantCombinations: newCombinations };
-            });
-        }
-    };
     
     const handleFieldChange = <T extends keyof Form>(field: T, value: Form[T]) => {
         // Auto-generate slug dari judul jika field yang berubah adalah title
@@ -1427,13 +1460,15 @@ const FormEditorPage: React.FC = () => {
             if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
                     // When province visibility changes, city and district follow
+                    // If unchecking visible, also uncheck required
+                    const newRequired = val ? prev.customerFields.province.required : false;
                     return {
                         ...prev,
                         customerFields: {
                             ...prev.customerFields,
-                            province: { ...prev.customerFields.province, visible: val },
-                            city: { ...prev.customerFields.city, visible: val },
-                            district: { ...prev.customerFields.district, visible: val }
+                            province: { ...prev.customerFields.province, visible: val, required: newRequired },
+                            city: { ...prev.customerFields.city, visible: val, required: val ? prev.customerFields.city.required : false },
+                            district: { ...prev.customerFields.district, visible: val, required: val ? prev.customerFields.district.required : false }
                         }
                     };
                 } else if (prop === 'required') {
@@ -1448,6 +1483,17 @@ const FormEditorPage: React.FC = () => {
                         }
                     };
                 }
+            }
+            
+            // Auto-off required when any field's visible is unchecked
+            if (mainField === 'customerFields' && prop === 'visible' && !val) {
+                return {
+                    ...prev,
+                    customerFields: {
+                        ...prev.customerFields,
+                        [subField]: { ...prev.customerFields[subField as keyof typeof prev.customerFields], visible: val, required: false }
+                    }
+                };
             }
             
             if (mainField === 'thankYouPage' && subField === 'showOrderSummary') {
@@ -1602,6 +1648,68 @@ const FormEditorPage: React.FC = () => {
                     </div>
 
                     <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium">Induk Produk</label>
+                            <span className="text-xs text-red-500 font-medium">Wajib</span>
+                        </div>
+                        <select
+                            value={form.productId || ''}
+                            onChange={async (e) => {
+                                const productId = e.target.value;
+                                handleFieldChange('productId', productId);
+                                
+                                // Auto-load variants dari produk yang dipilih
+                                if (productId) {
+                                    try {
+                                        const product = await productService.getProduct(productId);
+                                        if (product && product.variants && product.variants.length > 0) {
+                                            // Set form variants dengan variants dari produk
+                                            setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
+                                            showToast(`${product.variants.length} varian dimuat dari produk`, 'success');
+                                        } else {
+                                            setForm(prev => prev ? { ...prev, productVariants: [] } : prev);
+                                        }
+                                    } catch (error) {
+                                        console.error('Error loading product variants:', error);
+                                        showToast('Gagal memuat varian produk', 'error');
+                                    }
+                                }
+                            }}
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.productId ? 'border-red-500' : 'dark:border-slate-600'}`}
+                        >
+                            <option value="">-- Pilih Produk --</option>
+                            {products.map(product => (
+                                <option key={product.id} value={product.id}>
+                                    {product.name} {product.sku ? `(${product.sku})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                        {!form.productId && <p className="text-xs text-red-500 mt-1">Produk harus dipilih</p>}
+                        <p className="text-xs text-slate-500 mt-1">Formulir akan otomatis menggunakan varian dari produk yang dipilih.</p>
+                        
+                        {/* Display loaded variants info */}
+                        {form.productId && form.productVariants && form.productVariants.length > 0 && (
+                            <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100 mb-2">
+                                    ✓ {form.productVariants.length} Varian Produk Dimuat:
+                                </p>
+                                <div className="space-y-1">
+                                    {form.productVariants.slice(0, 3).map((variant: any, index: number) => (
+                                        <p key={index} className="text-xs text-indigo-700 dark:text-indigo-300">
+                                            • {variant.name || `Varian ${index + 1}`} - Rp {(variant.price || 0).toLocaleString('id-ID')}
+                                        </p>
+                                    ))}
+                                    {form.productVariants.length > 3 && (
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 italic">
+                                            ... dan {form.productVariants.length - 3} varian lainnya
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div>
                         <label className="block text-sm font-medium mb-1">URL Slug</label>
                          <div className="relative">
                             <input
@@ -1710,83 +1818,7 @@ const FormEditorPage: React.FC = () => {
                     </div>
                 </EditorCard>
                 
-                <EditorCard icon={TagIcon} title="Opsi & Varian Produk">
-                    {form.productOptions.map((option, index) => (
-                        <div key={option.id} className="p-3 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50">
-                            <div className="flex justify-between items-center mb-2">
-                                <input
-                                    type="text"
-                                    value={option.name}
-                                    onChange={e => handleOptionChange(option.id, 'name', e.target.value)}
-                                    className="font-semibold bg-transparent"
-                                />
-                                <button onClick={() => handleRemoveOption(option.id)}><TrashIcon className="w-4 h-4 text-red-500"/></button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                                <div>
-                                    <label className="block text-xs font-medium mb-1">Nilai Opsi</label>
-                                    <TagInput
-                                        values={option.values}
-                                        onChange={newValues => handleOptionChange(option.id, 'values', newValues)}
-                                    />
-                                </div>
-                                 <div>
-                                    <label className="block text-xs font-medium mb-1">Tampilan Varian</label>
-                                    <div className="flex items-center gap-1 p-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
-                                        {(['dropdown', 'radio', 'modern'] as VariantDisplayStyle[]).map(style => (
-                                            <button
-                                                key={style}
-                                                type="button"
-                                                onClick={() => handleOptionChange(option.id, 'displayStyle', style)}
-                                                className={`flex-1 p-1.5 rounded-md text-sm flex items-center justify-center gap-1.5 transition-colors ${option.displayStyle === style ? 'bg-white dark:bg-slate-800 shadow text-indigo-600 font-semibold' : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-600'}`}
-                                                title={style.charAt(0).toUpperCase() + style.slice(1)}
-                                            >
-                                                {style === 'dropdown' && <Bars3Icon className="w-5 h-5" />}
-                                                {style === 'radio' && <Bars4Icon className="w-5 h-5" />}
-                                                {style === 'modern' && <Squares2x2Icon className="w-5 h-5" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    <button onClick={handleAddOption} className="text-sm font-medium text-indigo-600 hover:text-indigo-500">+ Tambah Opsi (e.g., Warna, Ukuran)</button>
-                
-                    <div className="overflow-x-auto mt-4">
-                        <table className="min-w-full text-sm">
-                            <thead>
-                                <tr>
-                                    <th className="p-2 text-left font-medium text-slate-500">Varian</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Harga Jual</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Harga Coret</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Modal</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Komisi CS</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Komisi Adv</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Berat (gr)</th>
-                                    <th className="p-2 text-left font-medium text-slate-500">Stok Awal</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                {form.variantCombinations.map((combo, index) => (
-                                    <tr key={index} className="align-top">
-                                        <td className="p-2 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                                            {Object.values(combo.attributes).join(' / ') || 'Produk Tunggal'}
-                                        </td>
-                                        <td className="p-1"><input type="number" value={combo.sellingPrice} onChange={e => handleCombinationChange(index, 'sellingPrice', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" /></td>
-                                        <td className="p-1"><input type="number" value={combo.strikethroughPrice ?? ''} onChange={e => handleCombinationChange(index, 'strikethroughPrice', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" /></td>
-                                        <td className="p-1"><input type="number" value={combo.costPrice ?? ''} onChange={e => handleCombinationChange(index, 'costPrice', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" /></td>
-                                        <td className="p-1"><input type="number" value={combo.csCommission ?? ''} onChange={e => handleCombinationChange(index, 'csCommission', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" placeholder="0" /></td>
-                                        <td className="p-1"><input type="number" value={combo.advCommission ?? ''} onChange={e => handleCombinationChange(index, 'advCommission', e.target.value)} onFocus={e => e.target.select()} className="w-28 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" placeholder="0" /></td>
-                                        <td className="p-1"><input type="number" value={combo.weight ?? ''} onChange={e => handleCombinationChange(index, 'weight', e.target.value)} onFocus={e => e.target.select()} className="w-20 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" /></td>
-                                        <td className="p-1"><input type="number" value={combo.initialStock ?? ''} onChange={e => handleCombinationChange(index, 'initialStock', e.target.value)} onFocus={e => e.target.select()} className="w-20 p-1.5 border rounded bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 dark:border-slate-600" placeholder={form.stockCountdownSettings?.initialStock?.toString() || '10'} title="Kosongkan untuk gunakan default global" /></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </EditorCard>
-                
+
                 <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
                     {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
                         // Skip city and district as they're controlled by province
@@ -1800,7 +1832,16 @@ const FormEditorPage: React.FC = () => {
                                     <span className="capitalize text-sm">{key}</span>
                                     <div className="flex items-center gap-4">
                                         <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
-                                        <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].required} onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)} className="rounded" /> Wajib</label>
+                                        <label className="flex items-center gap-1 text-xs">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={(form.customerFields as any)[key].required && (form.customerFields as any)[key].visible}
+                                                onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)} 
+                                                disabled={!(form.customerFields as any)[key].visible}
+                                                className="rounded disabled:opacity-50"
+                                            /> 
+                                            Wajib
+                                        </label>
                                     </div>
                                 </div>
                                 

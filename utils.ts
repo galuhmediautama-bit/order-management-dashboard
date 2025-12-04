@@ -18,7 +18,12 @@ export const getNormalizedRole = (role: string | undefined, email?: string | nul
         return 'Super Admin';
     }
 
-    if (!role) return 'Super Admin'; // Fallback default
+    // ⚠️ IMPORTANT: Do NOT default to Super Admin if role is undefined
+    // This prevents accidental elevation to admin when profile hasn't loaded yet
+    if (!role) {
+        console.warn('⚠️ getNormalizedRole called with undefined role. This may indicate a profile loading issue.');
+        return 'Admin'; // Safe fallback to lower privilege, not Super Admin
+    }
 
     const lower = role.toLowerCase().trim();
     

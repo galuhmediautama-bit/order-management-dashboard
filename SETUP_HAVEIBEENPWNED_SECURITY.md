@@ -1,0 +1,75 @@
+-- SUPABASE AUTH SECURITY: Enable HaveIBeenPwned Password Check
+-- Date: 2025-12-04
+-- Status: Requires manual configuration via Supabase Dashboard
+
+-- ============================================================================
+-- OVERVIEW
+-- ============================================================================
+-- Supabase Auth can check passwords against the HaveIBeenPwned database
+-- to prevent users from using compromised passwords.
+-- This feature must be enabled via the Supabase Console.
+
+-- ============================================================================
+-- HOW TO ENABLE VIA SUPABASE CONSOLE
+-- ============================================================================
+-- 1. Go to https://app.supabase.com
+-- 2. Select your project (order-management-dashboard)
+-- 3. Navigate to: Authentication → Password & Signups
+-- 4. Look for "Security" section
+-- 5. Find toggle: "Verify password against Have I Been Pwned"
+-- 6. Toggle it ON (enable)
+-- 7. Click "Save" button
+-- 8. Wait for changes to take effect (usually instant)
+
+-- ============================================================================
+-- WHAT THIS DOES
+-- ============================================================================
+-- When enabled:
+-- - New user signups will check password against HaveIBeenPwned database
+-- - Password reset attempts will be checked
+-- - Existing passwords are NOT retroactively checked
+-- - Users will get error if password is compromised:
+--   "Password has been exposed in a data breach. Please use a different password."
+
+-- ============================================================================
+-- VERIFICATION
+-- ============================================================================
+-- After enabling, test by:
+-- 1. Try signing up with a known compromised password (e.g., "password123")
+-- 2. Should get rejection error
+-- 3. Try with a strong unique password
+-- 4. Should succeed
+
+-- ============================================================================
+-- API REFERENCE (For Documentation)
+-- ============================================================================
+-- Supabase Auth endpoint for password verification:
+-- POST https://YOUR_PROJECT.supabase.co/auth/v1/signup
+-- 
+-- Response if password is compromised:
+-- {
+--   "error_code": "weak_password",
+--   "message": "Password has been exposed in a data breach..."
+-- }
+
+-- ============================================================================
+-- NOTES
+-- ============================================================================
+-- - This is a Supabase managed service (no SQL command available)
+-- - Feature is free and enabled by default on new projects
+-- - Check uses API v1 from HaveIBeenPwned (k-anonymity model)
+-- - No actual passwords are sent to external services
+-- - Only password hash prefix is sent for privacy
+-- - Works for both signup and password update flows
+
+-- ============================================================================
+-- DOCUMENTATION LINKS
+-- ============================================================================
+-- Supabase Password Check Docs:
+-- https://supabase.com/docs/guides/auth/passwords
+--
+-- HaveIBeenPwned API:
+-- https://haveibeenpwned.com/API/v3
+--
+-- Security Best Practices:
+-- https://supabase.com/docs/guides/auth#security-best-practices

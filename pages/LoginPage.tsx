@@ -48,12 +48,23 @@ const LoginPage: React.FC = () => {
 
             if (isRegistering) {
                 // --- LOGIKA PENDAFTARAN ---
+                console.log('📝 Register request:', {
+                    email,
+                    fullName,
+                    selectedRole,
+                    whatsapp,
+                    address
+                });
+
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: email,
                     password: password,
                     options: {
                         data: {
                             full_name: fullName,
+                            role: selectedRole,
+                            phone: whatsapp || null,
+                            address: address || null
                         }
                     }
                 });
@@ -61,6 +72,13 @@ const LoginPage: React.FC = () => {
                 if (authError) throw authError;
 
                 if (authData && authData.user) {
+                    console.log('✅ Auth user created:', {
+                        userId: authData.user.id,
+                        email: authData.user.email,
+                        metadata: authData.user.user_metadata,
+                        metadata_stringified: JSON.stringify(authData.user.user_metadata, null, 2)
+                    });
+                    
                     // If email confirmation is required, supabase may return no session
                     if (!authData.session && authData.user.identities?.length) {
                         setSuccessMsg('Akun dibuat! Silakan cek email Anda untuk konfirmasi sebelum masuk.');
@@ -69,7 +87,7 @@ const LoginPage: React.FC = () => {
                     }
 
                     // Insert profile into public.users with status 'Tidak Aktif'
-                    const { error: dbError } = await supabase.from('users').insert([{
+                    const { error: dbError, data: insertedData } = await supabase.from('users').insert([{
                         id: authData.user.id,
                         email: email,
                         name: fullName || email.split('@')[0],
@@ -81,10 +99,16 @@ const LoginPage: React.FC = () => {
                     }]);
 
                     if (dbError) {
-                        console.error('Gagal membuat profil user:', dbError);
+                        console.error('❌ Gagal membuat profil user:', { error: dbError, selectedRole });
                         setError(`Akun Auth dibuat, tapi gagal simpan profil: ${dbError.message || JSON.stringify(dbError)}`);
                     } else {
-                        setSuccessMsg('✅ Akun berhasil dibuat! Silakan tunggu konfirmasi dari admin sebelum dapat mengakses aplikasi. Anda akan menerima email pemberitahuan setelah disetujui.');
+                        console.log('✅ User profile created successfully:', { 
+                            userId: authData.user.id, 
+                            email: email, 
+                            role: selectedRole, 
+                            data: insertedData 
+                        });
+                        setSuccessMsg('✅ Akun berhasil dibuat dengan role: ' + selectedRole + '! Silakan tunggu konfirmasi dari admin sebelum dapat mengakses aplikasi. Anda akan menerima email pemberitahuan setelah disetujui.');
                         setIsRegistering(false);
                         setEmail('');
                         setPassword('');

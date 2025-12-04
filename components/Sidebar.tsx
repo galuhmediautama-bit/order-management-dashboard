@@ -24,6 +24,7 @@ import ArchiveIcon from './icons/ArchiveIcon';
 import ClipboardListIcon from './icons/ClipboardListIcon';
 import TrashIcon from './icons/TrashIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
+import Squares2x2Icon from './icons/Squares2x2Icon';
 import { supabase } from '../supabase';
 import { getNormalizedRole } from '../utils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -44,6 +45,8 @@ const pageToPath: Record<string, string> = {
     'Laporan Iklan': '/laporan-iklan',
     'Laporan CS': '/laporan-cs',
     'Formulir': '/formulir',
+    'Produk': '/produk',
+    'Analitik Produk': '/analitik-produk',
     'Pengaturan': '#',
     'Pengaturan Website': '/pengaturan/website',
     'Manajemen Pengguna': '/pengaturan/pengguna',
@@ -71,19 +74,40 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 try {
-                    const { data: userDoc, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+                    // Retry logic for race condition during registration
+                    let userDoc = null;
+                    let error = null;
+                    let retries = 0;
+                    const maxRetries = 3;
+                    const retryDelay = 500; // ms
+
+                    while (retries < maxRetries && !userDoc) {
+                        const result = await supabase.from('users').select('*').eq('id', user.id).single();
+                        error = result.error;
+                        userDoc = result.data;
+
+                        if (!userDoc && retries < maxRetries - 1) {
+                            // Retry with exponential backoff
+                            await new Promise(resolve => setTimeout(resolve, retryDelay * (retries + 1)));
+                            retries++;
+                        } else {
+                            break;
+                        }
+                    }
                     
                     if (error || !userDoc) {
-                        console.warn("User role not found in DB, defaulting to Super Admin for UI.");
-                        setCurrentUserRole('Super Admin');
+                        console.error('⚠️ User profile not found in DB after retries. Auth user:', user.email, 'Error:', error);
+                        // Don't default to Super Admin - this could be a data integrity issue
+                        // Return null to indicate profile not found
+                        setCurrentUserRole(null);
                     } else {
                         const normalized = getNormalizedRole(userDoc.role, user.email);
-                        console.log('🔍 Sidebar - User role from DB:', userDoc.role, '→ Normalized:', normalized);
+                        console.log('✅ Sidebar - User role from DB:', userDoc.role, '→ Normalized:', normalized);
                         setCurrentUserRole(normalized);
                     }
                 } catch (error) {
-                    console.error("Error fetching user role:", error);
-                    setCurrentUserRole('Super Admin');
+                    console.error('❌ Error fetching user role:', error);
+                    setCurrentUserRole(null);
                 }
             }
         };
@@ -168,6 +192,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           name: 'Formulir', 
           icon: FormsIcon,
           allowedRoles: ['Super Admin', 'Admin', 'Advertiser']
+      },
+      { 
+          name: 'Produk', 
+          icon: Squares2x2Icon,
+          allowedRoles: ['Super Admin', 'Admin']
+      },
+      { 
+          name: 'Analitik Produk', 
+          icon: TrendingUpIcon,
+          allowedRoles: ['Super Admin', 'Admin']
       },
       { 
         name: 'Pengaturan', 

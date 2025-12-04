@@ -288,6 +288,7 @@ export interface Form {
     title: string;
     slug: string; // URL slug (auto-generated dari judul, bisa di-edit manual)
     brandId?: string;
+    productId?: string; // FK ke Products table (induk produk)
     mainImage: string;
     productImages?: string[]; // Multiple product images
     description: string;
@@ -484,4 +485,140 @@ export interface GlobalPixelSettings {
     google: { pixels: GlobalPixel[], active: boolean };
     tiktok: { pixels: GlobalPixel[], active: boolean };
     snack: { pixels: GlobalPixel[], active: boolean };
+}
+
+// --- Products (Induk Produk) Types ---
+export interface ProductStockTracking {
+    enabled: boolean;
+    current: number;
+}
+
+export interface Product {
+    id: string;
+    brandId: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    sku?: string;
+    category?: string;
+    
+    // Stock management
+    initialStock?: number;
+    stockTracking: ProductStockTracking;
+    
+    // Pricing
+    basePrice?: number;
+    comparePrice?: number;
+    costPrice?: number;
+    
+    // Commissions
+    csCommission?: number;
+    advCommission?: number;
+    
+    // Weight
+    weight?: number;
+    stock?: number;
+    
+    // Variants
+    variants?: Array<{
+        name: string;
+        sku?: string;
+        price: number;
+        comparePrice?: number;
+        costPrice?: number;
+        csCommission?: number;
+        advCommission?: number;
+        weight?: number;
+        initialStock?: number;
+    }>;
+    variantOptions?: Array<{
+        name: string;
+        values: string[];
+    }>;
+    
+    // Status
+    status: 'active' | 'inactive' | 'archived';
+    isFeatured: boolean;
+    
+    // Metadata
+    tags: string[];
+    attributes: Record<string, any>;
+    seoTitle?: string;
+    seoDescription?: string;
+    
+    createdAt: string;
+    updatedAt: string;
+}
+
+// --- Product Analytics Types ---
+export interface TrafficSources {
+    organic: number;
+    social: number;
+    email: number;
+    paid: number;
+    direct: number;
+}
+
+export interface ProductFormAnalytics {
+    id: string;
+    productId: string;
+    formId: string;
+    advertiserId: string;
+    
+    // Performance metrics
+    viewsCount: number;
+    clicksCount: number;
+    ordersCount: number;
+    totalRevenue: number;
+    
+    // Engagement
+    averageTimeOnPage: number;
+    bounceRate: number;
+    
+    // Conversion
+    conversionRate: number;
+    averageOrderValue: number;
+    
+    // Source tracking
+    trafficSources: TrafficSources;
+    topReferrer?: string;
+    
+    // Time period
+    periodStart: string; // DATE
+    periodEnd?: string;
+    
+    isActive: boolean;
+    
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ProductPerformanceAggregate {
+    productId: string;
+    productName: string;
+    brandId: string;
+    totalForms: number;
+    totalAdvertisers: number;
+    totalViews: number;
+    totalClicks: number;
+    totalOrders: number;
+    totalRevenue: number;
+    conversionRatePercent: number;
+    avgOrderValue: number;
+    lastUpdated: string;
+}
+
+export interface AdvertiserProductPerformance {
+    advertiserId: string;
+    productId: string;
+    productName: string;
+    formsCount: number;
+    viewsCount: number;
+    clicksCount: number;
+    ordersCount: number;
+    totalRevenue: number;
+    conversionRate: number;
+    averageOrderValue: number;
+    periodStart: string;
+    isProfitable: boolean;
 }
