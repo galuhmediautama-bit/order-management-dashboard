@@ -71,9 +71,12 @@ const OrdersPage: React.FC = () => {
     return { startDate, endDate };
   });
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
+  const [selectedProductFilter, setSelectedProductFilter] = useState<string>('all');
   const [selectedPaymentFilter, setSelectedPaymentFilter] = useState<Set<string>>(new Set());
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [paymentDropdownOpen, setPaymentDropdownOpen] = useState(false);
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   
   // Bulk Actions
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
@@ -107,9 +110,11 @@ const OrdersPage: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.payment-dropdown') && !target.closest('.status-dropdown')) {
+      if (!target.closest('.payment-dropdown') && !target.closest('.status-dropdown') && !target.closest('.brand-dropdown') && !target.closest('.product-dropdown')) {
         setPaymentDropdownOpen(false);
         setStatusDropdownOpen(false);
+        setBrandDropdownOpen(false);
+        setProductDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -492,12 +497,17 @@ const OrdersPage: React.FC = () => {
           result = result.filter(o => o.brandId === selectedBrandFilter);
       }
 
-      // 4. Payment Filter
+      // 4. Product Filter
+      if (selectedProductFilter !== 'all') {
+          result = result.filter(o => o.productName === selectedProductFilter);
+      }
+
+      // 5. Payment Filter
       if (selectedPaymentFilter.size > 0) {
           result = result.filter(o => o.paymentMethod && selectedPaymentFilter.has(o.paymentMethod));
       }
 
-      // 5. Date Range
+      // 6. Date Range
       if (dateRange.startDate && dateRange.endDate) {
           // Create start and end dates in UTC to avoid timezone mismatch
           const start = new Date(dateRange.startDate);
@@ -510,7 +520,7 @@ const OrdersPage: React.FC = () => {
           });
       }
 
-      // 6. Search
+      // 7. Search
       if (searchTerm) {
           const lower = searchTerm.toLowerCase();
           result = result.filter(o => 
@@ -521,7 +531,7 @@ const OrdersPage: React.FC = () => {
       }
 
       return result;
-  }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedPaymentFilter, currentUser]);
+  }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedProductFilter, selectedPaymentFilter, currentUser]);
 
   // Statistics Cards Data
   const stats = useMemo(() => {
@@ -545,6 +555,15 @@ const OrdersPage: React.FC = () => {
       if (o.brandId) brands.add(o.brandId);
     });
     return Array.from(brands);
+  }, [orders]);
+
+  // Get unique products for filter
+  const uniqueProducts = useMemo(() => {
+    const products = new Set<string>();
+    orders.forEach(o => {
+      if (o.productName) products.add(o.productName);
+    });
+    return Array.from(products).sort();
   }, [orders]);
 
   // Get unique payment methods for filter
@@ -703,6 +722,87 @@ const OrdersPage: React.FC = () => {
                     onChange={e => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
+              </div>
+
+              {/* Brand Filter */}
+              <div className="relative brand-dropdown">
+                  <button
+                    onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
+                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
+                  >
+                    <span className="flex-1 text-left truncate">
+                      {selectedBrandFilter === 'all' ? 'Brand' : selectedBrandFilter}
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                  </button>
+                  {brandDropdownOpen && (
+                    <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            setSelectedBrandFilter('all');
+                            setBrandDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                        >
+                          Semua Brand
+                        </button>
+                        {uniqueBrands.map(brand => (
+                          <button
+                            key={brand}
+                            onClick={() => {
+                              setSelectedBrandFilter(brand);
+                              setBrandDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === brand ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                          >
+                            {brand}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* Product Filter */}
+              <div className="relative product-dropdown">
+                  <button
+                    onClick={() => setProductDropdownOpen(!productDropdownOpen)}
+                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
+                  >
+                    <span className="flex-1 text-left truncate">
+                      {selectedProductFilter === 'all' ? 'Produk' : selectedProductFilter}
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                  </button>
+                  {productDropdownOpen && (
+                    <div className="absolute top-full mt-1 left-0 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            setSelectedProductFilter('all');
+                            setProductDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedProductFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                        >
+                          Semua Produk
+                        </button>
+                        {uniqueProducts.map(product => (
+                          <button
+                            key={product}
+                            onClick={() => {
+                              setSelectedProductFilter(product);
+                              setProductDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm truncate ${selectedProductFilter === product ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                            title={product}
+                          >
+                            {product}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
               </div>
 
               {/* Payment Method Multi-Select */}
