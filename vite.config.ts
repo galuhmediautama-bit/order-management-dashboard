@@ -8,6 +8,20 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        watch: {
+          usePolling: false, // Disable polling untuk mengurangi CPU usage
+          interval: 1000, // Interval checking lebih lambat
+          ignored: [
+            '**/node_modules/**',
+            '**/.git/**',
+            '**/dist/**',
+            '**/*.md',
+            '**/*.sql',
+            '**/*.txt',
+            '**/*.sh',
+            '**/*.ps1',
+          ]
+        }
       },
       plugins: [react()],
       define: {

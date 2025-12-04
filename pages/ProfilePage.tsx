@@ -10,6 +10,7 @@ import BellIcon from '../components/icons/BellIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
 import XCircleIcon from '../components/icons/XCircleIcon';
+import AddressInput, { type AddressData } from '../components/AddressInput';
 
 const Message: React.FC<{ message: { type: string, text: string } }> = ({ message }) => {
     if (!message.text) return null;
@@ -37,6 +38,14 @@ const ProfilePage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
     const [address, setAddress] = useState('');
+    const [addressData, setAddressData] = useState<AddressData>({
+        province: '',
+        city: '',
+        district: '',
+        postalCode: '',
+        detailAddress: '',
+        fullAddress: ''
+    });
     const [avatarPreview, setAvatarPreview] = useState('');
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
@@ -79,6 +88,11 @@ const ProfilePage: React.FC = () => {
         };
         fetchUserData();
     }, []);
+
+    // Update address when addressData changes
+    useEffect(() => {
+        setAddress(addressData.fullAddress);
+    }, [addressData]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -290,14 +304,9 @@ const ProfilePage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="address" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Alamat Lengkap</label>
-                                    <textarea
-                                        id="address"
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        placeholder="Jl. ..., RT/RW ..., Kelurahan ..., Kecamatan ..."
-                                        rows={3}
-                                        className="w-full p-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                    <AddressInput
+                                        value={addressData}
+                                        onChange={setAddressData}
                                     />
                                 </div>
                             </div>

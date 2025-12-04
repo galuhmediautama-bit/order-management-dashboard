@@ -17,6 +17,7 @@ import SpinnerIcon from '../components/icons/SpinnerIcon';
 import { supabase } from '../supabase';
 import { capitalizeWords } from '../utils';
 import { useToast } from '../contexts/ToastContext';
+import AddressInput, { type AddressData } from '../components/AddressInput';
 
 
 const calculateCustomerScore = (customer: Customer): number => {
@@ -61,6 +62,14 @@ const CustomerModal: React.FC<{
     const [formData, setFormData] = useState<Customer>(
         customer || { id: '', name: '', email: '', phone: '', address: '', rejectedOrders: 0, orderCount: 0, totalSpent: 0, joinDate: new Date().toISOString().split('T')[0] }
     );
+    const [addressData, setAddressData] = useState<AddressData>({
+        province: '',
+        city: '',
+        district: '',
+        postalCode: '',
+        detailAddress: '',
+        fullAddress: customer?.address || ''
+    });
     const isEditing = !!customer?.id;
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -87,7 +96,7 @@ const CustomerModal: React.FC<{
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Nama Lengkap*</label><input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" required /></div>
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Email*</label><input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" required /></div>
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Nomor Telepon</label><input type="tel" name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" /></div>
-                        <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Alamat</label><textarea name="address" value={formData.address || ''} onChange={handleChange} rows={3} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" /></div>
+                        <div><AddressInput value={addressData} onChange={(data) => { setAddressData(data); setFormData({...formData, address: data.fullAddress}); }} /></div>
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Pesanan Ditolak</label><input type="number" name="rejectedOrders" value={formData.rejectedOrders || 0} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" /></div>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">

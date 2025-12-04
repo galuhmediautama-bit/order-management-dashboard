@@ -25,7 +25,7 @@ const StatCard: React.FC<{
     changeType?: 'increase' | 'decrease' | 'neutral';
 }> = ({ title, value, icon: Icon, change, changeType = 'neutral' }) => {
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-start gap-6 transition-all hover:shadow-md hover:-translate-y-1">
+      <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-start gap-3 sm:gap-6 transition-all hover:shadow-md hover:-translate-y-1 w-full max-w-[340px] mx-auto">
             <div className="p-4 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex-shrink-0">
                 <Icon className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
             </div>
@@ -340,22 +340,21 @@ const DashboardPage: React.FC = () => {
     };
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="space-y-8 sm:space-y-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
         <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white">Dashboard Analytics</h1>
-            <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">Pantau performa bisnis Anda secara real-time</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Dashboard Analytics</h1>
+            <p className="mt-2 text-base sm:text-lg text-slate-600 dark:text-slate-400">Pantau performa bisnis Anda secara real-time</p>
         </div>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        <div className="w-full md:w-auto mt-4 md:mt-0"><DateRangePicker value={dateRange} onChange={setDateRange} /></div>
       </div>
-      
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-pulse">
-            {Array(4).fill(0).map((_, i) => <div key={i} className="h-36 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>)}
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 animate-pulse">
+            {Array(4).fill(0).map((_, i) => <div key={i} className="h-28 sm:h-36 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>)}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <StatCard 
               title="Total Penjualan" 
               value={`Rp ${filteredDashboardData.stats.totalSales.toLocaleString('id-ID')}`} 
@@ -391,7 +390,7 @@ const DashboardPage: React.FC = () => {
           </div>
 
           {/* Quick Stats Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -433,9 +432,9 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-4 sm:p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Ringkasan Penjualan</h2>
             <div className="flex gap-2">
@@ -491,7 +490,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Status Breakdown Pie Chart */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Status Pesanan</h2>
           {filteredDashboardData.statusBreakdown.length > 0 ? (
             <>
@@ -540,7 +539,7 @@ const DashboardPage: React.FC = () => {
 
       {/* Top Products */}
       {filteredDashboardData.topProducts.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Top 5 Produk Terlaris</h2>
           <div className="space-y-4">
             {filteredDashboardData.topProducts.map((product, idx) => (
@@ -565,10 +564,10 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Top Advertiser & Top CS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Top Advertiser */}
         {filteredDashboardData.topAdvertisers.length > 0 && (
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
             <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">🏆 Top 5 Advertiser</h2>
             <div className="space-y-4">
               {filteredDashboardData.topAdvertisers.map((adv, idx) => (
@@ -596,7 +595,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Top Customer Service */}
         {filteredDashboardData.topCS.length > 0 && (
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
             <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">⭐ Top 5 Customer Service</h2>
             <div className="space-y-4">
               {filteredDashboardData.topCS.map((cs, idx) => (
@@ -624,9 +623,9 @@ const DashboardPage: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 sm:p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 gap-4">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Pesanan Terbaru</h2>
-            <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                 <div className="flex items-center gap-2">
                     <label className="text-sm text-slate-600 dark:text-slate-300">Per halaman</label>
                     <select
@@ -652,11 +651,11 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                    placeholder="Cari Order ID, nama pelanggan, atau total..."
-                    className="w-full md:w-80 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                  placeholder="Cari Order ID, nama pelanggan, atau total..."
+                  className="w-full sm:w-60 md:w-80 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
                 />
                 <button onClick={exportCsv} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm">Export CSV</button>
             </div>
@@ -666,31 +665,31 @@ const DashboardPage: React.FC = () => {
                 <div className="text-center p-12 text-slate-600 dark:text-slate-400 text-lg">Memuat pesanan...</div>
             ) : (
                 <table className="w-full text-left">
-                    <thead className="text-sm text-slate-600 dark:text-slate-400 uppercase border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                        <tr>
-                            <th scope="col" className="px-8 py-4 font-semibold">Order ID</th>
-                            <th scope="col" className="px-8 py-4 font-semibold">Pelanggan</th>
-                            <th scope="col" className="px-8 py-4 font-semibold">Tanggal</th>
-                            <th scope="col" className="px-8 py-4 font-semibold">Total</th>
-                            <th scope="col" className="px-8 py-4 font-semibold">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                        {filteredRecentOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="px-8 py-5 font-medium text-base text-slate-900 dark:text-white whitespace-nowrap" title={order.id}>{order.id.substring(0, 6)}...</td>
-                            <td className="px-8 py-5 text-base text-slate-600 dark:text-slate-300">
-                               <div className="flex items-center gap-4">
-                                    <img src={order.avatar} alt={order.customer} className="w-10 h-10 rounded-full" />
-                                    <span>{capitalizeWords(order.customer)}</span>
-                                </div>
-                            </td>
-                            <td className="px-8 py-5 text-base text-slate-600 dark:text-slate-300 whitespace-nowrap">{order.date}</td>
-                            <td className="px-8 py-5 text-base text-slate-900 dark:text-white font-semibold">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</td>
-                            <td className="px-8 py-5"><StatusBadge status={order.status} /></td>
-                        </tr>
-                        ))}
-                    </tbody>
+                  <thead className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 uppercase border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                      <th scope="col" className="px-3 sm:px-6 md:px-8 py-2 sm:py-4 font-semibold">Order ID</th>
+                      <th scope="col" className="px-3 sm:px-6 md:px-8 py-2 sm:py-4 font-semibold">Pelanggan</th>
+                      <th scope="col" className="px-3 sm:px-6 md:px-8 py-2 sm:py-4 font-semibold">Tanggal</th>
+                      <th scope="col" className="px-3 sm:px-6 md:px-8 py-2 sm:py-4 font-semibold">Total</th>
+                      <th scope="col" className="px-3 sm:px-6 md:px-8 py-2 sm:py-4 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {filteredRecentOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 font-medium text-xs sm:text-sm md:text-base text-slate-900 dark:text-white whitespace-nowrap" title={order.id}>{order.id.substring(0, 6)}...</td>
+                      <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300">
+                         <div className="flex items-center gap-2 sm:gap-4">
+                          <img src={order.avatar} alt={order.customer} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
+                          <span className="truncate max-w-[100px] sm:max-w-[160px] md:max-w-[200px]">{capitalizeWords(order.customer)}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300 whitespace-nowrap">{order.date}</td>
+                      <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 text-xs sm:text-sm md:text-base text-slate-900 dark:text-white font-semibold">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</td>
+                      <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5"><StatusBadge status={order.status} /></td>
+                    </tr>
+                    ))}
+                  </tbody>
                 </table>
             )}
         </div>

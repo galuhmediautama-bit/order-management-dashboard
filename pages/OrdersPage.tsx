@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import type { Order, OrderStatus, MessageTemplates, Form, ShippingSettings, PaymentSettings, UserRole, User } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
 import CalendarIcon from '../components/icons/CalendarIcon';
@@ -9,6 +10,7 @@ import StatusBadge from '../components/StatusBadge';
 import EyeIcon from '../components/icons/EyeIcon';
 import XCircleIcon from '../components/icons/XCircleIcon';
 import TrashIcon from '../components/icons/TrashIcon';
+import PencilIcon from '../components/icons/PencilIcon';
 import SearchIcon from '../components/icons/SearchIcon';
 import PhoneIcon from '../components/icons/PhoneIcon';
 import MailIcon from '../components/icons/MailIcon';
@@ -28,7 +30,7 @@ import { supabase } from '../supabase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
-import { Link } from 'react-router-dom';
+import AddressInput, { type AddressData } from '../components/AddressInput';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import FilterIcon from '../components/icons/FilterIcon'; 
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -76,6 +78,9 @@ const OrdersPage: React.FC = () => {
   // Bulk Actions
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Dropdown Actions
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   
   // Pending Deletions
   const [pendingDeletionsCount, setPendingDeletionsCount] = useState<number>(0);
@@ -144,10 +149,11 @@ const OrdersPage: React.FC = () => {
              }
         }
 
-        // 2. Orders
+        // 2. Orders (exclude soft-deleted orders)
         const { data: ordersData, error: ordersError } = await supabase
             .from('orders')
             .select('*')
+            .is('deletedAt', null)
             .order('date', { ascending: false });
         
         if (ordersError) throw ordersError;
@@ -190,20 +196,48 @@ const OrdersPage: React.FC = () => {
 
   const handleSaveManualOrder = async (newOrderData: Omit<Order, 'id'>) => {
       try {
-          const dataWithTimestamp = {
-              ...newOrderData,
-              date: new Date().toISOString()
-          };
-          const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
-          if (error) throw error;
+          // If editing existing order (selectedOrder exists), update it
+          if (selectedOrder) {
+              const { error } = await supabase.from('orders')
+                  .update({
+                      customer: newOrderData.customer,
+                      customerPhone: newOrderData.customerPhone,
+                      shippingAddress: newOrderData.shippingAddress,
+                      totalPrice: newOrderData.totalPrice,
+                      assignedCsId: newOrderData.assignedCsId,
+                      notes: newOrderData.notes,
+                      variant: newOrderData.variant,
+                      quantity: newOrderData.quantity
+                  })
+                  .eq('id', selectedOrder.id);
+              
+              if (error) throw error;
+              
+              setOrders(prev => prev.map(o => 
+                  o.id === selectedOrder.id 
+                      ? { ...o, ...newOrderData } 
+                      : o
+              ));
+              showToast("Pesanan berhasil diupdate.", "success");
+          } else {
+              // Create new order
+              const dataWithTimestamp = {
+                  ...newOrderData,
+                  date: new Date().toISOString()
+              };
+              const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
+              if (error) throw error;
+              
+              const newOrder = data as Order;
+              setOrders(prev => [newOrder, ...prev]);
+              showToast("Pesanan manual berhasil dibuat.", "success");
+          }
           
-          const newOrder = data as Order;
-          setOrders(prev => [newOrder, ...prev]);
           setIsManualOrderModalOpen(false);
-          showToast("Pesanan manual berhasil dibuat.", "success");
+          setSelectedOrder(null);
       } catch (error) {
-          console.error("Error creating order:", error);
-          showToast("Gagal membuat pesanan.", "error");
+          console.error("Error saving order:", error);
+          showToast(selectedOrder ? "Gagal update pesanan." : "Gagal membuat pesanan.", "error");
       }
   };
 
@@ -332,54 +366,43 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  // Bulk Delete
+  // Bulk Delete - All users must create deletion request for review
   const handleBulkDelete = async () => {
     if (selectedOrders.size === 0 || !currentUser) return;
     
-    const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Super Admin';
-    
     try {
-      if (isAdmin) {
-        // Admin can delete directly
-        for (const orderId of selectedOrders) {
-          await supabase.from('orders').delete().eq('id', orderId);
-        }
-        setOrders(prev => prev.filter(o => !selectedOrders.has(o.id)));
-        showToast(`${selectedOrders.size} pesanan berhasil dihapus`, 'success');
-      } else {
-        // Non-admin: create deletion request
-        const deletionRequests = Array.from(selectedOrders).map(orderId => {
-          const order = orders.find(o => o.id === orderId);
-          if (!order) return null;
-          
-          return {
-            orderId: order.id,
-            orderNumber: order.id.substring(0, 8),
-            customerName: order.customer,
-            customerPhone: order.customerPhone,
-            totalPrice: order.totalPrice,
-            requestedBy: currentUser.name,
-            requestedByEmail: currentUser.email,
-            reason: 'Bulk deletion request',
-            status: 'pending'
-          };
-        }).filter(Boolean);
+      // All users (including Super Admin) must create deletion request
+      const deletionRequests = Array.from(selectedOrders).map(orderId => {
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return null;
         
-        const { error: insertError } = await supabase
-          .from('pending_deletions')
-          .insert(deletionRequests);
-        
-        if (insertError) throw insertError;
-        
-        showToast(`${selectedOrders.size} permintaan hapus berhasil dikirim ke Admin`, 'success');
-        
-        // Refresh pending deletions count
-        const { count } = await supabase
-          .from('pending_deletions')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
-        if (count !== null) setPendingDeletionsCount(count);
-      }
+        return {
+          orderId: order.id,
+          orderNumber: order.id.substring(0, 8),
+          customerName: order.customer,
+          customerPhone: order.customerPhone,
+          totalPrice: order.totalPrice,
+          requestedBy: currentUser.name,
+          requestedByEmail: currentUser.email,
+          reason: 'Bulk deletion request',
+          status: 'pending'
+        };
+      }).filter(Boolean);
+      
+      const { error: insertError } = await supabase
+        .from('pending_deletions')
+        .insert(deletionRequests);
+      
+      if (insertError) throw insertError;
+      
+      showToast(`${selectedOrders.size} permintaan hapus berhasil dibuat. Menunggu review di Permintaan Hapus.`, 'success');
+      
+      // Refresh pending deletions count
+      const { count } = await supabase
+        .from('pending_deletions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (count !== null) setPendingDeletionsCount(count);
       
       setSelectedOrders(new Set());
       
@@ -396,40 +419,31 @@ const OrdersPage: React.FC = () => {
   const confirmDeleteOrder = async () => {
       if (!orderToDelete || !currentUser) return;
       
-      const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Super Admin';
-      
       try {
-          if (isAdmin) {
-              // Admin can delete directly
-              await supabase.from('orders').delete().eq('id', orderToDelete.id);
-              setOrders(prev => prev.filter(o => o.id !== orderToDelete.id));
-              showToast('Pesanan berhasil dihapus', 'success');
-          } else {
-              // Non-admin: create deletion request
-              const { error: insertError } = await supabase
-                  .from('pending_deletions')
-                  .insert({
-                      orderId: orderToDelete.id,
-                      orderNumber: orderToDelete.id.substring(0, 8),
-                      customerName: orderToDelete.customer,
-                      customerPhone: orderToDelete.customerPhone,
-                      totalPrice: orderToDelete.totalPrice,
-                      requestedBy: currentUser.name,
-                      requestedByEmail: currentUser.email,
-                      status: 'pending'
-                  });
-              
-              if (insertError) throw insertError;
-              
-              showToast('Permintaan hapus pesanan berhasil dikirim ke Admin', 'success');
-              
-              // Refresh pending deletions count
-              const { count } = await supabase
-                  .from('pending_deletions')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('status', 'pending');
-              if (count !== null) setPendingDeletionsCount(count);
-          }
+          // All users (including Super Admin) must create deletion request for review
+          const { error: insertError } = await supabase
+              .from('pending_deletions')
+              .insert({
+                  orderId: orderToDelete.id,
+                  orderNumber: orderToDelete.id.substring(0, 8),
+                  customerName: orderToDelete.customer,
+                  customerPhone: orderToDelete.customerPhone,
+                  totalPrice: orderToDelete.totalPrice,
+                  requestedBy: currentUser.name,
+                  requestedByEmail: currentUser.email,
+                  status: 'pending'
+              });
+          
+          if (insertError) throw insertError;
+          
+          showToast('Permintaan hapus pesanan berhasil dibuat. Menunggu review di Permintaan Hapus.', 'success');
+          
+          // Refresh pending deletions count
+          const { count } = await supabase
+              .from('pending_deletions')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'pending');
+          if (count !== null) setPendingDeletionsCount(count);
           
           setOrderToDelete(null);
           
@@ -611,11 +625,22 @@ const OrdersPage: React.FC = () => {
                 <PlusIcon className="w-5 h-5" />
                 <span>Pesanan Manual</span>
             </button>
+            {/* Pending Deletions Button - Only for Admin/Super Admin */}
+            {(currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
+                <Link to="/pengaturan/permintaan-hapus" className="relative p-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all" title="Permintaan Hapus">
+                    <TrashIcon className="w-5 h-5" />
+                    {pendingDeletionsCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">
+                            {pendingDeletionsCount}
+                        </span>
+                    )}
+                </Link>
+            )}
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -811,8 +836,8 @@ const OrdersPage: React.FC = () => {
           )}
 
           {/* Orders Table */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <div className="overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
+              <div className="min-w-[700px] md:min-w-0">
               {loading ? (
                   <div className="flex flex-col justify-center items-center py-20">
                       <SpinnerIcon className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
@@ -864,7 +889,15 @@ const OrdersPage: React.FC = () => {
                                   </td>
                                   <td className="px-6 py-5 align-top">
                                       <div className="flex flex-col">
-                                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">#{order.id.substring(0, 8)}</span>
+                                          <button
+                                              onClick={() => {
+                                                  setSelectedOrder(order);
+                                                  setIsDetailModalOpen(true);
+                                              }}
+                                              className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer text-left hover:underline"
+                                          >
+                                              #{order.id.substring(0, 8)}
+                                          </button>
                                           <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                                               <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                           </span>
@@ -935,32 +968,107 @@ const OrdersPage: React.FC = () => {
                                       </div>
                                   </td>
                                   <td className="px-6 py-5 align-middle text-right">
-                                      <div className="flex items-center justify-end gap-2">
-                                          <button onClick={() => { setSelectedOrder(order); setIsDetailModalOpen(true); }} className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all hover:scale-110" title="Detail">
-                                              <EyeIcon className="w-5 h-5" />
+                                      <div className="relative flex items-center justify-end">
+                                          <button 
+                                              onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
+                                              className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                                              title="Aksi"
+                                          >
+                                              <DotsHorizontalIcon className="w-5 h-5" />
                                           </button>
                                           
-                                          {order.status === 'Pending' && (
-                                              <button onClick={() => setOrderToProcess(order)} className="p-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all hover:scale-110" title="Proses">
-                                                  <PlayIcon className="w-5 h-5" />
-                                              </button>
-                                          )}
-                                          
-                                          {order.status === 'Processing' && (
-                                              <button onClick={() => setOrderToShip(order)} className="p-2.5 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 rounded-xl transition-all hover:scale-110" title="Kirim (Input Resi)">
-                                                  <ShipIcon className="w-5 h-5" />
-                                              </button>
-                                          )}
+                                          {openDropdownId === order.id && (
+                                              <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50">
+                                                  <button 
+                                                      onClick={() => {
+                                                          setSelectedOrder(order);
+                                                          setIsDetailModalOpen(true);
+                                                          setOpenDropdownId(null);
+                                                      }}
+                                                      className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                  >
+                                                      <EyeIcon className="w-5 h-5 text-indigo-600" />
+                                                      <span>Detail</span>
+                                                  </button>
+                                                  
+                                                  <button 
+                                                      onClick={() => {
+                                                          setSelectedOrder(order);
+                                                          setIsManualOrderModalOpen(true);
+                                                          setOpenDropdownId(null);
+                                                      }}
+                                                      className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                  >
+                                                      <PencilIcon className="w-5 h-5 text-slate-600" />
+                                                      <span>Edit</span>
+                                                  </button>
+                                                  
+                                                  {order.status === 'Pending' && (
+                                                      <button 
+                                                          onClick={() => {
+                                                              setOrderToProcess(order);
+                                                              setOpenDropdownId(null);
+                                                          }}
+                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                      >
+                                                          <PlayIcon className="w-5 h-5 text-blue-600" />
+                                                          <span>Proses</span>
+                                                      </button>
+                                                  )}
+                                                  
+                                                  {order.status === 'Processing' && (
+                                                      <button 
+                                                          onClick={() => {
+                                                              setOrderToShip(order);
+                                                              setOpenDropdownId(null);
+                                                          }}
+                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                      >
+                                                          <ShipIcon className="w-5 h-5 text-cyan-600" />
+                                                          <span>Kirim (Input Resi)</span>
+                                                      </button>
+                                                  )}
 
-                                          {order.status === 'Shipped' && (
-                                               <button onClick={() => handleUpdateStatus(order.id, 'Delivered')} className="p-2.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-xl transition-all hover:scale-110" title="Selesai (Delivered)">
-                                                  <CheckCircleFilledIcon className="w-5 h-5" />
-                                               </button>
-                                          )}
+                                                  {order.status === 'Shipped' && (
+                                                      <button 
+                                                          onClick={() => {
+                                                              handleUpdateStatus(order.id, 'Delivered');
+                                                              setOpenDropdownId(null);
+                                                          }}
+                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                      >
+                                                          <CheckCircleFilledIcon className="w-5 h-5 text-green-600" />
+                                                          <span>Selesai (Delivered)</span>
+                                                      </button>
+                                                  )}
 
-                                          <button onClick={() => openDeleteConfirmation(order)} className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all hover:scale-110" title="Hapus">
-                                              <TrashIcon className="w-5 h-5" />
-                                          </button>
+                                                  {order.status !== 'Canceled' && (
+                                                      <button 
+                                                          onClick={() => {
+                                                              handleUpdateStatus(order.id, 'Canceled');
+                                                              setOpenDropdownId(null);
+                                                          }}
+                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                      >
+                                                          <XCircleIcon className="w-5 h-5 text-orange-600" />
+                                                          <span>Batalkan</span>
+                                                      </button>
+                                                  )}
+
+                                                  <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+
+                                                  <button 
+                                                      onClick={() => {
+                                                          openDeleteConfirmation(order);
+                                                          setOpenDropdownId(null);
+                                                      }}
+                                                      className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-colors"
+                                                  >
+                                                      <TrashIcon className="w-5 h-5" />
+                                                      <span>Hapus</span>
+                                                  </button>
+                                              </div>
+                                          )}
                                       </div>
                                   </td>
                               </tr>
@@ -1003,7 +1111,11 @@ const OrdersPage: React.FC = () => {
             forms={forms} 
             csUsers={csUsers}
             currentUser={currentUser}
-            onClose={() => setIsManualOrderModalOpen(false)} 
+            editOrder={selectedOrder}
+            onClose={() => {
+                setIsManualOrderModalOpen(false);
+                setSelectedOrder(null);
+            }} 
             onSave={handleSaveManualOrder} 
           />
       )}
@@ -1117,8 +1229,8 @@ const FollowUpIndicator: React.FC<{
 };
 
 const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ order, onClose }) => (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={onClose}>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b dark:border-slate-700 flex justify-between">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Detail Pesanan</h2>
                 <button onClick={onClose}><XIcon className="w-6 h-6 text-slate-500" /></button>
@@ -1139,6 +1251,18 @@ const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ ord
                 <div className="border-t dark:border-slate-700 pt-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg">
                     <h3 className="font-bold text-lg mb-3">Produk</h3>
                     <p className="text-base">{order.productName}</p>
+                    {order.variant && (
+                        <p className="text-base mt-2"><span className="font-semibold">Variant:</span> {order.variant}</p>
+                    )}
+                    {order.quantity && (
+                        <p className="text-base mt-1"><span className="font-semibold">Jumlah:</span> {order.quantity}</p>
+                    )}
+                    {order.notes && (
+                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                            <p className="font-semibold text-sm text-slate-500">Catatan:</p>
+                            <p className="text-base mt-1">{order.notes}</p>
+                        </div>
+                    )}
                     <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                         <span className="text-lg font-bold">Total</span>
                         <span className="text-2xl font-bold text-indigo-600">Rp {order.totalPrice?.toLocaleString('id-ID')}</span>
@@ -1153,20 +1277,87 @@ const ManualOrderModal: React.FC<{
     forms: Form[]; 
     csUsers: User[]; 
     currentUser: User | null;
+    editOrder?: Order | null;
     onClose: () => void; 
     onSave: (o: Omit<Order, 'id'>) => void 
-}> = ({ forms, csUsers, currentUser, onClose, onSave }) => {
-    const [selectedFormId, setSelectedFormId] = useState(forms[0]?.id || '');
-    const [customerData, setCustomerData] = useState({ name: '', phone: '', address: '' });
-    const [orderTotal, setOrderTotal] = useState<number>(0);
-    const [selectedCsId, setSelectedCsId] = useState<string>('');
+}> = ({ forms, csUsers, currentUser, editOrder, onClose, onSave }) => {
+    const [selectedFormId, setSelectedFormId] = useState(editOrder?.formId || forms[0]?.id || '');
+    const [customerData, setCustomerData] = useState({ 
+        name: editOrder?.customer || '', 
+        phone: editOrder?.customerPhone || '', 
+        address: editOrder?.shippingAddress || '' 
+    });
+    const [addressData, setAddressData] = useState<AddressData>({
+        province: '',
+        city: '',
+        district: '',
+        postalCode: '',
+        detailAddress: '',
+        fullAddress: editOrder?.shippingAddress || ''
+    });
+    const [orderTotal, setOrderTotal] = useState<number>(editOrder?.totalPrice || 0);
+    const [selectedCsId, setSelectedCsId] = useState<string>(editOrder?.assignedCsId || '');
+    const [notes, setNotes] = useState<string>(editOrder?.notes || '');
+    const [variant, setVariant] = useState<string>(editOrder?.variant || '');
+    const [quantity, setQuantity] = useState<number>(editOrder?.quantity || 1);
+
+    // Update state when editOrder changes (when opening modal for edit)
+    useEffect(() => {
+        if (editOrder) {
+            setSelectedFormId(editOrder.formId || forms[0]?.id || '');
+            setCustomerData({
+                name: editOrder.customer || '',
+                phone: editOrder.customerPhone || '',
+                address: editOrder.shippingAddress || ''
+            });
+            // Set address in detailAddress field so it shows up in AddressInput
+            setAddressData({
+                province: '',
+                city: '',
+                district: '',
+                postalCode: '',
+                detailAddress: editOrder.shippingAddress || '', // Put full address in detail field
+                fullAddress: editOrder.shippingAddress || ''
+            });
+            setOrderTotal(editOrder.totalPrice || 0);
+            setSelectedCsId(editOrder.assignedCsId || '');
+            setNotes(editOrder.notes || '');
+            setVariant(editOrder.variant || '');
+            setQuantity(editOrder.quantity || 1);
+        } else {
+            // Reset when creating new order
+            setSelectedFormId(forms[0]?.id || '');
+            setCustomerData({ name: '', phone: '', address: '' });
+            setAddressData({
+                province: '',
+                city: '',
+                district: '',
+                postalCode: '',
+                detailAddress: '',
+                fullAddress: ''
+            });
+            setOrderTotal(0);
+            setSelectedCsId('');
+            setNotes('');
+            setVariant('');
+            setQuantity(1);
+        }
+    }, [editOrder, forms]);
 
     // Pre-select CS if user is CS
     useEffect(() => {
-        if (currentUser && currentUser.role === 'Customer service') {
+        if (currentUser && currentUser.role === 'Customer service' && !editOrder) {
             setSelectedCsId(currentUser.id);
         }
-    }, [currentUser]);
+    }, [currentUser, editOrder]);
+
+    // Update customerData.address when addressData changes
+    useEffect(() => {
+        setCustomerData(prev => ({
+            ...prev,
+            address: addressData.fullAddress
+        }));
+    }, [addressData]);
     
     const handleSubmit = () => {
         const form = forms.find(f => f.id === selectedFormId);
@@ -1187,42 +1378,202 @@ const ManualOrderModal: React.FC<{
             formId: form.id,
             formTitle: form.title,
             brandId: form.brandId || '',
-            assignedCsId: selectedCsId || undefined // Assign CS
+            assignedCsId: selectedCsId || undefined, // Assign CS
+            notes: notes || undefined,
+            variant: variant || undefined,
+            quantity: quantity || 1
         });
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
-                <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Buat Pesanan Manual</h3>
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-xs text-slate-500 mb-1">Produk (Formulir)</label>
-                        <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" onChange={e => setSelectedFormId(e.target.value)}>
-                            {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
-                        </select>
-                    </div>
-                    
-                    {/* CS Assignment Field - Only for non-CS roles */}
-                    {currentUser?.role !== 'Customer service' && (
-                        <div>
-                            <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
-                            <select 
-                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
-                                value={selectedCsId}
-                                onChange={e => setSelectedCsId(e.target.value)}
-                            >
-                                <option value="">Pilih CS...</option>
-                                {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
-                            </select>
-                        </div>
-                    )}
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl p-6 my-8">
+                <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">{editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Kolom Kiri */}
+                    <div className="space-y-4">
+                        {/* Product/Form Field - Only show when creating new order */}
+                        {!editOrder && (
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Produk (Formulir)</label>
+                                <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" value={selectedFormId} onChange={e => setSelectedFormId(e.target.value)}>
+                                    {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                                </select>
+                            </div>
+                        )}
+                        
+                        {/* CS Assignment Field - Only for Admin */}
+                        {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
+                                <select 
+                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                    value={selectedCsId}
+                                    onChange={e => setSelectedCsId(e.target.value)}
+                                >
+                                    <option value="">Pilih CS...</option>
+                                    {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
+                                </select>
+                            </div>
+                        )}
 
-                    <input className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Nama Pelanggan" onChange={e => setCustomerData({...customerData, name: e.target.value})} />
-                    <input className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="WhatsApp (e.g. 0812...)" onChange={e => setCustomerData({...customerData, phone: e.target.value})} />
-                    <input type="number" className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Total Harga (Rp)" onChange={e => setOrderTotal(parseFloat(e.target.value) || 0)} />
-                    <textarea className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Alamat Lengkap" rows={3} onChange={e => setCustomerData({...customerData, address: e.target.value})} />
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Pelanggan</label>
+                            <input 
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                placeholder="Nama Pelanggan" 
+                                value={customerData.name}
+                                onChange={e => setCustomerData({...customerData, name: e.target.value})} 
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">WhatsApp</label>
+                            <input 
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                placeholder="WhatsApp (e.g. 0812...)" 
+                                value={customerData.phone}
+                                onChange={e => setCustomerData({...customerData, phone: e.target.value})} 
+                            />
+                        </div>
+
+                        {(() => {
+                            const selectedForm = forms.find(f => f.id === selectedFormId);
+                            const variants = selectedForm?.variantCombinations || [];
+                            
+                            // Find matching variant index based on stored variant string
+                            const matchingIndex = variants.findIndex((v) => {
+                                const variantLabel = Object.entries(v.attributes || {})
+                                    .map(([key, val]) => `${key}: ${val}`)
+                                    .join(', ');
+                                return variant === variantLabel;
+                            });
+                            
+                            const currentValue = matchingIndex >= 0 ? `${matchingIndex}::${variant}` : variant;
+                            
+                            return (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Variant</label>
+                                    {variants.length > 0 ? (
+                                        <select
+                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                            value={currentValue}
+                                            onChange={e => {
+                                                const selectedIndex = parseInt(e.target.value.split('::')[0]);
+                                                const selectedVariant = variants[selectedIndex];
+                                                const variantName = e.target.value.split('::')[1] || e.target.value;
+                                                setVariant(variantName);
+                                                // Auto-update price when variant changes
+                                                if (selectedVariant?.sellingPrice) {
+                                                    setOrderTotal(selectedVariant.sellingPrice * quantity);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Pilih Variant...</option>
+                                            {variants.map((v, idx) => {
+                                                const variantLabel = Object.entries(v.attributes || {})
+                                                    .map(([key, val]) => `${key}: ${val}`)
+                                                    .join(', ');
+                                                const variantValue = `${idx}::${variantLabel}`;
+                                                return (
+                                                    <option key={idx} value={variantValue}>
+                                                        {variantLabel} - Rp {v.sellingPrice?.toLocaleString('id-ID') || 0}
+                                                    </option>
+                                                );
+                                            })}
+                                            {/* Show current variant even if not in list */}
+                                            {variant && matchingIndex < 0 && (
+                                                <option value={variant}>{variant} (Tidak tersedia)</option>
+                                            )}
+                                        </select>
+                                    ) : (
+                                        variant ? (
+                                            <input 
+                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                                value={variant}
+                                                onChange={e => setVariant(e.target.value)}
+                                            />
+                                        ) : (
+                                            <input 
+                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 bg-gray-100 dark:bg-gray-900" 
+                                                placeholder="Tidak ada variant" 
+                                                value=""
+                                                disabled
+                                            />
+                                        )
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jumlah</label>
+                            <input 
+                                type="number" 
+                                min="1"
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                placeholder="1" 
+                                value={quantity}
+                                onChange={e => {
+                                    const newQty = parseInt(e.target.value) || 1;
+                                    setQuantity(newQty);
+                                    // Auto-calculate total if variant is selected
+                                    const selectedForm = forms.find(f => f.id === selectedFormId);
+                                    const variants = selectedForm?.variantCombinations || [];
+                                    // Try to find variant by checking if current variant matches any variant label
+                                    const selectedVariant = variants.find((v, idx) => {
+                                        const variantLabel = Object.entries(v.attributes || {})
+                                            .map(([key, val]) => `${key}: ${val}`)
+                                            .join(', ');
+                                        return variant === variantLabel || variant === `${idx}::${variantLabel}`;
+                                    });
+                                    if (selectedVariant?.sellingPrice) {
+                                        setOrderTotal(selectedVariant.sellingPrice * newQty);
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Harga</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
+                                <input 
+                                    type="number" 
+                                    className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                    placeholder="0" 
+                                    value={orderTotal}
+                                    onChange={e => setOrderTotal(parseFloat(e.target.value) || 0)} 
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Catatan</label>
+                            <textarea 
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                placeholder="Catatan tambahan untuk pesanan ini" 
+                                rows={3}
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)} 
+                            />
+                        </div>
+                    </div>
+
+                    {/* Kolom Kanan */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Alamat Lengkap</label>
+                            <AddressInput
+                                value={addressData}
+                                onChange={setAddressData}
+                                required={true}
+                            />
+                        </div>
+                    </div>
                 </div>
+
                 <div className="mt-6 flex justify-end gap-2">
                     <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg">Batal</button>
                     <button onClick={handleSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Simpan</button>

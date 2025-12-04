@@ -182,7 +182,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           { name: 'Merek', icon: BrandsIcon, allowedRoles: ['Super Admin'] },
           { name: 'Pelacakan', icon: TrackingIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
           { name: 'Template Pesan', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'Permintaan Hapus', icon: TrashIcon, allowedRoles: ['Super Admin'] },
         ]
       },
     ];

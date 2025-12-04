@@ -63,6 +63,11 @@ export interface Order {
   commissionSnapshot?: number; // Commission value at the time of order creation (DEPRECATED - use csCommission + advCommission)
   csCommission?: number; // Commission for Customer Service
   advCommission?: number; // Commission for Advertiser
+  notes?: string; // Order notes/catatan
+  variant?: string; // Product variant
+  quantity?: number; // Order quantity/jumlah pesanan
+  deletedAt?: string; // Soft delete timestamp
+  scheduledDeletionDate?: string; // Auto-delete scheduled date (7 days after approval)
 }
 
 export type CSOrderStatus = 'Pending' | 'Diproses' | 'Dibatalkan' | 'Dikirim';

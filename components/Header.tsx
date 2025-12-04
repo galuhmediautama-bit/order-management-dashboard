@@ -4,9 +4,7 @@ import { Link } from 'react-router-dom';
 import MenuIcon from './icons/MenuIcon';
 import ChevronDownIcon from './icons/ChevronDownIcon';
 import ThemeToggle from './ThemeToggle';
-import LanguageToggle from './LanguageToggle';
 import SearchIcon from './icons/SearchIcon';
-import TranslateIcon from './icons/TranslateIcon';
 import UserIcon from './icons/UserIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -14,7 +12,6 @@ import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to
 import type { Notification } from '../types';
 import BellIcon from './icons/BellIcon';
 import { supabase } from '../supabase';
-import { useLanguage } from '../contexts/LanguageContext';
 
 
 const timeAgo = (isoString: string) => {
@@ -44,7 +41,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentTheme, user, logout }) => {
   const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setNotificationsOpen] = useState(false);
-  const { t } = useLanguage();
+
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
@@ -189,9 +186,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
             <button className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 <SearchIcon className="h-6 w-6" />
             </button>
-
-            {/* Language Switcher */}
-            <LanguageToggle />
 
             {/* Theme Toggle */}
             <ThemeToggle toggleTheme={toggleTheme} theme={currentTheme} />

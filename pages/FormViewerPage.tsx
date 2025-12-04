@@ -12,6 +12,7 @@ import { capitalizeWords, normalizeForm } from '../utils';
 import { SettingsContext } from '../contexts/SettingsContext';
 import CustomScriptInjector from '../components/CustomScriptInjector';
 import MetaPixelScript from '../components/MetaPixelScript';
+import AddressInput, { type AddressData } from '../components/AddressInput';
 
 const SHIPPING_LABELS: Record<keyof ShippingSettings, string> = {
     regular: 'Regular',
@@ -256,6 +257,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
     // Form state
     const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '' });
+    const [addressData, setAddressData] = useState<AddressData>({
+        province: '',
+        city: '',
+        district: '',
+        postalCode: '',
+        detailAddress: '',
+        fullAddress: ''
+    });
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
     const [selectedShippingKey, setSelectedShippingKey] = useState<keyof ShippingSettings | undefined>();
     const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
@@ -415,6 +424,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             return () => clearInterval(interval);
         }
     }, [form?.ctaSettings]);
+
+    // Update customerData.address when addressData changes
+    useEffect(() => {
+        setCustomerData(prev => ({
+            ...prev,
+            address: addressData.fullAddress
+        }));
+    }, [addressData]);
 
     useEffect(() => {
         const fetchForm = async () => {
@@ -960,8 +977,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     )}
                                     {form.customerFields.address.visible && (
                                         <div>
-                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
-                                            <textarea name="address" value={customerData.address} onChange={handleCustomerDataChange} rows={3} placeholder="Sertakan nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota/kabupaten, dan kode pos" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.address.required} />
+                                            <AddressInput
+                                                value={addressData}
+                                                onChange={setAddressData}
+                                                required={form.customerFields.address.required}
+                                            />
                                         </div>
                                     )}
                                 </div>

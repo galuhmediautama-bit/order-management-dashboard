@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../contexts/ToastContext';
 import TrashIcon from '../components/icons/TrashIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
 import XCircleIcon from '../components/icons/XCircleIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import ClockIcon from '../components/icons/ClockIcon';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface PendingDeletion {
     id: string;
@@ -23,11 +25,15 @@ interface PendingDeletion {
 
 const PendingDeletionsPage: React.FC = () => {
     const { t } = useLanguage();
+    const { showToast } = useToast();
     const [deletions, setDeletions] = useState<PendingDeletion[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+    const [confirmDelete, setConfirmDelete] = useState<PendingDeletion | null>(null);
+    const [confirmReject, setConfirmReject] = useState<PendingDeletion | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
 
     useEffect(() => {
         fetchCurrentUser();
@@ -65,25 +71,30 @@ const PendingDeletionsPage: React.FC = () => {
         }
     };
 
-    const handleApprove = async (deletion: PendingDeletion) => {
-        if (!currentUser || currentUser.role !== 'Super admin') {
-            alert('Hanya Super Admin yang dapat menyetujui penghapusan!');
+    const handleApprove = (deletion: PendingDeletion) => {
+        if (!currentUser || currentUser.role !== 'Super Admin') {
+            showToast('Hanya Super Admin yang dapat menyetujui penghapusan!', 'error');
             return;
         }
+        setConfirmDelete(deletion);
+    };
 
-        if (!confirm(`Apakah Anda yakin ingin MENGHAPUS PERMANEN pesanan #${deletion.orderNumber}?\n\nData tidak dapat dikembalikan!`)) {
-            return;
-        }
-
+    const executeApproval = async (deletion: PendingDeletion) => {
         setProcessing(deletion.id);
         try {
-            // Delete the actual order
-            const { error: deleteError } = await supabase
+            // Soft delete: mark as deleted and schedule permanent deletion in 7 days
+            const scheduledDate = new Date();
+            scheduledDate.setDate(scheduledDate.getDate() + 7);
+
+            const { error: softDeleteError } = await supabase
                 .from('orders')
-                .delete()
+                .update({
+                    deletedAt: new Date().toISOString(),
+                    scheduledDeletionDate: scheduledDate.toISOString()
+                })
                 .eq('id', deletion.orderId);
 
-            if (deleteError) throw deleteError;
+            if (softDeleteError) throw softDeleteError;
 
             // Update deletion status
             const { error: updateError } = await supabase
@@ -97,26 +108,39 @@ const PendingDeletionsPage: React.FC = () => {
 
             if (updateError) throw updateError;
 
-            alert('✅ Pesanan berhasil dihapus permanen!');
+            showToast('Pesanan akan dihapus permanen dalam 7 hari', 'success');
+            setConfirmDelete(null);
             fetchDeletions();
         } catch (error: any) {
             console.error('Error approving deletion:', error);
-            alert('❌ Gagal menghapus pesanan: ' + error.message);
+            showToast('Gagal menghapus pesanan: ' + error.message, 'error');
         } finally {
             setProcessing(null);
         }
     };
 
-    const handleReject = async (deletion: PendingDeletion) => {
-        if (!currentUser || currentUser.role !== 'Super admin') {
-            alert('Hanya Super Admin yang dapat menolak penghapusan!');
+    const handleReject = (deletion: PendingDeletion) => {
+        if (!currentUser || currentUser.role !== 'Super Admin') {
+            showToast('Hanya Super Admin yang dapat menolak penghapusan!', 'error');
             return;
         }
+        setConfirmReject(deletion);
+    };
 
-        const reason = prompt('Alasan penolakan (opsional):');
-
+    const executeRejection = async (deletion: PendingDeletion) => {
         setProcessing(deletion.id);
         try {
+            // Restore order: remove deletion marks if they exist
+            const { error: restoreError } = await supabase
+                .from('orders')
+                .update({
+                    deletedAt: null,
+                    scheduledDeletionDate: null
+                })
+                .eq('id', deletion.orderId);
+
+            if (restoreError) throw restoreError;
+
             // Update deletion status
             const { error } = await supabase
                 .from('pending_deletions')
@@ -124,17 +148,19 @@ const PendingDeletionsPage: React.FC = () => {
                     status: 'rejected',
                     rejectedBy: currentUser.email,
                     rejectedAt: new Date().toISOString(),
-                    rejectionReason: reason || undefined
+                    rejectionReason: rejectionReason || undefined
                 })
                 .eq('id', deletion.id);
 
             if (error) throw error;
 
-            alert('✅ Permintaan penghapusan ditolak!');
+            showToast('Pesanan dikembalikan ke daftar pesanan', 'success');
+            setConfirmReject(null);
+            setRejectionReason('');
             fetchDeletions();
         } catch (error: any) {
             console.error('Error rejecting deletion:', error);
-            alert('❌ Gagal menolak: ' + error.message);
+            showToast('Gagal menolak: ' + error.message, 'error');
         } finally {
             setProcessing(null);
         }
@@ -158,7 +184,7 @@ const PendingDeletionsPage: React.FC = () => {
         });
     };
 
-    if (currentUser && currentUser.role !== 'Super admin') {
+    if (currentUser && currentUser.role !== 'Super Admin') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900">
                 <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md">
@@ -334,6 +360,76 @@ const PendingDeletionsPage: React.FC = () => {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Confirmation Modal for Deletion Approval */}
+            {confirmDelete && (
+                <ConfirmationModal
+                    isOpen={!!confirmDelete}
+                    onClose={() => setConfirmDelete(null)}
+                    onConfirm={() => executeApproval(confirmDelete)}
+                    title="⚠️ Konfirmasi Penghapusan"
+                    message={
+                        <div className="space-y-3">
+                            <p className="text-slate-700 dark:text-slate-300">
+                                Pesanan akan ditandai untuk dihapus dan <span className="font-bold text-orange-600">dihapus permanen dalam 7 hari</span>.
+                            </p>
+                            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg space-y-2">
+                                <p><span className="font-semibold">Nomor Pesanan:</span> #{confirmDelete.orderNumber}</p>
+                                <p><span className="font-semibold">Pelanggan:</span> {confirmDelete.customerName}</p>
+                                <p><span className="font-semibold">Total:</span> {formatCurrency(confirmDelete.totalPrice)}</p>
+                            </div>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    ℹ️ Pesanan akan disembunyikan dari daftar dan dihapus otomatis setelah 7 hari.
+                                </p>
+                            </div>
+                        </div>
+                    }
+                    confirmText="Ya, Approve"
+                    cancelText="Batal"
+                    confirmButtonClass="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                />
+            )}
+
+            {/* Confirmation Modal for Rejection */}
+            {confirmReject && (
+                <ConfirmationModal
+                    isOpen={!!confirmReject}
+                    onClose={() => {
+                        setConfirmReject(null);
+                        setRejectionReason('');
+                    }}
+                    onConfirm={() => executeRejection(confirmReject)}
+                    title="Tolak Permintaan Penghapusan"
+                    message={
+                        <div className="space-y-3">
+                            <p className="text-slate-700 dark:text-slate-300">
+                                Pesanan akan <span className="font-bold text-green-600">dikembalikan ke daftar pesanan</span> normal.
+                            </p>
+                            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg space-y-2">
+                                <p><span className="font-semibold">Nomor Pesanan:</span> #{confirmReject.orderNumber}</p>
+                                <p><span className="font-semibold">Pelanggan:</span> {confirmReject.customerName}</p>
+                                <p><span className="font-semibold">Diminta oleh:</span> {confirmReject.requestedBy}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    Alasan penolakan (opsional):
+                                </label>
+                                <textarea
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    placeholder="Masukkan alasan penolakan..."
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white resize-none"
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
+                    }
+                    confirmText="Ya, Tolak & Kembalikan"
+                    cancelText="Batal"
+                    confirmButtonClass="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
+                />
             )}
         </div>
     );
