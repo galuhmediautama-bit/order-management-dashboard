@@ -295,6 +295,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                                 {item.subItems!.map(subItem => {
                                     const subPath = pageToPath[subItem.name];
                                     const isSubActive = currentPagePath === subPath;
+                                    
+                                    // Skip if path is undefined or '#'
+                                    if (!subPath || subPath === '#') {
+                                        console.warn(`⚠️ No route defined for submenu: ${subItem.name}`);
+                                        return null;
+                                    }
+                                    
                                     return (
                                         <Link
                                             key={subItem.name}
