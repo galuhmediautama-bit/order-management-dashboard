@@ -10,6 +10,7 @@ import { supabase } from '../firebase';
 import ChatBubbleIcon from '../components/icons/ChatBubbleIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
 import XIcon from '../components/icons/XIcon';
+import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import { filterDataByBrand } from '../utils';
 import CodeIcon from '../components/icons/CodeIcon';
 import ClipboardListIcon from '../components/icons/ClipboardListIcon';
@@ -128,6 +129,10 @@ const FormsPage: React.FC = () => {
     const [globalTemplates, setGlobalTemplates] = useState<MessageTemplates | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
+    const [selectedProductFilter, setSelectedProductFilter] = useState<string>('all');
+    const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+    const [productDropdownOpen, setProductDropdownOpen] = useState(false);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
     const actionMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const navigate = useNavigate();
@@ -178,10 +183,21 @@ const FormsPage: React.FC = () => {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
+            
+            // Close action menu
             if (openActionMenuId && actionMenuRefs.current[openActionMenuId]) {
                 if (!actionMenuRefs.current[openActionMenuId]?.contains(target)) {
                     setOpenActionMenuId(null);
                 }
+            }
+            
+            // Close filter dropdowns
+            const targetElement = target as HTMLElement;
+            if (!targetElement.closest('.brand-dropdown')) {
+                setBrandDropdownOpen(false);
+            }
+            if (!targetElement.closest('.product-dropdown')) {
+                setProductDropdownOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -261,16 +277,45 @@ const FormsPage: React.FC = () => {
     };
     
     const filteredForms = useMemo(() => {
-        const brandFiltered = filterDataByBrand(forms, currentUser);
+        let result = filterDataByBrand(forms, currentUser);
         
-        if (!searchTerm.trim()) return brandFiltered;
+        // Brand Filter
+        if (selectedBrandFilter !== 'all') {
+            result = result.filter((form: Form) => form.brandId === selectedBrandFilter);
+        }
+        
+        // Product Filter (by form title)
+        if (selectedProductFilter !== 'all') {
+            result = result.filter((form: Form) => form.title === selectedProductFilter);
+        }
+        
+        // Search
+        if (!searchTerm.trim()) return result;
         
         const term = searchTerm.toLowerCase();
-        return brandFiltered.filter((form: Form) => 
+        return result.filter((form: Form) => 
             form.title.toLowerCase().includes(term) ||
             form.slug.toLowerCase().includes(term)
         );
-    }, [forms, currentUser, searchTerm]);
+    }, [forms, currentUser, searchTerm, selectedBrandFilter, selectedProductFilter]);
+
+    // Get unique brands for filter
+    const uniqueBrands = useMemo(() => {
+        const brands = new Set<string>();
+        forms.forEach(f => {
+            if (f.brandId) brands.add(f.brandId);
+        });
+        return Array.from(brands);
+    }, [forms]);
+
+    // Get unique products (form titles) for filter
+    const uniqueProducts = useMemo(() => {
+        const products = new Set<string>();
+        forms.forEach(f => {
+            if (f.title) products.add(f.title);
+        });
+        return Array.from(products).sort();
+    }, [forms]);
 
     return (
         <div className="space-y-6">
@@ -303,31 +348,115 @@ const FormsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Search Bar */}
+            {/* Filter & Search Bar */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
+                <div className="flex items-center gap-2 mb-3">
+                    {/* Search */}
+                    <div className="flex-1 relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Cari formulir berdasarkan judul atau slug..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="block w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                                <XIcon className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Cari formulir berdasarkan judul, slug, atau domain..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="block w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                    />
-                    {searchTerm && (
+
+                    {/* Brand Filter */}
+                    <div className="relative brand-dropdown">
                         <button
-                            onClick={() => setSearchTerm('')}
-                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
+                            className="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
                         >
-                            <XIcon className="w-5 h-5" />
+                            <span className="flex-1 text-left truncate">
+                                {selectedBrandFilter === 'all' ? 'Brand' : selectedBrandFilter}
+                            </span>
+                            <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
                         </button>
-                    )}
+                        {brandDropdownOpen && (
+                            <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div className="p-2">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedBrandFilter('all');
+                                            setBrandDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                    >
+                                        Semua Brand
+                                    </button>
+                                    {uniqueBrands.map(brand => (
+                                        <button
+                                            key={brand}
+                                            onClick={() => {
+                                                setSelectedBrandFilter(brand);
+                                                setBrandDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === brand ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                        >
+                                            {brand}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Product Filter */}
+                    <div className="relative product-dropdown">
+                        <button
+                            onClick={() => setProductDropdownOpen(!productDropdownOpen)}
+                            className="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
+                        >
+                            <span className="flex-1 text-left truncate">
+                                {selectedProductFilter === 'all' ? 'Produk' : selectedProductFilter}
+                            </span>
+                            <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                        </button>
+                        {productDropdownOpen && (
+                            <div className="absolute top-full mt-1 left-0 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div className="p-2">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedProductFilter('all');
+                                            setProductDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedProductFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                    >
+                                        Semua Produk
+                                    </button>
+                                    {uniqueProducts.map(product => (
+                                        <button
+                                            key={product}
+                                            onClick={() => {
+                                                setSelectedProductFilter(product);
+                                                setProductDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm truncate ${selectedProductFilter === product ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                            title={product}
+                                        >
+                                            {product}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <span>Menampilkan {filteredForms.length} dari {forms.length} formulir</span>
                 </div>
             </div>

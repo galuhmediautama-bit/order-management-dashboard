@@ -28,6 +28,7 @@ const CuanRankPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     
     const [csRules, setCsRules] = useState<CSRankRule[]>([]);
     const [adRules, setAdRules] = useState<AdvertiserRankRule[]>([]);
@@ -102,17 +103,44 @@ const CuanRankPage: React.FC = () => {
 
     const handleSave = async () => {
         setSaving(true);
+        setSaveError(null);
         try {
+            // Only save the fields that need to persist (exclude calculated minSpending)
+            const persistAdvertiserRules = adRules.map(({ rank, minLeads, minRoas }) => ({
+                rank,
+                minLeads,
+                minRoas
+            }));
+            
             const settings: CuanRankSettings = {
                 csRules,
-                advertiserRules: adRules
+                advertiserRules: persistAdvertiserRules as AdvertiserRankRule[]
             };
-            await supabase.from("settings").upsert({ id: "cuanRank", ...settings });
+            
+            console.log('Saving settings:', settings);
+            
+            const { data, error } = await supabase.from("settings").upsert({ id: "cuanRank", ...settings }).select();
+            
+            if (error) {
+                console.error("Error saving settings:", error);
+                const errorMsg = error.message.includes('permission') || error.message.includes('Policy') 
+                    ? 'Anda tidak memiliki izin untuk mengubah pengaturan. Hanya Super Admin atau Admin yang dapat menyimpan CuanRank.'
+                    : error.message;
+                setSaveError(errorMsg);
+                return;
+            }
+            
+            console.log('Saved successfully:', data);
+            
+            // Verify the save by immediately fetching
+            const { data: verifyData } = await supabase.from("settings").select('*').eq("id", "cuanRank").single();
+            console.log('Verified saved data:', verifyData);
+            
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error) {
             console.error("Error saving settings:", error);
-            alert("Gagal menyimpan pengaturan.");
+            setSaveError(error instanceof Error ? error.message : 'Gagal menyimpan pengaturan.');
         } finally {
             setSaving(false);
         }
@@ -172,6 +200,25 @@ const CuanRankPage: React.FC = () => {
                             <div>
                                 <p className="font-semibold text-green-900 dark:text-green-100">✓ Berhasil Disimpan!</p>
                                 <p className="text-sm text-green-700 dark:text-green-300">Pengaturan CuanRank telah diperbarui.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error Message */}
+                {saveError && (
+                    <div className="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                                <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="font-semibold text-red-900 dark:text-red-100">❌ Gagal Menyimpan</p>
+                                <p className="text-sm text-red-700 dark:text-red-300">{saveError}</p>
                             </div>
                         </div>
                     </div>

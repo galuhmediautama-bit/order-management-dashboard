@@ -759,9 +759,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 urgency: 'Low',
                 followUps: 0,
                 date: new Date().toISOString(), 
+                quantity: 1,
                 formId: form.id || null,
                 formTitle: form.title,
                 assignedCsId: assignedCsId || null,
+                productId: form.productId || null,
                 commissionSnapshot: finalCsCommission, // Legacy field for backwards compatibility
                 brandId: form.brandId || null,
             };

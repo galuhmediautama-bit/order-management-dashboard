@@ -86,7 +86,7 @@ const LoginPage: React.FC = () => {
                         return;
                     }
 
-                    // Insert profile into public.users with status 'Tidak Aktif'
+                    // Insert profile into public.users with status 'Aktif'
                     const { error: dbError, data: insertedData } = await supabase.from('users').insert([{
                         id: authData.user.id,
                         email: email,
@@ -94,7 +94,7 @@ const LoginPage: React.FC = () => {
                         phone: whatsapp || null,
                         address: address || null,
                         role: selectedRole,
-                        status: 'Tidak Aktif',
+                        status: 'Aktif',
                         lastLogin: new Date().toISOString()
                     }]);
 

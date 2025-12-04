@@ -188,7 +188,37 @@ const BrandsPage: React.FC = () => {
 
     useEffect(() => {
         fetchBrands();
+        recalculateProductCounts();
     }, []);
+
+    const recalculateProductCounts = async () => {
+        try {
+            // Fetch all brands
+            const { data: allBrands } = await supabase.from('brands').select('id');
+            if (!allBrands) return;
+
+            // For each brand, count products and update
+            for (const brand of allBrands) {
+                const { count } = await supabase
+                    .from('products')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('brand_id', brand.id);
+                
+                const productCount = count || 0;
+                
+                // Update brand with correct product count
+                await supabase
+                    .from('brands')
+                    .update({ productCount })
+                    .eq('id', brand.id);
+            }
+
+            // Re-fetch brands to show updated counts
+            await fetchBrands();
+        } catch (error) {
+            console.warn('Warning: Could not recalculate product counts:', error);
+        }
+    };
 
     const filteredBrands = brands.filter(brand =>
         brand.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -347,13 +377,22 @@ const BrandsPage: React.FC = () => {
             </h2>
             <p className="text-gray-600 dark:text-gray-300">Kelola semua merek produk yang Anda tawarkan</p>
           </div>
-          <button 
-            onClick={() => handleOpenModal()} 
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:scale-105 transition-all"
-          >
-            <PlusIcon className="w-5 h-5"/>
-            <span>Tambah Merek</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={recalculateProductCounts}
+              className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 font-medium transition-colors text-sm"
+              title="Sinkronisasi jumlah produk dari database"
+            >
+              🔄 Sinkronisasi
+            </button>
+            <button 
+              onClick={() => handleOpenModal()} 
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:scale-105 transition-all"
+            >
+              <PlusIcon className="w-5 h-5"/>
+              <span>Tambah Merek</span>
+            </button>
+          </div>
         </div>
 
         {/* Statistics */}

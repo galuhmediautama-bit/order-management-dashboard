@@ -395,6 +395,25 @@ const ProductFormPage: React.FC = () => {
             } else {
                 await productService.createProduct(productData);
                 showToast('Produk berhasil ditambahkan', 'success');
+                
+                // Update brand's productCount
+                try {
+                    const { data: brand } = await supabase
+                        .from('brands')
+                        .select('productCount')
+                        .eq('id', formData.brandId)
+                        .single();
+                    
+                    if (brand) {
+                        const newCount = (brand.productCount || 0) + 1;
+                        await supabase
+                            .from('brands')
+                            .update({ productCount: newCount })
+                            .eq('id', formData.brandId);
+                    }
+                } catch (error) {
+                    console.warn('Warning: Could not update brand productCount:', error);
+                }
             }
             navigate('/produk');
         } catch (error: any) {

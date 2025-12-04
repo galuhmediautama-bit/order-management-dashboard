@@ -260,7 +260,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
                         </ul>
                         {notifications.length > 0 && (
                             <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700">
-                                <a href="#" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center justify-center gap-1">
+                                <a href="#/notifikasi" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center justify-center gap-1">
                                     Lihat semua notifikasi
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>

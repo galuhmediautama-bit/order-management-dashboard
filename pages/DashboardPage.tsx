@@ -284,10 +284,7 @@ const DashboardPage: React.FC = () => {
             .sort((a, b) => b.orders - a.orders)
             .slice(0, 5);
         
-        const recent = brandFilteredOrders.slice(0, 5).map(order => {
-            const avatarSeed = order.customer ? order.customer.split(' ')[0] : order.id;
-            return { ...order, avatar: `https://i.pravatar.cc/150?u=${avatarSeed}` };
-        });
+        const recent = brandFilteredOrders.slice(0, 5);
 
         return {
             stats: { totalSales, totalOrders, uniqueCustomers, averageOrderValue, pendingOrders, completedOrders, conversionRate },
@@ -686,10 +683,7 @@ const DashboardPage: React.FC = () => {
                     <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 font-medium text-xs sm:text-sm md:text-base text-slate-900 dark:text-white whitespace-nowrap" title={order.id}>{order.id.substring(0, 6)}...</td>
                       <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300">
-                         <div className="flex items-center gap-2 sm:gap-4">
-                          <img src={order.avatar} alt={order.customer} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
-                          <span className="truncate max-w-[100px] sm:max-w-[160px] md:max-w-[200px]">{capitalizeWords(order.customer)}</span>
-                        </div>
+                         <span className="truncate max-w-[100px] sm:max-w-[160px] md:max-w-[200px]">{capitalizeWords(order.customer)}</span>
                       </td>
                       <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300 whitespace-nowrap">{order.date}</td>
                       <td className="px-3 sm:px-6 md:px-8 py-2 sm:py-5 text-xs sm:text-sm md:text-base text-slate-900 dark:text-white font-semibold">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</td>

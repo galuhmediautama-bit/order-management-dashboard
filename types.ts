@@ -63,6 +63,8 @@ export interface Order {
   paymentMethod?: string;
   totalPrice?: number;
   assignedCsId?: string;
+  assignedAdvertiserId?: string; // FK to Users table (assigned advertiser)
+  productId?: string; // FK to Products table (product source)
   commissionSnapshot?: number; // Commission value at the time of order creation (DEPRECATED - use csCommission + advCommission)
   csCommission?: number; // Commission for Customer Service
   advCommission?: number; // Commission for Advertiser
@@ -71,6 +73,9 @@ export interface Order {
   quantity?: number; // Order quantity/jumlah pesanan
   deletedAt?: string; // Soft delete timestamp
   scheduledDeletionDate?: string; // Auto-delete scheduled date (7 days after approval)
+  cancellationReason?: string; // Reason for cancellation
+  shippingCost?: number; // Shipping cost/biaya ongkir
+  codFee?: number; // Cash on Delivery fee/biaya COD
 }
 
 export type CSOrderStatus = 'Pending' | 'Diproses' | 'Dibatalkan' | 'Dikirim';
@@ -455,6 +460,11 @@ export interface MessageTemplates {
   followUp5: string;
   processing: string;
   shipped: string;
+}
+
+export interface CancellationReasons {
+  id: string;
+  reasons: string[]; // Array of cancellation reason options
 }
 
 // --- CuanRank Types ---

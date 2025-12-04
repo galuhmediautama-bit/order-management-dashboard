@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import type { Order, OrderStatus, MessageTemplates, Form, ShippingSettings, PaymentSettings, UserRole, User } from '../types';
+import type { Order, OrderStatus, MessageTemplates, Form, ShippingSettings, PaymentSettings, UserRole, User, Brand } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
 import CalendarIcon from '../components/icons/CalendarIcon';
 import ShipIcon from '../components/icons/ShipIcon';
@@ -58,6 +58,10 @@ const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [forms, setForms] = useState<Form[]>([]); // For manual order
   const [csUsers, setCsUsers] = useState<User[]>([]); // List of CS agents for assignment
+  const [allUsers, setAllUsers] = useState<User[]>([]); // ALL users for modal lookups
+  const [csAgents, setCsAgents] = useState<any[]>([]); // CS agents for modal lookups
+  const [brands, setBrands] = useState<Brand[]>([]); // All brands for modal lookups
+  const [products, setProducts] = useState<any[]>([]); // All products for modal lookups
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   
@@ -99,8 +103,11 @@ const OrdersPage: React.FC = () => {
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null); 
   const [orderToNotify, setOrderToNotify] = useState<Order | null>(null); 
   const [orderToChangePayment, setOrderToChangePayment] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [cancellationReason, setCancellationReason] = useState<string>('');
 
   const [templates, setTemplates] = useState<MessageTemplates | null>(null);
+  const [cancellationReasons, setCancellationReasons] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
     // Assignment state for inline CS assign
     const [assignTargetOrderId, setAssignTargetOrderId] = useState<string | null>(null);
@@ -172,17 +179,55 @@ const OrdersPage: React.FC = () => {
         const { data: formsData } = await supabase.from('forms').select('*');
         setForms((formsData || []).map(f => ({ ...f }) as Form));
 
-        // 4. CS Users (for Manual Order Assignment)
+        // 4. Users (for CS assignment and modal lookups)
         const { data: usersData } = await supabase.from('users').select('*');
         if (usersData) {
+            setAllUsers(usersData as User[]); // Store ALL users
             const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
             setCsUsers(cs as User[]);
         }
 
-        // 5. Templates
+        // 4.5. CS Agents (for modal lookups - separate table from users)
+        const { data: csAgentsData } = await supabase.from('cs_agents').select('*');
+        if (csAgentsData) {
+            setCsAgents(csAgentsData);
+        }
+
+        // 5. Brands (for modal lookups)
+        const { data: brandsData } = await supabase.from('brands').select('*');
+        if (brandsData) {
+            setBrands(brandsData as Brand[]);
+        }
+
+        // 6. Products (for modal lookups)
+        const { data: productsData } = await supabase.from('products').select('*');
+        if (productsData) {
+            setProducts(productsData);
+        }
+
+        // 7. Templates
         const { data: templatesData } = await supabase.from('settings').select('*').eq('id', 'messageTemplates').single();
         if (templatesData) {
             setTemplates(templatesData as MessageTemplates);
+        }
+
+        // 8. Cancellation Reasons
+        const { data: cancellationData } = await supabase.from('settings').select('*').eq('id', 'cancellationReasons').single();
+        if (cancellationData && cancellationData.reasons) {
+            setCancellationReasons(cancellationData.reasons);
+        } else {
+            // Default reasons if not in database
+            setCancellationReasons([
+                'Pelanggan tidak merespons',
+                'Pelanggan membatalkan sendiri', 
+                'Alamat tidak lengkap/salah',
+                'Nomor telepon tidak aktif',
+                'Produk tidak tersedia',
+                'Harga tidak sesuai',
+                'Pembayaran gagal',
+                'Duplikat pesanan',
+                'Lainnya'
+            ]);
         }
 
     } catch (error) {
@@ -243,6 +288,40 @@ const OrdersPage: React.FC = () => {
       } catch (error) {
           console.error("Error saving order:", error);
           showToast(selectedOrder ? "Gagal update pesanan." : "Gagal membuat pesanan.", "error");
+      }
+  };
+
+  const handleCancelOrder = async () => {
+      if (!orderToCancel || !cancellationReason) {
+          showToast("Mohon pilih alasan pembatalan.", "error");
+          return;
+      }
+
+      try {
+          const { error } = await supabase.from('orders').update({ 
+              status: 'Canceled',
+              "cancellationReason": cancellationReason
+          }).eq('id', orderToCancel.id);
+          
+          if (error) {
+              console.error("Update error details:", error);
+              throw error;
+          }
+
+          setOrders(prev => prev.map(o => 
+              o.id === orderToCancel.id 
+                  ? { ...o, status: 'Canceled', cancellationReason: cancellationReason } 
+                  : o
+          ));
+          
+          showToast("Pesanan berhasil dibatalkan.", "success");
+          setOrderToCancel(null);
+          setCancellationReason('');
+
+      } catch (error: any) {
+          console.error("Error canceling order:", error);
+          const errorMsg = error?.message || error?.error_description || "Gagal membatalkan pesanan";
+          showToast(`Gagal membatalkan pesanan: ${errorMsg}`, "error");
       }
   };
 
@@ -1145,7 +1224,7 @@ const OrdersPage: React.FC = () => {
                                                   {order.status !== 'Canceled' && (
                                                       <button 
                                                           onClick={() => {
-                                                              handleUpdateStatus(order.id, 'Canceled');
+                                                              setOrderToCancel(order);
                                                               setOpenDropdownId(null);
                                                           }}
                                                           className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
@@ -1203,7 +1282,7 @@ const OrdersPage: React.FC = () => {
 
       {/* --- MODALS --- */}
       {isDetailModalOpen && selectedOrder && (
-          <OrderDetailModal order={selectedOrder} onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }} />
+          <OrderDetailModal order={selectedOrder} onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }} allUsers={allUsers} csAgents={csAgents} brands={brands} products={products} />
       )}
 
       {isManualOrderModalOpen && (
@@ -1264,6 +1343,54 @@ const OrdersPage: React.FC = () => {
             onConfirm={confirmDeleteOrder}
             onClose={() => setOrderToDelete(null)}
           />
+      )}
+
+      {orderToCancel && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setOrderToCancel(null)}>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                  <div className="p-6 border-b dark:border-slate-700">
+                      <h2 className="text-xl font-bold text-slate-900 dark:text-white">Konfirmasi Pembatalan Pesanan</h2>
+                  </div>
+                  <div className="p-6 space-y-4">
+                      <p className="text-slate-700 dark:text-slate-300">
+                          Apakah Anda yakin ingin membatalkan pesanan <span className="font-semibold">#{orderToCancel.id.substring(0, 8)}</span>?
+                      </p>
+                      <div>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                              Alasan Pembatalan <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                              value={cancellationReason}
+                              onChange={(e) => setCancellationReason(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          >
+                              <option value="">Pilih alasan pembatalan...</option>
+                              {cancellationReasons.map((reason) => (
+                                  <option key={reason} value={reason}>{reason}</option>
+                              ))}
+                          </select>
+                      </div>
+                  </div>
+                  <div className="p-6 border-t dark:border-slate-700 flex justify-end space-x-3">
+                      <button
+                          onClick={() => {
+                              setOrderToCancel(null);
+                              setCancellationReason('');
+                          }}
+                          className="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                      >
+                          Batal
+                      </button>
+                      <button
+                          onClick={handleCancelOrder}
+                          disabled={!cancellationReason}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                          Konfirmasi Batalkan
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
 
     </div>
@@ -1328,50 +1455,118 @@ const FollowUpIndicator: React.FC<{
   );
 };
 
-const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ order, onClose }) => (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={onClose}>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b dark:border-slate-700 flex justify-between">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Detail Pesanan</h2>
-                <button onClick={onClose}><XIcon className="w-6 h-6 text-slate-500" /></button>
-            </div>
-            <div className="p-8 space-y-6">
-                <div className="grid grid-cols-2 gap-4 text-base">
-                    <div><p className="text-slate-500">ID Pesanan</p><p className="font-mono font-bold">{order.id}</p></div>
-                    <div><p className="text-slate-500">Tanggal</p><p className="font-medium">{order.date}</p></div>
-                    <div><p className="text-slate-500">Status</p><StatusBadge status={order.status} /></div>
-                    <div><p className="text-slate-500">Metode Bayar</p><p className="font-medium">{order.paymentMethod}</p></div>
+const OrderDetailModal: React.FC<{ 
+    order: Order; 
+    onClose: () => void;
+    allUsers: User[];
+    csAgents: any[];
+    brands: Brand[];
+    products: any[];
+}> = ({ order, onClose, allUsers, csAgents, brands, products }) => {
+    const csInfo = csAgents.find(cs => cs.id === order.assignedCsId);
+    const brandInfo = brands.find(b => b.id === order.brandId);
+    const advertiserInfo = allUsers.find(u => u.id === order.assignedAdvertiserId);
+    const productInfo = products.find(p => p.id === order.productId);
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="p-6 border-b dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Detail Pesanan</h2>
+                    <button onClick={onClose} className="hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg p-1 transition">
+                        <XIcon className="w-6 h-6 text-slate-500" />
+                    </button>
                 </div>
-                <div className="border-t dark:border-slate-700 pt-4">
-                    <h3 className="font-bold text-lg mb-3">Pelanggan</h3>
-                    <p className="text-base"><span className="font-semibold">Nama:</span> {order.customer}</p>
-                    <p className="text-base"><span className="font-semibold">WhatsApp:</span> {order.customerPhone}</p>
-                    <p className="text-base"><span className="font-semibold">Alamat:</span> {order.shippingAddress}</p>
-                </div>
-                <div className="border-t dark:border-slate-700 pt-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg">
-                    <h3 className="font-bold text-lg mb-3">Produk</h3>
-                    <p className="text-base">{order.productName}</p>
-                    {order.variant && (
-                        <p className="text-base mt-2"><span className="font-semibold">Variant:</span> {order.variant}</p>
-                    )}
-                    {order.quantity && (
-                        <p className="text-base mt-1"><span className="font-semibold">Jumlah:</span> {order.quantity}</p>
-                    )}
-                    {order.notes && (
-                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                            <p className="font-semibold text-sm text-slate-500">Catatan:</p>
-                            <p className="text-base mt-1">{order.notes}</p>
+                <div className="p-8 space-y-6">
+                    {/* Order Info */}
+                    <div>
+                        <h3 className="font-bold text-lg mb-3">Informasi Pesanan</h3>
+                        <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg">
+                            <div><p className="text-slate-500 text-sm">ID</p><p className="font-mono font-bold">{order.id}</p></div>
+                            <div><p className="text-slate-500 text-sm">Tanggal</p><p className="font-medium">{order.date}</p></div>
+                            <div><p className="text-slate-500 text-sm">Status</p><div className="mt-1"><StatusBadge status={order.status} /></div></div>
+                            <div><p className="text-slate-500 text-sm">Metode Bayar</p><p className="font-medium">{order.paymentMethod || '-'}</p></div>
+                        </div>
+                    </div>
+
+                    {/* Customer */}
+                    <div className="border-t dark:border-slate-700 pt-6">
+                        <h3 className="font-bold text-lg mb-3">Data Pelanggan</h3>
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
+                            <div><p className="text-slate-500 text-sm">Nama</p><p>{order.customer}</p></div>
+                            <div><p className="text-slate-500 text-sm">WhatsApp</p><p>{order.customerPhone}</p></div>
+                            {order.customerEmail && <div><p className="text-slate-500 text-sm">Email</p><p>{order.customerEmail}</p></div>}
+                            <div><p className="text-slate-500 text-sm">Alamat</p><p>{order.shippingAddress}</p></div>
+                            {order.shippingMethod && <div><p className="text-slate-500 text-sm">Metode</p><p>{order.shippingMethod}</p></div>}
+                        </div>
+                    </div>
+
+                    {/* Tracking */}
+                    <div className="border-t dark:border-slate-700 pt-6">
+                        <h3 className="font-bold text-lg mb-3">Pelacakan</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Merek</p><p className="font-semibold">{brandInfo?.name || order.brandId || '-'}</p></div>
+                            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                                <p className="text-slate-500 text-sm">CS Ditugaskan</p>
+                                <p className="font-semibold">{csInfo?.name || order.assignedCsId || '-'}</p>
+                            </div>
+                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Advertiser</p><p className="font-semibold">{advertiserInfo?.name || order.assignedAdvertiserId || '-'}</p></div>
+                            <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Produk</p><p className="font-semibold">{productInfo?.name || order.productName || '-'}</p></div>
+                        </div>
+                    </div>
+
+                    {/* Product */}
+                    <div className="border-t dark:border-slate-700 pt-6">
+                        <h3 className="font-bold text-lg mb-3">Produk</h3>
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
+                            {order.variant && <div><p className="text-slate-500 text-sm">Varian</p><p>{order.variant}</p></div>}
+                            {order.quantity && <div><p className="text-slate-500 text-sm">Jumlah</p><p>{order.quantity}</p></div>}
+                            {order.notes && <div><p className="text-slate-500 text-sm">Catatan</p><p>{order.notes}</p></div>}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><p className="text-slate-500 text-sm">Harga Produk</p><p className="font-semibold">Rp {order.productPrice?.toLocaleString('id-ID')}</p></div>
+                                {order.shippingCost !== undefined && (
+                                    <div><p className="text-slate-500 text-sm">Biaya Ongkir</p><p className="font-semibold text-blue-600">Rp {order.shippingCost?.toLocaleString('id-ID')}</p></div>
+                                )}
+                                {order.codFee !== undefined && order.codFee > 0 && (
+                                    <div><p className="text-slate-500 text-sm">Biaya COD</p><p className="font-semibold text-orange-600">Rp {order.codFee?.toLocaleString('id-ID')}</p></div>
+                                )}
+                            </div>
+                            <div className="pt-3 border-t"><p className="text-slate-500 text-sm">Total</p><p className="text-2xl font-bold text-indigo-600">Rp {order.totalPrice?.toLocaleString('id-ID')}</p></div>
+                        </div>
+                    </div>
+
+                    {order.status === 'Canceled' && order.cancellationReason && (
+                        <div className="border-t dark:border-slate-700 pt-6">
+                            <h3 className="font-bold text-lg mb-3">Alasan Pembatalan</h3>
+                            <div className="bg-red-50 dark:bg-red-950 p-4 rounded-lg"><p className="font-semibold text-red-900">{order.cancellationReason}</p></div>
                         </div>
                     )}
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <span className="text-lg font-bold">Total</span>
-                        <span className="text-2xl font-bold text-indigo-600">Rp {order.totalPrice?.toLocaleString('id-ID')}</span>
-                    </div>
+
+                    {(order.status === 'Shipped' || order.status === 'Delivered') && order.shippingResi && (
+                        <div className="border-t dark:border-slate-700 pt-6">
+                            <h3 className="font-bold text-lg mb-3">Nomor Resi</h3>
+                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg"><p className="font-mono font-bold text-lg">{order.shippingResi}</p></div>
+                        </div>
+                    )}
+
+                    {(order.csCommission || order.advCommission) && (
+                        <div className="border-t dark:border-slate-700 pt-6">
+                            <h3 className="font-bold text-lg mb-3">Komisi</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {order.csCommission !== undefined && (
+                                    <div className="bg-orange-50 dark:bg-orange-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Komisi CS</p><p className="font-bold text-orange-700">Rp {order.csCommission?.toLocaleString('id-ID')}</p></div>
+                                )}
+                                {order.advCommission !== undefined && (
+                                    <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Komisi Advertiser</p><p className="font-bold text-yellow-700">Rp {order.advCommission?.toLocaleString('id-ID')}</p></div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 const ManualOrderModal: React.FC<{ 
     forms: Form[]; 

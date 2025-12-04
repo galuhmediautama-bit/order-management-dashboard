@@ -85,8 +85,33 @@ const ProductsPage: React.FC = () => {
 
         setIsLoading(true);
         try {
+            // Get product to find its brandId
+            const productToDelete = products.find(p => p.id === productId);
+            
             await productService.deleteProduct(productId);
             showToast('Produk berhasil dihapus', 'success');
+            
+            // Update brand's productCount
+            if (productToDelete?.brandId) {
+                try {
+                    const { data: brand } = await supabase
+                        .from('brands')
+                        .select('productCount')
+                        .eq('id', productToDelete.brandId)
+                        .single();
+                    
+                    if (brand) {
+                        const newCount = Math.max(0, (brand.productCount || 0) - 1);
+                        await supabase
+                            .from('brands')
+                            .update({ productCount: newCount })
+                            .eq('id', productToDelete.brandId);
+                    }
+                } catch (error) {
+                    console.warn('Warning: Could not update brand productCount:', error);
+                }
+            }
+            
             fetchProducts();
         } catch (error) {
             console.error('Error deleting product:', error);
@@ -159,7 +184,7 @@ const ProductsPage: React.FC = () => {
                     Produk Induk
                 </h1>
                 <button
-                    onClick={() => navigate('/produk/tambah')}
+                    onClick={() => navigate('/daftar-produk/tambah')}
                     className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition"
                 >
                     <PlusIcon className="w-5 h-5" />
