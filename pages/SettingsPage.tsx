@@ -406,6 +406,15 @@ const UserModal: React.FC<{
     );
     const isEditing = !!user;
 
+    // Update formData when user prop changes (e.g., editing different user)
+    useEffect(() => {
+        if (user) {
+            setFormData(user);
+        } else {
+            setFormData({ id: '', name: '', email: '', phone: '', address: '', role: 'Customer service', status: 'Aktif', lastLogin: '', assignedBrandIds: [] });
+        }
+    }, [user]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -751,8 +760,9 @@ const UserManagement: React.FC = () => {
                     email: userData.email,
                     role: userData.role,
                     status: userData.status,
-                    phone: userData.phone || null,
-                    address: userData.address || null,
+                    // Only set phone/address if they have a value, preserve existing if empty
+                    phone: userData.phone && userData.phone.trim() ? userData.phone.trim() : null,
+                    address: userData.address && userData.address.trim() ? userData.address.trim() : null,
                     assignedBrandIds: userData.assignedBrandIds || []
                 };
 
