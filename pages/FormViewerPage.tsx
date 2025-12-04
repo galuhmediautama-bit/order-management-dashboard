@@ -255,6 +255,16 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
     // Pixel State
     const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
+    const [eventNames, setEventNames] = useState<{ formPage: string; thankYouPage: string }>({
+        formPage: 'ViewContent',
+        thankYouPage: 'Purchase'
+    });
+    const [pixelsByPlatform, setPixelsByPlatform] = useState<Record<string, { ids: string[]; eventName: string }>>({
+        meta: { ids: [], eventName: 'ViewContent' },
+        google: { ids: [], eventName: 'view_item' },
+        tiktok: { ids: [], eventName: 'ViewContent' },
+        snack: { ids: [], eventName: 'ViewContent' },
+    });
     
     // Form state
     const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '', province: '', city: '', district: '' });
@@ -285,28 +295,60 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         console.log('[FormViewer] Calculating pixels for page:', pageType);
         console.log('[FormViewer] Form tracking settings:', form.trackingSettings);
         
-        const specificSettings = form.trackingSettings?.[pageType]?.meta;
-        const specificIds = specificSettings?.pixelIds || [];
+        const trackingSettings = form.trackingSettings?.[pageType];
         
-        console.log('[FormViewer] Specific pixel IDs from form:', specificIds);
-        console.log('[FormViewer] Global tracking settings:', globalTrackingSettings);
+        // Build pixel data for each platform
+        const newPixelsByPlatform: Record<string, { ids: string[]; eventName: string }> = {
+            meta: { ids: [], eventName: 'ViewContent' },
+            google: { ids: [], eventName: 'view_item' },
+            tiktok: { ids: [], eventName: 'ViewContent' },
+            snack: { ids: [], eventName: 'ViewContent' },
+        };
         
-        let finalIds: string[] = [];
-
-        // Priority: Specific Form Pixels > Global Pixels
-        if (specificIds && specificIds.length > 0) {
-            finalIds = specificIds;
-            console.log('[FormViewer] Using specific form pixels:', finalIds);
-        } else if (!settingsLoading && globalTrackingSettings?.meta?.active && globalTrackingSettings.meta?.pixels) {
-            // Fallback to global only if loaded and active
-            finalIds = globalTrackingSettings.meta.pixels.map(p => p.id);
-            console.log('[FormViewer] Using global pixels:', finalIds);
-        } else {
-            console.warn('[FormViewer] No pixels found. Settings loading:', settingsLoading, 'Global meta:', globalTrackingSettings?.meta);
+        let firstEventName = pageType === 'thankYouPage' ? 'Purchase' : 'ViewContent';
+        
+        // Extract from form tracking settings
+        if (trackingSettings) {
+            Object.entries(trackingSettings).forEach(([platform, settings]) => {
+                if (settings?.pixelIds && settings.pixelIds.length > 0) {
+                    newPixelsByPlatform[platform] = {
+                        ids: settings.pixelIds,
+                        eventName: settings.eventName || newPixelsByPlatform[platform].eventName
+                    };
+                    console.log(`[FormViewer] ${platform} - IDs: ${settings.pixelIds.join(', ')}, Event: ${settings.eventName}`);
+                    
+                    // Use first platform's event as primary
+                    if (firstEventName === (pageType === 'thankYouPage' ? 'Purchase' : 'ViewContent')) {
+                        firstEventName = settings.eventName || firstEventName;
+                    }
+                }
+            });
+        }
+        
+        // Fallback to global if no form-specific settings
+        const hasCoverageFromForm = Object.values(newPixelsByPlatform).some(p => p.ids.length > 0);
+        if (!hasCoverageFromForm && !settingsLoading && globalTrackingSettings) {
+            console.log('[FormViewer] Falling back to global tracking settings');
+            Object.entries(globalTrackingSettings).forEach(([platform, settings]) => {
+                if (settings?.active && settings.pixels) {
+                    newPixelsByPlatform[platform].ids = settings.pixels.map(p => p.id);
+                    console.log(`[FormViewer] ${platform} (global) - IDs: ${newPixelsByPlatform[platform].ids.join(', ')}`);
+                }
+            });
         }
 
-        console.log(`[FormViewer] Final IDs: ${finalIds.length > 0 ? finalIds.join(', ') : 'NONE'} | Page: ${pageType}`);
-        setActivePixelIds(finalIds);
+        setPixelsByPlatform(newPixelsByPlatform);
+        
+        // For backward compatibility - Meta pixel IDs
+        const metaIds = newPixelsByPlatform.meta.ids;
+        console.log(`[FormViewer] Final Meta IDs: ${metaIds.length > 0 ? metaIds.join(', ') : 'NONE'}`);
+        setActivePixelIds(metaIds);
+        
+        // Update event names
+        setEventNames(prev => ({
+            ...prev,
+            [pageType]: firstEventName
+        }));
 
     }, [form, globalTrackingSettings, submission, settingsLoading]);
 
@@ -802,7 +844,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             <>
                 <MetaPixelScript 
                     pixelIds={activePixelIds} 
-                    eventName="Purchase" 
+                    eventName={eventNames.thankYouPage} 
                     order={submission.order} 
                     contentName={form.title} 
                 />
@@ -834,7 +876,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         <>
             <MetaPixelScript 
                 pixelIds={activePixelIds} 
-                eventName="ViewContent" 
+                eventName={eventNames.formPage} 
                 contentName={form.title} 
             />
             <CustomScriptInjector scriptContent={form.customScripts?.formPage || ''} />
