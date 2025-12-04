@@ -12,6 +12,7 @@ import { capitalizeWords, normalizeForm } from '../utils';
 import { SettingsContext } from '../contexts/SettingsContext';
 import CustomScriptInjector from '../components/CustomScriptInjector';
 import MetaPixelScript from '../components/MetaPixelScript';
+import ThankYouPixelEvent from '../components/ThankYouPixelEvent';
 import ProvinceInput from '../components/ProvinceInput';
 import AddressInput, { type AddressData } from '../components/AddressInput';
 
@@ -837,9 +838,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     if (submission.success && submission.order) {
         return (
             <>
-                <MetaPixelScript 
-                    key="thankYouPage-pixel"
-                    pixelIds={activePixelIds} 
+                <ThankYouPixelEvent 
                     eventName={eventNames.thankYouPage} 
                     order={submission.order} 
                     contentName={form.title} 
