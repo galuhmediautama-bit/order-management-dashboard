@@ -465,7 +465,28 @@ export interface AnnouncementSettings {
     dismissBehavior: 'hide_for_session' | 'hide_for_hours';
     hideDurationHours?: number;
   };
-}export interface MessageTemplates {
+}
+
+// --- Announcement Types (actual announcements to display) ---
+export type AnnouncementType = 'info' | 'success' | 'warning' | 'error';
+export type AnnouncementDisplayMode = 'popup' | 'linebar' | 'both';
+
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: AnnouncementType;
+  displayMode: AnnouncementDisplayMode;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string; // User ID who created
+  startDate?: string; // When to start showing
+  endDate?: string; // When to stop showing
+  order?: number; // Display order priority
+}
+
+export interface MessageTemplates {
   followUp1: string;
   followUp2: string;
   followUp3: string;

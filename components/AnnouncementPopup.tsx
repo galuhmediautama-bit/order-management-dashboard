@@ -1,91 +1,110 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { SettingsContext } from '../contexts/SettingsContext';
+import { supabase } from '../firebase';
+import type { Announcement } from '../types';
 import XIcon from './icons/XIcon';
 
 interface AnnouncementPopupProps {
-    title?: string;
-    message: string;
     onClose?: () => void;
 }
 
-const AnnouncementPopup: React.FC<AnnouncementPopupProps> = ({ 
-    title = 'Pengumuman', 
-    message, 
-    onClose 
-}) => {
+const AnnouncementPopup: React.FC<AnnouncementPopupProps> = ({ onClose }) => {
     const { announcementSettings } = useContext(SettingsContext);
     const [isVisible, setIsVisible] = useState(false);
-    const [showCount, setShowCount] = useState(0);
+    const [currentAnnouncement, setCurrentAnnouncement] = useState<Announcement | null>(null);
 
     useEffect(() => {
-        if (!announcementSettings?.popup.enabled) {
-            return;
-        }
+        const fetchAndShowAnnouncement = async () => {
+            if (!announcementSettings?.popup?.enabled) {
+                setIsVisible(false);
+                return;
+            }
 
-        // Check if we should show based on frequency settings
-        const shouldShow = checkFrequencyRules();
-        if (shouldShow) {
-            setIsVisible(true);
-            incrementShowCount();
-        }
-    }, [announcementSettings, message]);
+            try {
+                // Fetch active popup announcements
+                const now = new Date().toISOString();
+                const { data, error } = await supabase
+                    .from('announcements')
+                    .select('*')
+                    .eq('isActive', true)
+                    .in('displayMode', ['popup', 'both'])
+                    .lte('startDate', now)
+                    .gte('endDate', now)
+                    .order('order', { ascending: true })
+                    .limit(1);
 
-    const checkFrequencyRules = (): boolean => {
-        if (!announcementSettings?.popup) return false;
+                if (error) {
+                    console.error('Error fetching announcement:', error);
+                    return;
+                }
 
-        const settings = announcementSettings.popup;
-        const storageKey = `announcement_${Date.now()}`;
+                if (data && data.length > 0) {
+                    const announcement = data[0] as Announcement;
+                    setCurrentAnnouncement(announcement);
+
+                    // Check frequency rules
+                    if (shouldShowAnnouncement(announcement)) {
+                        setIsVisible(true);
+                    }
+                }
+            } catch (err) {
+                console.error('Error in announcement popup:', err);
+            }
+        };
+
+        fetchAndShowAnnouncement();
+    }, [announcementSettings]);
+
+    const shouldShowAnnouncement = (announcement: Announcement): boolean => {
+        const settings = announcementSettings?.popup;
+        if (!settings) return false;
+
+        const storageKey = `announcement_popup_${announcement.id}`;
+        const showCountKey = `announcement_popup_count_${announcement.id}`;
+        const today = new Date().toDateString();
 
         if (settings.frequency === 'always') {
             return true;
         }
 
         if (settings.frequency === 'per_session') {
-            // Check if already shown in this session
-            const sessionKey = 'announcement_shown_session';
-            if (sessionStorage.getItem(sessionKey)) {
-                return false;
+            const sessionShown = sessionStorage.getItem(storageKey);
+            if (!sessionShown) {
+                sessionStorage.setItem(storageKey, 'true');
+                return true;
             }
-            sessionStorage.setItem(sessionKey, 'true');
-            return true;
+            return false;
         }
 
-        if (settings.frequency === 'cooldown' && settings.cooldownMinutes) {
-            const cooldownKey = 'announcement_last_shown';
-            const lastShown = localStorage.getItem(cooldownKey);
-            
+        if (settings.frequency === 'cooldown') {
+            const lastShown = localStorage.getItem(storageKey);
+            const cooldownMs = (settings.cooldownMinutes || 30) * 60 * 1000;
+
             if (!lastShown) {
-                localStorage.setItem(cooldownKey, Date.now().toString());
+                localStorage.setItem(storageKey, new Date().toISOString());
                 return true;
             }
 
-            const lastShownTime = parseInt(lastShown, 10);
-            const cooldownMs = settings.cooldownMinutes * 60 * 1000;
-            const now = Date.now();
+            const lastTime = new Date(lastShown).getTime();
+            const elapsed = new Date().getTime() - lastTime;
 
-            if (now - lastShownTime >= cooldownMs) {
-                localStorage.setItem(cooldownKey, Date.now().toString());
-
+            if (elapsed >= cooldownMs) {
+                localStorage.setItem(storageKey, new Date().toISOString());
+                
                 // Check max shows per day
-                if (settings.maxShowsPerDay) {
-                    const todayKey = `announcement_shows_today_${new Date().toDateString()}`;
-                    const todayCount = parseInt(localStorage.getItem(todayKey) || '0', 10);
+                const countKey = `${showCountKey}_${today}`;
+                const showCount = parseInt(localStorage.getItem(countKey) || '0', 10);
+                const maxShows = settings.maxShowsPerDay || 3;
 
-                    if (todayCount >= settings.maxShowsPerDay) {
-                        return false;
-                    }
-                    localStorage.setItem(todayKey, (todayCount + 1).toString());
+                if (showCount < maxShows) {
+                    localStorage.setItem(countKey, (showCount + 1).toString());
+                    return true;
                 }
-
-                return true;
             }
+            return false;
         }
 
         return false;
-    };
-
-    const incrementShowCount = () => {
-        setShowCount(prev => prev + 1);
     };
 
     const handleClose = () => {
@@ -95,17 +114,25 @@ const AnnouncementPopup: React.FC<AnnouncementPopupProps> = ({
         }
     };
 
-    if (!isVisible) {
+    if (!isVisible || !currentAnnouncement) {
         return null;
     }
+
+    // Color mapping based on announcement type
+    const typeColorMap = {
+        info: 'from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20',
+        success: 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',
+        warning: 'from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20',
+        error: 'from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20',
+    };
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-300">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 flex items-start justify-between">
+                <div className={`p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r ${typeColorMap[currentAnnouncement.type]} flex items-start justify-between`}>
                     <div>
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h2>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{currentAnnouncement.title}</h2>
                     </div>
                     <button
                         onClick={handleClose}
@@ -118,7 +145,7 @@ const AnnouncementPopup: React.FC<AnnouncementPopupProps> = ({
 
                 {/* Content */}
                 <div className="p-6">
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{message}</p>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{currentAnnouncement.message}</p>
                 </div>
 
                 {/* Footer */}

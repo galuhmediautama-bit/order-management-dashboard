@@ -54,6 +54,7 @@ const ProductsPage = lazyWithRetry(() => import('./pages/ProductsPage'));
 const ProductAnalyticsPage = lazyWithRetry(() => import('./pages/ProductAnalyticsPage'));
 const ProductFormPage = lazyWithRetry(() => import('./pages/ProductFormPage'));
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
+const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'));
 
 
 const FormViewerWrapper: React.FC = () => {
@@ -70,8 +71,7 @@ interface AuthenticatedAppProps {
 
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme, toggleTheme }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
-  const { websiteSettings, announcementSettings } = useContext(SettingsContext);
+  const { websiteSettings } = useContext(SettingsContext);
   const websiteName = websiteSettings?.siteName;
 
   useEffect(() => {
@@ -79,18 +79,6 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
         document.title = websiteName;
     }
   }, [websiteName]);
-
-  useEffect(() => {
-    // Demo: Show announcement popup after 2 seconds (for testing)
-    // In production, this would be triggered by actual announcement data from Supabase
-    const timer = setTimeout(() => {
-      if (announcementSettings?.popup.enabled) {
-        setShowAnnouncement(true);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [announcementSettings?.popup.enabled]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -112,13 +100,8 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
           logout={handleLogout}
         />
         
-        {/* Global Announcement Line Bar */}
-        {announcementSettings?.lineBar.enabled && (
-          <AnnouncementLineBar 
-            message="Selamat datang! Fitur pengumuman sistem telah aktif." 
-            type="info" 
-          />
-        )}
+        {/* Global Announcement Line Bar - fetches from database */}
+        <AnnouncementLineBar />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 dark:bg-slate-900 p-4 md:p-6 lg:p-8">
           <Suspense fallback={<div className="flex justify-center items-center h-64"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
@@ -148,6 +131,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
                 <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
                 <Route path="/notifikasi" element={<NotificationsPage />} />
+                <Route path="/pengumuman" element={<AnnouncementsPage />} />
                 <Route path="/daftar-produk" element={<ProductsPage />} />
                 <Route path="/daftar-produk/tambah" element={<ProductFormPage />} />
                 <Route path="/daftar-produk/edit/:id" element={<ProductFormPage />} />
@@ -157,14 +141,8 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
           </Suspense>
         </main>
 
-        {/* Global Announcement Popup */}
-        {showAnnouncement && (
-          <AnnouncementPopup 
-            title="Pengumuman Penting"
-            message="Ini adalah pesan pengumuman demo. Pengaturan frekuensi pop-up dan durasi line bar dapat diatur di halaman 'Pengaturan Pengumuman'."
-            onClose={() => setShowAnnouncement(false)}
-          />
-        )}
+        {/* Global Announcement Popup - fetches from database */}
+        <AnnouncementPopup />
       </div>
     </div>
   );

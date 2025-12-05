@@ -1,68 +1,97 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { SettingsContext } from '../contexts/SettingsContext';
+import { supabase } from '../firebase';
+import type { Announcement } from '../types';
 import XIcon from './icons/XIcon';
 
 interface AnnouncementLineBarProps {
-    message: string;
-    type?: 'info' | 'success' | 'warning' | 'error';
+    onClose?: () => void;
 }
 
-const AnnouncementLineBar: React.FC<AnnouncementLineBarProps> = ({ 
-    message, 
-    type = 'info' 
-}) => {
+const AnnouncementLineBar: React.FC<AnnouncementLineBarProps> = ({ onClose }) => {
     const { announcementSettings } = useContext(SettingsContext);
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
+    const [currentAnnouncement, setCurrentAnnouncement] = useState<Announcement | null>(null);
 
     useEffect(() => {
-        if (!announcementSettings?.lineBar.enabled) {
-            setIsVisible(false);
-            return;
-        }
-
-        // Check if bar was dismissed and should remain hidden
-        const dismissedKey = 'announcement_linebar_dismissed';
-        const dismissedTime = localStorage.getItem(dismissedKey);
-
-        if (dismissedTime) {
-            const dismissedAt = parseInt(dismissedTime, 10);
-            const now = Date.now();
-
-            if (announcementSettings.lineBar.dismissBehavior === 'hide_for_session') {
-                // Only hide for this session (check sessionStorage instead)
-                const sessionKey = 'announcement_linebar_dismissed_session';
-                if (sessionStorage.getItem(sessionKey)) {
-                    setIsVisible(false);
-                    return;
-                }
-            } else if (announcementSettings.lineBar.dismissBehavior === 'hide_for_hours') {
-                const hideDurationMs = (announcementSettings.lineBar.hideDurationHours || 12) * 60 * 60 * 1000;
-                if (now - dismissedAt < hideDurationMs) {
-                    setIsVisible(false);
-                    return;
-                } else {
-                    // Duration expired, clear the key
-                    localStorage.removeItem(dismissedKey);
-                }
+        const fetchAndShowAnnouncement = async () => {
+            if (!announcementSettings?.lineBar?.enabled) {
+                setIsVisible(false);
+                return;
             }
-        }
 
-        setIsVisible(true);
+            try {
+                // Check if dismissed
+                const dismissedKey = `announcement_linebar_dismissed_${announcementSettings.lineBar.dismissBehavior}`;
+                const dismissedTime = localStorage.getItem(dismissedKey);
+
+                if (dismissedTime) {
+                    const dismissedAt = parseInt(dismissedTime, 10);
+                    const now = Date.now();
+
+                    if (announcementSettings.lineBar.dismissBehavior === 'hide_for_session') {
+                        const sessionKey = 'announcement_linebar_dismissed_session';
+                        if (sessionStorage.getItem(sessionKey)) {
+                            setIsVisible(false);
+                            return;
+                        }
+                    } else if (announcementSettings.lineBar.dismissBehavior === 'hide_for_hours') {
+                        const hideDurationMs = (announcementSettings.lineBar.hideDurationHours || 12) * 60 * 60 * 1000;
+                        if (now - dismissedAt < hideDurationMs) {
+                            setIsVisible(false);
+                            return;
+                        }
+                    }
+                }
+
+                // Fetch active line bar announcements
+                const now = new Date().toISOString();
+                const { data, error } = await supabase
+                    .from('announcements')
+                    .select('*')
+                    .eq('isActive', true)
+                    .in('displayMode', ['linebar', 'both'])
+                    .lte('startDate', now)
+                    .gte('endDate', now)
+                    .order('order', { ascending: true })
+                    .limit(1);
+
+                if (error) {
+                    console.error('Error fetching announcement:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    const announcement = data[0] as Announcement;
+                    setCurrentAnnouncement(announcement);
+                    setIsVisible(true);
+                }
+            } catch (err) {
+                console.error('Error in announcement line bar:', err);
+            }
+        };
+
+        fetchAndShowAnnouncement();
     }, [announcementSettings]);
 
     const handleClose = () => {
-        const dismissedKey = 'announcement_linebar_dismissed';
+        if (!currentAnnouncement) return;
 
-        if (announcementSettings?.lineBar.dismissBehavior === 'hide_for_session') {
+        const dismissedKey = `announcement_linebar_dismissed_${announcementSettings?.lineBar?.dismissBehavior || 'hide_for_hours'}`;
+
+        if (announcementSettings?.lineBar?.dismissBehavior === 'hide_for_session') {
             sessionStorage.setItem('announcement_linebar_dismissed_session', 'true');
-        } else if (announcementSettings?.lineBar.dismissBehavior === 'hide_for_hours') {
+        } else {
             localStorage.setItem(dismissedKey, Date.now().toString());
         }
 
         setIsVisible(false);
+        if (onClose) {
+            onClose();
+        }
     };
 
-    if (!isVisible) {
+    if (!isVisible || !currentAnnouncement) {
         return null;
     }
 
@@ -74,12 +103,12 @@ const AnnouncementLineBar: React.FC<AnnouncementLineBarProps> = ({
     };
 
     return (
-        <div className={`flex items-center justify-between gap-4 px-4 py-3 border-b ${typeStyles[type]} transition-all duration-300 animate-in slide-in-from-top`}>
+        <div className={`flex items-center justify-between gap-4 px-4 py-3 border-b ${typeStyles[currentAnnouncement.type]} transition-all duration-300 animate-in slide-in-from-top`}>
             <div className="flex items-center gap-3 flex-1">
                 <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                <p className="text-sm font-medium">{message}</p>
+                <p className="text-sm font-medium">{currentAnnouncement.message}</p>
             </div>
             <button
                 onClick={handleClose}

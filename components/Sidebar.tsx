@@ -63,6 +63,7 @@ const pageToPath: Record<string, string> = {
     'Profil Saya': '/profil',
     'Pelanggan': '/pelanggan',
     'Penghasilan': '/penghasilan',
+    'Kelola Pengumuman': '/pengumuman',
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => {
@@ -201,6 +202,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           name: 'Penghasilan', 
           icon: BanknotesIcon,
           allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser']
+      },
+      { 
+          name: 'Kelola Pengumuman', 
+          icon: ChatBubbleIcon,
+          allowedRoles: ['Super Admin', 'Admin']
       },
       { 
         name: 'Pengaturan', 
