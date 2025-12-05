@@ -478,6 +478,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             return;
         }
 
+        // ✅ PENTING: Jangan simpan ke abandoned_carts jika user sedang di Thank You page
+        // (berarti mereka sudah selesai checkout, bukan abandoned)
+        if (submission?.success) {
+            return;
+        }
+
         const cartData = {
             formId: form.id,
             formTitle: form.title,
@@ -977,6 +983,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             await supabase.from('forms').update({
                 submissionCount: (form.submissionCount || 0) + 1
             }).eq('id', form.id);
+            
+            // ✅ DELETE abandoned cart record saat order berhasil dibuat
+            // (jangan masukkan order yang sudah completed ke abandoned carts)
+            const cartId = sessionStorage.getItem(`abandonedCart_${form.id}`);
+            if (cartId) {
+                try {
+                    await supabase.from('abandoned_carts').delete().eq('id', cartId);
+                } catch (err) {
+                    console.warn("Failed to delete abandoned cart record:", err);
+                }
+            }
             
             const newOrder = {
                 ...(data as Order),
