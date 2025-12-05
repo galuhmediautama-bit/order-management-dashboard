@@ -194,6 +194,21 @@ const FormsPage: React.FC = () => {
         fetchData();
     }, []);
 
+    // Debug effect to log CS assignments
+    useEffect(() => {
+        if (forms.length > 0 && csAgents.length > 0) {
+            console.log('=== Forms with CS Assignment ===');
+            forms.forEach(form => {
+                if (form.thankYouPage?.csAssignment) {
+                    console.log(`Form: ${form.title}`, {
+                        csAssignment: form.thankYouPage.csAssignment,
+                        csAgentsAvailable: csAgents.map(a => ({ id: a.id, name: a.name }))
+                    });
+                }
+            });
+        }
+    }, [forms, csAgents]);
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
@@ -299,34 +314,44 @@ const FormsPage: React.FC = () => {
         // Then try cs_agents table
         let agent = csAgents.find(a => a.id === userId);
         if (agent) return agent.name;
+        console.warn(`User/Agent not found for ID: ${userId}. Available users: ${users.map(u => u.id).join(', ')} | Available agents: ${csAgents.map(a => a.id).join(', ')}`);
         return 'Unknown User';
     };
 
-    // Helper function to get CS agent names by mode
+    // Helper function to get CS agent names by mode - showing all details
     const getCsAssignmentDisplay = (csAssignment?: any): string => {
-        if (!csAssignment?.mode) return '-';
-        if (csAssignment.mode === 'single' && csAssignment.singleAgentId) {
-            // Try to find in cs_agents table first (for cs_agents IDs)
-            let agent = csAgents.find(a => a.id === csAssignment.singleAgentId);
-            if (agent) return agent.name;
-            // Fallback to users table
-            agent = users.find(u => u.id === csAssignment.singleAgentId);
-            if (agent) return agent.name;
-            return 'Unknown Agent';
+        if (!csAssignment) return '-';
+        
+        console.log('CS Assignment Debug:', {
+            mode: csAssignment.mode,
+            singleAgentId: csAssignment.singleAgentId,
+            roundRobinAgents: csAssignment.roundRobinAgents,
+            usersCount: users.length,
+            csAgentsCount: csAgents.length
+        });
+
+        if (csAssignment.mode === 'single') {
+            if (csAssignment.singleAgentId) {
+                const agentName = getUserName(csAssignment.singleAgentId);
+                return `Single: ${agentName}`;
+            }
+            return 'Single: No agent assigned';
         }
-        if (csAssignment.mode === 'round_robin' && csAssignment.roundRobinAgents?.length) {
-            const agentNames = csAssignment.roundRobinAgents
-                .map((ra: any) => {
-                    // Try cs_agents table first
-                    let agent = csAgents.find(a => a.id === ra.csAgentId);
-                    if (agent) return agent.name;
-                    // Fallback to users table
-                    agent = users.find(u => u.id === ra.csAgentId);
-                    return agent?.name || 'Unknown';
-                })
-                .join(', ');
-            return `Round Robin: ${agentNames}`;
+        
+        if (csAssignment.mode === 'round_robin') {
+            if (csAssignment.roundRobinAgents?.length) {
+                const agentNames = csAssignment.roundRobinAgents
+                    .map((ra: any) => {
+                        const agentName = getUserName(ra.csAgentId);
+                        const percentage = ra.percentage ? ` (${ra.percentage}%)` : '';
+                        return `${agentName}${percentage}`;
+                    })
+                    .join(', ');
+                return `Multi: ${agentNames}`;
+            }
+            return 'Multi: No agents assigned';
         }
+        
         return '-';
     };
     
