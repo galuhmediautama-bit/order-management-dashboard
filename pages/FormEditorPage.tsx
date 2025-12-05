@@ -2027,6 +2027,171 @@ const FormEditorPage: React.FC = () => {
                     </div>
                 </EditorCard>
 
+                {/* Atur Opsi Varian */}
+                <EditorCard icon={CubeIcon} title="Atur Opsi Varian">
+                    <p className="text-xs text-slate-500 mb-3">Kelola atribut produk (Warna, Ukuran, dll) dan nilai-nilainya</p>
+                    
+                    {form.productOptions && form.productOptions.length > 0 ? (
+                        <div className="space-y-4">
+                            {form.productOptions.map((option, optIndex) => (
+                                <div key={option.id} className="p-4 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30">
+                                    {/* Header Opsi */}
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <input
+                                            type="text"
+                                            value={option.name}
+                                            onChange={(e) => {
+                                                const newName = e.target.value.toUpperCase();
+                                                setForm(prev => {
+                                                    if (!prev) return prev;
+                                                    const updated = [...prev.productOptions];
+                                                    const oldName = updated[optIndex].name;
+                                                    updated[optIndex] = { ...updated[optIndex], name: newName };
+                                                    
+                                                    // Update atribut di semua combinations
+                                                    const updatedCombos = prev.variantCombinations.map(combo => {
+                                                        const attrs = { ...combo.attributes };
+                                                        if (attrs[oldName] !== undefined) {
+                                                            attrs[newName] = attrs[oldName];
+                                                            delete attrs[oldName];
+                                                        }
+                                                        return { ...combo, attributes: attrs };
+                                                    });
+                                                    
+                                                    return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
+                                                });
+                                            }}
+                                            placeholder="Nama atribut (e.g., WARNA)"
+                                            className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 font-bold text-indigo-600"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (confirm(`Hapus atribut "${option.name}"?`)) {
+                                                    setForm(prev => {
+                                                        if (!prev) return prev;
+                                                        const filtered = prev.productOptions.filter((_, i) => i !== optIndex);
+                                                        return { ...prev, productOptions: filtered };
+                                                    });
+                                                }
+                                            }}
+                                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Nilai-nilai */}
+                                    <div className="space-y-2">
+                                        {option.values.map((value, valIndex) => (
+                                            <div key={valIndex} className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={value}
+                                                    onChange={(e) => {
+                                                        const newValue = e.target.value;
+                                                        setForm(prev => {
+                                                            if (!prev) return prev;
+                                                            const updated = [...prev.productOptions];
+                                                            const oldValue = updated[optIndex].values[valIndex];
+                                                            updated[optIndex].values[valIndex] = newValue;
+                                                            
+                                                            // Update combinations yang menggunakan value ini
+                                                            const updatedCombos = prev.variantCombinations.map(combo => {
+                                                                if (combo.attributes[option.name] === oldValue) {
+                                                                    return {
+                                                                        ...combo,
+                                                                        attributes: { ...combo.attributes, [option.name]: newValue }
+                                                                    };
+                                                                }
+                                                                return combo;
+                                                            });
+                                                            
+                                                            return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
+                                                        });
+                                                    }}
+                                                    placeholder={`Nilai ${valIndex + 1}`}
+                                                    className="flex-1 px-3 py-1.5 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setForm(prev => {
+                                                            if (!prev) return prev;
+                                                            const updated = [...prev.productOptions];
+                                                            updated[optIndex].values.splice(valIndex, 1);
+                                                            return { ...prev, productOptions: updated };
+                                                        });
+                                                    }}
+                                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                                >
+                                                    <XIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForm(prev => {
+                                                    if (!prev) return prev;
+                                                    const updated = [...prev.productOptions];
+                                                    updated[optIndex].values.push(`Nilai ${updated[optIndex].values.length + 1}`);
+                                                    return { ...prev, productOptions: updated };
+                                                });
+                                            }}
+                                            className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
+                                        >
+                                            + Tambah Nilai
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setForm(prev => {
+                                        if (!prev) return prev;
+                                        const newOption: ProductOption = {
+                                            id: Date.now(),
+                                            name: `OPSI ${prev.productOptions.length + 1}`,
+                                            values: ['Nilai 1'],
+                                            displayStyle: 'radio'
+                                        };
+                                        return { ...prev, productOptions: [...prev.productOptions, newOption] };
+                                    });
+                                }}
+                                className="w-full py-2.5 border-2 border-dashed border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 font-medium text-sm"
+                            >
+                                + Tambah Opsi
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-8">
+                            <p className="text-sm text-slate-500 mb-3">Belum ada opsi varian</p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setForm(prev => {
+                                        if (!prev) return prev;
+                                        const newOption: ProductOption = {
+                                            id: Date.now(),
+                                            name: 'WARNA',
+                                            values: ['HITAM', 'MERAH', 'BIRU'],
+                                            displayStyle: 'radio'
+                                        };
+                                        return { ...prev, productOptions: [newOption] };
+                                    });
+                                }}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm"
+                            >
+                                Buat Opsi Pertama
+                            </button>
+                        </div>
+                    )}
+                </EditorCard>
+
                 <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
                     <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
                     {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
