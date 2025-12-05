@@ -298,7 +298,7 @@ const UserDetailModal: React.FC<{
                     {/* Profile Header */}
                     <div className="flex items-center gap-4 pb-6 border-b dark:border-slate-700">
                         <img 
-                            src={user.avatar || `https://i.pravatar.cc/150?u=${user.id}`} 
+                            src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`} 
                             alt={user.name} 
                             className="w-20 h-20 rounded-full ring-4 ring-purple-200 dark:ring-purple-700"
                         />
@@ -433,6 +433,21 @@ const UserModal: React.FC<{
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // SECURITY: Prevent anyone from creating/modifying Super Admin
+        if (formData.role === 'Super Admin' && formData.email !== 'galuhmediautama@gmail.com') {
+            alert('⛔ FORBIDDEN: Only galuhmediautama@gmail.com can have Super Admin role!');
+            return;
+        }
+        
+        // SECURITY: Prevent changing Super Admin email or role
+        if (isEditing && user?.email === 'galuhmediautama@gmail.com') {
+            if (formData.email !== 'galuhmediautama@gmail.com' || formData.role !== 'Super Admin') {
+                alert('⛔ FORBIDDEN: Cannot change Super Admin email or role!');
+                return;
+            }
+        }
+        
         if (formData.name && formData.email) {
             onSave(formData);
         }
@@ -463,17 +478,40 @@ const UserModal: React.FC<{
                         <div><label className="text-sm text-slate-700 dark:text-slate-300">Email*</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600" required disabled={isEditing} /></div>
                         <div>
                             <label className="text-sm text-slate-700 dark:text-slate-300">Peran</label>
-                            <select name="role" value={formData.role} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600">
-                                <option value="Super Admin">Super Admin</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Keuangan">Keuangan</option>
-                                <option value="Customer service">Customer Service</option>
-                                <option value="Advertiser">Advertiser</option>
-                                <option value="Partner">Partner</option>
+                            <select 
+                                name="role" 
+                                value={formData.role} 
+                                onChange={handleChange} 
+                                className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600"
+                                disabled={formData.email === 'galuhmediautama@gmail.com'}
+                            >
+                                {formData.email === 'galuhmediautama@gmail.com' ? (
+                                    <option value="Super Admin">Super Admin (LOCKED)</option>
+                                ) : (
+                                    <>
+                                        <option value="Admin">Admin</option>
+                                        <option value="Keuangan">Keuangan</option>
+                                        <option value="Customer service">Customer Service</option>
+                                        <option value="Advertiser">Advertiser</option>
+                                        <option value="Partner">Partner</option>
+                                    </>
+                                )}
                             </select>
-                            <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded">
-                                <strong>Info Akses:</strong> {getRoleDescription(formData.role)}
-                            </p>
+                            {formData.email === 'galuhmediautama@gmail.com' && (
+                                <p className="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-2 rounded">
+                                    <strong>⚠️ PROTECTED:</strong> Super Admin role is locked and cannot be changed. Only galuhmediautama@gmail.com can have this role.
+                                </p>
+                            )}
+                            {formData.email !== 'galuhmediautama@gmail.com' && (
+                                <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded">
+                                    <strong>Info Akses:</strong> {getRoleDescription(formData.role)}
+                                </p>
+                            )}
+                            {formData.email !== 'galuhmediautama@gmail.com' && (
+                                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-2 rounded">
+                                    <strong>🔒 Security:</strong> Super Admin role is restricted to system owner only.
+                                </p>
+                            )}
                         
                         <div>
                             <label className="text-sm text-slate-700 dark:text-slate-300">Nomor WhatsApp</label>
@@ -571,6 +609,7 @@ const UserManagement: React.FC = () => {
     const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
     const [viewingUser, setViewingUser] = useState<User | null>(null); // For detail modal
     const [currentUserRole, setCurrentUserRole] = useState<UserRole>('Super Admin');
+    const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now()); // For cache busting
     const navigate = useNavigate();
     const { showToast } = useToast();
 
@@ -584,6 +623,9 @@ const UserManagement: React.FC = () => {
              
              // 2. Fetch Users from Public Table
              const { data: usersData, error: fetchError } = await supabase.from('users').select('*');
+             
+             // Update avatar timestamp for cache busting
+             setAvatarTimestamp(Date.now());
              
              let tableExists = true;
              if (fetchError) {
@@ -1026,7 +1068,7 @@ const UserManagement: React.FC = () => {
                             <div key={user.id} className="flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800/50 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <img 
-                                        src={user.avatar || `https://i.pravatar.cc/150?u=${user.id}`} 
+                                        src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`} 
                                         alt={user.name} 
                                         className="w-10 h-10 rounded-full"
                                     />
@@ -1148,7 +1190,7 @@ const UserManagement: React.FC = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <img 
-                                                src={user.avatar || `https://i.pravatar.cc/150?u=${user.id}`} 
+                                                src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`} 
                                                 alt={user.name} 
                                                 className="w-10 h-10 rounded-full bg-gray-200 ring-2 ring-purple-200 dark:ring-purple-700"
                                             />

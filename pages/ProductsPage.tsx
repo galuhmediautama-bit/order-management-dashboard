@@ -279,7 +279,7 @@ const ProductsPage: React.FC = () => {
                                                 <div className="absolute right-0 mt-8 w-48 bg-white dark:bg-slate-700 rounded-lg shadow-lg z-10 border border-slate-200 dark:border-slate-600">
                                                     <button
                                                         onClick={() => {
-                                                            navigate(`/produk/edit/${product.id}`);
+                                                            navigate(`/daftar-produk/edit/${product.id}`);
                                                             setOpenDropdown(null);
                                                         }}
                                                         className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600"

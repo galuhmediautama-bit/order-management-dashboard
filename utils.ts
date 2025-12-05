@@ -123,6 +123,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
         ...formToEdit,
         slug: formToEdit.slug || '',
         brandId: formToEdit.brandId || '', // Ensure brandId exists
+        assignedAdvertiserId: formToEdit.assignedAdvertiserId || '', // PRESERVE: Don't reset advertiser assignment
         productImages: formToEdit.productImages || [], // Ensure productImages array exists
         showTitle: formToEdit.showTitle ?? true,
         showDescription: formToEdit.showDescription ?? true,

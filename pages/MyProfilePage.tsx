@@ -17,6 +17,7 @@ const MyProfilePage: React.FC = () => {
     const [userData, setUserData] = useState<User | null>(null);
     const [stats, setStats] = useState({ ordersHandled: 0, totalRevenue: 0 });
     const [loading, setLoading] = useState(true);
+    const [userAvatar, setUserAvatar] = useState<string>('');
 
     useEffect(() => {
         const fetchProfileAndStats = async () => {
@@ -39,6 +40,13 @@ const MyProfilePage: React.FC = () => {
                     };
                     
                     setUserData(currentUser);
+                    
+                    // Fetch avatar from database (latest version)
+                    if (userDoc?.avatar) {
+                        setUserAvatar(userDoc.avatar);
+                    } else {
+                        setUserAvatar(user.user_metadata?.avatar_url || '');
+                    }
 
                     // 2. Fetch Stats (Orders handled by this user)
                     // Note: If user is Super Admin/Admin, this might show 0 if they don't assign orders to themselves, which is correct behavior.
@@ -110,7 +118,7 @@ const MyProfilePage: React.FC = () => {
                             <div className="relative -mt-16 inline-block">
                                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 p-1 shadow-xl">
                                     <img
-                                        src={userData.avatar || `https://i.pravatar.cc/150?u=${userData.id}`}
+                                        src={userAvatar ? `${userAvatar}?t=${Date.now()}` : `https://i.pravatar.cc/150?u=${userData.id}`}
                                         alt="Avatar"
                                         className="w-full h-full rounded-full object-cover bg-white dark:bg-slate-700"
                                     />

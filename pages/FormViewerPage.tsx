@@ -886,9 +886,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                             {/* ... (Existing Form UI JSX remains exactly the same) ... */}
                             <FadeInBlock delay={0}>
                                 <div className="mb-4">
-                                    {(currentGalleryImage || form.mainImage) && (
+                                    {form.mainImage && (
                                         <img
-                                            src={currentGalleryImage || form.mainImage}
+                                            src={form.mainImage}
                                             alt={form.title}
                                             className={`w-full aspect-square object-cover rounded-lg transition-all duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                             onLoad={() => setImageLoaded(true)}
@@ -898,40 +898,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     )}
                                     {!form.mainImage && <div className="h-8"></div>}
                                 </div>
-                                
-                                {form.productImages && form.productImages.length > 0 && (
-                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                                        <div 
-                                            onClick={() => {
-                                                setCurrentGalleryImage(form.mainImage);
-                                                setImageLoaded(false);
-                                            }}
-                                            className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${
-                                                (currentGalleryImage === form.mainImage || (!currentGalleryImage && form.mainImage))
-                                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' 
-                                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
-                                            }`}
-                                        >
-                                            <img src={form.mainImage} alt="Main" className="w-full h-full object-cover rounded-lg" />
-                                        </div>
-                                        {form.productImages.map((img, idx) => (
-                                            <div 
-                                                key={idx}
-                                                onClick={() => {
-                                                    setCurrentGalleryImage(img);
-                                                    setImageLoaded(false);
-                                                }}
-                                                className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${
-                                                    currentGalleryImage === img 
-                                                    ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' 
-                                                    : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
-                                                }`}
-                                            >
-                                                <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </FadeInBlock>
                             
                             <FadeInBlock delay={150}>

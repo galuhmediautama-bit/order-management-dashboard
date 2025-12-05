@@ -35,7 +35,7 @@ const LoginPage: React.FC = () => {
             if (isForgotPassword) {
                 // --- LOGIKA RESET PASSWORD ---
                 const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/reset-password`,
+                    redirectTo: `${window.location.origin}/#/reset-password`,
                 });
 
                 if (resetError) throw resetError;
@@ -86,7 +86,7 @@ const LoginPage: React.FC = () => {
                         return;
                     }
 
-                    // Insert profile into public.users with status 'Aktif'
+                    // Insert profile into public.users with status 'Tidak Aktif' (requires admin approval)
                     const { error: dbError, data: insertedData } = await supabase.from('users').insert([{
                         id: authData.user.id,
                         email: email,
@@ -94,8 +94,8 @@ const LoginPage: React.FC = () => {
                         phone: whatsapp || null,
                         address: address || null,
                         role: selectedRole,
-                        status: 'Aktif',
-                        lastLogin: new Date().toISOString()
+                        status: 'Tidak Aktif', // Changed: User must be approved by admin before login
+                        lastLogin: null // Changed: No login timestamp until approved
                     }]);
 
                     if (dbError) {
@@ -108,7 +108,7 @@ const LoginPage: React.FC = () => {
                             role: selectedRole, 
                             data: insertedData 
                         });
-                        setSuccessMsg('✅ Akun berhasil dibuat dengan role: ' + selectedRole + '! Silakan tunggu konfirmasi dari admin sebelum dapat mengakses aplikasi. Anda akan menerima email pemberitahuan setelah disetujui.');
+                        setSuccessMsg('✅ Akun berhasil dibuat! Status: MENUNGGU APPROVAL dari Admin. Anda akan menerima notifikasi email setelah akun Anda disetujui dan dapat login.');
                         setIsRegistering(false);
                         setEmail('');
                         setPassword('');

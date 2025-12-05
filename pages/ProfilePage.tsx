@@ -150,11 +150,23 @@ const ProfilePage: React.FC = () => {
             // Update Auth Metadata
             const { error: authError } = await supabase.auth.updateUser({ data: authUpdateData });
             if (authError) throw authError;
+
+            // Refresh auth session untuk update avatar di header
+            await supabase.auth.refreshSession();
             
             setUserData(prev => ({ ...prev!, ...dbUpdateData } as User));
-            if (avatarChanged) setAvatarFile(null);
+            if (avatarChanged) {
+                setAvatarFile(null);
+                // Update preview dengan URL baru agar langsung terlihat
+                if (newAvatarUrl) setAvatarPreview(newAvatarUrl);
+            }
             
-            setProfileMessage({ type: 'success', text: 'Profil berhasil diperbarui.' });
+            setProfileMessage({ type: 'success', text: 'Profil berhasil diperbarui. Avatar akan muncul setelah halaman dimuat ulang.' });
+            
+            // Reload halaman setelah 1.5 detik agar user bisa lihat pesan sukses
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } catch (error) {
             console.error("Error updating profile: ", error);
             setProfileMessage({ type: 'error', text: 'Gagal memperbarui profil.' });
@@ -259,7 +271,7 @@ const ProfilePage: React.FC = () => {
                             <div className="relative group">
                                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gradient-to-br from-indigo-400 to-purple-500 p-1 shadow-xl bg-gradient-to-br from-indigo-400 to-purple-500">
                                     <img 
-                                        src={avatarPreview || `https://i.pravatar.cc/150?u=${user.id}`} 
+                                        src={avatarPreview ? `${avatarPreview}${avatarPreview.startsWith('data:') ? '' : `?t=${Date.now()}`}` : `https://i.pravatar.cc/150?u=${user.id}`} 
                                         alt="Avatar" 
                                         className="w-full h-full object-cover bg-white dark:bg-slate-700 rounded-full"
                                     />

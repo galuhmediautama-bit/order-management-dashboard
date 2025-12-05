@@ -415,7 +415,7 @@ const ProductFormPage: React.FC = () => {
                     console.warn('Warning: Could not update brand productCount:', error);
                 }
             }
-            navigate('/produk');
+            navigate('/daftar-produk');
         } catch (error: any) {
             console.error('Error saving product:', error);
             
@@ -456,7 +456,7 @@ const ProductFormPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button
-                    onClick={() => navigate('/produk')}
+                    onClick={() => navigate('/daftar-produk')}
                     className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
                     title="Kembali"
                 >

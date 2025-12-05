@@ -43,6 +43,7 @@ const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
 const CustomersPage = lazyWithRetry(() => import('./pages/CustomersPage'));
 const PendingUsersPage = lazyWithRetry(() => import('./pages/PendingUsersPage'));
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const MyProfilePage = lazyWithRetry(() => import('./pages/MyProfilePage'));
 const EarningsPage = lazyWithRetry(() => import('./pages/EarningsPage'));
@@ -258,7 +259,13 @@ const AppContent: React.FC = () => {
               <FormViewerWrapper />
             </Suspense>
           } 
-        />
+        /> 
+        {/* Reset Password Route - Must be before /* catch-all */}
+        <Route path="/reset-password" element={
+          <Suspense fallback={<div className="flex items-center justify-center h-screen"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
+            <ResetPasswordPage />
+          </Suspense>
+        } />
         <Route path="/*" element={
             <Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900"><div className="text-xl text-slate-600 dark:text-slate-400 animate-pulse">Memuat Aplikasi...</div></div>}>
                 {user ? (

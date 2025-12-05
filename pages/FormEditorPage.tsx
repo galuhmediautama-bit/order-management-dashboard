@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { Form, Product, ShippingSettings, PaymentSettings, CustomerFieldSetting, ShippingSetting, BankTransferSetting, PaymentSetting, BankAccount, CODSettings, QRISSettings, ThankYouPageSettings, TrackingEventName, FormPageTrackingSettings, FormPixelSetting, CSAgent, CSAssignmentMode, CSAssignmentSettings, Brand, MessageTemplates, User } from '../types';
+import type { Form, Product, ProductOption, VariantCombination, ShippingSettings, PaymentSettings, CustomerFieldSetting, ShippingSetting, BankTransferSetting, PaymentSetting, BankAccount, CODSettings, QRISSettings, ThankYouPageSettings, TrackingEventName, FormPageTrackingSettings, FormPixelSetting, CSAgent, CSAssignmentMode, CSAssignmentSettings, Brand, MessageTemplates, User } from '../types';
 import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import EyeIcon from '../components/icons/EyeIcon';
@@ -1085,6 +1085,81 @@ const FormEditorPage: React.FC = () => {
         loadProductsByBrand();
     }, [form?.brandId]);
     
+    // Auto-load product data untuk form edit yang sudah punya productId
+    useEffect(() => {
+        // Skip jika bukan form edit atau tidak punya productId
+        if (!formId || !form?.productId) return;
+        
+        // Skip jika sudah punya varian DAN gambar sudah sesuai
+        // (ini artinya sudah di-load sebelumnya dalam session ini)
+        const alreadyLoaded = form.variantCombinations && 
+                              form.variantCombinations.length > 0 && 
+                              form.mainImage; // Ada varian DAN ada gambar
+        
+        if (alreadyLoaded) {
+            console.log('ℹ️ Form sudah memiliki varian dan gambar, skip auto-load');
+            return;
+        }
+        
+        // Auto-load data produk untuk form edit lama
+        const autoLoadProductData = async () => {
+            try {
+                console.log('🔄 Auto-loading product data untuk form edit:', form.productId);
+                const product = await productService.getProduct(form.productId);
+                
+                if (product) {
+                    console.log('📦 Product data loaded:', product);
+                    
+                    // SELALU update gambar dari produk (force update untuk form lama)
+                    if (product.imageUrl) {
+                        setForm(prev => prev ? { ...prev, mainImage: product.imageUrl } : prev);
+                        setMainImagePreview(product.imageUrl);
+                        console.log('🖼️ Gambar updated dari produk:', product.imageUrl);
+                    }
+                    
+                    // Load dan konversi varian jika ada
+                    if (product.variants && product.variants.length > 0) {
+                        console.log('📊 Converting variants untuk form edit');
+                        
+                        const variantNames = product.variants.map(v => v.name || 'Varian');
+                        
+                        const newProductOptions: ProductOption[] = [{
+                            id: Date.now(),
+                            name: 'Varian',
+                            values: variantNames,
+                            displayStyle: 'radio'
+                        }];
+                        
+                        const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
+                            attributes: { 'Varian': variant.name || `Varian ${idx + 1}` },
+                            sellingPrice: variant.price || 0,
+                            costPrice: variant.costPrice || 0,
+                            csCommission: variant.csCommission || 0,
+                            advCommission: variant.advCommission || 0,
+                            sku: variant.sku || '',
+                            weight: variant.weight || 0,
+                            initialStock: variant.initialStock || 0
+                        }));
+                        
+                        setForm(prev => prev ? {
+                            ...prev,
+                            productOptions: newProductOptions,
+                            variantCombinations: newVariantCombinations,
+                            productVariants: product.variants
+                        } : prev);
+                        
+                        console.log('✅ Varian berhasil di-load untuk form edit');
+                        showToast(`Form diupdate: ${product.variants.length} varian dimuat`, 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error auto-loading product data:', error);
+            }
+        };
+        
+        autoLoadProductData();
+    }, [formId, form?.productId]); // Trigger saat form.productId tersedia
+    
     useEffect(() => {
         if (!form) return;
         if (form.productOptions.length === 0) {
@@ -1698,7 +1773,14 @@ const FormEditorPage: React.FC = () => {
                         <select
                             value={form.assignedAdvertiserId || ''}
                             onChange={(e) => handleFieldChange('assignedAdvertiserId', e.target.value)}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId ? 'border-red-500' : 'dark:border-slate-600'}`}
+                            disabled={!!formId && !!form.assignedAdvertiserId}
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${
+                                !form.assignedAdvertiserId 
+                                    ? 'border-red-500' 
+                                    : !!formId && !!form.assignedAdvertiserId 
+                                        ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800' 
+                                        : 'dark:border-slate-600'
+                            }`}
                         >
                             <option value="">-- Pilih Advertiser --</option>
                             {advertisers
@@ -1710,7 +1792,16 @@ const FormEditorPage: React.FC = () => {
                             ))}
                         </select>
                         {!form.assignedAdvertiserId && <p className="text-xs text-red-500 mt-1">Advertiser harus dipilih</p>}
-                        <p className="text-xs text-slate-500 mt-1">Pilih advertiser yang akan mengelola formulir ini.</p>
+                        {!!formId && !!form.assignedAdvertiserId ? (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                                Advertiser terkunci setelah disimpan dan tidak dapat diubah
+                            </p>
+                        ) : (
+                            <p className="text-xs text-slate-500 mt-1">Pilih advertiser yang akan mengelola formulir ini.</p>
+                        )}
                     </div>
 
                     <div>
@@ -1780,21 +1871,86 @@ const FormEditorPage: React.FC = () => {
                                 const productId = e.target.value;
                                 handleFieldChange('productId', productId);
                                 
-                                // Auto-load variants dari produk yang dipilih
+                                // Auto-load variants dan gambar dari produk yang dipilih
                                 if (productId) {
                                     try {
                                         const product = await productService.getProduct(productId);
-                                        if (product && product.variants && product.variants.length > 0) {
-                                            // Set form variants dengan variants dari produk
-                                            setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
-                                            showToast(`${product.variants.length} varian dimuat dari produk`, 'success');
-                                        } else {
-                                            setForm(prev => prev ? { ...prev, productVariants: [] } : prev);
+                                        if (product) {
+                                            console.log('📦 Produk dimuat:', product);
+                                            
+                                            // 1. SELALU update gambar dari produk (tidak peduli form baru/edit)
+                                            if (product.imageUrl) {
+                                                handleFieldChange('mainImage', product.imageUrl);
+                                                setMainImagePreview(product.imageUrl);
+                                                console.log('🖼️ Gambar produk dimuat:', product.imageUrl);
+                                            }
+                                            
+                                            // 2. Load variants dan konversi ke format form
+                                            if (product.variants && product.variants.length > 0) {
+                                                console.log('📊 Variants dari produk:', product.variants);
+                                                
+                                                // Simpan productVariants untuk referensi
+                                                setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
+                                                
+                                                // Konversi variants ke productOptions dan variantCombinations
+                                                // Asumsi: product.variants = [{ name: 'Varian A', price: 100000, ... }]
+                                                const variantNames = product.variants.map(v => v.name || 'Varian');
+                                                
+                                                const newProductOptions: ProductOption[] = [{
+                                                    id: Date.now(),
+                                                    name: 'Varian',
+                                                    values: variantNames,
+                                                    displayStyle: 'radio'
+                                                }];
+                                                
+                                                const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
+                                                    attributes: { 'Varian': variant.name || `Varian ${idx + 1}` },
+                                                    sellingPrice: variant.price || 0,
+                                                    costPrice: variant.costPrice || 0,
+                                                    csCommission: variant.csCommission || 0,
+                                                    advCommission: variant.advCommission || 0,
+                                                    sku: variant.sku || '',
+                                                    weight: variant.weight || 0,
+                                                    initialStock: variant.initialStock || 0
+                                                }));
+                                                
+                                                console.log('✅ ProductOptions:', newProductOptions);
+                                                console.log('✅ VariantCombinations:', newVariantCombinations);
+                                                
+                                                // Update form dengan varian yang sudah dikonversi
+                                                setForm(prev => prev ? {
+                                                    ...prev,
+                                                    productOptions: newProductOptions,
+                                                    variantCombinations: newVariantCombinations,
+                                                    productVariants: product.variants
+                                                } : prev);
+                                                
+                                                showToast(`${product.variants.length} varian dimuat dari produk`, 'success');
+                                            } else {
+                                                // Tidak ada varian - reset
+                                                setForm(prev => prev ? { 
+                                                    ...prev, 
+                                                    productVariants: [],
+                                                    productOptions: [],
+                                                    variantCombinations: []
+                                                } : prev);
+                                                showToast('Produk tidak memiliki varian', 'info');
+                                            }
                                         }
                                     } catch (error) {
-                                        console.error('Error loading product variants:', error);
-                                        showToast('Gagal memuat varian produk', 'error');
+                                        console.error('Error loading product:', error);
+                                        showToast('Gagal memuat data produk', 'error');
                                     }
+                                } else {
+                                    // Product ID kosong - reset semua
+                                    setForm(prev => prev ? { 
+                                        ...prev, 
+                                        productVariants: [],
+                                        productOptions: [],
+                                        variantCombinations: [],
+                                        mainImage: ''
+                                    } : prev);
+                                    setMainImagePreview('');
                                 }
                             }}
                             disabled={!form.brandId || loadingProductDetails}
@@ -1869,27 +2025,6 @@ const FormEditorPage: React.FC = () => {
                         </div>
                         <p className="text-xs text-slate-500 mt-1">URL: https://form.cuanmax.digital/#/f/<strong>{form.slug || 'id-formulir'}</strong></p>
                     </div>
-
-                    {form.productId && (
-                        <div>
-                            <label className="block text-sm font-medium mb-2">📸 Gambar dari Produk</label>
-                            <p className="text-xs text-slate-500 mb-3">Gambar formulir akan otomatis menggunakan gambar dari produk yang dipilih.</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {form.productImages && form.productImages.length > 0 ? (
-                                    form.productImages.slice(0, 4).map((img, idx) => (
-                                        <div key={idx} className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-indigo-200 dark:border-indigo-800">
-                                            <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
-                                            <div className="absolute bottom-1 right-1 bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded">#{idx + 1}</div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="col-span-2 md:col-span-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
-                                        <p className="text-sm text-slate-500">Produk ini tidak memiliki gambar</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </EditorCard>
 
                 <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">

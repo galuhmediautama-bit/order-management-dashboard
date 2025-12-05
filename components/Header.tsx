@@ -45,13 +45,38 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [userAvatar, setUserAvatar] = useState<string | undefined>(user.user_metadata?.avatar_url);
 
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsDropdownRef = useRef<HTMLDivElement>(null);
 
   const userDisplayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const userEmail = user.email || 'user@email.com';
-  const userAvatar = user.user_metadata?.avatar_url;
+
+  // Fetch user avatar from database to get latest version
+  useEffect(() => {
+    const fetchUserAvatar = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('avatar')
+          .eq('id', user.id)
+          .single();
+        
+        if (data && data.avatar) {
+          setUserAvatar(data.avatar);
+        } else {
+          // Fallback ke auth metadata jika tidak ada di database
+          setUserAvatar(user.user_metadata?.avatar_url);
+        }
+      } catch (error) {
+        console.error('Error fetching user avatar:', error);
+        setUserAvatar(user.user_metadata?.avatar_url);
+      }
+    };
+    
+    fetchUserAvatar();
+  }, [user.id, user.user_metadata?.avatar_url]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -280,7 +305,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
                   aria-label="User Menu"
                 >
                     <img 
-                      src={userAvatar || `https://i.pravatar.cc/150?u=${user.id}`} 
+                      src={userAvatar ? `${userAvatar}?t=${Date.now()}` : `https://i.pravatar.cc/150?u=${user.id}`} 
                       alt="User Avatar" 
                       className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 shadow-md object-cover" 
                     />
@@ -296,7 +321,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
                         <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 rounded-t-2xl">
                             <div className="flex items-center gap-4">
                                 <img 
-                                  src={userAvatar || `https://i.pravatar.cc/150?u=${user.id}`} 
+                                  src={userAvatar ? `${userAvatar}?t=${Date.now()}` : `https://i.pravatar.cc/150?u=${user.id}`} 
                                   alt="User Avatar" 
                                   className="w-14 h-14 rounded-full border-3 border-white dark:border-slate-700 shadow-lg object-cover" 
                                 />
