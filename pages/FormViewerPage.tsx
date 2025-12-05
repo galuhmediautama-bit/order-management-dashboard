@@ -955,7 +955,25 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                 {displayOptions.length > 0 && (
                                     <div className="mb-4 space-y-6">
                                     {displayOptions.map((option, index) => {
-                                        const displayStyle = option.displayStyle || 'dropdown';
+                                        const displayStyle = option.displayStyle || 'radio';
+                                        
+                                        // Helper: Get price/details for a specific value of this attribute
+                                        const getVariantDetails = (attributeValue: string) => {
+                                            if (!form?.variantCombinations) return null;
+                                            
+                                            // Build current selection with this value
+                                            const testSelection = { ...selectedOptions, [option.name]: attributeValue };
+                                            
+                                            // Find matching combination
+                                            const match = form.variantCombinations.find(combo => {
+                                                return Object.entries(testSelection).every(([key, val]) => 
+                                                    combo.attributes[key] === val
+                                                );
+                                            });
+                                            
+                                            return match;
+                                        };
+                                        
                                         return (
                                             <div key={option.id} className="space-y-3">
                                                 {/* Header Variasi */}
@@ -974,45 +992,63 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                         value={selectedOptions[option.name] || ''}
                                                         className="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 font-medium"
                                                     >
-                                                        {option.values.map(val => <option key={val} value={val}>{val}</option>)}
+                                                        {option.values.map(val => {
+                                                            const details = getVariantDetails(val);
+                                                            const label = details?.sellingPrice 
+                                                                ? `${val} - Rp ${details.sellingPrice.toLocaleString('id-ID')}`
+                                                                : val;
+                                                            return <option key={val} value={val}>{label}</option>;
+                                                        })}
                                                     </select>
                                                 )}
                                                 {displayStyle === 'radio' && (
                                                     <div className="space-y-2">
-                                                        {option.values.map(val => (
-                                                            <label 
-                                                                key={val} 
-                                                                className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
-                                                                    selectedOptions[option.name] === val 
-                                                                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]' 
-                                                                        : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                                                        selectedOptions[option.name] === val ? 'border-white' : 'border-gray-400'
-                                                                    }`}>
-                                                                        {selectedOptions[option.name] === val && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                        {option.values.map(val => {
+                                                            const details = getVariantDetails(val);
+                                                            const isSelected = selectedOptions[option.name] === val;
+                                                            
+                                                            return (
+                                                                <label 
+                                                                    key={val} 
+                                                                    className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                                                                        isSelected
+                                                                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]' 
+                                                                            : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                                                            isSelected ? 'border-white' : 'border-gray-400'
+                                                                        }`}>
+                                                                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                                        </div>
+                                                                        <input 
+                                                                            type="radio" 
+                                                                            name={option.name} 
+                                                                            value={val} 
+                                                                            checked={isSelected} 
+                                                                            onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))} 
+                                                                            className="hidden" 
+                                                                        />
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-medium">{val}</span>
+                                                                            {details?.sellingPrice && (
+                                                                                <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                                    Rp {details.sellingPrice.toLocaleString('id-ID')}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                    <input 
-                                                                        type="radio" 
-                                                                        name={option.name} 
-                                                                        value={val} 
-                                                                        checked={selectedOptions[option.name] === val} 
-                                                                        onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))} 
-                                                                        className="hidden" 
-                                                                    />
-                                                                    <span className="font-medium">{val}</span>
-                                                                </div>
-                                                                {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
-                                                                    <span className={`text-sm font-medium animate-pulse ${
-                                                                        selectedOptions[option.name] === val ? 'text-red-200' : 'text-red-600 dark:text-red-400'
-                                                                    }`}>
-                                                                        Stok: {currentVariantStock} pcs
-                                                                    </span>
-                                                                )}
-                                                            </label>
-                                                        ))}
+                                                                    {form.stockCountdownSettings?.active && details && (
+                                                                        <span className={`text-sm font-medium animate-pulse ${
+                                                                            isSelected ? 'text-red-200' : 'text-red-600 dark:text-red-400'
+                                                                        }`}>
+                                                                            Stok: {variantStock[Object.values(details.attributes).join(' / ')] || 0} pcs
+                                                                        </span>
+                                                                    )}
+                                                                </label>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
                                                 {displayStyle === 'modern' && (
