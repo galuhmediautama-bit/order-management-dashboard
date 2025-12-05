@@ -227,6 +227,38 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
                     </FadeInBlock>
                 )}
 
+                {/* Tampilkan metode pembayaran QRIS jika dipilih */}
+                {order.paymentMethod === 'QRIS' && form.paymentSettings.qris.qrImageUrl && (
+                    <FadeInBlock delay={450}>
+                        <div className="my-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3">📱 Pembayaran QRIS</h3>
+                            <div className="flex justify-center mb-3">
+                                <img src={form.paymentSettings.qris.qrImageUrl} alt="QRIS" className="w-48 h-48 object-contain" />
+                            </div>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 text-center">Scan QR code dengan aplikasi perbankan Anda untuk menyelesaikan pembayaran</p>
+                        </div>
+                    </FadeInBlock>
+                )}
+
+                {/* Tampilkan metode pembayaran Transfer Bank jika dipilih */}
+                {order.paymentMethod === 'Transfer Bank' && form.paymentSettings.bankTransfer.accounts && form.paymentSettings.bankTransfer.accounts.length > 0 && (
+                    <FadeInBlock delay={450}>
+                        <div className="my-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3">🏦 Detail Transfer Bank</h3>
+                            <div className="space-y-3 text-sm">
+                                {form.paymentSettings.bankTransfer.accounts.map((account, idx) => (
+                                    <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-lg">
+                                        <p className="text-slate-700 dark:text-slate-300"><span className="font-medium">Bank:</span> {account.bankName}</p>
+                                        <p className="text-slate-700 dark:text-slate-300"><span className="font-medium">Nomor Rekening:</span> {account.accountNumber}</p>
+                                        <p className="text-slate-700 dark:text-slate-300"><span className="font-medium">Atas Nama:</span> {account.accountHolder}</p>
+                                        <p className="text-slate-700 dark:text-slate-300 mt-2"><span className="font-medium">Jumlah:</span> Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </FadeInBlock>
+                )}
+
                 {thankYouPage.whatsappConfirmation.active && (
                         <FadeInBlock delay={600}>
                         <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="w-full mt-4 bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
@@ -1345,20 +1377,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                             <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
                                                             <span className="font-medium">{config.label}</span>
                                                         </label>
-                                                        {key === 'bankTransfer' && selectedPaymentKey === 'bankTransfer' && accounts?.length > 0 && (
-                                                            <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2">
-                                                                <p className="font-semibold">Silakan transfer ke salah satu rekening berikut:</p>
-                                                                {accounts.map(acc => (
-                                                                    <div key={acc.id}><p><strong>{acc.bankName}:</strong> {acc.accountNumber} (a/n {acc.accountHolder})</p></div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                         {key === 'qris' && selectedPaymentKey === 'qris' && qrImageUrl && (
-                                                            <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2 text-center">
-                                                                <p className="font-semibold">Pindai kode QRIS berikut:</p>
-                                                                <img src={qrImageUrl} alt="QRIS" className="max-w-[200px] mx-auto rounded-md" />
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 );
                                             })}
