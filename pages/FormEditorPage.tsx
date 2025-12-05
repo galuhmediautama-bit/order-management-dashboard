@@ -932,6 +932,7 @@ const FormEditorPage: React.FC = () => {
                         countdownSettings: { active: true, duration: 300 },
                         stockCountdownSettings: { active: true, initialStock: 160, intervalSeconds: 5 },
                         socialProofSettings: { active: true, position: 'top-left', animation: 'slide-up', initialDelaySeconds: 2, displayDurationSeconds: 5, intervalSeconds: 8, customerNames: 'Rina Setyawati,Andi Prasetyo,Siti Marlina,Budi Hartanto,Della Anggraini,Fajar Nugraha,Novi Rahmawati,Ardiansyah Putra,Lela Mardiani,Rivaldi Saputra,Melani Oktaviani,Kevin Aditya,Ayu Pramesti,Rendy Kurniawan,Siska Amelia,Rama Wijaya,Clara Widyaningrum,Gilang Ramdhan,Irma Kusumawati,Aldi Pranata', customerCities: 'Jakarta,Bandung,Surabaya,Yogyakarta,Semarang,Bekasi,Depok,Tangerang,Medan,Palembang,Makassar,Denpasar,Malang,Pontianak,Pekanbaru,Batam,Solo,Cirebon,Manado,Banjarmasin' },
+                        ctaSettings: { active: true, mainText: 'Pesan Sekarang', urgencyText: 'Stok terbatas, pesan sebelum terlambat!', buttonColor: '#6366f1', initialCount: 0, increaseIntervalSeconds: 120, animationEnabled: true },
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
                         thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah melakukan pemesanan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama: [CUSTOMER_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman begitu tersedia.\n\nTerima kasih! 🙏' }},
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
@@ -2830,21 +2831,52 @@ const FormEditorPage: React.FC = () => {
                             <CursorClickIcon className="w-5 h-5 text-blue-500" />
                             <p className="text-sm font-medium">Teks Tombol & Urgensi</p>
                         </div>
-                        <div className="space-y-2">
-                            <input 
-                                type="text" 
-                                placeholder="Teks Tombol (e.g. Pesan Sekarang)" 
-                                value={form.ctaSettings?.mainText} 
-                                onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'mainText', e.target.value)}
-                                className="w-full p-2 text-sm border rounded"
-                            />
-                            <input 
-                                type="text" 
-                                placeholder="Teks Bawah (e.g. {count} orang sudah checkout)" 
-                                value={form.ctaSettings?.urgencyText} 
-                                onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'urgencyText', e.target.value)}
-                                className="w-full p-2 text-sm border rounded"
-                            />
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Teks Tombol</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. Pesan Sekarang" 
+                                    value={form.ctaSettings?.mainText || ''} 
+                                    onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'mainText', e.target.value)}
+                                    className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Teks Urgensi</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. Stok terbatas, pesan sebelum terlambat!" 
+                                    value={form.ctaSettings?.urgencyText || ''} 
+                                    onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'urgencyText', e.target.value)}
+                                    className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Warna Tombol (Hex)</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="color" 
+                                        value={form.ctaSettings?.buttonColor || '#6366f1'} 
+                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
+                                        className="w-12 h-10 border rounded cursor-pointer"
+                                    />
+                                    <input 
+                                        type="text" 
+                                        placeholder="#6366f1" 
+                                        value={form.ctaSettings?.buttonColor || '#6366f1'} 
+                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
+                                        className="flex-1 p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600 font-mono"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/30 rounded">
+                                <label className="text-sm font-medium">Animasi Tombol</label>
+                                <ToggleSwitch 
+                                    checked={form.ctaSettings?.animationEnabled || false} 
+                                    onChange={v => handleSubNestedFieldChange('ctaSettings', null, 'animationEnabled', v)} 
+                                />
+                            </div>
                         </div>
                     </div>
                 </EditorCard>

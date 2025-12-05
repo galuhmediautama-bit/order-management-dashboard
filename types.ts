@@ -353,10 +353,13 @@ export interface Form {
         customerCities: string;
     };
     ctaSettings?: {
+        active: boolean;
         mainText: string;
         urgencyText: string;
+        buttonColor: string; // Hex color or tailwind class
         initialCount: number;
         increaseIntervalSeconds: number;
+        animationEnabled: boolean;
     };
     commissionPrice?: number; // Deprecated: Moved to VariantCombination level
     // This is for client-side migration of old data structure
