@@ -123,6 +123,7 @@ const MessageTemplatesModal: React.FC<{
 
 const FormsPage: React.FC = () => {
     const [forms, setForms] = useState<Form[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [formToDelete, setFormToDelete] = useState<Form | null>(null);
     const [editingTemplatesFor, setEditingTemplatesFor] = useState<Form | null>(null);
@@ -154,6 +155,12 @@ const FormsPage: React.FC = () => {
             const { data: formsData } = await supabase.from('forms').select('*');
             const formsList = (formsData || []).map(doc => ({ ...doc } as Form));
             setForms(formsList);
+
+            // Fetch all users for name lookups
+            const { data: usersData } = await supabase.from('users').select('*');
+            if (usersData) {
+                setUsers(usersData as User[]);
+            }
 
             const { data: templatesData } = await supabase.from('settings').select('*').eq('id', 'messageTemplates').single();
             if (templatesData) {
@@ -274,6 +281,29 @@ const FormsPage: React.FC = () => {
         } finally {
             setEditingTemplatesFor(null);
         }
+    };
+
+    // Helper function to get user name by ID
+    const getUserName = (userId?: string): string => {
+        if (!userId) return '-';
+        const user = users.find(u => u.id === userId);
+        return user?.name || 'Unknown User';
+    };
+
+    // Helper function to get CS agent names by mode
+    const getCsAssignmentDisplay = (csAssignment?: any): string => {
+        if (!csAssignment?.mode) return '-';
+        if (csAssignment.mode === 'single' && csAssignment.singleAgentId) {
+            const agent = users.find(u => u.id === csAssignment.singleAgentId);
+            return agent?.name || 'Unknown Agent';
+        }
+        if (csAssignment.mode === 'round_robin' && csAssignment.roundRobinAgents?.length) {
+            const agentNames = csAssignment.roundRobinAgents
+                .map((ra: any) => users.find(u => u.id === ra.csAgentId)?.name || 'Unknown')
+                .join(', ');
+            return `Round Robin: ${agentNames}`;
+        }
+        return '-';
     };
     
     const filteredForms = useMemo(() => {
@@ -531,30 +561,16 @@ const FormsPage: React.FC = () => {
                                             {form.assignedAdvertiserId ? (
                                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                                     <div className="w-6 h-6 rounded-full bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold">
-                                                        {currentUser?.id === form.assignedAdvertiserId ? 'ME' : (currentUser?.name?.charAt(0).toUpperCase() || 'A')}
+                                                        {getUserName(form.assignedAdvertiserId).charAt(0).toUpperCase()}
                                                     </div>
-                                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">{currentUser?.id === form.assignedAdvertiserId ? 'Anda' : 'Assigned'}</span>
+                                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">{getUserName(form.assignedAdvertiserId)}</span>
                                                 </div>
                                             ) : (
-                                                <span className="text-sm text-slate-400 dark:text-slate-500 italic">No Advertiser</span>
+                                                <span className="text-sm text-slate-400 dark:text-slate-500 italic">-</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            {form.thankYouPage?.csAssignment?.mode ? (
-                                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                                                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                                                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                                                        {form.thankYouPage.csAssignment.mode === 'single' ? 'Single' : 'Round Robin'}
-                                                    </span>
-                                                    {form.thankYouPage.csAssignment.mode === 'round_robin' && form.thankYouPage.csAssignment.roundRobinAgents && (
-                                                        <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">
-                                                            ({form.thankYouPage.csAssignment.roundRobinAgents.length})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm text-slate-400 dark:text-slate-500 italic">No CS Config</span>
-                                            )}
+                                            <span className="text-sm text-slate-700 dark:text-slate-300">{getCsAssignmentDisplay(form.thankYouPage?.csAssignment)}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="relative inline-block" ref={el => { if (el) actionMenuRefs.current[form.id] = el; }}>
