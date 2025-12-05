@@ -52,15 +52,15 @@ const FadeInBlock = ({ children, delay }: { children?: React.ReactNode; delay: n
 const getAnimationClasses = (animationType?: string): string => {
     switch (animationType) {
         case 'pulse':
-            return 'animate-pulse';
+            return 'animate-buttonPulse';
         case 'shine':
-            return 'animate-shine shadow-lg shadow-indigo-500/50';
+            return 'animate-buttonShine';
         case 'bounce':
-            return 'animate-bounce';
+            return 'animate-buttonBounce';
         case 'scale':
-            return 'active:scale-95';
+            return 'animate-buttonScale';
         case 'glow':
-            return 'animate-glow';
+            return 'animate-buttonGlow';
         default:
             return '';
     }
@@ -1136,19 +1136,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
     // Add inline styles for animations
     const animationStyles = `
-        .animate-shine {
+        .animate-buttonShine {
             background: linear-gradient(
                 90deg,
-                transparent 0%,
-                rgba(255, 255, 255, 0.3) 50%,
-                transparent 100%
+                #4f46e5 0%,
+                #6366f1 25%,
+                #818cf8 50%,
+                #6366f1 75%,
+                #4f46e5 100%
             );
             background-size: 200% 100%;
-            animation: shine-effect 3s infinite;
-        }
-        @keyframes shine-effect {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+            animation: buttonShine 3s linear infinite;
         }
     `;
 

@@ -50,18 +50,33 @@
                 }
             },
             keyframes: {
-              shine: {
-                '0%': { backgroundPosition: '200% center' },
-                '100%': { backgroundPosition: '-200% center' },
+              buttonPulse: {
+                '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                '50%': { opacity: '0.85', transform: 'scale(1.02)' },
               },
-              glow: {
-                '0%, 100%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5), inset 0 0 5px rgba(99, 102, 241, 0.1)' },
-                '50%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.8), inset 0 0 10px rgba(99, 102, 241, 0.3)' },
+              buttonShine: {
+                '0%': { backgroundPosition: '-1000px 0' },
+                '100%': { backgroundPosition: '1000px 0' },
+              },
+              buttonBounce: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-8px)' },
+              },
+              buttonScale: {
+                '0%, 100%': { transform: 'scale(1)' },
+                '50%': { transform: 'scale(1.08)' },
+              },
+              buttonGlow: {
+                '0%, 100%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3)' },
+                '50%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.9), 0 0 30px rgba(99, 102, 241, 0.5)' },
               },
             },
             animation: {
-              shine: 'shine 3s linear infinite',
-              glow: 'glow 2s ease-in-out infinite',
+              buttonPulse: 'buttonPulse 2s ease-in-out infinite',
+              buttonShine: 'buttonShine 3s linear infinite',
+              buttonBounce: 'buttonBounce 2s ease-in-out infinite',
+              buttonScale: 'buttonScale 2s ease-in-out infinite',
+              buttonGlow: 'buttonGlow 2s ease-in-out infinite',
             }
           },
         },
