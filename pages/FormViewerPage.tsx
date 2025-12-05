@@ -48,6 +48,24 @@ const FadeInBlock = ({ children, delay }: { children?: React.ReactNode; delay: n
     );
 };
 
+// Helper function to get animation classes based on type
+const getAnimationClasses = (animationType?: string): string => {
+    switch (animationType) {
+        case 'pulse':
+            return 'animate-pulse';
+        case 'shine':
+            return 'animate-shine shadow-lg shadow-indigo-500/50';
+        case 'bounce':
+            return 'animate-bounce';
+        case 'scale':
+            return 'active:scale-95';
+        case 'glow':
+            return 'animate-glow';
+        default:
+            return '';
+    }
+};
+
 // Skeleton Loader Component
 const FormSkeleton: React.FC = () => (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 py-8 px-4">
@@ -678,8 +696,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         if (form?.ctaSettings) {
             setCheckoutCount(form.ctaSettings.initialCount);
             const interval = setInterval(() => {
-                setCheckoutCount(prev => prev + 1);
-            }, (form.ctaSettings.increaseIntervalSeconds || 8) * 1000);
+                setCheckoutCount(prev => prev + (form.ctaSettings?.incrementPerSecond || 1));
+            }, (form.ctaSettings.increaseIntervalSeconds || 3) * 1000);
             return () => clearInterval(interval);
         }
     }, [form?.ctaSettings]);
@@ -1116,8 +1134,27 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
     const hasVisiblePayment = sortedPaymentKeys.length > 0;
 
+    // Add inline styles for animations
+    const animationStyles = `
+        .animate-shine {
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+            animation: shine-effect 3s infinite;
+        }
+        @keyframes shine-effect {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    `;
+
     return (
         <>
+            <style>{animationStyles}</style>
             <MetaPixelScript 
                 key="formPage-pixel"
                 pixelIds={activePixelIds} 
@@ -1409,7 +1446,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                 <button
                                     type="submit"
                                     disabled={!currentCombination || isSubmitting}
-                                    className="w-full mt-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed flex flex-col items-center justify-center p-2 min-h-[4rem] transition-all shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/40"
+                                    className={`w-full mt-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed flex flex-col items-center justify-center p-2 min-h-[4rem] transition-all shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/40 ${form.ctaSettings?.animationEnabled ? getAnimationClasses(form.ctaSettings?.animationType) : ''}`}
                                 >
                                     {isSubmitting ? (
                                         <SpinnerIcon className="w-6 h-6 animate-spin" />

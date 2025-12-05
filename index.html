@@ -48,6 +48,20 @@
                     900: '#0b1120', /* Custom Deep Background */
                     950: '#020617',
                 }
+            },
+            keyframes: {
+              shine: {
+                '0%': { backgroundPosition: '200% center' },
+                '100%': { backgroundPosition: '-200% center' },
+              },
+              glow: {
+                '0%, 100%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5), inset 0 0 5px rgba(99, 102, 241, 0.1)' },
+                '50%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.8), inset 0 0 10px rgba(99, 102, 241, 0.3)' },
+              },
+            },
+            animation: {
+              shine: 'shine 3s linear infinite',
+              glow: 'glow 2s ease-in-out infinite',
             }
           },
         },

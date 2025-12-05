@@ -931,8 +931,8 @@ const FormEditorPage: React.FC = () => {
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         countdownSettings: { active: true, duration: 300 },
                         stockCountdownSettings: { active: true, initialStock: 160, intervalSeconds: 5 },
-                        socialProofSettings: { active: true, position: 'top-left', animation: 'slide-up', initialDelaySeconds: 2, displayDurationSeconds: 5, intervalSeconds: 8, customerNames: 'Rina Setyawati,Andi Prasetyo,Siti Marlina,Budi Hartanto,Della Anggraini,Fajar Nugraha,Novi Rahmawati,Ardiansyah Putra,Lela Mardiani,Rivaldi Saputra,Melani Oktaviani,Kevin Aditya,Ayu Pramesti,Rendy Kurniawan,Siska Amelia,Rama Wijaya,Clara Widyaningrum,Gilang Ramdhan,Irma Kusumawati,Aldi Pranata', customerCities: 'Jakarta,Bandung,Surabaya,Yogyakarta,Semarang,Bekasi,Depok,Tangerang,Medan,Palembang,Makassar,Denpasar,Malang,Pontianak,Pekanbaru,Batam,Solo,Cirebon,Manado,Banjarmasin' },
-                        ctaSettings: { active: true, mainText: 'Pesan Sekarang', urgencyText: 'Stok terbatas, pesan sebelum terlambat!', buttonColor: '#6366f1', initialCount: 0, increaseIntervalSeconds: 120, animationEnabled: true },
+                        socialProofSettings: { active: true, position: 'top-left', animation: 'slide-up', initialDelaySeconds: 2, displayDurationSeconds: 5, intervalSeconds: 8, customerNames: 'Rina Setyawati\nAndi Prasetyo\nSiti Marlina\nBudi Hartanto\nDella Anggraini\nFajar Nugraha\nNovi Rahmawati\nArdiansyah Putra\nLela Mardiani\nRivaldi Saputra\nMelani Oktaviani\nKevin Aditya\nAyu Pramesti\nRendy Kurniawan\nSiska Amelia\nRama Wijaya\nClara Widyaningrum\nGilang Ramdhan\nIrma Kusumawati\nAldi Pranata', customerCities: 'Jakarta\nBandung\nSubaraya\nYogyakarta\nSemarang\nBekasi\nDepok\nTangerang\nMedan\nPalembang\nMakassar\nDenpasar\nMalang\nPontianak\nPekanbaru\nBatam\nSolo\nCirebon\nManado\nBanjarmasin' },
+                        ctaSettings: { active: true, mainText: 'Pesan Sekarang', urgencyText: '{count} sudah beli hari ini', buttonColor: '#6366f1', initialCount: 0, increaseIntervalSeconds: 3, incrementPerSecond: 1, animationEnabled: true, animationType: 'pulse' },
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
                         thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah melakukan pemesanan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama: [CUSTOMER_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman begitu tersedia.\n\nTerima kasih! 🙏' }},
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
@@ -2846,11 +2846,35 @@ const FormEditorPage: React.FC = () => {
                                 <label className="block text-xs font-medium mb-1">Teks Urgensi</label>
                                 <input 
                                     type="text" 
-                                    placeholder="e.g. Stok terbatas, pesan sebelum terlambat!" 
+                                    placeholder="e.g. {count} sudah beli hari ini (gunakan {count} untuk angka)" 
                                     value={form.ctaSettings?.urgencyText || ''} 
                                     onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'urgencyText', e.target.value)}
                                     className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                 />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-xs font-medium mb-1">Interval (detik)</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="3" 
+                                        value={form.ctaSettings?.increaseIntervalSeconds || 3}
+                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'increaseIntervalSeconds', parseInt(e.target.value))}
+                                        className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                        min="1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium mb-1">Tambah Per Interval</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="1" 
+                                        value={form.ctaSettings?.incrementPerSecond || 1}
+                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'incrementPerSecond', parseInt(e.target.value))}
+                                        className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                        min="1"
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium mb-1">Warna Tombol (Hex)</label>
@@ -2877,6 +2901,33 @@ const FormEditorPage: React.FC = () => {
                                     onChange={v => handleSubNestedFieldChange('ctaSettings', null, 'animationEnabled', v)} 
                                 />
                             </div>
+                            {form.ctaSettings?.animationEnabled && (
+                                <div>
+                                    <label className="block text-xs font-medium mb-2">Pilih Jenis Animasi</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { value: 'pulse', label: '💓 Pulse', desc: 'Denyut Lembut' },
+                                            { value: 'shine', label: '✨ Shine', desc: 'Cahaya Gerak' },
+                                            { value: 'bounce', label: '⬆️ Bounce', desc: 'Memantul' },
+                                            { value: 'scale', label: '📏 Scale', desc: 'Membesar' },
+                                            { value: 'glow', label: '🌟 Glow', desc: 'Bersinar' }
+                                        ].map(anim => (
+                                            <button
+                                                key={anim.value}
+                                                onClick={() => handleSubNestedFieldChange('ctaSettings', null, 'animationType', anim.value as any)}
+                                                className={`p-2 text-xs font-medium rounded border transition ${
+                                                    form.ctaSettings?.animationType === anim.value
+                                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                }`}
+                                            >
+                                                <div>{anim.label}</div>
+                                                <div className="text-xs opacity-70">{anim.desc}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </EditorCard>
