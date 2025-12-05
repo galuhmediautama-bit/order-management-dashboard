@@ -3,6 +3,8 @@ import React, { useState, useEffect, Suspense, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import AnnouncementPopup from './components/AnnouncementPopup';
+import AnnouncementLineBar from './components/AnnouncementLineBar';
 import { supabase } from './supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import SpinnerIcon from './components/icons/SpinnerIcon';
@@ -68,7 +70,8 @@ interface AuthenticatedAppProps {
 
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme, toggleTheme }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const { websiteSettings } = useContext(SettingsContext);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const { websiteSettings, announcementSettings } = useContext(SettingsContext);
   const websiteName = websiteSettings?.siteName;
 
   useEffect(() => {
@@ -76,6 +79,18 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
         document.title = websiteName;
     }
   }, [websiteName]);
+
+  useEffect(() => {
+    // Demo: Show announcement popup after 2 seconds (for testing)
+    // In production, this would be triggered by actual announcement data from Supabase
+    const timer = setTimeout(() => {
+      if (announcementSettings?.popup.enabled) {
+        setShowAnnouncement(true);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [announcementSettings?.popup.enabled]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -96,6 +111,15 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
           user={user}
           logout={handleLogout}
         />
+        
+        {/* Global Announcement Line Bar */}
+        {announcementSettings?.lineBar.enabled && (
+          <AnnouncementLineBar 
+            message="Selamat datang! Fitur pengumuman sistem telah aktif." 
+            type="info" 
+          />
+        )}
+
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 dark:bg-slate-900 p-4 md:p-6 lg:p-8">
           <Suspense fallback={<div className="flex justify-center items-center h-64"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
           <Routes>
@@ -132,6 +156,15 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
             </Routes>
           </Suspense>
         </main>
+
+        {/* Global Announcement Popup */}
+        {showAnnouncement && (
+          <AnnouncementPopup 
+            title="Pengumuman Penting"
+            message="Ini adalah pesan pengumuman demo. Pengaturan frekuensi pop-up dan durasi line bar dapat diatur di halaman 'Pengaturan Pengumuman'."
+            onClose={() => setShowAnnouncement(false)}
+          />
+        )}
       </div>
     </div>
   );
