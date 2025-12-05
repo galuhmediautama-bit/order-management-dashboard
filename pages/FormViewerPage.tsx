@@ -249,7 +249,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submission, setSubmission] = useState<{success: boolean, order?: Order, error?: string}>({success: false});
     const [imageLoaded, setImageLoaded] = useState(false);
-    const [currentGalleryImage, setCurrentGalleryImage] = useState<string>('');
     const [timeLeft, setTimeLeft] = useState(0);
     const [variantStock, setVariantStock] = useState<Record<string, number>>({});
     const [checkoutCount, setCheckoutCount] = useState(0);
@@ -527,7 +526,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             if (foundForm) {
                 const normalizedForm = normalizeForm(foundForm);
                 console.log('Normalized form customerFields:', normalizedForm.customerFields);
-                setForm(normalizedForm);
+                
+                // Remove productImages array untuk menghindari galeri foto
+                const cleanForm = { ...normalizedForm, productImages: [] };
+                setForm(cleanForm);
 
                 if (normalizedForm.countdownSettings?.active) {
                     setTimeLeft(normalizedForm.countdownSettings.duration);
@@ -763,7 +765,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 formId: form.id || null,
                 formTitle: form.title,
                 assignedCsId: assignedCsId || null,
-                productId: form.productId || null,
+                // Use snake_case column for Supabase insert
+                product_id: form.productId || null,
                 commissionSnapshot: finalCsCommission, // Legacy field for backwards compatibility
                 brandId: form.brandId || null,
             };
@@ -789,7 +792,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 submissionCount: (form.submissionCount || 0) + 1
             }).eq('id', form.id);
             
-            const newOrder = data as Order;
+            const newOrder = {
+                ...(data as Order),
+                productId: (data as any)?.product_id ?? (data as any)?.productId ?? null,
+            } as Order;
             
             sessionStorage.removeItem(`abandonedCart_${form.id}`);
 
@@ -913,19 +919,26 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                             
                             <FadeInBlock delay={300}>
                                 {form.productOptions.length > 0 && (
-                                    <div className="mb-4 space-y-4">
+                                    <div className="mb-4 space-y-6">
                                     {form.productOptions.map((option, index) => {
                                         const displayStyle = option.displayStyle || 'dropdown';
                                         return (
-                                            <div key={option.id}>
-                                                <div className="flex justify-between items-baseline mb-2">
-                                                    <label className="font-semibold block text-sm text-slate-900 dark:text-slate-100">{option.name}:</label>
+                                            <div key={option.id} className="space-y-3">
+                                                {/* Header Variasi */}
+                                                <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                                        {option.name}
+                                                    </h3>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        Pilih salah satu opsi di bawah
+                                                    </p>
                                                 </div>
+                                                
                                                 {displayStyle === 'dropdown' && (
                                                     <select
                                                         onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))}
                                                         value={selectedOptions[option.name] || ''}
-                                                        className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
+                                                        className="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 font-medium"
                                                     >
                                                         {option.values.map(val => <option key={val} value={val}>{val}</option>)}
                                                     </select>
@@ -971,7 +984,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 {displayStyle === 'modern' && (
                                                     <div className="flex flex-col gap-2">
                                                         {option.values.map(val => (
-                                                            <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({...prev, [option.name]: val}))} className={`w-full flex justify-between items-center px-3 py-1.5 border rounded-lg text-sm transition-colors ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
+                                                            <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({...prev, [option.name]: val}))} className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
                                                                 <span>{val}</span>
                                                                 {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
                                                                     <span className="text-xs font-medium opacity-80 animate-pulse">

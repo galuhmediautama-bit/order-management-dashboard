@@ -171,7 +171,11 @@ const OrdersPage: React.FC = () => {
         if (ordersError) throw ordersError;
         
         const ordersList = (ordersData || []).map(data => {
-            return { ...data } as Order;
+            const typed = data as any;
+            return {
+                ...typed,
+                productId: typed.product_id ?? typed.productId ?? null,
+            } as Order;
         });
         setOrders(ordersList);
 
@@ -271,14 +275,19 @@ const OrdersPage: React.FC = () => {
               showToast("Pesanan berhasil diupdate.", "success");
           } else {
               // Create new order
+              const { productId, ...restOrder } = newOrderData as any;
               const dataWithTimestamp = {
-                  ...newOrderData,
+                  ...restOrder,
+                  product_id: productId ?? null,
                   date: new Date().toISOString()
               };
               const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
               if (error) throw error;
               
-              const newOrder = data as Order;
+              const newOrder = {
+                  ...(data as Order),
+                  productId: (data as any)?.product_id ?? (data as any)?.productId ?? null,
+              } as Order;
               setOrders(prev => [newOrder, ...prev]);
               showToast("Pesanan manual berhasil dibuat.", "success");
           }

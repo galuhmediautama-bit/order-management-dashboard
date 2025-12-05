@@ -124,7 +124,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
         slug: formToEdit.slug || '',
         brandId: formToEdit.brandId || '', // Ensure brandId exists
         assignedAdvertiserId: formToEdit.assignedAdvertiserId || '', // PRESERVE: Don't reset advertiser assignment
-        productImages: formToEdit.productImages || [], // Ensure productImages array exists
+        productImages: [], // Always empty - tidak digunakan lagi
         showTitle: formToEdit.showTitle ?? true,
         showDescription: formToEdit.showDescription ?? true,
         productOptions: (formToEdit.productOptions || []).map(opt => ({
