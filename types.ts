@@ -361,7 +361,7 @@ export interface Form {
         increaseIntervalSeconds: number;
         incrementPerSecond: number; // How much to increase count per interval
         animationEnabled: boolean;
-        animationType?: 'pulse' | 'shine' | 'bounce' | 'scale' | 'glow'; // Animation style when enabled
+        animationType?: 'pulse' | 'shine' | 'bounce' | 'scale' | 'glow' | 'rotate'; // Animation style when enabled
     };
     commissionPrice?: number; // Deprecated: Moved to VariantCombination level
     // This is for client-side migration of old data structure

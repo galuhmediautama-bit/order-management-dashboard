@@ -61,6 +61,8 @@ const getAnimationClasses = (animationType?: string): string => {
             return 'animate-buttonScale';
         case 'glow':
             return 'animate-buttonGlow';
+        case 'rotate':
+            return 'animate-buttonRotate';
         default:
             return '';
     }

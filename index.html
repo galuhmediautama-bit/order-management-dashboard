@@ -70,6 +70,10 @@
                 '0%, 100%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3)' },
                 '50%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.9), 0 0 30px rgba(99, 102, 241, 0.5)' },
               },
+              buttonRotate: {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
             },
             animation: {
               buttonPulse: 'buttonPulse 2s ease-in-out infinite',
@@ -77,6 +81,7 @@
               buttonBounce: 'buttonBounce 2s ease-in-out infinite',
               buttonScale: 'buttonScale 2s ease-in-out infinite',
               buttonGlow: 'buttonGlow 2s ease-in-out infinite',
+              buttonRotate: 'buttonRotate 3s linear infinite',
             }
           },
         },

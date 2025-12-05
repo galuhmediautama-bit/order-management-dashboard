@@ -932,7 +932,7 @@ const FormEditorPage: React.FC = () => {
                         countdownSettings: { active: true, duration: 300 },
                         stockCountdownSettings: { active: true, initialStock: 160, intervalSeconds: 5 },
                         socialProofSettings: { active: true, position: 'top-left', animation: 'slide-up', initialDelaySeconds: 2, displayDurationSeconds: 5, intervalSeconds: 8, customerNames: 'Rina Setyawati\nAndi Prasetyo\nSiti Marlina\nBudi Hartanto\nDella Anggraini\nFajar Nugraha\nNovi Rahmawati\nArdiansyah Putra\nLela Mardiani\nRivaldi Saputra\nMelani Oktaviani\nKevin Aditya\nAyu Pramesti\nRendy Kurniawan\nSiska Amelia\nRama Wijaya\nClara Widyaningrum\nGilang Ramdhan\nIrma Kusumawati\nAldi Pranata', customerCities: 'Jakarta\nBandung\nSubaraya\nYogyakarta\nSemarang\nBekasi\nDepok\nTangerang\nMedan\nPalembang\nMakassar\nDenpasar\nMalang\nPontianak\nPekanbaru\nBatam\nSolo\nCirebon\nManado\nBanjarmasin' },
-                        ctaSettings: { active: true, mainText: 'Pesan Sekarang', urgencyText: '{count} sudah beli hari ini', buttonColor: '#6366f1', initialCount: 0, increaseIntervalSeconds: 3, incrementPerSecond: 1, animationEnabled: true, animationType: 'pulse' },
+                        ctaSettings: { active: true, mainText: 'Pesan Sekarang', urgencyText: '{count} sudah beli hari ini', buttonColor: '#6366f1', initialCount: 265, increaseIntervalSeconds: 1, incrementPerSecond: 2, animationEnabled: true, animationType: 'pulse' },
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
                         thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah melakukan pemesanan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama: [CUSTOMER_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman begitu tersedia.\n\nTerima kasih! 🙏' }},
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
@@ -2852,13 +2852,24 @@ const FormEditorPage: React.FC = () => {
                                     className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-4 gap-2">
+                                <div>
+                                    <label className="block text-xs font-medium mb-1">Angka Awal</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="265" 
+                                        value={form.ctaSettings?.initialCount || 265}
+                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'initialCount', parseInt(e.target.value))}
+                                        className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                        min="0"
+                                    />
+                                </div>
                                 <div>
                                     <label className="block text-xs font-medium mb-1">Interval (detik)</label>
                                     <input 
                                         type="number" 
-                                        placeholder="3" 
-                                        value={form.ctaSettings?.increaseIntervalSeconds || 3}
+                                        placeholder="1" 
+                                        value={form.ctaSettings?.increaseIntervalSeconds || 1}
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'increaseIntervalSeconds', parseInt(e.target.value))}
                                         className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                         min="1"
@@ -2868,31 +2879,32 @@ const FormEditorPage: React.FC = () => {
                                     <label className="block text-xs font-medium mb-1">Tambah Per Interval</label>
                                     <input 
                                         type="number" 
-                                        placeholder="1" 
-                                        value={form.ctaSettings?.incrementPerSecond || 1}
+                                        placeholder="2" 
+                                        value={form.ctaSettings?.incrementPerSecond || 2}
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'incrementPerSecond', parseInt(e.target.value))}
                                         className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                         min="1"
                                     />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium mb-1">Warna Tombol (Hex)</label>
-                                <div className="flex gap-2">
+                                <div>
+                                    <label className="block text-xs font-medium mb-1">Warna Tombol</label>
                                     <input 
                                         type="color" 
                                         value={form.ctaSettings?.buttonColor || '#6366f1'} 
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
-                                        className="w-12 h-10 border rounded cursor-pointer"
-                                    />
-                                    <input 
-                                        type="text" 
-                                        placeholder="#6366f1" 
-                                        value={form.ctaSettings?.buttonColor || '#6366f1'} 
-                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
-                                        className="flex-1 p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600 font-mono"
+                                        className="w-full p-2 text-sm border rounded cursor-pointer"
                                     />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium mb-1">Kode Hex Warna</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="#6366f1" 
+                                    value={form.ctaSettings?.buttonColor || '#6366f1'} 
+                                    onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
+                                    className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600 font-mono"
+                                />
                             </div>
                             <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/30 rounded">
                                 <label className="text-sm font-medium">Animasi Tombol</label>
@@ -2910,7 +2922,8 @@ const FormEditorPage: React.FC = () => {
                                             { value: 'shine', label: '✨ Shine', desc: 'Cahaya Gerak' },
                                             { value: 'bounce', label: '⬆️ Bounce', desc: 'Memantul' },
                                             { value: 'scale', label: '📏 Scale', desc: 'Membesar' },
-                                            { value: 'glow', label: '🌟 Glow', desc: 'Bersinar' }
+                                            { value: 'glow', label: '🌟 Glow', desc: 'Bersinar' },
+                                            { value: 'rotate', label: '🔄 Rotate', desc: 'Berputar' }
                                         ].map(anim => (
                                             <button
                                                 key={anim.value}
