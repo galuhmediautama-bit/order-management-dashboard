@@ -282,6 +282,27 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
     const debounceTimer = useRef<number | null>(null);
 
+    // Derive display options (fallback to variant attributes when productOptions kosong)
+    const displayOptions = useMemo(() => {
+        if (!form) return [] as Form['productOptions'];
+        if (form.productOptions && form.productOptions.length > 0) return form.productOptions;
+
+        if (!form.variantCombinations || form.variantCombinations.length === 0) return [] as Form['productOptions'];
+
+        const firstCombo = form.variantCombinations[0];
+        const optionNames = Object.keys(firstCombo.attributes || {});
+
+        return optionNames.map((name, idx) => {
+            const values = Array.from(new Set(form.variantCombinations.map(vc => vc.attributes[name]).filter(Boolean)));
+            return {
+                id: idx + 1,
+                name,
+                values,
+                displayStyle: 'radio' as VariantDisplayStyle,
+            };
+        });
+    }, [form]);
+
     // --- TRACKING CALCULATOR ---
     useEffect(() => {
         if (!form) {
@@ -338,7 +359,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         setActivePixelIds(metaIds);
         
         // Update event names - use Meta platform event as primary
-        const metaEventName = newPixelsByPlatform.meta.eventName;
+        let metaEventName = newPixelsByPlatform.meta.eventName;
+        // Guard: jangan pernah fire InitiateCheckout di Thank You page; pakai AddToCart
+        if (isThankYouPage && metaEventName === 'InitiateCheckout') {
+            metaEventName = 'AddToCart';
+        }
         console.log(`[FormViewer] Setting ${pageType} event to: ${metaEventName}`);
         setEventNames(prev => ({
             ...prev,
@@ -535,15 +560,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     setTimeLeft(normalizedForm.countdownSettings.duration);
                 }
 
-                // Initialize form state based on fetched data
-                const initialSelection: Record<string, string> = {};
-                normalizedForm.productOptions.forEach(option => {
-                    if (option.values.length > 0) {
-                        initialSelection[option.name] = option.values[0];
-                    }
-                });
-                setSelectedOptions(initialSelection);
-
                 const visibleShipping = (Object.keys(normalizedForm.shippingSettings) as Array<keyof ShippingSettings>).filter(
                     key => normalizedForm!.shippingSettings[key]?.visible
                 );
@@ -570,15 +586,33 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             document.title = originalTitle;
         };
     }, [form]);
+
+    // Seed selectedOptions when displayOptions change (ensures grouping UI even tanpa productOptions)
+    useEffect(() => {
+        if (!displayOptions || displayOptions.length === 0) return;
+        setSelectedOptions(prev => {
+            const next = { ...prev } as Record<string, string>;
+            let changed = false;
+            displayOptions.forEach(opt => {
+                if (!next[opt.name] && opt.values.length > 0) {
+                    next[opt.name] = opt.values[0];
+                    changed = true;
+                }
+            });
+            return changed ? next : prev;
+        });
+    }, [displayOptions]);
     
     
     const currentCombination = useMemo(() => {
         if (!form) return null;
-        if (form.productOptions.length === 0) return form.variantCombinations.length > 0 ? form.variantCombinations[0] : null;
+        if (!form.variantCombinations || form.variantCombinations.length === 0) return null;
+        if (!displayOptions || displayOptions.length === 0) return form.variantCombinations[0] || null;
+
         return form.variantCombinations.find(combo => {
             return Object.entries(selectedOptions).every(([key, value]) => combo.attributes[key] === value);
-        });
-    }, [selectedOptions, form]);
+        }) || form.variantCombinations[0];
+    }, [selectedOptions, form, displayOptions]);
 
     // Get current variant stock based on selected options
     const currentVariantStock = useMemo(() => {
@@ -918,9 +952,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                             </FadeInBlock>
                             
                             <FadeInBlock delay={300}>
-                                {form.productOptions.length > 0 && (
+                                {displayOptions.length > 0 && (
                                     <div className="mb-4 space-y-6">
-                                    {form.productOptions.map((option, index) => {
+                                    {displayOptions.map((option, index) => {
                                         const displayStyle = option.displayStyle || 'dropdown';
                                         return (
                                             <div key={option.id} className="space-y-3">
