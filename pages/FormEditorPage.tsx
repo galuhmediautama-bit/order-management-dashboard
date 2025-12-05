@@ -2167,6 +2167,50 @@ const FormEditorPage: React.FC = () => {
                             >
                                 + Tambah Opsi
                             </button>
+                            
+                            {/* Generate Combinations Button */}
+                            {form.productOptions.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setForm(prev => {
+                                            if (!prev || !prev.productOptions || prev.productOptions.length === 0) return prev;
+                                            
+                                            // Generate all combinations dari productOptions
+                                            const optionValues = prev.productOptions.map(opt => opt.values);
+                                            const combinations: VariantCombination[] = [];
+                                            
+                                            function generateCombos(index: number, current: Record<string, string>) {
+                                                if (index === prev.productOptions.length) {
+                                                    combinations.push({
+                                                        attributes: { ...current },
+                                                        sellingPrice: 0,
+                                                        costPrice: 0,
+                                                        csCommission: 0,
+                                                        advCommission: 0,
+                                                        weight: 0,
+                                                        initialStock: 10
+                                                    });
+                                                    return;
+                                                }
+                                                
+                                                const opt = prev.productOptions[index];
+                                                for (const value of opt.values) {
+                                                    generateCombos(index + 1, { ...current, [opt.name]: value });
+                                                }
+                                            }
+                                            
+                                            generateCombos(0, {});
+                                            
+                                            showToast(`${combinations.length} kombinasi varian dibuat`, 'success');
+                                            return { ...prev, variantCombinations: combinations };
+                                        });
+                                    }}
+                                    className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm shadow-lg"
+                                >
+                                    🔄 Generate {form.productOptions.reduce((acc, opt) => acc * opt.values.length, 1)} Kombinasi Varian
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center py-8">
