@@ -364,7 +364,6 @@ const FormsPage: React.FC = () => {
             return '-';
         }
     };
-    };
     
     const filteredForms = useMemo(() => {
         let result = filterDataByBrand(forms, currentUser);
