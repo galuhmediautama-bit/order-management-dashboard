@@ -489,6 +489,8 @@ const FormsPage: React.FC = () => {
                                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Formulir</th>
                                     <th className="px-6 py-4 text-center text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Respons</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Slug / Domain</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">ADV Assign</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">CS Assign</th>
                                     <th className="px-6 py-4 text-center text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
@@ -523,6 +525,35 @@ const FormsPage: React.FC = () => {
                                                 </div>
                                             ) : (
                                                 <span className="text-sm text-slate-400 dark:text-slate-500">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {form.assignedAdvertiserId ? (
+                                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                    <div className="w-6 h-6 rounded-full bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold">
+                                                        {currentUser?.id === form.assignedAdvertiserId ? 'ME' : (currentUser?.name?.charAt(0).toUpperCase() || 'A')}
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">{currentUser?.id === form.assignedAdvertiserId ? 'Anda' : 'Assigned'}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-slate-400 dark:text-slate-500 italic">No Advertiser</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {form.thankYouPage?.csAssignment?.mode ? (
+                                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                                                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                                        {form.thankYouPage.csAssignment.mode === 'single' ? 'Single' : 'Round Robin'}
+                                                    </span>
+                                                    {form.thankYouPage.csAssignment.mode === 'round_robin' && form.thankYouPage.csAssignment.roundRobinAgents && (
+                                                        <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">
+                                                            ({form.thankYouPage.csAssignment.roundRobinAgents.length})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-slate-400 dark:text-slate-500 italic">No CS Config</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
