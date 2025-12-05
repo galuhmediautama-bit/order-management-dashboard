@@ -188,9 +188,13 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
 
     let whatsappLink = '#';
     if (thankYouPage.whatsappConfirmation.active) {
+        const productDisplay = order.variant 
+            ? `${order.productName || 'Produk'} / ${order.variant}`
+            : (order.productName || 'Produk');
+        
         const message = thankYouPage.whatsappConfirmation.messageTemplate
-            .replace('[PRODUCT_NAME]', order.productName || 'Produk')
-            .replace('[ORDER_ID]', order.id)
+            .replace('[PRODUCT_NAME]', productDisplay)
+            .replace('[ORDER_ID]', order.id.substring(0, 8))
             .replace('[CUSTOMER_NAME]', capitalizeWords(order.customer))
             .replace('[TOTAL_PRICE]', `Rp ${order.totalPrice?.toLocaleString('id-ID')}`)
             .replace('[PAYMENT_METHOD]', order.paymentMethod || 'Tidak ditentukan');
