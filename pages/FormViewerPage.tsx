@@ -252,6 +252,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [timeLeft, setTimeLeft] = useState(0);
     const [variantStock, setVariantStock] = useState<Record<string, number>>({});
     const [checkoutCount, setCheckoutCount] = useState(0);
+    const [productOptionsOverride, setProductOptionsOverride] = useState<Form['productOptions']>([]);
     
     // Pixel State
     const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
@@ -282,12 +283,45 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
     const debounceTimer = useRef<number | null>(null);
 
-    // Derive display options (fallback to variant attributes when productOptions kosong)
-    const displayOptions = useMemo(() => {
-        if (!form) return [] as Form['productOptions'];
-        if (form.productOptions && form.productOptions.length > 0) return form.productOptions;
+    // Fetch product variant options (source of truth) untuk hindari gabungan di UI
+    useEffect(() => {
+        const loadProductOptions = async () => {
+            if (!form?.productId) {
+                setProductOptionsOverride([]);
+                return;
+            }
 
-        if (!form.variantCombinations || form.variantCombinations.length === 0) return [] as Form['productOptions'];
+            try {
+                const { data } = await supabase
+                    .from('products')
+                    .select('attributes')
+                    .eq('id', form.productId)
+                    .single();
+
+                const variantOptions = (data?.attributes?.variantOptions || []) as Array<{ name: string; values: string[] }>;
+                if (Array.isArray(variantOptions) && variantOptions.length > 0) {
+                    const mapped = variantOptions.map((opt, idx) => ({
+                        id: idx + 1,
+                        name: opt.name || `Opsi ${idx + 1}`,
+                        values: Array.isArray(opt.values) ? opt.values : [],
+                        displayStyle: 'radio' as VariantDisplayStyle,
+                    }));
+                    setProductOptionsOverride(mapped);
+                } else {
+                    setProductOptionsOverride([]);
+                }
+            } catch (error) {
+                console.error('Error loading product variant options:', error);
+                setProductOptionsOverride([]);
+            }
+        };
+
+        loadProductOptions();
+    }, [form?.productId]);
+
+    // Derive options langsung dari variantCombinations untuk fallback
+    const derivedOptions = useMemo(() => {
+        if (!form || !form.variantCombinations || form.variantCombinations.length === 0) return [] as Form['productOptions'];
 
         const firstCombo = form.variantCombinations[0];
         const optionNames = Object.keys(firstCombo.attributes || {});
@@ -302,6 +336,71 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             };
         });
     }, [form]);
+
+    // Jika hanya ada satu atribut dan nilainya mengandung pemisah "-", pecah menjadi dua kelompok (Atribut 1 & Atribut 2)
+    const compositeFallback = useMemo(() => {
+        if (derivedOptions.length !== 1) return null;
+        const [singleOption] = derivedOptions;
+        const separator = ' - ';
+
+        const splitValues = singleOption.values
+            .map(v => v.split('-').map(part => part.trim()))
+            .filter(parts => parts.length === 2 && parts[0] && parts[1]);
+
+        if (splitValues.length !== singleOption.values.length) return null; // Ada nilai yang tidak bisa di-split, jangan paksa
+
+        const attr1Values = Array.from(new Set(splitValues.map(parts => parts[0])));
+        const attr2Values = Array.from(new Set(splitValues.map(parts => parts[1])));
+
+        const compositeOptions: Form['productOptions'] = [
+            { id: 1, name: 'Atribut 1', values: attr1Values, displayStyle: 'radio' },
+            { id: 2, name: 'Atribut 2', values: attr2Values, displayStyle: 'radio' },
+        ];
+
+        const buildCombinedValue = (selection: Record<string, string>) => {
+            const first = selection['Atribut 1'];
+            const second = selection['Atribut 2'];
+            if (!first || !second) return null;
+            return `${first} - ${second}`;
+        };
+
+        return {
+            options: compositeOptions,
+            separator,
+            originalAttributeKey: singleOption.name,
+            buildCombinedValue,
+        };
+    }, [derivedOptions]);
+
+    // Pilih sumber opsi: gunakan productOptions jika lengkap, tapi fallback ke derivedOptions atau compositeFallback untuk hindari gabungan ("Hitam - A4")
+    const displayOptions = useMemo(() => {
+        if (!form) return [] as Form['productOptions'];
+
+        // Utamakan variantOptions dari produk
+        if (productOptionsOverride.length > 0) {
+            return productOptionsOverride;
+        }
+
+        if (compositeFallback) return compositeFallback.options;
+
+        const hasProductOptions = Array.isArray(form.productOptions) && form.productOptions.length > 0;
+
+        if (hasProductOptions) {
+            // Jika productOptions hanya satu atribut tetapi derivedOptions punya lebih dari satu, pakai derived agar tidak jadi satu gabungan
+            if (derivedOptions.length > 1 && form.productOptions.length === 1) {
+                return derivedOptions;
+            }
+
+            // Jika derivedOptions lebih lengkap (jumlah atribut lebih banyak), gunakan derived
+            if (derivedOptions.length > form.productOptions.length) {
+                return derivedOptions;
+            }
+
+            return form.productOptions;
+        }
+
+        return derivedOptions;
+    }, [form, derivedOptions, productOptionsOverride]);
 
     // --- TRACKING CALCULATOR ---
     useEffect(() => {
@@ -442,6 +541,37 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         return () => clearInterval(timer);
     }, [timeLeft]);
 
+    // Resolve variant combinations once (handles product-level variantOptions splitting)
+    const resolvedVariantCombinations = useMemo(() => {
+        const base = form?.variantCombinations || [];
+        if (!base.length) return [];
+
+        // Jika produk punya variantOptions > 1, pecah nama gabungan menjadi atribut per option
+        if (productOptionsOverride.length > 1) {
+            return base.map(combo => {
+                const attrs = { ...(combo.attributes || {}) } as Record<string, string>;
+
+                // Jika sudah punya semua kunci sesuai produk, biarkan apa adanya
+                const alreadyComplete = productOptionsOverride.every(opt => attrs.hasOwnProperty(opt.name));
+                if (alreadyComplete) return combo;
+
+                // Jika hanya ada satu kunci gabungan, pecah berdasarkan '-'
+                const firstKey = Object.keys(attrs)[0];
+                const combined = firstKey ? attrs[firstKey] || '' : '';
+                const parts = (combined || '').split('-').map(p => p.trim());
+                const rebuilt: Record<string, string> = {};
+                productOptionsOverride.forEach((opt, idx) => {
+                    rebuilt[opt.name] = parts[idx] || opt.values[0] || '';
+                });
+
+                return { ...combo, attributes: rebuilt };
+            });
+        }
+
+        // Jika tidak ada productOptionsOverride, kembalikan base apa adanya
+        return base;
+    }, [form?.variantCombinations, productOptionsOverride]);
+
     useEffect(() => {
         if (form?.stockCountdownSettings?.active) {
             const getRandomStock = (seed: number) => {
@@ -457,8 +587,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             const initialStocks: Record<string, number> = {};
             const maxStock = form.stockCountdownSettings.initialStock; // This is now the MAX, not base
             
-            // Build stock map for each variant combination with random values below max
-            form.variantCombinations.forEach((combo, index) => {
+            // Build stock map for each resolved variant combination with random values below max
+            resolvedVariantCombinations.forEach((combo, index) => {
                 const variantKey = Object.values(combo.attributes).join(' / ') || 'Produk Tunggal';
                 
                 // Create unique seed with more aggressive mixing
@@ -498,7 +628,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     
             return () => clearInterval(interval);
         }
-    }, [form?.stockCountdownSettings, form?.variantCombinations]);
+    }, [form?.stockCountdownSettings, resolvedVariantCombinations]);
     
     useEffect(() => {
         if (form?.ctaSettings) {
@@ -531,18 +661,28 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             setNotFound(false);
             let foundForm: Form | null = null;
 
-            try {
-                // 1. Try fetching by slug first
-                const { data: formBySlug } = await supabase.from("forms").select('*').eq("slug", identifier).single();
+            const rawIdentifier = decodeURIComponent(identifier).trim();
+            const normalizedIdentifier = rawIdentifier.replace(/^\//, '');
+            const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(normalizedIdentifier);
 
-                if (formBySlug) {
-                    foundForm = formBySlug as Form;
-                } else {
-                    // 2. If not found by slug, try fetching by ID (UUID)
-                    const { data: formById } = await supabase.from("forms").select('*').eq("id", identifier).single();
-                    if (formById) {
-                        foundForm = formById as Form;
-                    }
+            try {
+                // Cari form berdasarkan slug (case-insensitive). Jika identifier valid UUID, sertakan pencarian id.
+                const orFilters = isUuid
+                    ? `slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier},id.eq.${normalizedIdentifier}`
+                    : `slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier}`;
+
+                const { data, error } = await supabase
+                    .from('forms')
+                    .select('*')
+                    .or(orFilters)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error('Error fetching form:', error);
+                }
+
+                if (data) {
+                    foundForm = data as Form;
                 }
             } catch (error) {
                 console.error("Error fetching form:", error);
@@ -603,16 +743,28 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         });
     }, [displayOptions]);
     
-    
     const currentCombination = useMemo(() => {
         if (!form) return null;
-        if (!form.variantCombinations || form.variantCombinations.length === 0) return null;
-        if (!displayOptions || displayOptions.length === 0) return form.variantCombinations[0] || null;
+        if (resolvedVariantCombinations.length === 0) return null;
+        if (!displayOptions || displayOptions.length === 0) return resolvedVariantCombinations[0] || null;
 
-        return form.variantCombinations.find(combo => {
+        // Jika mode composite aktif, cari kombinasi berdasarkan gabungan nilai Atribut 1 & Atribut 2
+        if (compositeFallback) {
+            const targetCombined = compositeFallback.buildCombinedValue(selectedOptions);
+            if (targetCombined) {
+                const match = resolvedVariantCombinations.find(combo => {
+                    const keys = Object.keys(combo.attributes || {});
+                    const key = keys[0];
+                    return key && combo.attributes[key] === targetCombined;
+                });
+                return match || resolvedVariantCombinations[0];
+            }
+        }
+
+        return resolvedVariantCombinations.find(combo => {
             return Object.entries(selectedOptions).every(([key, value]) => combo.attributes[key] === value);
-        }) || form.variantCombinations[0];
-    }, [selectedOptions, form, displayOptions]);
+        }) || resolvedVariantCombinations[0];
+    }, [selectedOptions, form, displayOptions, compositeFallback, resolvedVariantCombinations]);
 
     // Get current variant stock based on selected options
     const currentVariantStock = useMemo(() => {
@@ -959,13 +1111,24 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                         
                                         // Helper: Get price/details for a specific value of this attribute
                                         const getVariantDetails = (attributeValue: string) => {
-                                            if (!form?.variantCombinations) return null;
+                                            if (!resolvedVariantCombinations || resolvedVariantCombinations.length === 0) return null;
                                             
                                             // Build current selection with this value
                                             const testSelection = { ...selectedOptions, [option.name]: attributeValue };
+
+                                            // Composite mode: gabungkan Atribut 1 & Atribut 2 ke nilai tunggal
+                                            if (compositeFallback) {
+                                                const combined = compositeFallback.buildCombinedValue(testSelection);
+                                                if (!combined) return null;
+                                                return resolvedVariantCombinations.find(combo => {
+                                                    const keys = Object.keys(combo.attributes || {});
+                                                    const key = keys[0];
+                                                    return key && combo.attributes[key] === combined;
+                                                }) || null;
+                                            }
                                             
-                                            // Find matching combination
-                                            const match = form.variantCombinations.find(combo => {
+                                            // Find matching combination (normal mode)
+                                            const match = resolvedVariantCombinations.find(combo => {
                                                 return Object.entries(testSelection).every(([key, val]) => 
                                                     combo.attributes[key] === val
                                                 );

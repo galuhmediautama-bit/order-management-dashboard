@@ -2,7 +2,7 @@
 // ... (imports remain the same, ensure they are present)
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { Page, User, UserRole, UserStatus, Role, Domain, DomainStatus, MessageTemplates, Brand } from '../types';
+import type { Page, User, UserRole, UserStatus, Role, Domain, DomainStatus, MessageTemplates, Brand, AnnouncementSettings } from '../types';
 import BrandsPage from './BrandsPage';
 // ... existing imports ...
 import TrackingPage from './TrackingPage';
@@ -29,6 +29,7 @@ import XCircleIcon from '../components/icons/XCircleIcon';
 import { getNormalizedRole } from '../utils';
 import PlusIcon from '../components/icons/PlusIcon';
 import ChatBubbleIcon from '../components/icons/ChatBubbleIcon'; // Ensure this is imported
+import BellIcon from '../components/icons/BellIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 import { useToast } from '../contexts/ToastContext'; // Import Toast Context
 
@@ -264,6 +265,252 @@ const MessageTemplatesSettings: React.FC = () => {
                                 <p className="text-xs text-amber-800 dark:text-amber-300">⚠️ Wajib menyertakan <code className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 rounded font-mono">[RESI_NUMBER]</code> untuk nomor resi</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Announcement Settings Component ---
+const AnnouncementSettingsPage: React.FC = () => {
+    const defaultSettings: AnnouncementSettings = {
+        popup: {
+            enabled: true,
+            frequency: 'per_session',
+            cooldownMinutes: 30,
+            maxShowsPerDay: 3,
+        },
+        lineBar: {
+            enabled: true,
+            dismissBehavior: 'hide_for_hours',
+            hideDurationHours: 12,
+        },
+    };
+
+    const { showToast } = useToast();
+    const [settings, setSettings] = useState<AnnouncementSettings>(defaultSettings);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            setLoading(true);
+            try {
+                const { data, error } = await supabase.from('settings').select('*').eq('id', 'announcementSettings').single();
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Error fetching notification settings:', error);
+                }
+
+                if (data) {
+                    const normalized: AnnouncementSettings = {
+                        popup: {
+                            enabled: data.announcementPopupEnabled ?? defaultSettings.popup.enabled,
+                            frequency: data.announcementPopupFrequency ?? defaultSettings.popup.frequency,
+                            cooldownMinutes: data.announcementPopupCooldownMinutes ?? defaultSettings.popup.cooldownMinutes,
+                            maxShowsPerDay: data.announcementPopupMaxShowsPerDay ?? defaultSettings.popup.maxShowsPerDay,
+                        },
+                        lineBar: {
+                            enabled: data.announcementLineBarEnabled ?? defaultSettings.lineBar.enabled,
+                            dismissBehavior: data.announcementLineBarDismissBehavior ?? defaultSettings.lineBar.dismissBehavior,
+                            hideDurationHours: data.announcementLineBarHideDurationHours ?? defaultSettings.lineBar.hideDurationHours,
+                        },
+                    };
+                    setSettings(normalized);
+                } else {
+                    setSettings(defaultSettings);
+                }
+            } catch (err) {
+                console.error('Unexpected error loading notification settings:', err);
+                setSettings(defaultSettings);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSettings();
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await supabase.from('settings').upsert({
+                id: 'announcementSettings',
+                announcementPopupEnabled: settings.popup.enabled,
+                announcementPopupFrequency: settings.popup.frequency,
+                announcementPopupCooldownMinutes: settings.popup.cooldownMinutes ?? null,
+                announcementPopupMaxShowsPerDay: settings.popup.maxShowsPerDay ?? null,
+                announcementLineBarEnabled: settings.lineBar.enabled,
+                announcementLineBarDismissBehavior: settings.lineBar.dismissBehavior,
+                announcementLineBarHideDurationHours: settings.lineBar.hideDurationHours ?? null,
+            });
+            showToast('Pengaturan pengumuman berhasil disimpan.', 'success');
+        } catch (error) {
+            console.error('Error saving notification settings:', error);
+            showToast('Gagal menyimpan pengaturan pengumuman.', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const updatePopup = (partial: Partial<AnnouncementSettings['popup']>) => {
+        setSettings(prev => ({ ...prev, popup: { ...prev.popup, ...partial } }));
+    };
+
+    const updateLineBar = (partial: Partial<AnnouncementSettings['lineBar']>) => {
+        setSettings(prev => ({ ...prev, lineBar: { ...prev.lineBar, ...partial } }));
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <SpinnerIcon className="w-8 h-8 animate-spin text-indigo-500" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 rounded-2xl p-8 shadow-sm border border-indigo-100/50 dark:border-indigo-800/30">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg">
+                            <BellIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 dark:from-indigo-400 dark:to-cyan-400 bg-clip-text text-transparent">Pengaturan Pengumuman</h2>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">Atur frekuensi pop-up dan perilaku baris pengumuman.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-xl hover:from-indigo-700 hover:to-cyan-700 font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60"
+                    >
+                        {saving ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <CheckIcon className="w-5 h-5" />}
+                        <span>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Popup Settings */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
+                            <ChatBubbleIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Pop-up Pengumuman</h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">Kontrol frekuensi kemunculan pop-up.</p>
+                        </div>
+                    </div>
+
+                    <div className="p-6 space-y-5">
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                            <div>
+                                <p className="font-semibold text-slate-900 dark:text-white">Aktifkan Pop-up Pengumuman</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Matikan jika tidak ingin menampilkan pop-up pengumuman sama sekali.</p>
+                            </div>
+                            <ToggleSwitch
+                                checked={settings.popup.enabled}
+                                onChange={(checked) => updatePopup({ enabled: checked })}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Frekuensi Tampilkan</label>
+                            <select
+                                value={settings.popup.frequency}
+                                onChange={(e) => updatePopup({ frequency: e.target.value as NotificationSettings['popup']['frequency'] })}
+                                className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="always">Selalu tampil</option>
+                                <option value="per_session">Sekali per sesi</option>
+                                <option value="cooldown">Gunakan cooldown (menit)</option>
+                            </select>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">"Per sesi" akan menampilkan pop-up hanya sekali per tab sampai ditutup.</p>
+                        </div>
+
+                        {settings.popup.frequency === 'cooldown' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Cooldown (menit)</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={settings.popup.cooldownMinutes ?? ''}
+                                        onChange={(e) => updatePopup({ cooldownMinutes: e.target.value ? Number(e.target.value) : undefined })}
+                                        className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Jeda minimal antar pop-up.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Maks. tampil per hari</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={settings.popup.maxShowsPerDay ?? ''}
+                                        onChange={(e) => updatePopup({ maxShowsPerDay: e.target.value ? Number(e.target.value) : undefined })}
+                                        className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Batasi frekuensi harian untuk pengguna.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Line Bar Settings */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                            <ChatBubbleIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Baris Pengumuman</h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">Atur perilaku bar garis (line bar) pengumuman di halaman.</p>
+                        </div>
+                    </div>
+
+                    <div className="p-6 space-y-5">
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                            <div>
+                                <p className="font-semibold text-slate-900 dark:text-white">Aktifkan Line Bar Pengumuman</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Matikan jika tidak ingin menampilkan bar informasi pengumuman.</p>
+                            </div>
+                            <ToggleSwitch
+                                checked={settings.lineBar.enabled}
+                                onChange={(checked) => updateLineBar({ enabled: checked })}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Perilaku saat ditutup</label>
+                            <select
+                                value={settings.lineBar.dismissBehavior}
+                                onChange={(e) => updateLineBar({ dismissBehavior: e.target.value as AnnouncementSettings['lineBar']['dismissBehavior'] })}
+                                className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            >
+                                <option value="hide_for_session">Sembunyikan sampai tab ditutup</option>
+                                <option value="hide_for_hours">Sembunyikan untuk beberapa jam</option>
+                            </select>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Kontrol lamanya bar tidak muncul setelah pengguna menutup.</p>
+                        </div>
+
+                        {settings.lineBar.dismissBehavior === 'hide_for_hours' && (
+                            <div>
+                                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Durasi sembunyikan (jam)</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={settings.lineBar.hideDurationHours ?? ''}
+                                    onChange={(e) => updateLineBar({ hideDurationHours: e.target.value ? Number(e.target.value) : undefined })}
+                                    className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Berapa lama bar disembunyikan setelah ditutup.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1851,6 +2098,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ subPage }) => {
         case 'Manajemen CS': return <CustomerServicePage />;
         case 'Pelacakan': return <TrackingPage />;
         case 'Template Pesan': return <MessageTemplatesSettings />;
+        case 'Pengaturan Pengumuman': return <AnnouncementSettingsPage />;
         case 'Permintaan Hapus': return <DeletionRequestsPage />;
         case 'CuanRank': return <CuanRankPage />;
         default: return <div>Halaman pengaturan tidak ditemukan.</div>;

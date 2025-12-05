@@ -17,6 +17,7 @@ import WebsiteIcon from './icons/WebsiteIcon';
 import DomainIcon from './icons/DomainIcon';
 import UsersIcon from './icons/UsersIcon';
 import ChatBubbleIcon from './icons/ChatBubbleIcon';
+import BellIcon from './icons/BellIcon';
 import BanknotesIcon from './icons/BanknotesIcon';
 import UserGroupIcon from './icons/UserGroupIcon';
 import TrophyIcon from './icons/TrophyIcon';
@@ -56,6 +57,7 @@ const pageToPath: Record<string, string> = {
     'Manajemen CS': '/pengaturan/cs',
     'Pelacakan': '/pengaturan/pelacakan',
     'Template Pesan': '/pengaturan/template-pesan',
+    'Pengaturan Pengumuman': '/pengaturan/pengumuman',
     'Permintaan Hapus': '/pengaturan/permintaan-hapus',
     'CuanRank': '/pengaturan/cuan-rank',
     'Profil Saya': '/profil',
@@ -213,6 +215,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           { name: 'CuanRank', icon: TrophyIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'Pelacakan', icon: TrackingIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
           { name: 'Template Pesan', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
+          { name: 'Pengaturan Pengumuman', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
         ]
       },
     ];

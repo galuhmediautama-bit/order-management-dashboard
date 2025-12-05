@@ -25,6 +25,7 @@ export type Page =
   | 'Manajemen CS'
   | 'Pelacakan'
   | 'Template Pesan'
+  | 'Pengaturan Pengumuman'
   | 'Permintaan Hapus'
   | 'Penghasilan'
   | 'CuanRank' // Added for new feature
@@ -452,7 +453,19 @@ export interface Notification {
   read: boolean;
 }
 
-export interface MessageTemplates {
+export interface AnnouncementSettings {
+  popup: {
+    enabled: boolean;
+    frequency: 'always' | 'per_session' | 'cooldown';
+    cooldownMinutes?: number;
+    maxShowsPerDay?: number;
+  };
+  lineBar: {
+    enabled: boolean;
+    dismissBehavior: 'hide_for_session' | 'hide_for_hours';
+    hideDurationHours?: number;
+  };
+}export interface MessageTemplates {
   followUp1: string;
   followUp2: string;
   followUp3: string;

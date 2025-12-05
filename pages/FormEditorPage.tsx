@@ -1118,22 +1118,53 @@ const FormEditorPage: React.FC = () => {
                         console.log('🖼️ Gambar updated dari produk:', product.imageUrl);
                     }
                     
-                    // Load dan konversi varian jika ada
+                    // Load dan konversi varian + variantOptions (produk adalah sumber kebenaran)
                     if (product.variants && product.variants.length > 0) {
-                        console.log('📊 Converting variants untuk form edit');
-                        
-                        const variantNames = product.variants.map(v => v.name || 'Varian');
-                        
-                        const newProductOptions: ProductOption[] = [{
-                            id: Date.now(),
-                            name: 'Varian',
-                            values: variantNames,
-                            displayStyle: 'radio'
-                        }];
-                        
-                        const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
-                            attributes: { 'Varian': variant.name || `Varian ${idx + 1}` },
+                        console.log('📊 Converting variants untuk form edit (mengikuti variantOptions produk)');
+
+                        const hasVariantOptions = Array.isArray(product.variantOptions) && product.variantOptions.length > 0;
+
+                        // Bangun productOptions dari variantOptions bila ada, fallback ke satu atribut "Varian"
+                        const productOptions: ProductOption[] = hasVariantOptions
+                            ? product.variantOptions!.map((opt, idx) => ({
+                                id: idx + 1,
+                                name: opt.name || `Opsi ${idx + 1}`,
+                                values: opt.values || [],
+                                displayStyle: 'radio',
+                              }))
+                            : [{
+                                id: 1,
+                                name: 'Varian',
+                                values: product.variants.map(v => v.name || 'Varian'),
+                                displayStyle: 'radio'
+                              }];
+
+                        // Helper: map nama varian (e.g., "Amber - Umar") ke attributes per option
+                        const mapAttributes = (variantName: string) => {
+                            const attributes: Record<string, string> = {};
+
+                            if (hasVariantOptions) {
+                                const parts = (variantName || '')
+                                    .split('-')
+                                    .map(p => p.trim())
+                                    .filter(Boolean);
+
+                                product.variantOptions!.forEach((opt, idx) => {
+                                    const key = opt.name || `Opsi ${idx + 1}`;
+                                    const value = parts[idx] || opt.values?.[0] || '';
+                                    attributes[key] = value;
+                                });
+                            } else {
+                                attributes['Varian'] = variantName || 'Varian';
+                            }
+
+                            return attributes;
+                        };
+
+                        const variantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
+                            attributes: mapAttributes(variant.name || `Varian ${idx + 1}`),
                             sellingPrice: variant.price || 0,
+                            strikethroughPrice: variant.comparePrice || 0,
                             costPrice: variant.costPrice || 0,
                             csCommission: variant.csCommission || 0,
                             advCommission: variant.advCommission || 0,
@@ -1141,14 +1172,14 @@ const FormEditorPage: React.FC = () => {
                             weight: variant.weight || 0,
                             initialStock: variant.initialStock || 0
                         }));
-                        
+
                         setForm(prev => prev ? {
                             ...prev,
-                            productOptions: newProductOptions,
-                            variantCombinations: newVariantCombinations,
+                            productOptions,
+                            variantCombinations,
                             productVariants: product.variants
                         } : prev);
-                        
+
                         console.log('✅ Varian berhasil di-load untuk form edit');
                         showToast(`Form diupdate: ${product.variants.length} varian dimuat`, 'success');
                     }
