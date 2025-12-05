@@ -189,9 +189,11 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
     let whatsappLink = '#';
     if (thankYouPage.whatsappConfirmation.active) {
         const message = thankYouPage.whatsappConfirmation.messageTemplate
+            .replace('[PRODUCT_NAME]', order.productName || 'Produk')
             .replace('[ORDER_ID]', order.id)
             .replace('[CUSTOMER_NAME]', capitalizeWords(order.customer))
-            .replace('[TOTAL_PRICE]', `Rp ${order.totalPrice?.toLocaleString('id-ID')}`);
+            .replace('[TOTAL_PRICE]', `Rp ${order.totalPrice?.toLocaleString('id-ID')}`)
+            .replace('[PAYMENT_METHOD]', order.paymentMethod || 'Tidak ditentukan');
 
         let destinationNumber = '';
         if (thankYouPage.whatsappConfirmation.destination === 'assigned_cs') {

@@ -930,7 +930,7 @@ const FormEditorPage: React.FC = () => {
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
-                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah memesan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman.\n\nTerima kasih! 🙏' }},
+                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah melakukan pemesanan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama: [CUSTOMER_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman begitu tersedia.\n\nTerima kasih! 🙏' }},
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
                     });
                     setForm(newForm);
@@ -2462,7 +2462,7 @@ const FormEditorPage: React.FC = () => {
                                         <div>
                                             <label className="block text-xs font-medium mb-1">Isi Pesan Template</label>
                                             <textarea value={form.thankYouPage.whatsappConfirmation.messageTemplate} onChange={e => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'messageTemplate', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"></textarea>
-                                            <p className="text-xs text-slate-500 mt-1">Gunakan: [ORDER_ID], [CUSTOMER_NAME], [TOTAL_PRICE]</p>
+                                            <p className="text-xs text-slate-500 mt-1">Gunakan: [PRODUCT_NAME], [ORDER_ID], [CUSTOMER_NAME], [TOTAL_PRICE], [PAYMENT_METHOD]</p>
                                         </div>
                                     </div>
                                 )}
