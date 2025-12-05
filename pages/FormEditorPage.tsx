@@ -39,6 +39,7 @@ import ClockIcon from '../components/icons/ClockIcon';
 import ArchiveIcon from '../components/icons/ArchiveIcon';
 import CursorClickIcon from '../components/icons/CursorClickIcon';
 import CodeIcon from '../components/icons/CodeIcon';
+import CubeIcon from '../components/icons/CubeIcon';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 
