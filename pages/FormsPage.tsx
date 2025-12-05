@@ -124,6 +124,7 @@ const MessageTemplatesModal: React.FC<{
 const FormsPage: React.FC = () => {
     const [forms, setForms] = useState<Form[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [csAgents, setCsAgents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [formToDelete, setFormToDelete] = useState<Form | null>(null);
     const [editingTemplatesFor, setEditingTemplatesFor] = useState<Form | null>(null);
@@ -160,6 +161,12 @@ const FormsPage: React.FC = () => {
             const { data: usersData } = await supabase.from('users').select('*');
             if (usersData) {
                 setUsers(usersData as User[]);
+            }
+
+            // Fetch CS agents for name lookups
+            const { data: csAgentsData } = await supabase.from('cs_agents').select('*');
+            if (csAgentsData) {
+                setCsAgents(csAgentsData);
             }
 
             const { data: templatesData } = await supabase.from('settings').select('*').eq('id', 'messageTemplates').single();
@@ -283,23 +290,40 @@ const FormsPage: React.FC = () => {
         }
     };
 
-    // Helper function to get user name by ID
+    // Helper function to get user name by ID (from users or cs_agents table)
     const getUserName = (userId?: string): string => {
         if (!userId) return '-';
-        const user = users.find(u => u.id === userId);
-        return user?.name || 'Unknown User';
+        // First try to find in users table
+        let user = users.find(u => u.id === userId);
+        if (user) return user.name;
+        // Then try cs_agents table
+        let agent = csAgents.find(a => a.id === userId);
+        if (agent) return agent.name;
+        return 'Unknown User';
     };
 
     // Helper function to get CS agent names by mode
     const getCsAssignmentDisplay = (csAssignment?: any): string => {
         if (!csAssignment?.mode) return '-';
         if (csAssignment.mode === 'single' && csAssignment.singleAgentId) {
-            const agent = users.find(u => u.id === csAssignment.singleAgentId);
-            return agent?.name || 'Unknown Agent';
+            // Try to find in cs_agents table first (for cs_agents IDs)
+            let agent = csAgents.find(a => a.id === csAssignment.singleAgentId);
+            if (agent) return agent.name;
+            // Fallback to users table
+            agent = users.find(u => u.id === csAssignment.singleAgentId);
+            if (agent) return agent.name;
+            return 'Unknown Agent';
         }
         if (csAssignment.mode === 'round_robin' && csAssignment.roundRobinAgents?.length) {
             const agentNames = csAssignment.roundRobinAgents
-                .map((ra: any) => users.find(u => u.id === ra.csAgentId)?.name || 'Unknown')
+                .map((ra: any) => {
+                    // Try cs_agents table first
+                    let agent = csAgents.find(a => a.id === ra.csAgentId);
+                    if (agent) return agent.name;
+                    // Fallback to users table
+                    agent = users.find(u => u.id === ra.csAgentId);
+                    return agent?.name || 'Unknown';
+                })
                 .join(', ');
             return `Round Robin: ${agentNames}`;
         }
