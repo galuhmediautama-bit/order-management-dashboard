@@ -307,52 +307,63 @@ const FormsPage: React.FC = () => {
 
     // Helper function to get user name by ID (from users or cs_agents table)
     const getUserName = (userId?: string): string => {
-        if (!userId) return '-';
-        // First try to find in users table
-        let user = users.find(u => u.id === userId);
-        if (user) return user.name;
-        // Then try cs_agents table
+        if (!userId || userId.trim() === '') return '(No Agent)';
+        
+        // First try to find in cs_agents table (priority for CS agents)
         let agent = csAgents.find(a => a.id === userId);
         if (agent) return agent.name;
-        console.warn(`User/Agent not found for ID: ${userId}. Available users: ${users.map(u => u.id).join(', ')} | Available agents: ${csAgents.map(a => a.id).join(', ')}`);
-        return 'Unknown User';
+        
+        // Then try users table
+        let user = users.find(u => u.id === userId);
+        if (user) return user.name;
+        
+        // If still not found, log a warning
+        console.warn(`⚠️ Agent/User not found for ID: "${userId}"`);
+        console.log(`Available CS Agents: ${csAgents.map(a => `${a.id}(${a.name})`).join(', ') || 'None'}`);
+        console.log(`Available Users: ${users.map(u => `${u.id}(${u.name})`).join(', ') || 'None'}`);
+        
+        return `[ID: ${userId.substring(0, 8)}...]`;
     };
 
     // Helper function to get CS agent names by mode - showing all details
     const getCsAssignmentDisplay = (csAssignment?: any): string => {
         if (!csAssignment) return '-';
         
-        console.log('CS Assignment Debug:', {
-            mode: csAssignment.mode,
-            singleAgentId: csAssignment.singleAgentId,
-            roundRobinAgents: csAssignment.roundRobinAgents,
-            usersCount: users.length,
-            csAgentsCount: csAgents.length
-        });
-
-        if (csAssignment.mode === 'single') {
-            if (csAssignment.singleAgentId) {
+        try {
+            if (csAssignment.mode === 'single') {
+                if (!csAssignment.singleAgentId) {
+                    return 'Single: (Not set)';
+                }
                 const agentName = getUserName(csAssignment.singleAgentId);
                 return `Single: ${agentName}`;
             }
-            return 'Single: No agent assigned';
-        }
-        
-        if (csAssignment.mode === 'round_robin') {
-            if (csAssignment.roundRobinAgents?.length) {
-                const agentNames = csAssignment.roundRobinAgents
+            
+            if (csAssignment.mode === 'round_robin') {
+                if (!csAssignment.roundRobinAgents || csAssignment.roundRobinAgents.length === 0) {
+                    return 'Multi: (No agents)';
+                }
+                
+                const agentDetails = csAssignment.roundRobinAgents
                     .map((ra: any) => {
                         const agentName = getUserName(ra.csAgentId);
                         const percentage = ra.percentage ? ` (${ra.percentage}%)` : '';
                         return `${agentName}${percentage}`;
                     })
-                    .join(', ');
-                return `Multi: ${agentNames}`;
+                    .filter((name: string) => name); // Filter empty
+                    
+                if (agentDetails.length === 0) {
+                    return 'Multi: (No valid agents)';
+                }
+                
+                return `Multi: ${agentDetails.join(', ')}`;
             }
-            return 'Multi: No agents assigned';
+            
+            return `Unknown mode: ${csAssignment.mode}`;
+        } catch (error) {
+            console.error('Error in getCsAssignmentDisplay:', error);
+            return '(Error loading)';
         }
-        
-        return '-';
+    };
     };
     
     const filteredForms = useMemo(() => {
@@ -619,7 +630,7 @@ const FormsPage: React.FC = () => {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">{getCsAssignmentDisplay(form.thankYouPage?.csAssignment)}</span>
+                                            <span className="text-sm text-slate-700 dark:text-slate-300 max-w-xs break-words">{getCsAssignmentDisplay(form.thankYouPage?.csAssignment)}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="relative inline-block" ref={el => { if (el) actionMenuRefs.current[form.id] = el; }}>
