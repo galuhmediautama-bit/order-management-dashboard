@@ -332,15 +332,15 @@ const FormsPage: React.FC = () => {
         try {
             if (csAssignment.mode === 'single') {
                 if (!csAssignment.singleAgentId) {
-                    return 'Single: (Not set)';
+                    return '-';
                 }
                 const agentName = getUserName(csAssignment.singleAgentId);
-                return `Single: ${agentName}`;
+                return agentName;
             }
             
             if (csAssignment.mode === 'round_robin') {
                 if (!csAssignment.roundRobinAgents || csAssignment.roundRobinAgents.length === 0) {
-                    return 'Multi: (No agents)';
+                    return '-';
                 }
                 
                 const agentDetails = csAssignment.roundRobinAgents
@@ -352,16 +352,16 @@ const FormsPage: React.FC = () => {
                     .filter((name: string) => name); // Filter empty
                     
                 if (agentDetails.length === 0) {
-                    return 'Multi: (No valid agents)';
+                    return '-';
                 }
                 
-                return `Multi: ${agentDetails.join(', ')}`;
+                return agentDetails.join(', ');
             }
             
-            return `Unknown mode: ${csAssignment.mode}`;
+            return '-';
         } catch (error) {
             console.error('Error in getCsAssignmentDisplay:', error);
-            return '(Error loading)';
+            return '-';
         }
     };
     };
