@@ -926,7 +926,7 @@ const FormEditorPage: React.FC = () => {
                     // Buat form baru - langsung set dan tampilkan
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: true, required: false }, province: { visible: true, required: true }, city: { visible: true, required: true }, district: { visible: true, required: true }, address: { visible: true, required: true } },
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 0, handlingFeeBase: 'product' }, qris: { visible: false, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
