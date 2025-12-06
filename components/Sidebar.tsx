@@ -187,14 +187,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         // Check dynamic permissions via RBAC
         const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
         
-        // Debug logging for troubleshooting
-        if (process.env.NODE_ENV === 'development' && (currentUserRole === 'Advertiser' || currentUserRole === 'Customer service')) {
-            console.log(`🔍 Sidebar canSee: ${item.name}`, { 
-                rbacMenuId, 
-                userRole: currentUserRole, 
-                hasAccess 
-            });
-        }
+        // Debug logging for troubleshooting (always enabled for now)
+        console.log(`🔍 Sidebar canSee: ${item.name}`, { 
+            rbacMenuId, 
+            userRole: currentUserRole, 
+            hasAccess,
+            menuNameToRbacId: rbacMenuId
+        });
 
         return hasAccess;
     };
