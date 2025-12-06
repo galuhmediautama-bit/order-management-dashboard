@@ -347,12 +347,48 @@ const DashboardPage: React.FC = () => {
         </div>
         <div className="w-full md:w-auto"><DateRangePicker value={dateRange} onChange={setDateRange} /></div>
       </div>
+
+      {/* Advertiser-specific Dashboard View */}
+      {currentUser && getNormalizedRole(currentUser.role) === 'Advertiser' && (
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-xl border border-purple-200 dark:border-slate-700">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Selamat Datang, {currentUser.name} 👋</h2>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">Berikut adalah ringkasan performa Anda hari ini</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-slate-600 dark:text-slate-400">Peran</p>
+              <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">📢 {currentUser.role || 'Advertiser'}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-700 p-4 rounded-lg border border-purple-100 dark:border-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Total Pesanan</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{filteredDashboardData.stats.totalOrders}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Dalam periode yang dipilih</p>
+            </div>
+            <div className="bg-white dark:bg-slate-700 p-4 rounded-lg border border-blue-100 dark:border-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Total Penjualan</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">Rp {(filteredDashboardData.stats.totalSales / 1000000).toFixed(1)}M</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Total revenue</p>
+            </div>
+            <div className="bg-white dark:bg-slate-700 p-4 rounded-lg border border-indigo-100 dark:border-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Conversion Rate</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{filteredDashboardData.stats.conversionRate.toFixed(1)}%</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Tingkat penyelesaian</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3 md:gap-4 animate-pulse">
             {Array(4).fill(0).map((_, i) => <div key={i} className="h-20 sm:h-20 md:h-20 bg-slate-200 dark:bg-slate-700 rounded-lg sm:rounded-xl"></div>)}
         </div>
       ) : (
         <>
+          {/* Only show full dashboard for non-Advertiser roles */}
+          {(!currentUser || getNormalizedRole(currentUser.role) !== 'Advertiser') && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3 md:gap-4">
             <StatCard 
               title="Total Penjualan" 
@@ -623,6 +659,8 @@ const DashboardPage: React.FC = () => {
               ))}
             </div>
           </div>
+        )}
+        </div>
         )}
       </div>
 

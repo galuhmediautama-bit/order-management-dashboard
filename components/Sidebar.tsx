@@ -163,10 +163,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         name: 'Produk', 
         label: 'Produk',
         icon: Squares2x2Icon,
-        allowedRoles: ['Super Admin', 'Admin'],
+        allowedRoles: ['Super Admin', 'Admin', 'Advertiser'],
         subItems: [
             { name: 'Daftar Produk', icon: Squares2x2Icon, allowedRoles: ['Super Admin', 'Admin'] },
-            { name: 'Daftar Formulir', icon: FormsIcon, allowedRoles: ['Super Admin', 'Admin'] },
+            { name: 'Daftar Formulir', icon: FormsIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
         ]
       },
       { 
@@ -187,16 +187,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
       { 
         name: 'Laporan', 
         icon: ReportsIcon,
-        allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Partner'],
+        allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser', 'Partner'],
         subItems: [
-            { name: 'Laporan Iklan', icon: TrendingUpIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan'] },
+            { name: 'Laporan Iklan', icon: TrendingUpIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Advertiser'] },
             { name: 'Laporan CS', icon: UserGroupIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service'] },
         ]
       },
       { 
           name: 'Penghasilan', 
           icon: BanknotesIcon,
-          allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service']
+          allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser']
       },
       { 
         name: 'Pengaturan', 
