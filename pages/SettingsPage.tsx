@@ -2112,6 +2112,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ subPage }) => {
         case 'Manajemen CS': return <CustomerServicePage />;
         case 'Pelacakan': return <TrackingPage />;
         case 'Pengumuman': return null; // Redirected to /pengaturan/pengumuman/kelola
+        case 'Pengaturan Pengumuman': return <AnnouncementSettingsPage />;
         case 'Permintaan Hapus': return <DeletionRequestsPage />;
         case 'CuanRank': return <CuanRankPage />;
         default: return <div>Halaman pengaturan tidak ditemukan.</div>;

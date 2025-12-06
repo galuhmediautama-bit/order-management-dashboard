@@ -201,11 +201,11 @@ const AnnouncementsPage: React.FC = () => {
                         <span>Tambah Pengumuman</span>
                     </button>
                     <button
-                        onClick={() => navigate('/pengaturan')}
+                        onClick={() => navigate('/pengaturan/pengumuman/settings')}
                         className="inline-flex items-center gap-2 px-5 py-3 bg-slate-600 dark:bg-slate-700 text-white rounded-xl hover:bg-slate-700 dark:hover:bg-slate-600 font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
                     >
                         <SettingsIcon className="w-5 h-5" />
-                        <span>Pengaturan</span>
+                        <span>Pengaturan Pengumuman</span>
                     </button>
                 </div>
             </div>

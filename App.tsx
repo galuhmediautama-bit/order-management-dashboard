@@ -128,6 +128,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/pengaturan/pelacakan" element={<SettingsPage subPage="Pelacakan" />} />
                 <Route path="/pengaturan/pending-users" element={<PendingUsersPage />} />
                 <Route path="/pengaturan/pengumuman/kelola" element={<AnnouncementsPage />} />
+                <Route path="/pengaturan/pengumuman/settings" element={<SettingsPage subPage="Pengaturan Pengumuman" />} />
                 <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
                 <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
                 <Route path="/notifikasi" element={<NotificationsPage />} />
