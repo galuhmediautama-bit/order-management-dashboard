@@ -174,28 +174,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         if (!currentUserRole) return false;
         if (currentUserRole === 'Super Admin') return true;
 
-        // Get RBAC menu ID for this item
+        // ALWAYS use RBAC system - get menu ID and check permissions
         const rbacMenuId = menuNameToRbacId[item.name];
-        if (!rbacMenuId) {
-            // If menu ID not found in mapping, use legacy allowedRoles as fallback
-            if (item.allowedRoles && item.allowedRoles.length > 0) {
-                return item.allowedRoles.includes(currentUserRole);
-            }
-            return true; // Default to visible if no mapping found
-        }
-
-        // Check dynamic permissions via RBAC
-        const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
         
-        // Debug logging for troubleshooting (always enabled for now)
-        console.log(`🔍 Sidebar canSee: ${item.name}`, { 
-            rbacMenuId, 
-            userRole: currentUserRole, 
-            hasAccess,
-            menuNameToRbacId: rbacMenuId
-        });
+        if (rbacMenuId) {
+            // Menu has RBAC mapping - use it
+            const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
+            
+            console.log(`🔍 Sidebar canSee: ${item.name}`, { 
+                rbacMenuId, 
+                userRole: currentUserRole, 
+                hasAccess
+            });
 
-        return hasAccess;
+            return hasAccess;
+        } else {
+            // No RBAC mapping found - log warning and deny access
+            console.warn(`⚠️ No RBAC mapping for menu: "${item.name}". Add to menuNameToRbacId!`);
+            return false;
+        }
     };
 
     // Declarative Navigation Structure
