@@ -233,10 +233,6 @@ const AnnouncementsPage: React.FC = () => {
                                     />
                                 </div>
                             )}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            )}
                             
                             {/* Header */}
                             <div className={`p-4 border-b border-slate-200 dark:border-slate-700 ${getTypeColor(announcement.type)}`}>
