@@ -39,8 +39,10 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
           ...DEFAULT_ROLE_PERMISSIONS,
           ...data.rolePermissions
         };
+        console.log('📋 Role Permissions - Loaded from DB and merged with defaults:', Object.keys(merged));
         setRolePermissions(merged as RolePermissionMap);
       } else {
+        console.log('📋 Role Permissions - Using defaults only (no DB data):', Object.keys(DEFAULT_ROLE_PERMISSIONS));
         setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
       }
     } catch (err) {
@@ -67,9 +69,19 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
   const canAccessMenu = useCallback((menuId: string, userRole: string): boolean => {
     const permissions = rolePermissions[userRole as keyof RolePermissionMap];
     if (!permissions) {
+      console.warn(`⚠️ No permissions found for role: "${userRole}"`, {
+        availableRoles: Object.keys(rolePermissions),
+        menuId
+      });
       return false;
     }
-    return permissions.menus.includes(menuId);
+    const hasAccess = permissions.menus.includes(menuId);
+    if (userRole === 'Customer service') {
+      console.log(`🔍 canAccessMenu("${menuId}", "${userRole}"):`, hasAccess, {
+        allowedMenus: permissions.menus
+      });
+    }
+    return hasAccess;
   }, [rolePermissions]);
 
   const canUseFeature = useCallback((featureId: string, userRole: string): boolean => {

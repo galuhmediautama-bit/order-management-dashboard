@@ -136,6 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                             normalized: normalized, 
                             email: user.email 
                         });
+                        console.log('🔑 Role will be used for permissions:', normalized);
                         setCurrentUserRole(normalized);
                     }
                 } catch (error) {
