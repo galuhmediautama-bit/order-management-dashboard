@@ -25,7 +25,7 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
     try {
       const { data, error: dbError } = await supabase
         .from('settings')
-        .select('rolePermissions')
+        .select('role_permissions')
         .eq('id', 'rolePermissions')
         .single();
 
@@ -33,11 +33,11 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
         throw dbError;
       }
 
-      if (data?.rolePermissions) {
+      if (data?.role_permissions) {
         // Merge database permissions with defaults
         const merged = {
           ...DEFAULT_ROLE_PERMISSIONS,
-          ...data.rolePermissions
+          ...data.role_permissions
         };
         console.log('📋 Role Permissions - Loaded from DB and merged with defaults:', Object.keys(merged));
         setRolePermissions(merged as RolePermissionMap);
