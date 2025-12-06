@@ -314,7 +314,7 @@ const OrdersPage: React.FC = () => {
                 refreshOrdersSilently();
         }, 45000); // 45s polling
         return () => clearInterval(interval);
-    }, []);
+    }, [showToast]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {

@@ -153,7 +153,7 @@ const AbandonedCartsPage: React.FC = () => {
     useEffect(() => {
         const interval = setInterval(() => refreshAbandonedSilently(), 60000); // 60s polling
         return () => clearInterval(interval);
-    }, []);
+    }, [showToast]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
