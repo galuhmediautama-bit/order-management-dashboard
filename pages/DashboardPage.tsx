@@ -83,7 +83,12 @@ const DashboardPage: React.FC = () => {
 
                      if (userDoc) {
                          setCurrentUser(userDoc as User);
-                         console.log('✅ DashboardPage - User loaded:', { id: userDoc.id, role: userDoc.role, name: userDoc.name });
+                         console.log('✅ DashboardPage - User loaded:', { 
+                             id: userDoc.id, 
+                             role: userDoc.role, 
+                             normalizedRole: getNormalizedRole(userDoc.role, user.email),
+                             name: userDoc.name 
+                         });
                      } else {
                          // Fallback for super admin owner who might not be in users collection yet
                          setCurrentUser({ id: user.id, role: 'Super Admin', name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });

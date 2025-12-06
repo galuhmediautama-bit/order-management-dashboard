@@ -102,7 +102,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                         setCurrentUserRole(null);
                     } else {
                         const normalized = getNormalizedRole(userDoc.role, user.email);
-                        console.log('✅ Sidebar - User role from DB:', userDoc.role, '→ Normalized:', normalized);
+                        console.log('✅ Sidebar - User role from DB:', { 
+                            raw: userDoc.role, 
+                            normalized: normalized, 
+                            email: user.email 
+                        });
                         setCurrentUserRole(normalized);
                     }
                 } catch (error) {
