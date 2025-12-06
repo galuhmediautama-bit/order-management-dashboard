@@ -58,12 +58,12 @@ const pageToPath: Record<string, string> = {
     'Pelacakan': '/pengaturan/pelacakan',
     'Template Pesan': '/pengaturan/template-pesan',
     'Pengaturan Pengumuman': '/pengaturan/pengumuman',
+    'Pengumuman': '/pengaturan/pengumuman/kelola',
     'Permintaan Hapus': '/pengaturan/permintaan-hapus',
     'CuanRank': '/pengaturan/cuan-rank',
     'Profil Saya': '/profil',
     'Pelanggan': '/pelanggan',
     'Penghasilan': '/penghasilan',
-    'Kelola Pengumuman': '/pengumuman',
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => {
@@ -197,16 +197,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             { name: 'Laporan Iklan', icon: TrendingUpIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Advertiser'] },
             { name: 'Laporan CS', icon: UserGroupIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service'] },
         ]
-      },
       { 
           name: 'Penghasilan', 
           icon: BanknotesIcon,
           allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser']
-      },
-      { 
-          name: 'Kelola Pengumuman', 
-          icon: ChatBubbleIcon,
-          allowedRoles: ['Super Admin', 'Admin']
       },
       { 
         name: 'Pengaturan', 
@@ -222,11 +216,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           { name: 'Pelacakan', icon: TrackingIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
           { name: 'Template Pesan', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'Pengaturan Pengumuman', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
+          { name: 'Pengumuman', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
         ]
       },
-    ];
-
-    const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
+    ];    const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => canSee(sub));
             return {
