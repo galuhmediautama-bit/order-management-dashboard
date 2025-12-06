@@ -707,7 +707,7 @@ const UserModal: React.FC<{
             case 'Keuangan': return 'Fokus pada verifikasi pembayaran, laporan penghasilan tim, dan data pesanan.';
             case 'Customer service': return 'Menangani pesanan, mengubah status, dan melihat penghasilan pribadi.';
             case 'Gudang': return 'Mengelola pemrosesan gudang: cek pesanan selesai, siapkan pengiriman, dan update resi.';
-            case 'Advertiser': return 'Mengelola formulir produk, melihat laporan iklan, dan penghasilan pribadi.';
+            case 'Advertiser': return 'Akses terbatas hanya dapat melihat dashboard untuk monitoring.';
             case 'Partner': return 'Mitra eksternal dengan akses terbatas (seperti melihat dasbor/laporan tertentu).';
             default: return '';
         }
@@ -1589,8 +1589,8 @@ const DEFAULT_ROLES = [
     },
     { 
         name: 'Advertiser', 
-        permissions: ['Buat/Edit Formulir', 'Laporan Iklan', 'Pelacakan Pixel', 'Penghasilan Pribadi'],
-        defaultDesc: 'Mengelola kampanye iklan, landing page, dan analisis performa.'
+        permissions: ['Lihat Dashboard'],
+        defaultDesc: 'Akses terbatas hanya dapat melihat dashboard untuk monitoring.'
     },
     { 
         name: 'Partner', 
