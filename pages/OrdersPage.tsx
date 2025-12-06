@@ -34,7 +34,8 @@ import AddressInput, { type AddressData } from '../components/AddressInput';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import FilterIcon from '../components/icons/FilterIcon'; 
 import ConfirmationModal from '../components/ConfirmationModal';
-import { useToast } from '../contexts/ToastContext';\nimport { useNotificationCount } from '../contexts/NotificationCountContext';
+import { useToast } from '../contexts/ToastContext';
+import { useNotificationCount } from '../contexts/NotificationCountContext';
 
 // --- Helper Components & Functions ---
 
@@ -62,7 +63,9 @@ const OrdersPage: React.FC = () => {
   const [csAgents, setCsAgents] = useState<any[]>([]); // CS agents for modal lookups
   const [brands, setBrands] = useState<Brand[]>([]); // All brands for modal lookups
   const [products, setProducts] = useState<any[]>([]); // All products for modal lookups
-  const [loading, setLoading] = useState(true);\n  const { showToast } = useToast();\n  const { setNewOrdersCount } = useNotificationCount();
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
+  const { setNewOrdersCount } = useNotificationCount();
     const [orderSoundEnabled, setOrderSoundEnabled] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
         const stored = localStorage.getItem('orders_sound_enabled');

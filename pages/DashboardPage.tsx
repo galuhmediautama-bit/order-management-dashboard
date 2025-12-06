@@ -430,6 +430,7 @@ const DashboardPage: React.FC = () => {
               changeType="neutral"
             />
           </div>
+          )}
 
           {/* Quick Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3 md:gap-4">
@@ -668,8 +669,6 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
         </div>
-        )}
-      </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 sm:p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 gap-4">
