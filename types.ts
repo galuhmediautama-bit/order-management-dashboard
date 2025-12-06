@@ -489,6 +489,7 @@ export interface Announcement {
   startDate?: string; // When to start showing
   endDate?: string; // When to stop showing
   order?: number; // Display order priority
+  imageUrl?: string; // Image URL for announcement
 }
 
 export interface MessageTemplates {

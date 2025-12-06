@@ -9,7 +9,9 @@ import SpinnerIcon from '../components/icons/SpinnerIcon';
 import CheckIcon from '../components/icons/CheckIcon';
 import XIcon from '../components/icons/XIcon';
 import SettingsIcon from '../components/icons/SettingsIcon';
+import ImageIcon from '../components/icons/ImageIcon';
 import { useToast } from '../contexts/ToastContext';
+import { uploadFileAndGetURL } from '../fileUploader';
 
 const AnnouncementsPage: React.FC = () => {
     const navigate = useNavigate();
@@ -23,7 +25,9 @@ const AnnouncementsPage: React.FC = () => {
         type: 'info',
         displayMode: 'both',
         isActive: true,
+        imageUrl: '',
     });
+    const [uploadingImage, setUploadingImage] = useState(false);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -56,6 +60,7 @@ const AnnouncementsPage: React.FC = () => {
                 type: 'info',
                 displayMode: 'both',
                 isActive: true,
+                imageUrl: '',
             });
         }
         setIsModalOpen(true);
@@ -70,7 +75,25 @@ const AnnouncementsPage: React.FC = () => {
             type: 'info',
             displayMode: 'both',
             isActive: true,
+            imageUrl: '',
         });
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingImage(true);
+        try {
+            const url = await uploadFileAndGetURL(file, 'announcements');
+            setFormData({ ...formData, imageUrl: url });
+            showToast('Gambar berhasil diunggah', 'success');
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            showToast('Gagal mengunggah gambar', 'error');
+        } finally {
+            setUploadingImage(false);
+        }
     };
 
     const handleSave = async () => {
@@ -92,6 +115,7 @@ const AnnouncementsPage: React.FC = () => {
                         isActive: formData.isActive,
                         startDate: formData.startDate,
                         endDate: formData.endDate,
+                        imageUrl: formData.imageUrl,
                         updatedAt: new Date().toISOString(),
                     })
                     .eq('id', editingAnnouncement.id);
@@ -108,6 +132,7 @@ const AnnouncementsPage: React.FC = () => {
                     isActive: formData.isActive,
                     startDate: formData.startDate,
                     endDate: formData.endDate,
+                    imageUrl: formData.imageUrl,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     order: announcements.length + 1,
@@ -195,6 +220,17 @@ const AnnouncementsPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {announcements.map(announcement => (
                         <div key={announcement.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-lg transition-shadow">
+                            {/* Image */}
+                            {announcement.imageUrl && (
+                                <div className="w-full h-40 overflow-hidden bg-slate-100 dark:bg-slate-700">
+                                    <img 
+                                        src={announcement.imageUrl} 
+                                        alt={announcement.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                            
                             {/* Header */}
                             <div className={`p-4 border-b border-slate-200 dark:border-slate-700 ${getTypeColor(announcement.type)}`}>
                                 <div className="flex items-start justify-between">
@@ -288,6 +324,49 @@ const AnnouncementsPage: React.FC = () => {
                                     rows={4}
                                     className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                                 />
+                            </div>
+
+                            {/* Gambar */}
+                            <div>
+                                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Gambar (opsional)</label>
+                                <div className="space-y-3">
+                                    {formData.imageUrl && (
+                                        <div className="relative w-full h-40 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                                            <img 
+                                                src={formData.imageUrl} 
+                                                alt="Preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
+                                            >
+                                                <XIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploadingImage}
+                                            className="hidden"
+                                        />
+                                        {uploadingImage ? (
+                                            <>
+                                                <SpinnerIcon className="w-5 h-5 animate-spin text-indigo-500" />
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Mengunggah...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ImageIcon className="w-5 h-5 text-slate-500" />
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Klik untuk unggah gambar</span>
+                                            </>
+                                        )}
+                                    </label>
+                                </div>
                             </div>
 
                             {/* Tipe */}
