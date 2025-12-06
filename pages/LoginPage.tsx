@@ -35,7 +35,7 @@ const LoginPage: React.FC = () => {
             if (isForgotPassword) {
                 // --- LOGIKA RESET PASSWORD ---
                 const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/#/reset-password`,
+                    redirectTo: `https://form.cuanmax.digital/#/reset-password`,
                 });
 
                 if (resetError) throw resetError;

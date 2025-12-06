@@ -177,10 +177,19 @@ const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
-    // Smart redirect for clean form URLs (?form_id=...)
+    // Handle Supabase auth callbacks and form URLs
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
+    const authType = params.get('type');
+    
+    // Handle password recovery flow from email
+    if (authType === 'recovery') {
+      // Redirect to reset password page with hash
+      window.location.hash = '#/reset-password';
+      return;
+    }
 
+    // Smart redirect for clean form URLs (?form_id=...)
     if (formId) {
         window.history.replaceState(null, '', window.location.pathname);
         window.location.hash = `/f/${formId}`;
