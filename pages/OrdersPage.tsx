@@ -36,6 +36,7 @@ import FilterIcon from '../components/icons/FilterIcon';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
 import { useNotificationCount } from '../contexts/NotificationCountContext';
+import { useRolePermissions } from '../contexts/RolePermissionsContext';
 
 // --- Helper Components & Functions ---
 
@@ -56,6 +57,7 @@ const formatWaNumber = (num: string | null | undefined) => {
 // ... Modals will be updated below ...
 
 const OrdersPage: React.FC = () => {
+  const { canUseFeature } = useRolePermissions();
   const [orders, setOrders] = useState<Order[]>([]);
   const [forms, setForms] = useState<Form[]>([]); // For manual order
   const [csUsers, setCsUsers] = useState<User[]>([]); // List of CS agents for assignment
@@ -66,6 +68,7 @@ const OrdersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { setNewOrdersCount } = useNotificationCount();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [orderSoundEnabled, setOrderSoundEnabled] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
         const stored = localStorage.getItem('orders_sound_enabled');
@@ -117,7 +120,6 @@ const OrdersPage: React.FC = () => {
 
   const [templates, setTemplates] = useState<MessageTemplates | null>(null);
   const [cancellationReasons, setCancellationReasons] = useState<string[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
     // Assignment state for inline CS assign
     const [assignTargetOrderId, setAssignTargetOrderId] = useState<string | null>(null);
     const [assignSelectedCsId, setAssignSelectedCsId] = useState<string>('');
@@ -424,6 +426,12 @@ const OrdersPage: React.FC = () => {
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus, extraData?: Partial<Order>) => {
+      // Check permission to change order status
+      if (!currentUser || !canUseFeature('change_order_status', getNormalizedRole(currentUser.role))) {
+          showToast("Anda tidak memiliki izin untuk mengubah status pesanan.", "error");
+          return;
+      }
+
       try {
           const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
           if (error) throw error;
@@ -600,6 +608,13 @@ const OrdersPage: React.FC = () => {
 
   const confirmDeleteOrder = async () => {
       if (!orderToDelete || !currentUser) return;
+      
+      // Check permission to delete order
+      if (!canUseFeature('delete_order', getNormalizedRole(currentUser.role))) {
+          showToast("Anda tidak memiliki izin untuk menghapus pesanan.", "error");
+          setOrderToDelete(null);
+          return;
+      }
       
       try {
           // All users (including Super Admin) must create deletion request for review
@@ -816,6 +831,7 @@ const OrdersPage: React.FC = () => {
                         >
                             <span>{orderSoundEnabled ? '🔔 Suara ON' : '🔕 Suara OFF'}</span>
                         </button>
+            {currentUser && canUseFeature('export_csv', getNormalizedRole(currentUser.role)) && (
             <button 
               onClick={handleExportExcel} 
               disabled={isExporting || filteredOrders.length === 0}
@@ -824,10 +840,13 @@ const OrdersPage: React.FC = () => {
                 {isExporting ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}
                 <span>Ekspor CSV</span>
             </button>
+            )}
+            {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
             <button onClick={() => setIsManualOrderModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all">
                 <PlusIcon className="w-4 h-4" />
                 <span>Pesanan Manual</span>
             </button>
+            )}
             {/* Pending Deletions Button - Only for Admin/Super Admin */}
             {(currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
                 <Link to="/pengaturan/permintaan-hapus" className="relative p-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all" title="Permintaan Hapus">
@@ -1287,7 +1306,7 @@ const OrdersPage: React.FC = () => {
                                                       <span>Edit</span>
                                                   </button>
                                                   
-                                                  {order.status === 'Pending' && (
+                                                  {order.status === 'Pending' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
                                                       <button 
                                                           onClick={() => {
                                                               setOrderToProcess(order);
@@ -1300,7 +1319,7 @@ const OrdersPage: React.FC = () => {
                                                       </button>
                                                   )}
                                                   
-                                                  {order.status === 'Processing' && (
+                                                  {order.status === 'Processing' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
                                                       <button 
                                                           onClick={() => {
                                                               setOrderToShip(order);
@@ -1313,7 +1332,7 @@ const OrdersPage: React.FC = () => {
                                                       </button>
                                                   )}
 
-                                                  {order.status === 'Shipped' && (
+                                                  {order.status === 'Shipped' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
                                                       <button 
                                                           onClick={() => {
                                                               handleUpdateStatus(order.id, 'Delivered');
@@ -1341,6 +1360,7 @@ const OrdersPage: React.FC = () => {
 
                                                   <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
 
+                                                  {currentUser && canUseFeature('delete_order', getNormalizedRole(currentUser.role)) && (
                                                   <button 
                                                       onClick={() => {
                                                           openDeleteConfirmation(order);
@@ -1351,6 +1371,7 @@ const OrdersPage: React.FC = () => {
                                                       <TrashIcon className="w-5 h-5" />
                                                       <span>Hapus</span>
                                                   </button>
+                                                  )}
                                               </div>
                                           )}
                                       </div>
