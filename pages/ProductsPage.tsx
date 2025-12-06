@@ -10,6 +10,7 @@ import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import PlusIcon from '../components/icons/PlusIcon';
 import EllipsisVerticalIcon from '../components/icons/EllipsisVerticalIcon';
+import SettingsIcon from '../components/icons/SettingsIcon';
 
 interface ProductStats {
     [productId: string]: {
@@ -183,13 +184,22 @@ const ProductsPage: React.FC = () => {
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                     Produk Induk
                 </h1>
-                <button
-                    onClick={() => navigate('/daftar-produk/tambah')}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition"
-                >
-                    <PlusIcon className="w-5 h-5" />
-                    Tambah Produk
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/analitik-produk')}
+                        className="flex items-center gap-2 bg-slate-600 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition"
+                    >
+                        <SettingsIcon className="w-5 h-5" />
+                        Analitik
+                    </button>
+                    <button
+                        onClick={() => navigate('/daftar-produk/tambah')}
+                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition"
+                    >
+                        <PlusIcon className="w-5 h-5" />
+                        Tambah Produk
+                    </button>
+                </div>
             </div>
 
             {/* Search */}

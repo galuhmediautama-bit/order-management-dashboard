@@ -48,7 +48,6 @@ const pageToPath: Record<string, string> = {
     'Produk': '#',
     'Daftar Produk': '/daftar-produk',
     'Daftar Formulir': '/formulir',
-    'Analitik Produk': '/analitik-produk',
     'Pengaturan': '#',
     'Pengaturan Website': '/pengaturan/website',
     'Manajemen Pengguna': '/pengaturan/pengguna',
@@ -169,7 +168,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         subItems: [
             { name: 'Daftar Produk', icon: Squares2x2Icon, allowedRoles: ['Super Admin', 'Admin'] },
             { name: 'Daftar Formulir', icon: FormsIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
-            { name: 'Analitik Produk', icon: TrendingUpIcon, allowedRoles: ['Super Admin', 'Admin'] },
         ]
       },
       { 
