@@ -186,46 +186,53 @@ const AnnouncementsPage: React.FC = () => {
         <div className="space-y-6">
             {/* Header */}
             <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 rounded-2xl p-8 shadow-sm border border-indigo-100/50 dark:border-indigo-800/30">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                     <div>
                         <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 dark:from-indigo-400 dark:to-cyan-400 bg-clip-text text-transparent">
                             📢 Kelola Pengumuman
                         </h2>
                         <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">Buat dan kelola pengumuman yang akan ditampilkan kepada pengguna</p>
                     </div>
-                    <button
-                        onClick={() => handleOpenModal()}
-                        className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-xl hover:from-indigo-700 hover:to-cyan-700 font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:scale-105 transition-all"
-                    >
-                        <PlusIcon className="w-5 h-5" />
-                        <span>Tambah Pengumuman</span>
-                    </button>
-                    <button
-                        onClick={() => navigate('/pengaturan/pengumuman/settings')}
-                        className="inline-flex items-center gap-2 px-5 py-3 bg-slate-600 dark:bg-slate-700 text-white rounded-xl hover:bg-slate-700 dark:hover:bg-slate-600 font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-                    >
-                        <SettingsIcon className="w-5 h-5" />
-                        <span>Pengaturan Pengumuman</span>
-                    </button>
+                    <div className="flex gap-3 flex-col sm:flex-row">
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-lg hover:from-indigo-700 hover:to-cyan-700 font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:scale-105 transition-all whitespace-nowrap text-sm md:text-base"
+                        >
+                            <PlusIcon className="w-5 h-5" />
+                            <span>Tambah Pengumuman</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/pengaturan/pengumuman/settings')}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-600 dark:bg-slate-700 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all whitespace-nowrap text-sm md:text-base"
+                        >
+                            <SettingsIcon className="w-5 h-5" />
+                            <span>Pengaturan Pengumuman</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Announcements List */}
             {announcements.length === 0 ? (
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-12 text-center">
-                    <div className="text-6xl mb-4">📭</div>
-                    <p className="text-slate-600 dark:text-slate-300 text-lg">Belum ada pengumuman. Buat yang pertama!</p>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/20 dark:to-slate-800/20 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-16 text-center">
+                    <div className="text-7xl mb-4 opacity-50">📭</div>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg font-medium">Belum ada pengumuman</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Klik "Tambah Pengumuman" untuk membuat pengumuman pertama Anda</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {announcements.map(announcement => (
-                        <div key={announcement.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-lg transition-shadow">
+                        <div key={announcement.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
                             {/* Image */}
                             {announcement.imageUrl && (
-                                <div className="w-full h-40 overflow-hidden bg-slate-100 dark:bg-slate-700">
+                                <div className="w-full h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800">
                                     <img 
                                         src={announcement.imageUrl} 
                                         alt={announcement.title}
+                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                    />
+                                </div>
+                            )}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
@@ -235,47 +242,48 @@ const AnnouncementsPage: React.FC = () => {
                             <div className={`p-4 border-b border-slate-200 dark:border-slate-700 ${getTypeColor(announcement.type)}`}>
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
-                                        <h3 className="font-bold text-lg line-clamp-2">{announcement.title}</h3>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded ${getTypeColor(announcement.type)}`}>
+                                        <h3 className="font-bold text-base line-clamp-2 text-slate-900 dark:text-white">{announcement.title}</h3>
+                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                            <span className={`px-2.5 py-1 text-xs font-semibold rounded-md ${getTypeColor(announcement.type)}`}>
                                                 {announcement.type.charAt(0).toUpperCase() + announcement.type.slice(1)}
                                             </span>
-                                            <span className="text-xs font-medium">{announcement.displayMode === 'both' ? 'Pop-up & Bar' : announcement.displayMode === 'popup' ? 'Pop-up' : 'Bar'}</span>
+                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{announcement.displayMode === 'both' ? '📱 Pop-up & Bar' : announcement.displayMode === 'popup' ? '📱 Pop-up' : '📌 Bar'}</span>
                                         </div>
                                     </div>
                                     <div className={`p-2 rounded-lg ${announcement.isActive ? 'bg-green-100 dark:bg-green-900/40' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                                        <div className={`w-3 h-3 rounded-full ${announcement.isActive ? 'bg-green-500' : 'bg-slate-400'}`}></div>
+                                        <div className={`w-2.5 h-2.5 rounded-full ${announcement.isActive ? 'bg-green-500' : 'bg-slate-400'}`}></div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Content */}
-                            <div className="p-4">
-                                <p className="text-slate-700 dark:text-slate-300 text-sm line-clamp-3 mb-3">{announcement.message}</p>
+                            <div className="p-4 space-y-3">
+                                <p className="text-slate-700 dark:text-slate-300 text-sm line-clamp-3 leading-relaxed">{announcement.message}</p>
                                 
                                 {(announcement.startDate || announcement.endDate) && (
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-                                        {announcement.startDate && <div>📅 Mulai: {new Date(announcement.startDate).toLocaleDateString('id-ID')}</div>}
-                                        {announcement.endDate && <div>📅 Berakhir: {new Date(announcement.endDate).toLocaleDateString('id-ID')}</div>}
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 pt-2 pb-3 border-t border-slate-200 dark:border-slate-700">
+                                        {announcement.startDate && <div>📅 Mulai: <span className="font-medium">{new Date(announcement.startDate).toLocaleDateString('id-ID')}</span></div>}
+                                        {announcement.endDate && <div>📅 Berakhir: <span className="font-medium">{new Date(announcement.endDate).toLocaleDateString('id-ID')}</span></div>}
                                     </div>
                                 )}
+                            </div>
 
-                                {/* Actions */}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleOpenModal(announcement)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold transition-colors"
-                                    >
-                                        <PencilIcon className="w-4 h-4" />
-                                        <span>Edit</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(announcement.id)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg font-semibold transition-colors"
-                                    >
-                                        <TrashIcon className="w-4 h-4" />
-                                        <span>Hapus</span>
-                                    </button>
+                            {/* Actions */}
+                            <div className="px-4 pb-4 pt-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 flex gap-2">
+                                <button
+                                    onClick={() => handleOpenModal(announcement)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-100 dark:bg-indigo-900/40 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 rounded-lg font-medium text-sm transition-colors"
+                                >
+                                    <PencilIcon className="w-4 h-4" />
+                                    <span>Edit</span>
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(announcement.id)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 rounded-lg font-medium text-sm transition-colors"
+                                >
+                                    <TrashIcon className="w-4 h-4" />
+                                    <span>Hapus</span>
+                                </button>
                                 </div>
                             </div>
                         </div>
