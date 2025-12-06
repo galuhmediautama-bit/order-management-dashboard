@@ -27,7 +27,7 @@ const AnnouncementPopup: React.FC<AnnouncementPopupProps> = ({ onClose }) => {
                     .from('announcements')
                     .select('*')
                     .eq('isActive', true)
-                    .in('displayMode', ['popup', 'both'])
+                    .eq('displayMode', 'popup')
                     .lte('startDate', now)
                     .gte('endDate', now)
                     .order('order', { ascending: true })
@@ -144,8 +144,29 @@ const AnnouncementPopup: React.FC<AnnouncementPopupProps> = ({ onClose }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{currentAnnouncement.message}</p>
+                <div className="p-6 space-y-4">
+                    {currentAnnouncement.imageUrl && (
+                        <div className="w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-700/50">
+                            <img
+                                src={currentAnnouncement.imageUrl}
+                                alt={currentAnnouncement.title || 'Pengumuman'}
+                                className="w-full h-56 object-cover"
+                            />
+                        </div>
+                    )}
+                    {currentAnnouncement.message && (
+                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{currentAnnouncement.message}</p>
+                    )}
+                    {currentAnnouncement.linkUrl && (
+                        <a
+                            href={currentAnnouncement.linkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                        >
+                            Buka tautan
+                        </a>
+                    )}
                 </div>
 
                 {/* Footer */}

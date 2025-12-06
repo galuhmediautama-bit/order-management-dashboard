@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
-import type { Announcement, AnnouncementType, AnnouncementDisplayMode } from '../types';
+import type { Announcement, AnnouncementType, AnnouncementDisplayMode, AnnouncementSettings } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import PencilIcon from '../components/icons/PencilIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import CheckIcon from '../components/icons/CheckIcon';
 import XIcon from '../components/icons/XIcon';
-import SettingsIcon from '../components/icons/SettingsIcon';
 import ImageIcon from '../components/icons/ImageIcon';
 import { useToast } from '../contexts/ToastContext';
 import { uploadFileAndGetURL } from '../fileUploader';
+import ToggleSwitch from '../components/ToggleSwitch';
+
+const defaultAnnouncementSettings: AnnouncementSettings = {
+    popup: {
+        enabled: true,
+        frequency: 'per_session',
+        cooldownMinutes: 30,
+        maxShowsPerDay: 3,
+    },
+    lineBar: {
+        enabled: true,
+        dismissBehavior: 'hide_for_hours',
+        hideDurationHours: 12,
+    },
+};
 
 const AnnouncementsPage: React.FC = () => {
-    const navigate = useNavigate();
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,15 +35,21 @@ const AnnouncementsPage: React.FC = () => {
         title: '',
         message: '',
         type: 'info',
-        displayMode: 'both',
+        displayMode: 'popup',
         isActive: true,
         imageUrl: '',
+        linkUrl: '',
     });
+    const [showTitle, setShowTitle] = useState(true);
+    const [showMessage, setShowMessage] = useState(true);
+    const [announcementSettings, setAnnouncementSettings] = useState<AnnouncementSettings>(defaultAnnouncementSettings);
+    const [settingsLoading, setSettingsLoading] = useState(true);
     const [uploadingImage, setUploadingImage] = useState(false);
     const { showToast } = useToast();
 
     useEffect(() => {
         fetchAnnouncements();
+        fetchAnnouncementSettings();
     }, []);
 
     const fetchAnnouncements = async () => {
@@ -48,19 +66,66 @@ const AnnouncementsPage: React.FC = () => {
         }
     };
 
+    const fetchAnnouncementSettings = async () => {
+        setSettingsLoading(true);
+        try {
+            const { data, error } = await supabase.from('settings').select('*').eq('id', 'announcementSettings').single();
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching announcement settings:', error);
+            }
+            if (data) {
+                const normalized: AnnouncementSettings = {
+                    popup: {
+                        enabled: data.announcementPopupEnabled ?? defaultAnnouncementSettings.popup.enabled,
+                        frequency: data.announcementPopupFrequency ?? defaultAnnouncementSettings.popup.frequency,
+                        cooldownMinutes: data.announcementPopupCooldownMinutes ?? defaultAnnouncementSettings.popup.cooldownMinutes,
+                        maxShowsPerDay: data.announcementPopupMaxShowsPerDay ?? defaultAnnouncementSettings.popup.maxShowsPerDay,
+                    },
+                    lineBar: {
+                        enabled: data.announcementLineBarEnabled ?? defaultAnnouncementSettings.lineBar.enabled,
+                        dismissBehavior: data.announcementLineBarDismissBehavior ?? defaultAnnouncementSettings.lineBar.dismissBehavior,
+                        hideDurationHours: data.announcementLineBarHideDurationHours ?? defaultAnnouncementSettings.lineBar.hideDurationHours,
+                    },
+                };
+                setAnnouncementSettings(normalized);
+            } else {
+                setAnnouncementSettings(defaultAnnouncementSettings);
+            }
+        } catch (err) {
+            console.error('Unexpected error loading announcement settings:', err);
+            setAnnouncementSettings(defaultAnnouncementSettings);
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
     const handleOpenModal = (announcement?: Announcement) => {
         if (announcement) {
             setEditingAnnouncement(announcement);
-            setFormData(announcement);
+            const isLinebar = announcement.displayMode === 'linebar';
+            setFormData({
+                ...announcement,
+                displayMode: announcement.displayMode || 'popup',
+                imageUrl: isLinebar ? '' : (announcement.imageUrl || ''),
+                linkUrl: announcement.linkUrl || '',
+            });
         } else {
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysLater = new Date();
+            thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+            const endDate = thirtyDaysLater.toISOString().split('T')[0];
+            
             setEditingAnnouncement(null);
             setFormData({
                 title: '',
                 message: '',
                 type: 'info',
-                displayMode: 'both',
+                displayMode: 'popup',
                 isActive: true,
                 imageUrl: '',
+                linkUrl: '',
+                startDate: today,
+                endDate: endDate,
             });
         }
         setIsModalOpen(true);
@@ -73,15 +138,23 @@ const AnnouncementsPage: React.FC = () => {
             title: '',
             message: '',
             type: 'info',
-            displayMode: 'both',
+            displayMode: 'popup',
             isActive: true,
             imageUrl: '',
+            linkUrl: '',
         });
+        setShowTitle(true);
+        setShowMessage(true);
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (formData.displayMode === 'linebar') {
+            showToast('Mode baris tidak mendukung gambar', 'error');
+            return;
+        }
 
         setUploadingImage(true);
         try {
@@ -97,48 +170,108 @@ const AnnouncementsPage: React.FC = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.title?.trim() || !formData.message?.trim()) {
-            showToast('Judul dan pesan harus diisi', 'error');
+        if ((showTitle && !formData.title?.trim()) || (showMessage && !formData.message?.trim())) {
+            showToast('Isi judul dan pesan yang ditampilkan', 'error');
+            return;
+        }
+
+        // Validate displayMode matches settings
+        if (!['popup', 'linebar'].includes(formData.displayMode || '')) {
+            showToast('Tampilan pengumuman tidak valid', 'error');
             return;
         }
 
         try {
+            const saveData = {
+                title: showTitle ? formData.title?.trim() : '',
+                message: showMessage ? formData.message?.trim() : '',
+                type: formData.type || 'info',
+                displayMode: formData.displayMode || 'popup',
+                isActive: formData.isActive ?? true,
+                startDate: formData.startDate || null,
+                endDate: formData.endDate || null,
+                imageUrl: formData.displayMode === 'popup' ? (formData.imageUrl || null) : null,
+                linkUrl: formData.displayMode === 'linebar' ? (formData.linkUrl?.trim() || null) : null,
+            };
+
+            // Save global announcement settings inline with graceful fallback if columns are missing
+            let payload: Record<string, any> = {
+                id: 'announcementSettings',
+                announcementPopupEnabled: announcementSettings.popup.enabled,
+                announcementPopupFrequency: announcementSettings.popup.frequency,
+                announcementPopupCooldownMinutes: announcementSettings.popup.cooldownMinutes ?? null,
+                announcementPopupMaxShowsPerDay: announcementSettings.popup.maxShowsPerDay ?? null,
+                announcementLineBarEnabled: announcementSettings.lineBar.enabled,
+                announcementLineBarDismissBehavior: announcementSettings.lineBar.dismissBehavior,
+                announcementLineBarHideDurationHours: announcementSettings.lineBar.hideDurationHours ?? null,
+            };
+
+            const stripMissingFieldAndRetry = async () => {
+                const maxAttempts = Object.keys(payload).length + 5; // remove as many as needed, with guard
+                let attempt = 0;
+                while (attempt < maxAttempts) {
+                    const { error } = await supabase.from('settings').upsert(payload);
+                    if (!error) return;
+
+                    const msg = error?.message || '';
+                    const match = msg.match(/'([^']+)' column/);
+                    const missingField = match?.[1];
+
+                    // If we detect a missing field that we still send, drop it and retry
+                    if (missingField && payload.hasOwnProperty(missingField)) {
+                        delete payload[missingField];
+                        attempt += 1;
+                        continue;
+                    }
+
+                    // If missingField not in payload, or message doesn't identify a column, try stripping non-id fields progressively
+                    const keys = Object.keys(payload).filter((k) => k !== 'id');
+                    if (keys.length > 0) {
+                        delete payload[keys[0]];
+                        attempt += 1;
+                        continue;
+                    }
+
+                    throw new Error(`Gagal menyimpan pengaturan pengumuman: ${msg}`);
+                }
+                throw new Error('Gagal menyimpan pengaturan pengumuman: percobaan maksimum tercapai');
+            };
+
+            try {
+                await stripMissingFieldAndRetry();
+            } catch (settingsError: any) {
+                console.error('Save announcement settings error:', settingsError);
+                throw settingsError;
+            }
+
             if (editingAnnouncement) {
                 // Update existing
                 const { error } = await supabase
                     .from('announcements')
                     .update({
-                        title: formData.title,
-                        message: formData.message,
-                        type: formData.type,
-                        displayMode: formData.displayMode,
-                        isActive: formData.isActive,
-                        startDate: formData.startDate,
-                        endDate: formData.endDate,
-                        imageUrl: formData.imageUrl,
+                        ...saveData,
                         updatedAt: new Date().toISOString(),
                     })
                     .eq('id', editingAnnouncement.id);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Update error:', error);
+                    throw new Error(`Update gagal: ${error.message}`);
+                }
                 showToast('Pengumuman berhasil diupdate', 'success');
             } else {
                 // Create new
                 const { error } = await supabase.from('announcements').insert({
-                    title: formData.title,
-                    message: formData.message,
-                    type: formData.type,
-                    displayMode: formData.displayMode,
-                    isActive: formData.isActive,
-                    startDate: formData.startDate,
-                    endDate: formData.endDate,
-                    imageUrl: formData.imageUrl,
+                    ...saveData,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     order: announcements.length + 1,
                 });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Insert error:', error);
+                    throw new Error(`Buat gagal: ${error.message}`);
+                }
                 showToast('Pengumuman berhasil dibuat', 'success');
             }
 
@@ -146,7 +279,8 @@ const AnnouncementsPage: React.FC = () => {
             fetchAnnouncements();
         } catch (error) {
             console.error('Error saving announcement:', error);
-            showToast('Gagal menyimpan pengumuman', 'error');
+            const message = error instanceof Error ? error.message : 'Gagal menyimpan pengumuman';
+            showToast(message, 'error');
         }
     };
 
@@ -201,13 +335,6 @@ const AnnouncementsPage: React.FC = () => {
                             <PlusIcon className="w-5 h-5" />
                             <span>Tambah Pengumuman</span>
                         </button>
-                        <button
-                            onClick={() => navigate('/pengaturan/pengumuman/settings')}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-600 dark:bg-slate-700 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all whitespace-nowrap text-sm md:text-base"
-                        >
-                            <SettingsIcon className="w-5 h-5" />
-                            <span>Pengaturan Pengumuman</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -224,7 +351,7 @@ const AnnouncementsPage: React.FC = () => {
                     {announcements.map(announcement => (
                         <div key={announcement.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
                             {/* Image */}
-                            {announcement.imageUrl && (
+                            {announcement.displayMode === 'popup' && announcement.imageUrl && (
                                 <div className="w-full h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800">
                                     <img 
                                         src={announcement.imageUrl} 
@@ -243,7 +370,7 @@ const AnnouncementsPage: React.FC = () => {
                                             <span className={`px-2.5 py-1 text-xs font-semibold rounded-md ${getTypeColor(announcement.type)}`}>
                                                 {announcement.type.charAt(0).toUpperCase() + announcement.type.slice(1)}
                                             </span>
-                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{announcement.displayMode === 'both' ? '📱 Pop-up & Bar' : announcement.displayMode === 'popup' ? '📱 Pop-up' : '📌 Bar'}</span>
+                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{announcement.displayMode === 'popup' ? '📱 Pop-up' : '📌 Baris'}</span>
                                         </div>
                                     </div>
                                     <div className={`p-2 rounded-lg ${announcement.isActive ? 'bg-green-100 dark:bg-green-900/40' : 'bg-slate-100 dark:bg-slate-700'}`}>
@@ -254,7 +381,17 @@ const AnnouncementsPage: React.FC = () => {
 
                             {/* Content */}
                             <div className="p-4 space-y-3">
-                                <p className="text-slate-700 dark:text-slate-300 text-sm line-clamp-3 leading-relaxed">{announcement.message}</p>
+                                {announcement.message && <p className="text-slate-700 dark:text-slate-300 text-sm line-clamp-3 leading-relaxed">{announcement.message}</p>}
+                                {announcement.linkUrl && (
+                                    <a
+                                        href={announcement.linkUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 underline-offset-4 hover:underline"
+                                    >
+                                        Buka tautan
+                                    </a>
+                                )}
                                 
                                 {(announcement.startDate || announcement.endDate) && (
                                     <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 pt-2 pb-3 border-t border-slate-200 dark:border-slate-700">
@@ -305,72 +442,137 @@ const AnnouncementsPage: React.FC = () => {
 
                         {/* Modal Content */}
                         <div className="p-6 space-y-4">
+                            {/* Mode Tampil (wajib pilih dulu) */}
+                            <div className="space-y-2">
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pilih mode tampil</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { key: 'popup', label: 'Pop-up', desc: 'Dengan gambar opsional' },
+                                        { key: 'linebar', label: 'Baris', desc: 'Tanpa gambar, bisa tautan' },
+                                    ].map((option) => {
+                                        const isActive = formData.displayMode === option.key;
+                                        return (
+                                            <button
+                                                key={option.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        displayMode: option.key as AnnouncementDisplayMode,
+                                                        imageUrl: option.key === 'linebar' ? '' : prev.imageUrl,
+                                                    }));
+                                                }}
+                                                className={`text-left p-3 rounded-xl border-2 transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300'}`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-semibold text-slate-800 dark:text-slate-200">{option.label}</span>
+                                                    {isActive && <CheckIcon className="w-4 h-4 text-indigo-600" />}
+                                                </div>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{option.desc}</p>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Judul Toggle */}
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tampilkan Judul</label>
+                                <ToggleSwitch checked={showTitle} onChange={setShowTitle} />
+                            </div>
+
                             {/* Judul */}
-                            <div>
-                                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Judul</label>
-                                <input
-                                    type="text"
-                                    value={formData.title || ''}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="Masukkan judul pengumuman"
-                                    className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                />
+                            {showTitle && (
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Judul</label>
+                                    <input
+                                        type="text"
+                                        value={formData.title || ''}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        placeholder="Masukkan judul pengumuman"
+                                        className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Pesan Toggle */}
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tampilkan Pesan</label>
+                                <ToggleSwitch checked={showMessage} onChange={setShowMessage} />
                             </div>
 
                             {/* Pesan */}
-                            <div>
-                                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Pesan</label>
-                                <textarea
-                                    value={formData.message || ''}
-                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                    placeholder="Masukkan pesan pengumuman"
-                                    rows={4}
-                                    className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
-                                />
-                            </div>
-
-                            {/* Gambar */}
-                            <div>
-                                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Gambar (opsional)</label>
-                                <div className="space-y-3">
-                                    {formData.imageUrl && (
-                                        <div className="relative w-full h-40 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                                            <img 
-                                                src={formData.imageUrl} 
-                                                alt="Preview" 
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
-                                            >
-                                                <XIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    )}
-                                    <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            disabled={uploadingImage}
-                                            className="hidden"
-                                        />
-                                        {uploadingImage ? (
-                                            <>
-                                                <SpinnerIcon className="w-5 h-5 animate-spin text-indigo-500" />
-                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Mengunggah...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ImageIcon className="w-5 h-5 text-slate-500" />
-                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Klik untuk unggah gambar</span>
-                                            </>
-                                        )}
-                                    </label>
+                            {showMessage && (
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Pesan</label>
+                                    <textarea
+                                        value={formData.message || ''}
+                                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                        placeholder="Masukkan pesan pengumuman"
+                                        rows={4}
+                                        className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                    />
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Gambar (hanya untuk pop-up) */}
+                            {formData.displayMode === 'popup' && (
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Gambar (opsional)</label>
+                                    <div className="space-y-3">
+                                        {formData.imageUrl && (
+                                            <div className="relative w-full h-40 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                                                <img 
+                                                    src={formData.imageUrl} 
+                                                    alt="Preview" 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                                                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
+                                                >
+                                                    <XIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                disabled={uploadingImage}
+                                                className="hidden"
+                                            />
+                                            {uploadingImage ? (
+                                                <>
+                                                    <SpinnerIcon className="w-5 h-5 animate-spin text-indigo-500" />
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Mengunggah...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ImageIcon className="w-5 h-5 text-slate-500" />
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Klik untuk unggah gambar</span>
+                                                </>
+                                            )}
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tautan (khusus baris) */}
+                            {formData.displayMode === 'linebar' && (
+                                <div>
+                                    <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Tautan (opsional)</label>
+                                    <input
+                                        type="url"
+                                        value={formData.linkUrl || ''}
+                                        onChange={(e) => setFormData({ ...formData, linkUrl: e.target.value })}
+                                        placeholder="https://contoh.com"
+                                        className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                    />
+                                </div>
+                            )}
 
                             {/* Tipe */}
                             <div>
@@ -387,18 +589,94 @@ const AnnouncementsPage: React.FC = () => {
                                 </select>
                             </div>
 
-                            {/* Display Mode */}
-                            <div>
-                                <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Mode Tampil</label>
-                                <select
-                                    value={formData.displayMode || 'both'}
-                                    onChange={(e) => setFormData({ ...formData, displayMode: e.target.value as AnnouncementDisplayMode })}
-                                    className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                >
-                                    <option value="both">Pop-up & Baris Bar</option>
-                                    <option value="popup">Hanya Pop-up</option>
-                                    <option value="linebar">Hanya Baris Bar</option>
-                                </select>
+                            {/* Pengaturan Pengumuman (Global) */}
+                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Pengaturan Pengumuman</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Berlaku global untuk semua pengumuman</p>
+                                    </div>
+                                    {settingsLoading && <SpinnerIcon className="w-4 h-4 animate-spin text-indigo-500" />}
+                                </div>
+
+                                {/* Popup Settings */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pop-up aktif</span>
+                                        <ToggleSwitch
+                                            checked={announcementSettings.popup.enabled}
+                                            onChange={(v) => setAnnouncementSettings(prev => ({ ...prev, popup: { ...prev.popup, enabled: v } }))}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="col-span-1 sm:col-span-1">
+                                            <label className="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">Frekuensi</label>
+                                            <select
+                                                value={announcementSettings.popup.frequency}
+                                                onChange={(e) => setAnnouncementSettings(prev => ({ ...prev, popup: { ...prev.popup, frequency: e.target.value as AnnouncementSettings['popup']['frequency'] } }))}
+                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                            >
+                                                <option value="always">Selalu</option>
+                                                <option value="per_session">Per Sesi</option>
+                                                <option value="cooldown">Cooldown</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">Cooldown (menit)</label>
+                                            <input
+                                                type="number"
+                                                value={announcementSettings.popup.cooldownMinutes ?? ''}
+                                                onChange={(e) => setAnnouncementSettings(prev => ({ ...prev, popup: { ...prev.popup, cooldownMinutes: Number(e.target.value) || 0 } }))}
+                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                                min={0}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">Maks. tampil/hari</label>
+                                            <input
+                                                type="number"
+                                                value={announcementSettings.popup.maxShowsPerDay ?? ''}
+                                                onChange={(e) => setAnnouncementSettings(prev => ({ ...prev, popup: { ...prev.popup, maxShowsPerDay: Number(e.target.value) || 0 } }))}
+                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                                min={0}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Line Bar Settings */}
+                                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Baris aktif</span>
+                                        <ToggleSwitch
+                                            checked={announcementSettings.lineBar.enabled}
+                                            onChange={(v) => setAnnouncementSettings(prev => ({ ...prev, lineBar: { ...prev.lineBar, enabled: v } }))}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">Perilaku tutup</label>
+                                            <select
+                                                value={announcementSettings.lineBar.dismissBehavior}
+                                                onChange={(e) => setAnnouncementSettings(prev => ({ ...prev, lineBar: { ...prev.lineBar, dismissBehavior: e.target.value as AnnouncementSettings['lineBar']['dismissBehavior'] } }))}
+                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                            >
+                                                <option value="hide_for_session">Sembunyikan untuk sesi</option>
+                                                <option value="hide_for_hours">Sembunyikan beberapa jam</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">Durasi sembunyi (jam)</label>
+                                            <input
+                                                type="number"
+                                                value={announcementSettings.lineBar.hideDurationHours ?? ''}
+                                                onChange={(e) => setAnnouncementSettings(prev => ({ ...prev, lineBar: { ...prev.lineBar, hideDurationHours: Number(e.target.value) || 0 } }))}
+                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                                min={0}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Start Date */}

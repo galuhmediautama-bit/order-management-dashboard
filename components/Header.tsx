@@ -166,7 +166,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
   }
 
   return (
-    <header className="sticky top-0 z-40 flex-shrink-0 bg-white/90 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+    <header className="sticky top-0 z-40 flex-shrink-0 bg-white/90 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200/80 dark:border-slate-800/80 shadow-sm lg:border-l border-transparent lg:border-l-slate-200/60 dark:lg:border-l-slate-800/60">
       <div className="flex items-center justify-between h-16 px-4 md:px-6 lg:px-8 gap-4">
         {/* Mobile Menu Button */}
         <button
@@ -176,9 +176,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
         >
           <MenuIcon className="h-7 w-7" />
         </button>
-        
-        {/* Spacer when no logo to avoid overlap */}
-        <div className="flex items-center gap-2 lg:gap-3 min-w-[1rem]"></div>
 
         {/* Search Bar - Desktop */}
         <div className="hidden lg:flex flex-1 max-w-2xl">

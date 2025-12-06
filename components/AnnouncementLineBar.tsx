@@ -50,7 +50,7 @@ const AnnouncementLineBar: React.FC<AnnouncementLineBarProps> = ({ onClose }) =>
                     .from('announcements')
                     .select('*')
                     .eq('isActive', true)
-                    .in('displayMode', ['linebar', 'both'])
+                    .eq('displayMode', 'linebar')
                     .lte('startDate', now)
                     .gte('endDate', now)
                     .order('order', { ascending: true })
@@ -108,7 +108,19 @@ const AnnouncementLineBar: React.FC<AnnouncementLineBarProps> = ({ onClose }) =>
                 <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                <p className="text-sm font-medium">{currentAnnouncement.message}</p>
+                <div className="flex items-center gap-3 flex-1">
+                    {currentAnnouncement.message && <p className="text-sm font-medium line-clamp-1">{currentAnnouncement.message}</p>}
+                    {currentAnnouncement.linkUrl && (
+                        <a
+                            href={currentAnnouncement.linkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 underline-offset-4 hover:underline"
+                        >
+                            Buka tautan
+                        </a>
+                    )}
+                </div>
             </div>
             <button
                 onClick={handleClose}

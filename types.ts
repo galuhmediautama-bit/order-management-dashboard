@@ -507,7 +507,7 @@ export interface AnnouncementSettings {
 
 // --- Announcement Types (actual announcements to display) ---
 export type AnnouncementType = 'info' | 'success' | 'warning' | 'error';
-export type AnnouncementDisplayMode = 'popup' | 'linebar' | 'both';
+export type AnnouncementDisplayMode = 'popup' | 'linebar';
 
 export interface Announcement {
   id: string;
@@ -523,6 +523,7 @@ export interface Announcement {
   endDate?: string; // When to stop showing
   order?: number; // Display order priority
   imageUrl?: string; // Image URL for announcement
+    linkUrl?: string; // Optional link for line bar (or popup)
 }
 
 export interface MessageTemplates {

@@ -231,23 +231,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
   return (
     <>
-      <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-20 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}></div>
+          <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-20 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}></div>
       
-            <aside className={`absolute inset-y-0 left-0 bg-white/95 dark:bg-slate-900/90 backdrop-blur w-64 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col shadow-md border-r border-slate-200/80 dark:border-slate-800/80`}>
+            <aside className={`absolute inset-y-0 left-0 w-64 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col shadow-xl border-r border-slate-800/80 bg-slate-950 text-slate-100`}>
 
-                <div className="h-16 flex items-center px-4 border-b border-slate-200/80 dark:border-slate-800/80 shrink-0">
-                     <Link to="/" className="flex items-center space-x-3 group w-full">
-                                <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                </div>
-                                <div className="flex flex-col text-left">
-                                    <span className="text-sm font-semibold text-slate-900 dark:text-white leading-tight truncate">{websiteName || 'CuanMax Digital'}</span>
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">Dashboard</span>
-                                </div>
-                        </Link>
-                </div>
+            <div className="h-16 flex items-center px-5 border-b border-slate-800/80 bg-gradient-to-br from-slate-900 via-slate-950 to-black rounded-br-2xl shadow-inner shrink-0">
+                 <Link to="/" className="flex items-center space-x-3 group w-full">
+                    <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <div className="flex flex-col text-left">
+                        <span className="text-sm font-semibold text-white leading-tight truncate">{websiteName || 'CuanMax Digital'}</span>
+                        <span className="text-xs text-slate-400">Dashboard</span>
+                    </div>
+                </Link>
+            </div>
 
-                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => {
             const path = pageToPath[item.name];
             const isActive = currentPagePath === path || isSubItemActive(item);
@@ -255,8 +255,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             const isMenuOpen = openSubMenus[item.name];
             
             const baseClasses = `flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group`;
-            const activeClasses = `bg-indigo-50/70 dark:bg-indigo-900/25 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800`;
-            const inactiveClasses = `text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100`;
+            const activeClasses = `bg-slate-800/80 text-white border border-slate-700 shadow-sm`;
+            const inactiveClasses = `text-slate-300 hover:bg-slate-900/80 hover:text-white`;
 
             const content = (
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -270,7 +270,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                     {hasSubMenu ? (
                         <button 
                             onClick={() => toggleSubMenu(item.name)} 
-                            className={`${baseClasses} ${isActive && !isMenuOpen ? activeClasses : inactiveClasses} ${isMenuOpen ? 'bg-slate-50 dark:bg-slate-800' : ''}`}
+                            className={`${baseClasses} ${isActive && !isMenuOpen ? activeClasses : inactiveClasses} ${isMenuOpen ? 'bg-slate-900/70' : ''}`}
                         >
                             {content}
                             <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
@@ -307,11 +307,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                                             onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }}
                                             className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
                                             isSubActive 
-                                                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' 
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                ? 'text-white bg-slate-800/80' 
+                                                : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
                                             }`}
                                         >
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-3 ${isSubActive ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                                            <div className={`w-1.5 h-1.5 rounded-full mr-3 ${isSubActive ? 'bg-indigo-400' : 'bg-slate-600'}`}></div>
                                             <span className="truncate">{subItem.label || subItem.name}</span>
                                         </Link>
                                     );
@@ -324,13 +324,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-600">
-                <span>&copy; 2024</span>
-                <span>•</span>
-                <span className="font-medium">v1.2.6</span>
-            </div>
-        </div>
+                <div className="p-4 border-t border-slate-800">
+                        <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                                <span>&copy; 2024</span>
+                                <span>•</span>
+                                <span className="font-medium">v1.2.6</span>
+                        </div>
+                </div>
       </aside>
     </>
   );
