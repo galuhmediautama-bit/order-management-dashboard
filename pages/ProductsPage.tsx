@@ -11,6 +11,7 @@ import TrashIcon from '../components/icons/TrashIcon';
 import PlusIcon from '../components/icons/PlusIcon';
 import EllipsisVerticalIcon from '../components/icons/EllipsisVerticalIcon';
 import SettingsIcon from '../components/icons/SettingsIcon';
+import Squares2x2Icon from '../components/icons/Squares2x2Icon';
 
 interface ProductStats {
     [productId: string]: {
@@ -178,25 +179,31 @@ const ProductsPage: React.FC = () => {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                    Produk Induk
-                </h1>
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md">
+                        <Squares2x2Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Produk Induk</h1>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Kelola daftar produk induk dan akses analitik.</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                         onClick={() => navigate('/analitik-produk')}
-                        className="flex items-center gap-2 bg-slate-600 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 dark:bg-slate-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition"
                     >
-                        <SettingsIcon className="w-5 h-5" />
+                        <SettingsIcon className="w-4 h-4" />
                         Analitik
                     </button>
                     <button
                         onClick={() => navigate('/daftar-produk/tambah')}
-                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition"
                     >
-                        <PlusIcon className="w-5 h-5" />
+                        <PlusIcon className="w-4 h-4" />
                         Tambah Produk
                     </button>
                 </div>
@@ -204,13 +211,13 @@ const ProductsPage: React.FC = () => {
 
             {/* Search */}
             <div className="relative">
-                <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                     type="text"
                     placeholder="Cari produk..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500"
                 />
             </div>
 
@@ -222,59 +229,59 @@ const ProductsPage: React.FC = () => {
                     Belum ada produk. Tambahkan produk baru untuk mulai melacak formulir.
                 </div>
             ) : (
-                <div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-lg shadow">
+                <div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <table className="w-full text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
                             <tr>
-                                <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-left font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     Nama Produk
                                 </th>
-                                <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-left font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     SKU
                                 </th>
-                                <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-left font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     Kategori
                                 </th>
-                                <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-left font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     Harga
                                 </th>
-                                <th className="px-6 py-3 text-center font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-center font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     Terjual
                                 </th>
-                                <th className="px-6 py-3 text-center font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-center font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     Form
                                 </th>
-                                <th className="px-6 py-3 text-center font-semibold text-slate-900 dark:text-slate-100">
+                                <th className="px-5 py-3 text-center font-semibold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wide">
                                     Aksi
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                             {filteredProducts.map((product) => (
                                 <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                    <td className="px-6 py-4 text-slate-900 dark:text-slate-100">
+                                    <td className="px-5 py-3 text-slate-900 dark:text-slate-100 font-medium">
                                         {product.name}
                                     </td>
-                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                                    <td className="px-5 py-3 text-slate-600 dark:text-slate-400">
                                         {getSKU(product)}
                                     </td>
-                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                                    <td className="px-5 py-3 text-slate-600 dark:text-slate-400">
                                         {product.category || '-'}
                                     </td>
-                                    <td className="px-6 py-4 text-slate-900 dark:text-slate-100">
+                                    <td className="px-5 py-3 text-slate-900 dark:text-slate-100">
                                         {getPrice(product)}
                                     </td>
-                                    <td className="px-6 py-4 text-center text-slate-900 dark:text-slate-100">
-                                        <span className="inline-flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-semibold">
+                                    <td className="px-5 py-3 text-center text-slate-900 dark:text-slate-100">
+                                        <span className="inline-flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-2.5 py-1 rounded-full text-xs font-semibold">
                                             {productStats[product.id]?.salesCount || 0}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center text-slate-900 dark:text-slate-100">
-                                        <span className="inline-flex items-center justify-center bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-semibold">
+                                    <td className="px-5 py-3 text-center text-slate-900 dark:text-slate-100">
+                                        <span className="inline-flex items-center justify-center bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 px-2.5 py-1 rounded-full text-xs font-semibold">
                                             {productStats[product.id]?.formCount || 0}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center relative">
+                                    <td className="px-5 py-3 text-center relative">
                                         <div className="flex justify-center">
                                             <button
                                                 onClick={() => setOpenDropdown(openDropdown === product.id ? null : product.id)}
@@ -332,7 +339,7 @@ const ProductsPage: React.FC = () => {
                                                             navigate(`/produk/${product.id}/analytics`);
                                                             setOpenDropdown(null);
                                                         }}
-                                                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600"
+                                                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-650 text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600"
                                                     >
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

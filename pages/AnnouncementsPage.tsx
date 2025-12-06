@@ -85,7 +85,7 @@ const AnnouncementsPage: React.FC = () => {
 
         setUploadingImage(true);
         try {
-            const url = await uploadFileAndGetURL(file, 'announcements');
+            const url = await uploadFileAndGetURL(file);
             setFormData({ ...formData, imageUrl: url });
             showToast('Gambar berhasil diunggah', 'success');
         } catch (error) {

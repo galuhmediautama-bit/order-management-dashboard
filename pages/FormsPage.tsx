@@ -407,31 +407,31 @@ const FormsPage: React.FC = () => {
     }, [forms]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-indigo-100 dark:border-slate-700">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700">
                 <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <ClipboardListIcon className="w-6 h-6 text-white" />
+                    <div className="flex items-center gap-3 mb-1.5">
+                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <ClipboardListIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Formulir Pemesanan</h1>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Formulir Pemesanan</h1>
                     </div>
-                    <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Kelola semua formulir pemesanan produk Anda.</p>
+                    <p className="ml-12 text-sm text-slate-600 dark:text-slate-400">Kelola semua formulir pemesanan produk Anda.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                     <Link 
                         to="/pengaturan/template-pesan"
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-700 border-2 border-indigo-200 dark:border-slate-600 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold shadow-sm hover:shadow-md hover:scale-105 transition-all"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-700 border border-indigo-100 dark:border-slate-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold shadow-sm hover:shadow-md transition-all"
                     >
-                        <ChatBubbleIcon className="w-5 h-5" />
+                        <ChatBubbleIcon className="w-4 h-4" />
                         <span>Template Pesan</span>
                     </Link>
                     <button 
                         onClick={handleNewForm} 
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:scale-105 transition-all"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all"
                     >
-                        <PlusIcon className="w-5 h-5" />
+                        <PlusIcon className="w-4 h-4" />
                         <span>Buat Formulir Baru</span>
                     </button>
                 </div>

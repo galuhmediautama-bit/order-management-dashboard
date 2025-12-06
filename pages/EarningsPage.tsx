@@ -68,15 +68,15 @@ const StatCard: React.FC<{
     icon: React.ComponentType<{ className?: string }>;
     gradient: string;
 }> = ({ title, value, subtitle, icon: Icon, gradient }) => (
-    <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-6 text-white shadow-xl hover:scale-105 transition-transform`}>
-        <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Icon className="w-6 h-6" />
+    <div className={`bg-gradient-to-br ${gradient} rounded-xl p-4 text-white shadow-md hover:shadow-lg transition-transform`}>
+        <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <Icon className="w-5 h-5" />
             </div>
-            <span className="text-2xl font-bold">{value}</span>
+            <span className="text-xl font-bold">{value}</span>
         </div>
-        <h3 className="text-sm font-medium text-white/90">{title}</h3>
-        <p className="text-xs text-white/70 mt-1">{subtitle}</p>
+        <h3 className="text-xs font-semibold text-white/90">{title}</h3>
+        <p className="text-[11px] text-white/70 mt-1">{subtitle}</p>
     </div>
 );
 
@@ -442,28 +442,28 @@ const EarningsPage: React.FC = () => {
     const showPersonalRank = ['Customer service', 'Advertiser'].includes(normalizedMyRole);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-green-100 dark:border-slate-700">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-green-100 dark:border-slate-700">
                 <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <BanknotesIcon className="w-6 h-6 text-white" />
+                    <div className="flex items-center gap-3 mb-1.5">
+                        <div className="w-9 h-9 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                            <BanknotesIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                             {showTeamView ? 'Penghasilan Tim' : 'Penghasilan Saya'}
                         </h1>
                     </div>
-                    <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Monitor gaji, komisi, dan performa tim.</p>
+                    <p className="ml-12 text-sm text-slate-600 dark:text-slate-400">Monitor gaji, komisi, dan performa tim.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                     {showTeamView && (
                         <button 
                             onClick={handleExportCSV}
                             disabled={isExporting || displayedData.length === 0}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-md shadow-green-500/20 hover:shadow-lg transition-all disabled:opacity-50"
                         >
-                            {isExporting ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
+                            {isExporting ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}
                             <span>Ekspor CSV</span>
                         </button>
                     )}
@@ -482,7 +482,7 @@ const EarningsPage: React.FC = () => {
 
             {/* Team Summary Grid (Admin/Keuangan) */}
             {showTeamView && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard 
                         title="Total Omzet Team" 
                         value={`Rp ${(totals.revenue / 1000000).toFixed(1)}M`}
@@ -516,12 +516,12 @@ const EarningsPage: React.FC = () => {
 
             {/* Role Filter */}
             {showTeamView && (
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-                    <div className="flex items-center gap-3 mb-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+                    <div className="flex items-center gap-2.5 mb-3">
                         <FilterIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
                         <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter Peran</span>
                     </div>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
                         {[
                             { value: 'all', label: 'Semua Tim', count: filteredData.length },
                             { value: 'cs', label: 'Customer Service', count: filteredData.filter(u => getNormalizedRole(u.role) === 'Customer service').length },
@@ -533,14 +533,14 @@ const EarningsPage: React.FC = () => {
                                 <button
                                     key={role.value}
                                     onClick={() => setRoleFilter(role.value as any)}
-                                    className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2.5 border shadow-sm hover:shadow-md ${
+                                    className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 border shadow-sm hover:shadow-md ${
                                         isActive 
-                                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 border-transparent text-white shadow-lg shadow-green-500/30 scale-105' 
+                                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 border-transparent text-white shadow-lg shadow-green-500/20' 
                                             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                     }`}
                                 >
                                     {role.label}
-                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                    <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
                                         isActive ? 'bg-white/20 text-white' : 'bg-green-50 dark:bg-slate-700 text-green-600 dark:text-green-400'
                                     }`}>
                                         {role.count}

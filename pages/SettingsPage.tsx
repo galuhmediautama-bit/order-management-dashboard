@@ -422,7 +422,7 @@ const AnnouncementSettingsPage: React.FC = () => {
                             <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Frekuensi Tampilkan</label>
                             <select
                                 value={settings.popup.frequency}
-                                onChange={(e) => updatePopup({ frequency: e.target.value as NotificationSettings['popup']['frequency'] })}
+                                onChange={(e) => updatePopup({ frequency: e.target.value as AnnouncementSettings['popup']['frequency'] })}
                                 className="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             >
                                 <option value="always">Selalu tampil</option>
@@ -545,7 +545,7 @@ const UserDetailModal: React.FC<{
                     {/* Profile Header */}
                     <div className="flex items-center gap-4 pb-6 border-b dark:border-slate-700">
                         <img 
-                            src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`} 
+                            src={user.avatar ? user.avatar : `https://i.pravatar.cc/150?u=${user.id}`} 
                             alt={user.name} 
                             className="w-20 h-20 rounded-full ring-4 ring-purple-200 dark:ring-purple-700"
                         />

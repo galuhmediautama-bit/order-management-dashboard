@@ -257,24 +257,24 @@ const AbandonedCartsPage: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-amber-100 dark:border-slate-700">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-amber-100 dark:border-slate-700">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <ShoppingCartIcon className="w-6 h-6 text-white" />
+                        <div className="w-9 h-9 bg-gradient-to-br from-amber-600 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
+                            <ShoppingCartIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Keranjang Terabaikan</h1>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Keranjang Terabaikan</h1>
                     </div>
-                    <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Hubungi calon pelanggan yang belum menyelesaikan pesanan.</p>
+                    <p className="ml-12 text-sm text-slate-600 dark:text-slate-400">Hubungi calon pelanggan yang belum menyelesaikan pesanan.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                     <DateRangePicker value={dateRange} onChange={setDateRange} />
                     <button 
                         onClick={handleExportCSV}
                         disabled={isExporting || filteredCarts.length === 0}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-md shadow-green-500/20 hover:shadow-lg transition-all disabled:opacity-50"
                     >
-                        {isExporting ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
+                        {isExporting ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}
                         <span>Ekspor CSV</span>
                     </button>
                 </div>
@@ -282,52 +282,52 @@ const AbandonedCartsPage: React.FC = () => {
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-transform">
                     <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                            <ShoppingCartIcon className="w-5 h-5" />
+                        <div className="w-9 h-9 bg-white/20 rounded-md flex items-center justify-center">
+                            <ShoppingCartIcon className="w-4 h-4" />
                         </div>
-                        <span className="text-2xl font-bold">{stats.total}</span>
+                        <span className="text-xl font-bold">{stats.total}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-blue-100 mt-2">Total Keranjang</h3>
-                    <p className="text-xs text-blue-200">Semua data</p>
+                    <h3 className="text-xs font-semibold text-blue-100 mt-2">Total Keranjang</h3>
+                    <p className="text-[11px] text-blue-200">Semua data</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-transform">
                     <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-9 h-9 bg-white/20 rounded-md flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <span className="text-2xl font-bold">{stats.new}</span>
+                        <span className="text-xl font-bold">{stats.new}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-amber-100 mt-2">Belum Dihubungi</h3>
-                    <p className="text-xs text-amber-200">Perlu follow up</p>
+                    <h3 className="text-xs font-semibold text-amber-100 mt-2">Belum Dihubungi</h3>
+                    <p className="text-[11px] text-amber-200">Perlu follow up</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-transform">
                     <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                            <CheckCircleFilledIcon className="w-5 h-5" />
+                        <div className="w-9 h-9 bg-white/20 rounded-md flex items-center justify-center">
+                            <CheckCircleFilledIcon className="w-4 h-4" />
                         </div>
-                        <span className="text-2xl font-bold">{stats.contacted}</span>
+                        <span className="text-xl font-bold">{stats.contacted}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-green-100 mt-2">Sudah Dihubungi</h3>
-                    <p className="text-xs text-green-200">Follow up selesai</p>
+                    <h3 className="text-xs font-semibold text-green-100 mt-2">Sudah Dihubungi</h3>
+                    <p className="text-[11px] text-green-200">Follow up selesai</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-transform">
                     <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-9 h-9 bg-white/20 rounded-md flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <span className="text-2xl font-bold">Rp {(stats.totalValue / 1000000).toFixed(1)}M</span>
+                        <span className="text-xl font-bold">Rp {(stats.totalValue / 1000000).toFixed(1)}M</span>
                     </div>
-                    <h3 className="text-sm font-medium text-purple-100 mt-2">Potensi Revenue</h3>
-                    <p className="text-xs text-purple-200">Total nilai keranjang</p>
+                    <h3 className="text-xs font-semibold text-purple-100 mt-2">Potensi Revenue</h3>
+                    <p className="text-[11px] text-purple-200">Total nilai keranjang</p>
                 </div>
             </div>
 

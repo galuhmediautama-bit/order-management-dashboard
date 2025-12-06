@@ -233,18 +233,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
     <>
       <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-20 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}></div>
       
-      <aside className={`absolute inset-y-0 left-0 bg-white dark:bg-slate-900 w-64 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col shadow-xl border-r border-slate-200 dark:border-slate-800`}>
-        
-        <div className="h-16 flex items-center px-5 border-b border-slate-200 dark:border-slate-800 shrink-0">
-           <Link to="/" className="flex items-center space-x-3 group w-full">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                </div>
-                <span className="text-lg font-semibold text-slate-900 dark:text-white truncate">{websiteName || 'OrderDash'}</span>
-            </Link>
-        </div>
+            <aside className={`absolute inset-y-0 left-0 bg-white/95 dark:bg-slate-900/90 backdrop-blur w-64 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col shadow-md border-r border-slate-200/80 dark:border-slate-800/80`}>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <div className="h-16 flex items-center px-4 border-b border-slate-200/80 dark:border-slate-800/80 shrink-0">
+                     <Link to="/" className="flex items-center space-x-3 group w-full">
+                                <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                                <div className="flex flex-col text-left">
+                                    <span className="text-sm font-semibold text-slate-900 dark:text-white leading-tight truncate">{websiteName || 'CuanMax Digital'}</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">Dashboard</span>
+                                </div>
+                        </Link>
+                </div>
+
+                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => {
             const path = pageToPath[item.name];
             const isActive = currentPagePath === path || isSubItemActive(item);
@@ -252,8 +255,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             const isMenuOpen = openSubMenus[item.name];
             
             const baseClasses = `flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group`;
-            const activeClasses = `bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400`;
-            const inactiveClasses = `text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200`;
+            const activeClasses = `bg-indigo-50/70 dark:bg-indigo-900/25 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800`;
+            const inactiveClasses = `text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100`;
 
             const content = (
                 <div className="flex items-center space-x-3 flex-1 min-w-0">

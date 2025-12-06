@@ -139,6 +139,39 @@ export interface Brand {
     description: string;
 }
 
+export interface BankAccount {
+    id: string;
+    bankName: string;
+    accountHolder: string;
+    accountNumber: string;
+    isDefault: boolean;
+}
+
+export interface QRISData {
+    id: string;
+    displayName: string;
+    qrisCode: string; // QR code image URL or base64
+}
+
+export interface Warehouse {
+    id: string;
+    name: string;
+    address: string;
+    phone: string;
+    email?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
+    isDefault: boolean;
+}
+
+export interface BrandSettings {
+    brandId: string;
+    bankAccounts: BankAccount[];
+    qrisPayments: QRISData | null;
+    warehouses: Warehouse[];
+}
+
 // Types for Customer Service (Ticketing) Page
 export type TicketStatus = 'Baru' | 'Dikerjakan' | 'Selesai';
 export type TicketPriority = 'Rendah' | 'Normal' | 'Tinggi';

@@ -25,27 +25,27 @@ const StatCard: React.FC<{
     changeType?: 'increase' | 'decrease' | 'neutral';
 }> = ({ title, value, icon: Icon, change, changeType = 'neutral' }) => {
     return (
-      <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
-            <div className="flex items-start gap-3 sm:gap-3">
-                <div className="p-2 sm:p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex-shrink-0">
-                    <Icon className="w-5 sm:w-5 md:w-6 h-5 sm:h-5 md:h-6 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <div className="flex-grow min-w-0">
-                    <p className="text-xs sm:text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{title}</p>
-                    <p className="text-lg sm:text-lg md:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">{value}</p>
-                    {change && (
-                        <p className={`text-xs mt-0.5 sm:mt-1 flex items-center gap-1 ${
-                            changeType === 'increase' ? 'text-green-600 dark:text-green-400' :
-                            changeType === 'decrease' ? 'text-red-600 dark:text-red-400' :
-                            'text-slate-500 dark:text-slate-400'
-                        }`}>
-                            {changeType === 'increase' && '↑'}
-                            {changeType === 'decrease' && '↓'}
-                            {change}
-                        </p>
-                    )}
-                </div>
+        <div className="bg-white dark:bg-slate-800 p-3 sm:p-3 md:p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+          <div className="flex items-start gap-2.5 sm:gap-3">
+            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex-shrink-0">
+              <Icon className="w-5 h-5 md:w-5 md:h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
+            <div className="flex-grow min-w-0">
+              <p className="text-xs md:text-xs font-medium text-slate-500 dark:text-slate-400 truncate">{title}</p>
+              <p className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mt-0.5">{value}</p>
+              {change && (
+                <p className={`text-xs mt-0.5 flex items-center gap-1 ${
+                  changeType === 'increase' ? 'text-green-600 dark:text-green-400' :
+                  changeType === 'decrease' ? 'text-red-600 dark:text-red-400' :
+                  'text-slate-500 dark:text-slate-400'
+                }`}>
+                  {changeType === 'increase' && '↑'}
+                  {changeType === 'decrease' && '↓'}
+                  {change}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
     );
 };
