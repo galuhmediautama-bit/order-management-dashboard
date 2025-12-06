@@ -29,6 +29,7 @@ import Squares2x2Icon from './icons/Squares2x2Icon';
 import { supabase } from '../supabase';
 import { getNormalizedRole } from '../utils';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useRolePermissions } from '../contexts/RolePermissionsContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -62,10 +63,36 @@ const pageToPath: Record<string, string> = {
     'Penghasilan': '/penghasilan',
 };
 
+// Map sidebar menu names to RBAC menu IDs from rolePermissions.ts
+const menuNameToRbacId: Record<string, string> = {
+    'Dasbor': 'dashboard',
+    'Produk': 'products',
+    'Daftar Produk': 'product_list',
+    'Daftar Formulir': 'form_list',
+    'Pesanan': 'orders',
+    'Daftar Pesanan': 'order_list',
+    'Pesanan Tertinggal': 'abandoned_carts',
+    'Pelanggan': 'customers',
+    'Laporan': 'reports',
+    'Laporan Iklan': 'ad_reports',
+    'Laporan CS': 'cs_reports',
+    'Penghasilan': 'earnings',
+    'Pengaturan': 'settings',
+    'Pengaturan Website': 'website_settings',
+    'Merek': 'brands',
+    'Manajemen Pengguna': 'user_management',
+    'Manajemen CS': 'cs_management',
+    'Pelacakan': 'tracking',
+    'Pengumuman': 'announcements',
+    'Permintaan Hapus': 'deletion_requests',
+    'CuanRank': 'cuan_rank',
+};
+
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => {
     const [openSubMenus, setOpenSubMenus] = useState<{[key: string]: boolean}>({});
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
     const { t } = useLanguage();
+    const { canAccessMenu } = useRolePermissions();
     const location = useLocation();
     const currentPagePath = location.pathname;
 
@@ -144,22 +171,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         if (!currentUserRole) return false;
         if (currentUserRole === 'Super Admin') return true;
 
-        // Debug logging for Advertiser
-        if (currentUserRole === 'Advertiser') {
-            console.log('🔍 Advertiser canSee check:', { itemName: item.name, allowedRoles: item.allowedRoles, currentUserRole });
-        }
-
-        // If specific roles are defined for the item, check them
-        if (item.allowedRoles && item.allowedRoles.length > 0) {
-            const canAccess = item.allowedRoles.includes(currentUserRole);
-            if (item.name === 'Permintaan Hapus') {
-                console.log('🔍 Checking Permintaan Hapus:', { currentUserRole, allowedRoles: item.allowedRoles, canAccess });
+        // Get RBAC menu ID for this item
+        const rbacMenuId = menuNameToRbacId[item.name];
+        if (!rbacMenuId) {
+            // If menu ID not found in mapping, use legacy allowedRoles as fallback
+            if (item.allowedRoles && item.allowedRoles.length > 0) {
+                return item.allowedRoles.includes(currentUserRole);
             }
-            return canAccess;
+            return true; // Default to visible if no mapping found
         }
 
-        // Default to visible if no roles specified
-        return true; 
+        // Check dynamic permissions via RBAC
+        const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
+        
+        // Debug logging for troubleshooting
+        if (process.env.NODE_ENV === 'development' && (currentUserRole === 'Advertiser' || currentUserRole === 'Customer service')) {
+            console.log(`🔍 Sidebar canSee: ${item.name}`, { 
+                rbacMenuId, 
+                userRole: currentUserRole, 
+                hasAccess 
+            });
+        }
+
+        return hasAccess;
     };
 
     // Declarative Navigation Structure
