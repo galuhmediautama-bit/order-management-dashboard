@@ -20,36 +20,51 @@ import { useToast } from '../contexts/ToastContext';
 import AddressInput, { type AddressData } from '../components/AddressInput';
 
 
-const calculateCustomerScore = (customer: Customer): number => {
-    let score = 3.0; // Base score for an average customer
+const calculateCODScore = (customer: Customer): { score: string; rate: number | null; display: string } => {
+    const totalCOD = customer.totalCODOrders ?? 0;
+    const successfulCOD = customer.successfulCODOrders ?? 0;
 
-    // Points for total spent
+    // No Data: belum ada COD history
+    if (totalCOD === 0) {
+        return { score: 'No Data', rate: null, display: 'No Data' };
+    }
+
+    const successRate = (successfulCOD / totalCOD) * 100;
+
+    // Kategori scoring berdasarkan success rate
+    if (successRate >= 98) {
+        return { score: 'A', rate: successRate, display: `A (${successRate.toFixed(1)}%)` };
+    } else if (successRate >= 90) {
+        return { score: 'B', rate: successRate, display: `B (${successRate.toFixed(1)}%)` };
+    } else if (successRate >= 80) {
+        return { score: 'C', rate: successRate, display: `C (${successRate.toFixed(1)}%)` };
+    } else if (successRate >= 50) {
+        return { score: 'D', rate: successRate, display: `D (${successRate.toFixed(1)}%)` };
+    } else {
+        return { score: 'E', rate: successRate, display: `E (${successRate.toFixed(1)}%)` };
+    }
+};
+
+const calculateCustomerScore = (customer: Customer): number => {
+    // Legacy numeric score for VIP calculation (kept for backwards compatibility)
+    let score = 3.0;
+
     if (customer.totalSpent > 2000000) score += 1;
     else if (customer.totalSpent > 500000) score += 0.5;
 
-    // Points for order count
     if (customer.orderCount > 7) score += 1;
     else if (customer.orderCount > 3) score += 0.5;
 
-    // Penalty for rejected orders
     const rejectionRate = customer.orderCount > 0 ? customer.rejectedOrders / customer.orderCount : 0;
-    if (rejectionRate > 0.5) {
-        score -= 2.5; // Heavy penalty
-    } else if (rejectionRate > 0.2) {
-        score -= 1.5;
-    } else if (customer.rejectedOrders > 0) {
-        score -= 0.5;
-    }
-    
-    // Bonus for loyalty (joined more than a year ago)
+    if (rejectionRate > 0.5) score -= 2.5;
+    else if (rejectionRate > 0.2) score -= 1.5;
+    else if (customer.rejectedOrders > 0) score -= 0.5;
+
     const joinDate = new Date(customer.joinDate);
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    if (joinDate < oneYearAgo) {
-        score += 0.5;
-    }
+    if (joinDate < oneYearAgo) score += 0.5;
 
-    // Clamp score between 1 and 5
     return Math.max(1, Math.min(5, score));
 };
 
@@ -167,7 +182,7 @@ const CustomersPage: React.FC = () => {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
     const [viewHistoryCustomer, setViewHistoryCustomer] = useState<Customer | null>(null);
-    const [scoreFilter, setScoreFilter] = useState<'all' | 'vip' | 'good' | 'average' | 'poor'>('all');
+    const [scoreFilter, setScoreFilter] = useState<'all' | 'a' | 'b' | 'c' | 'd' | 'e' | 'nodata'>('all');
     const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
     const [isExporting, setIsExporting] = useState(false);
     const { showToast } = useToast();
@@ -210,6 +225,8 @@ const CustomersPage: React.FC = () => {
                             orderCount: 0,
                             totalSpent: 0,
                             rejectedOrders: 0,
+                            totalCODOrders: 0,
+                            successfulCODOrders: 0,
                             joinDate: order.date
                         });
                     }
@@ -218,6 +235,16 @@ const CustomersPage: React.FC = () => {
                     cust.orderCount += 1;
                     cust.totalSpent += (order.totalPrice || 0);
                     if (order.status === 'Canceled') cust.rejectedOrders += 1;
+                    
+                    // Track COD orders
+                    const isCOD = order.paymentMethod?.toLowerCase().includes('cod') || order.paymentMethod?.toLowerCase().includes('bayar di tempat');
+                    if (isCOD) {
+                        cust.totalCODOrders = (cust.totalCODOrders || 0) + 1;
+                        if (order.status === 'Delivered') {
+                            cust.successfulCODOrders = (cust.successfulCODOrders || 0) + 1;
+                        }
+                    }
+                    
                     if (new Date(order.date) < new Date(cust.joinDate)) cust.joinDate = order.date;
                 });
                 
@@ -243,12 +270,8 @@ const CustomersPage: React.FC = () => {
         // Score filter
         if (scoreFilter !== 'all') {
             results = results.filter(c => {
-                const score = calculateCustomerScore(c);
-                if (scoreFilter === 'vip') return score >= 4.5;
-                if (scoreFilter === 'good') return score >= 3.5 && score < 4.5;
-                if (scoreFilter === 'average') return score >= 2.5 && score < 3.5;
-                if (scoreFilter === 'poor') return score < 2.5;
-                return true;
+                const codScore = calculateCODScore(c).score.toLowerCase();
+                return codScore === scoreFilter;
             });
         }
         
@@ -267,30 +290,44 @@ const CustomersPage: React.FC = () => {
 
     // Statistics
     const stats = useMemo(() => {
+        const scoreA = customers.filter(c => calculateCODScore(c).score === 'A').length;
+        const scoreB = customers.filter(c => calculateCODScore(c).score === 'B').length;
+        const totalCODOrders = customers.reduce((sum, c) => sum + (c.totalCODOrders || 0), 0);
+        const successfulCOD = customers.reduce((sum, c) => sum + (c.successfulCODOrders || 0), 0);
+        const overallSuccessRate = totalCODOrders > 0 ? (successfulCOD / totalCODOrders) * 100 : 0;
+        
         return {
             total: customers.length,
-            vip: customers.filter(c => calculateCustomerScore(c) >= 4.5).length,
+            scoreA: scoreA,
+            scoreB: scoreB,
             totalRevenue: customers.reduce((sum, c) => sum + c.totalSpent, 0),
             avgOrderValue: customers.length > 0 
                 ? customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.reduce((sum, c) => sum + c.orderCount, 0)
-                : 0
+                : 0,
+            overallCODSuccessRate: overallSuccessRate
         };
     }, [customers]);
 
     const handleExportCSV = () => {
         setIsExporting(true);
         try {
-            const dataToExport = filteredCustomers.map(customer => ({
-                'Nama': customer.name,
-                'Email': customer.email,
-                'Telepon': customer.phone,
-                'Alamat': customer.address,
-                'Total Belanja': customer.totalSpent,
-                'Jumlah Pesanan': customer.orderCount,
-                'Pesanan Ditolak': customer.rejectedOrders,
-                'Skor': calculateCustomerScore(customer).toFixed(1),
-                'Bergabung': new Date(customer.joinDate).toLocaleDateString('id-ID')
-            }));
+            const dataToExport = filteredCustomers.map(customer => {
+                const codScore = calculateCODScore(customer);
+                return {
+                    'Nama': customer.name,
+                    'Email': customer.email,
+                    'Telepon': customer.phone,
+                    'Alamat': customer.address,
+                    'Total Belanja': customer.totalSpent,
+                    'Jumlah Pesanan': customer.orderCount,
+                    'Pesanan Ditolak': customer.rejectedOrders,
+                    'Total COD': customer.totalCODOrders || 0,
+                    'COD Berhasil': customer.successfulCODOrders || 0,
+                    'COD Score': codScore.display,
+                    'Success Rate': codScore.rate !== null ? `${codScore.rate.toFixed(1)}%` : 'N/A',
+                    'Bergabung': new Date(customer.joinDate).toLocaleDateString('id-ID')
+                };
+            });
 
             const csv = [
                 Object.keys(dataToExport[0] || {}).join(','),
@@ -445,10 +482,10 @@ const CustomersPage: React.FC = () => {
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                             </svg>
                         </div>
-                        <span className="text-2xl font-bold">{stats.vip}</span>
+                        <span className="text-2xl font-bold">{stats.scoreA + stats.scoreB}</span>
                     </div>
-                    <h3 className="text-sm font-medium text-purple-100 mt-2">VIP Customers</h3>
-                    <p className="text-xs text-purple-200">Skor ≥ 4.5</p>
+                    <h3 className="text-sm font-medium text-purple-100 mt-2">Customers Terpercaya</h3>
+                    <p className="text-xs text-purple-200">COD Score A & B</p>
                 </div>
 
                 <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
@@ -486,10 +523,12 @@ const CustomersPage: React.FC = () => {
                         <div className="flex items-center gap-2 overflow-x-auto">
                             {[
                                 { value: 'all', label: 'Semua', count: customers.length },
-                                { value: 'vip', label: 'VIP (≥4.5)', count: customers.filter(c => calculateCustomerScore(c) >= 4.5).length },
-                                { value: 'good', label: 'Baik (3.5-4.4)', count: customers.filter(c => { const s = calculateCustomerScore(c); return s >= 3.5 && s < 4.5; }).length },
-                                { value: 'average', label: 'Cukup (2.5-3.4)', count: customers.filter(c => { const s = calculateCustomerScore(c); return s >= 2.5 && s < 3.5; }).length },
-                                { value: 'poor', label: 'Perlu Perhatian (<2.5)', count: customers.filter(c => calculateCustomerScore(c) < 2.5).length }
+                                { value: 'a', label: 'A (98-100%)', count: customers.filter(c => calculateCODScore(c).score === 'A').length },
+                                { value: 'b', label: 'B (90-97%)', count: customers.filter(c => calculateCODScore(c).score === 'B').length },
+                                { value: 'c', label: 'C (80-89%)', count: customers.filter(c => calculateCODScore(c).score === 'C').length },
+                                { value: 'd', label: 'D (50-79%)', count: customers.filter(c => calculateCODScore(c).score === 'D').length },
+                                { value: 'e', label: 'E (0-49%)', count: customers.filter(c => calculateCODScore(c).score === 'E').length },
+                                { value: 'nodata', label: 'No Data', count: customers.filter(c => calculateCODScore(c).score === 'No Data').length }
                             ].map(segment => {
                                 const isActive = scoreFilter === segment.value;
                                 
@@ -583,13 +622,12 @@ const CustomersPage: React.FC = () => {
                                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Nama</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Kontak</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Total Belanja</th>
-                                    <th className="px-6 py-4 text-center text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Skor</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">COD Score</th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                 {filteredCustomers.map(customer => {
-                                    const score = calculateCustomerScore(customer);
                                     const isSelected = selectedCustomers.has(customer.id);
                                     
                                     return (
@@ -621,8 +659,30 @@ const CustomersPage: React.FC = () => {
                                                 <div className="font-semibold text-green-600 dark:text-green-400">Rp {customer.totalSpent.toLocaleString('id-ID')}</div>
                                                 <div className="text-sm text-slate-500 dark:text-slate-400">{customer.orderCount} Pesanan</div>
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <CustomerScoreBadge score={score} />
+                                            <td className="px-6 py-4">
+                                                {(() => {
+                                                    const codScore = calculateCODScore(customer);
+                                                    const colorMap: Record<string, string> = {
+                                                        'No Data': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+                                                        'E': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                                                        'D': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+                                                        'C': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                                                        'B': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                                        'A': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    };
+                                                    return (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${colorMap[codScore.score]}`}>
+                                                                {codScore.display}
+                                                            </span>
+                                                            {codScore.rate !== null && (
+                                                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                                    {customer.successfulCODOrders}/{customer.totalCODOrders} COD
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-2">

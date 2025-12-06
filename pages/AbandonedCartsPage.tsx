@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '../supabase';
 import type { AbandonedCart, User, UserRole } from '../types';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
@@ -13,6 +13,7 @@ import FilterIcon from '../components/icons/FilterIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import CalendarIcon from '../components/icons/CalendarIcon';
 import { useToast } from '../contexts/ToastContext';
+import { useNotificationCount } from '../contexts/NotificationCountContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 
@@ -34,6 +35,7 @@ const AbandonedCartsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { showToast } = useToast();
+    const { setNewAbandonedCount } = useNotificationCount();
     const [cartSoundEnabled, setCartSoundEnabled] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
         const stored = localStorage.getItem('abandoned_sound_enabled');
@@ -88,6 +90,11 @@ const AbandonedCartsPage: React.FC = () => {
                 } as AbandonedCart;
             });
             setCarts(cartsList);
+            
+            // Track new (uncontacted) abandoned carts for notification badge
+            const newCartsCount = (cartsList || []).filter((c: AbandonedCart) => c.status === 'New').length;
+            setNewAbandonedCount(newCartsCount);
+            
             lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
         } catch (error) {
             console.error("Error fetching abandoned carts:", error);
@@ -122,7 +129,7 @@ const AbandonedCartsPage: React.FC = () => {
         }
     };
 
-    const refreshAbandonedSilently = async () => {
+    const refreshAbandonedSilently = useCallback(async () => {
         try {
             const { data: cartsData, error } = await supabase
                 .from('abandoned_carts')
@@ -138,22 +145,29 @@ const AbandonedCartsPage: React.FC = () => {
 
             const previousIds = lastCartIdsRef.current;
             const newOnes = cartsList.filter(c => !previousIds.has(c.id));
+            console.log('[Polling Carts] Previous:', previousIds.size, 'New:', newOnes.length);
             if (previousIds.size > 0 && newOnes.length > 0) {
+                console.log('[Notification Carts] Showing toast for', newOnes.length, 'new carts');
                 showToast(`${newOnes.length} keranjang baru tercatat`, 'info');
                 playTone(660);
             }
 
             setCarts(cartsList);
+            
+            // Update notification count for new abandoned carts
+            const newCartsCount = (cartsList || []).filter((c: AbandonedCart) => c.status === 'New').length;
+            setNewAbandonedCount(newCartsCount);
+            
             lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
         } catch (err) {
             console.error('Silent refresh abandoned carts failed:', err);
         }
-    };
+    }, [showToast, playTone, setNewAbandonedCount]);
 
     useEffect(() => {
         const interval = setInterval(() => refreshAbandonedSilently(), 60000); // 60s polling
         return () => clearInterval(interval);
-    }, [showToast]);
+    }, [refreshAbandonedSilently]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {

@@ -469,6 +469,8 @@ export interface CSPerformanceData {
 }
 
 // Types for Customers Page
+export type CustomerCODScore = 'No Data' | 'E' | 'D' | 'C' | 'B' | 'A';
+
 export interface Customer {
     id: string;
     name: string;
@@ -480,6 +482,8 @@ export interface Customer {
     joinDate: string;
     address: string;
     rejectedOrders: number;
+    totalCODOrders?: number; // Total pesanan COD
+    successfulCODOrders?: number; // COD yang berhasil diterima (Delivered)
 }
 
 // Types for Notifications

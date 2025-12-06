@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { Order, OrderStatus, MessageTemplates, Form, ShippingSettings, PaymentSettings, UserRole, User, Brand } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
@@ -34,7 +34,7 @@ import AddressInput, { type AddressData } from '../components/AddressInput';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import FilterIcon from '../components/icons/FilterIcon'; 
 import ConfirmationModal from '../components/ConfirmationModal';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/ToastContext';\nimport { useNotificationCount } from '../contexts/NotificationCountContext';
 
 // --- Helper Components & Functions ---
 
@@ -62,8 +62,7 @@ const OrdersPage: React.FC = () => {
   const [csAgents, setCsAgents] = useState<any[]>([]); // CS agents for modal lookups
   const [brands, setBrands] = useState<Brand[]>([]); // All brands for modal lookups
   const [products, setProducts] = useState<any[]>([]); // All products for modal lookups
-  const [loading, setLoading] = useState(true);
-  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);\n  const { showToast } = useToast();\n  const { setNewOrdersCount } = useNotificationCount();
     const [orderSoundEnabled, setOrderSoundEnabled] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
         const stored = localStorage.getItem('orders_sound_enabled');
@@ -242,6 +241,10 @@ const OrdersPage: React.FC = () => {
             ]);
         }
 
+        // Update notification count
+        const pendingCount = (ordersData || []).filter((o: any) => o.status === 'Pending').length;
+        setNewOrdersCount(pendingCount);
+
     } catch (error) {
         console.error("Error fetching data:", error);
         showToast("Gagal memuat data pesanan.", "error");
@@ -276,47 +279,50 @@ const OrdersPage: React.FC = () => {
         }
     };
 
-    const refreshOrdersSilently = async () => {
-        try {
-                const { data: ordersData, error: ordersError } = await supabase
-                        .from('orders')
-                        .select('*')
-                        .is('deletedAt', null)
-                        .order('date', { ascending: false });
+  const refreshOrdersSilently = useCallback(async () => {
+    try {
+        const { data: ordersData, error: ordersError } = await supabase
+            .from('orders')
+            .select('*')
+            .is('deletedAt', null)
+            .order('date', { ascending: false });
 
-                if (ordersError) throw ordersError;
+        if (ordersError) throw ordersError;
 
-                const ordersList = (ordersData || []).map(data => {
-                        const typed = data as any;
-                        return {
-                                ...typed,
-                                productId: typed.product_id ?? typed.productId ?? null,
-                        } as Order;
-                });
+        const ordersList = (ordersData || []).map(data => {
+            const typed = data as any;
+            return {
+                ...typed,
+                productId: typed.product_id ?? typed.productId ?? null,
+            } as Order;
+        });
 
-                // Detect new arrivals
-                const previousIds = lastOrderIdsRef.current;
-                const newOnes = ordersList.filter(o => !previousIds.has(o.id));
-                if (previousIds.size > 0 && newOnes.length > 0) {
-                        showToast(`${newOnes.length} pesanan baru masuk`, 'success');
-                        playTone(880);
-                }
-
-                setOrders(ordersList);
-                lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
-        } catch (err) {
-                console.error('Silent refresh orders failed:', err);
+        // Detect new arrivals
+        const previousIds = lastOrderIdsRef.current;
+        const newOnes = ordersList.filter(o => !previousIds.has(o.id));
+        console.log('[Polling] Previous IDs:', previousIds.size, 'New orders:', newOnes.length);
+        if (previousIds.size > 0 && newOnes.length > 0) {
+            console.log('[Notification] Showing toast for', newOnes.length, 'new orders');
+            showToast(`${newOnes.length} pesanan baru masuk`, 'success');
+            playTone(880);
         }
-    };
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-                refreshOrdersSilently();
-        }, 45000); // 45s polling
-        return () => clearInterval(interval);
-    }, [showToast]);
-
-    useEffect(() => {
+        setOrders(ordersList);
+        
+        // Update notification count for pending orders
+        const pendingCount = (ordersList || []).filter((o: any) => o.status === 'Pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
+    } catch (err) {
+        console.error('Silent refresh orders failed:', err);
+    }
+  }, [showToast, playTone, setNewOrdersCount]);  useEffect(() => {
+    const interval = setInterval(() => {
+        refreshOrdersSilently();
+    }, 45000); // 45s polling
+    return () => clearInterval(interval);
+  }, [refreshOrdersSilently]);    useEffect(() => {
         if (typeof window !== 'undefined') {
                 localStorage.setItem('orders_sound_enabled', orderSoundEnabled ? 'true' : 'false');
         }

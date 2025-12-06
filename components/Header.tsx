@@ -12,6 +12,7 @@ import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to
 import type { Notification } from '../types';
 import BellIcon from './icons/BellIcon';
 import { supabase } from '../supabase';
+import { useNotificationCount } from '../contexts/NotificationCountContext';
 
 
 const timeAgo = (isoString: string) => {
@@ -41,7 +42,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentTheme, user, logout }) => {
   const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setNotificationsOpen] = useState(false);
-
+  const { newOrdersCount, newAbandonedCount } = useNotificationCount();
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
@@ -218,6 +219,11 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
                             <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-ping"></span>
                         </>
                     )}
+                    {(newOrdersCount > 0 || newAbandonedCount > 0) && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-orange-600 rounded-full">
+                            {newOrdersCount + newAbandonedCount}
+                        </span>
+                    )}
                     <BellIcon className="h-6 w-6" />
                 </button>
                 {isNotificationsOpen && (
@@ -225,11 +231,23 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <div>
                                 <p className="text-lg font-bold text-slate-900 dark:text-white">Notifikasi</p>
-                                {hasUnread && (
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        {notifications.filter(n => !n.read).length} notifikasi baru
-                                    </p>
-                                )}
+                                <div className="flex gap-4 mt-1">
+                                    {newOrdersCount > 0 && (
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                                            📦 {newOrdersCount} pesanan baru
+                                        </p>
+                                    )}
+                                    {newAbandonedCount > 0 && (
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                            🛒 {newAbandonedCount} keranjang baru
+                                        </p>
+                                    )}
+                                    {hasUnread && (
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {notifications.filter(n => !n.read).length} lainnya
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             <button 
                               onClick={handleMarkAllAsRead} 
