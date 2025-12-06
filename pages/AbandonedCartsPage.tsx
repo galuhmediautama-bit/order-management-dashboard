@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import type { AbandonedCart, User, UserRole } from '../types';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
@@ -34,6 +34,13 @@ const AbandonedCartsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { showToast } = useToast();
+    const [cartSoundEnabled, setCartSoundEnabled] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return true;
+        const stored = localStorage.getItem('abandoned_sound_enabled');
+        return stored ? stored === 'true' : true;
+    });
+    const lastCartIdsRef = useRef<Set<string>>(new Set());
+    const audioCtxRef = useRef<AudioContext | null>(null);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [cartToDelete, setCartToDelete] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'New' | 'Contacted'>('all');
@@ -81,6 +88,7 @@ const AbandonedCartsPage: React.FC = () => {
                 } as AbandonedCart;
             });
             setCarts(cartsList);
+            lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
         } catch (error) {
             console.error("Error fetching abandoned carts:", error);
         } finally {
@@ -91,6 +99,67 @@ const AbandonedCartsPage: React.FC = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    // --- Lightweight polling for new abandoned carts ---
+    const playTone = (freq: number) => {
+        if (!cartSoundEnabled) return;
+        try {
+            const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioCtxRef.current = ctx;
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.type = 'triangle';
+            oscillator.frequency.value = freq;
+            gain.gain.value = 0.18;
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            const now = ctx.currentTime;
+            oscillator.start(now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+            oscillator.stop(now + 0.3);
+        } catch (err) {
+            console.warn('Audio notification failed:', err);
+        }
+    };
+
+    const refreshAbandonedSilently = async () => {
+        try {
+            const { data: cartsData, error } = await supabase
+                .from('abandoned_carts')
+                .select('*')
+                .order('timestamp', { ascending: false });
+
+            if (error) throw error;
+
+            const cartsList = (cartsData || []).map(cart => ({
+                ...cart,
+                timestamp: cart.timestamp,
+            } as AbandonedCart));
+
+            const previousIds = lastCartIdsRef.current;
+            const newOnes = cartsList.filter(c => !previousIds.has(c.id));
+            if (previousIds.size > 0 && newOnes.length > 0) {
+                showToast(`${newOnes.length} keranjang baru tercatat`, 'info');
+                playTone(660);
+            }
+
+            setCarts(cartsList);
+            lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
+        } catch (err) {
+            console.error('Silent refresh abandoned carts failed:', err);
+        }
+    };
+
+    useEffect(() => {
+        const interval = setInterval(() => refreshAbandonedSilently(), 60000); // 60s polling
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('abandoned_sound_enabled', cartSoundEnabled ? 'true' : 'false');
+        }
+    }, [cartSoundEnabled]);
 
     const handleFollowUp = async (cart: AbandonedCart) => {
         const waNumber = formatWaNumber(cart.customerPhone);
@@ -269,6 +338,13 @@ const AbandonedCartsPage: React.FC = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                     <DateRangePicker value={dateRange} onChange={setDateRange} />
+                    <button
+                        onClick={() => setCartSoundEnabled(prev => !prev)}
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold shadow-md transition-all ${cartSoundEnabled ? 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'}`}
+                        title="Toggle notifikasi suara keranjang"
+                    >
+                        <span>{cartSoundEnabled ? '🔔 Suara ON' : '🔕 Suara OFF'}</span>
+                    </button>
                     <button 
                         onClick={handleExportCSV}
                         disabled={isExporting || filteredCarts.length === 0}

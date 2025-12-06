@@ -64,6 +64,13 @@ const OrdersPage: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]); // All products for modal lookups
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+    const [orderSoundEnabled, setOrderSoundEnabled] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return true;
+        const stored = localStorage.getItem('orders_sound_enabled');
+        return stored ? stored === 'true' : true;
+    });
+    const lastOrderIdsRef = useRef<Set<string>>(new Set());
+    const audioCtxRef = useRef<AudioContext | null>(null);
   
   // State for Filters
   const [activeStatusFilter, setActiveStatusFilter] = useState<Set<OrderStatus>>(new Set());
@@ -178,6 +185,7 @@ const OrdersPage: React.FC = () => {
             } as Order;
         });
         setOrders(ordersList);
+        lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
 
         // 3. Forms (for manual order dropdown)
         const { data: formsData } = await supabase.from('forms').select('*');
@@ -243,8 +251,76 @@ const OrdersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData();
+        fetchData();
   }, []);
+
+    // --- Lightweight polling for new orders ---
+    const playTone = (freq: number) => {
+        if (!orderSoundEnabled) return;
+        try {
+                const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+                audioCtxRef.current = ctx;
+                const oscillator = ctx.createOscillator();
+                const gain = ctx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = freq;
+                gain.gain.value = 0.2;
+                oscillator.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+                oscillator.start(now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+                oscillator.stop(now + 0.3);
+        } catch (err) {
+                console.warn('Audio notification failed:', err);
+        }
+    };
+
+    const refreshOrdersSilently = async () => {
+        try {
+                const { data: ordersData, error: ordersError } = await supabase
+                        .from('orders')
+                        .select('*')
+                        .is('deletedAt', null)
+                        .order('date', { ascending: false });
+
+                if (ordersError) throw ordersError;
+
+                const ordersList = (ordersData || []).map(data => {
+                        const typed = data as any;
+                        return {
+                                ...typed,
+                                productId: typed.product_id ?? typed.productId ?? null,
+                        } as Order;
+                });
+
+                // Detect new arrivals
+                const previousIds = lastOrderIdsRef.current;
+                const newOnes = ordersList.filter(o => !previousIds.has(o.id));
+                if (previousIds.size > 0 && newOnes.length > 0) {
+                        showToast(`${newOnes.length} pesanan baru masuk`, 'success');
+                        playTone(880);
+                }
+
+                setOrders(ordersList);
+                lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
+        } catch (err) {
+                console.error('Silent refresh orders failed:', err);
+        }
+    };
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+                refreshOrdersSilently();
+        }, 45000); // 45s polling
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+                localStorage.setItem('orders_sound_enabled', orderSoundEnabled ? 'true' : 'false');
+        }
+    }, [orderSoundEnabled]);
 
   // --- Actions ---
 
@@ -720,6 +796,13 @@ const OrdersPage: React.FC = () => {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
             <DateRangePicker value={dateRange} onChange={setDateRange} />
+                        <button
+                            onClick={() => setOrderSoundEnabled(prev => !prev)}
+                            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold shadow-md transition-all ${orderSoundEnabled ? 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'}`}
+                            title="Toggle notifikasi suara pesanan"
+                        >
+                            <span>{orderSoundEnabled ? '🔔 Suara ON' : '🔕 Suara OFF'}</span>
+                        </button>
             <button 
               onClick={handleExportExcel} 
               disabled={isExporting || filteredOrders.length === 0}
