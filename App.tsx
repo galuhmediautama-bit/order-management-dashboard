@@ -190,7 +190,18 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // Check if user is on reset password flow from email link
+      const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
+      const isResetPasswordFlow = window.location.hash.includes('reset-password') || 
+                                    hashParams.get('type') === 'recovery';
+      
       if (session?.user) {
+        // If on reset password flow, don't auto-login - let user reset password first
+        if (isResetPasswordFlow) {
+          setUser(null);
+          setLoadingAuthState(false);
+          return;
+        }
         // Check if user status is active in the users table
         validateUserStatus(session.user);
       } else {
