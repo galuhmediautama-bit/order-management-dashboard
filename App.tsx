@@ -184,8 +184,18 @@ const AppContent: React.FC = () => {
     
     // Handle password recovery flow from email
     if (authType === 'recovery') {
-      // Redirect to reset password page with hash
-      window.location.hash = '#/reset-password';
+      console.log('🔐 Recovery flow detected, redirecting to reset password...');
+      // Get all URL params to preserve access_token
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token') || hashParams.get('access_token');
+      const refreshToken = params.get('refresh_token') || hashParams.get('refresh_token');
+      
+      // Redirect to reset password WITH tokens in hash
+      if (accessToken) {
+        window.location.hash = `#/reset-password?access_token=${accessToken}${refreshToken ? `&refresh_token=${refreshToken}` : ''}&type=recovery`;
+      } else {
+        window.location.hash = '#/reset-password';
+      }
       return;
     }
 

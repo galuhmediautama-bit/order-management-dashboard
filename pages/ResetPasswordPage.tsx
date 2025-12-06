@@ -20,7 +20,44 @@ const ResetPasswordPage: React.FC = () => {
     useEffect(() => {
         // Check if user came from password reset email
         const checkSession = async () => {
+            // Parse hash params (format: #/reset-password?access_token=xxx&type=recovery)
+            const hash = window.location.hash;
+            const queryStart = hash.indexOf('?');
+            const hashParams = queryStart >= 0 ? new URLSearchParams(hash.substring(queryStart + 1)) : new URLSearchParams();
+            
+            const accessToken = hashParams.get('access_token');
+            const type = hashParams.get('type');
+            
+            console.log('🔐 Reset Password - Checking tokens:', { 
+                hasAccessToken: !!accessToken, 
+                type,
+                fullHash: hash
+            });
+
+            if (accessToken && type === 'recovery') {
+                // Token exists in URL, set session with it
+                console.log('✅ Recovery token found, setting session...');
+                try {
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: hashParams.get('refresh_token') || ''
+                    });
+                    
+                    if (error) throw error;
+                    if (data.session) {
+                        console.log('✅ Session established from recovery token');
+                        setIsValidSession(true);
+                        return;
+                    }
+                } catch (err) {
+                    console.error('❌ Failed to set session from token:', err);
+                }
+            }
+
+            // Fallback: check existing session
             const { data: { session } } = await supabase.auth.getSession();
+            console.log('🔍 Session check:', { hasSession: !!session });
+            
             if (session) {
                 setIsValidSession(true);
             } else {
