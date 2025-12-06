@@ -1,3 +1,11 @@
+// Type definitions for role permissions
+export interface MenuAccess {
+  menus: string[];
+  features: string[];
+}
+
+export type RolePermissionMap = Record<string, MenuAccess>;
+
 // All available menus and features for role-based access control
 export const ALL_MENUS = [
   { id: 'dashboard', name: 'Dasbor', category: 'menu', description: 'Dashboard Analytics' },

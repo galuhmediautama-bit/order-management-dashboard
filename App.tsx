@@ -12,6 +12,7 @@ import { SettingsProvider, SettingsContext } from './contexts/SettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationCountProvider } from './contexts/NotificationCountContext';
+import { RolePermissionsProvider } from './contexts/RolePermissionsContext';
 
 // Helper for lazy loading with retry mechanism to handle slow/unstable internet connections
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -300,7 +301,9 @@ const App: React.FC = () => (
     <ToastProvider>
       <SettingsProvider>
         <NotificationCountProvider>
-          <AppContent />
+          <RolePermissionsProvider>
+            <AppContent />
+          </RolePermissionsProvider>
         </NotificationCountProvider>
       </SettingsProvider>
     </ToastProvider>
