@@ -18,53 +18,47 @@ const ResetPasswordPage: React.FC = () => {
     const [isValidSession, setIsValidSession] = useState(false);
 
     useEffect(() => {
-        // Check if user came from password reset email
-        const checkSession = async () => {
-            // Parse hash params (format: #/reset-password?access_token=xxx&type=recovery)
-            const hash = window.location.hash;
-            const queryStart = hash.indexOf('?');
-            const hashParams = queryStart >= 0 ? new URLSearchParams(hash.substring(queryStart + 1)) : new URLSearchParams();
+        // Listen for auth state changes to catch recovery session
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('🔐 Auth state change:', { event, hasSession: !!session });
             
-            const accessToken = hashParams.get('access_token');
-            const type = hashParams.get('type');
-            
-            console.log('🔐 Reset Password - Checking tokens:', { 
-                hasAccessToken: !!accessToken, 
-                type,
-                fullHash: hash
-            });
-
-            if (accessToken && type === 'recovery') {
-                // Token exists in URL, set session with it
-                console.log('✅ Recovery token found, setting session...');
-                try {
-                    const { data, error } = await supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: hashParams.get('refresh_token') || ''
-                    });
-                    
-                    if (error) throw error;
-                    if (data.session) {
-                        console.log('✅ Session established from recovery token');
-                        setIsValidSession(true);
-                        return;
-                    }
-                } catch (err) {
-                    console.error('❌ Failed to set session from token:', err);
-                }
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('✅ Password recovery event detected');
+                setIsValidSession(true);
+                setError('');
+            } else if (session && event === 'SIGNED_IN') {
+                console.log('✅ User signed in (recovery flow)');
+                setIsValidSession(true);
+                setError('');
             }
+        });
 
-            // Fallback: check existing session
+        // Also check current session on mount
+        const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
-            console.log('🔍 Session check:', { hasSession: !!session });
+            console.log('🔍 Initial session check:', { hasSession: !!session });
             
             if (session) {
                 setIsValidSession(true);
+                setError('');
             } else {
-                setError('⛔ Link reset password tidak valid atau sudah kadaluarsa. Silakan request reset password lagi.');
+                // Give auth state change listener time to fire
+                setTimeout(() => {
+                    supabase.auth.getSession().then(({ data: { session: laterSession } }) => {
+                        if (!laterSession) {
+                            setError('⛔ Link reset password tidak valid atau sudah kadaluarsa. Silakan request reset password lagi.');
+                        }
+                    });
+                }, 1000);
             }
         };
+        
         checkSession();
+
+        // Cleanup subscription
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     const handleResetPassword = async (e: React.FormEvent) => {

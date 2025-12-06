@@ -177,28 +177,10 @@ const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
-    // Handle Supabase auth callbacks and form URLs
+    // Handle form URLs only (let Supabase handle auth callbacks automatically)
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
-    const authType = params.get('type');
     
-    // Handle password recovery flow from email
-    if (authType === 'recovery') {
-      console.log('🔐 Recovery flow detected, redirecting to reset password...');
-      // Get all URL params to preserve access_token
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = params.get('access_token') || hashParams.get('access_token');
-      const refreshToken = params.get('refresh_token') || hashParams.get('refresh_token');
-      
-      // Redirect to reset password WITH tokens in hash
-      if (accessToken) {
-        window.location.hash = `#/reset-password?access_token=${accessToken}${refreshToken ? `&refresh_token=${refreshToken}` : ''}&type=recovery`;
-      } else {
-        window.location.hash = '#/reset-password';
-      }
-      return;
-    }
-
     // Smart redirect for clean form URLs (?form_id=...)
     if (formId) {
         window.history.replaceState(null, '', window.location.pathname);
@@ -232,7 +214,16 @@ const AppContent: React.FC = () => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 Global Auth Event:', event);
+      
+      // Handle password recovery flow
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('✅ PASSWORD_RECOVERY event detected globally, redirecting to reset password');
+        window.location.hash = '#/reset-password';
+        return;
+      }
+      
       if (session?.user) {
         validateUserStatus(session.user);
       } else {
