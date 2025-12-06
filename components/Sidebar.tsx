@@ -140,6 +140,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         if (!currentUserRole) return false;
         if (currentUserRole === 'Super Admin') return true;
 
+        // Debug logging for Advertiser
+        if (currentUserRole === 'Advertiser') {
+            console.log('🔍 Advertiser canSee check:', { itemName: item.name, allowedRoles: item.allowedRoles, currentUserRole });
+        }
+
         // If specific roles are defined for the item, check them
         if (item.allowedRoles && item.allowedRoles.length > 0) {
             const canAccess = item.allowedRoles.includes(currentUserRole);
