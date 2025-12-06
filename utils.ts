@@ -32,6 +32,7 @@ export const getNormalizedRole = (role: string | undefined, email?: string | nul
     if (lower === 'admin' || lower === 'administrator') return 'Admin';
     if (lower === 'keuangan' || lower === 'finance') return 'Keuangan';
     if (lower === 'customer service' || lower === 'cs' || lower === 'support') return 'Customer service';
+    if (lower === 'gudang' || lower === 'warehouse' || lower === 'wh') return 'Gudang';
     if (lower === 'advertiser' || lower === 'marketing' || lower === 'ads') return 'Advertiser';
     if (lower === 'partner' || lower === 'partnert' || lower === 'mitra') return 'Partner';
 
