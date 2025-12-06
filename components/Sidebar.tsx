@@ -56,7 +56,6 @@ const pageToPath: Record<string, string> = {
     'Merek': '/pengaturan/merek',
     'Manajemen CS': '/pengaturan/cs',
     'Pelacakan': '/pengaturan/pelacakan',
-    'Template Pesan': '/pengaturan/template-pesan',
     'Pengaturan Pengumuman': '/pengaturan/pengumuman',
     'Pengumuman': '/pengaturan/pengumuman/kelola',
     'Permintaan Hapus': '/pengaturan/permintaan-hapus',
@@ -215,7 +214,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           { name: 'Manajemen CS', icon: CustomerServiceIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'CuanRank', icon: TrophyIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'Pelacakan', icon: TrackingIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
-          { name: 'Template Pesan', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'Pengaturan Pengumuman', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
           { name: 'Pengumuman', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
         ]
