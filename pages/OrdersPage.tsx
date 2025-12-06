@@ -317,12 +317,16 @@ const OrdersPage: React.FC = () => {
     } catch (err) {
         console.error('Silent refresh orders failed:', err);
     }
-  }, [showToast, playTone, setNewOrdersCount]);  useEffect(() => {
+  }, [showToast, playTone, setNewOrdersCount]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
         refreshOrdersSilently();
     }, 45000); // 45s polling
     return () => clearInterval(interval);
-  }, [refreshOrdersSilently]);    useEffect(() => {
+  }, [refreshOrdersSilently]);
+
+  useEffect(() => {
         if (typeof window !== 'undefined') {
                 localStorage.setItem('orders_sound_enabled', orderSoundEnabled ? 'true' : 'false');
         }
