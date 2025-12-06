@@ -118,6 +118,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/formulir/baru" element={<FormEditorPage />} />
                 <Route path="/formulir/edit/:formId" element={<FormEditorPage />} />
                 <Route path="/pengaturan-akun" element={<ProfilePage />} />
+                <Route path="/pengaturan" element={<SettingsPage subPage="Pengaturan Website" />} />
                 <Route path="/pengaturan/website" element={<SettingsPage subPage="Pengaturan Website" />} />
                 <Route path="/pengaturan/pengguna" element={<SettingsPage subPage="Manajemen Pengguna" />} />
                 <Route path="/pengaturan/peran" element={<SettingsPage subPage="Manajemen Peran" />} />
