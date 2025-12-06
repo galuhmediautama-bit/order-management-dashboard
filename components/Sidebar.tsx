@@ -173,7 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         name: 'Pesanan', 
         label: 'Pesanan',
         icon: OrdersIcon,
-        allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service'],
+                allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Gudang'],
         subItems: [
             { name: 'Daftar Pesanan', icon: ClipboardListIcon },
             { name: 'Pesanan Tertinggal', icon: ArchiveIcon },
@@ -182,7 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
       { 
           name: 'Pelanggan', 
           icon: UsersIcon,
-          allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service']
+                    allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Gudang']
       },
       { 
         name: 'Laporan', 

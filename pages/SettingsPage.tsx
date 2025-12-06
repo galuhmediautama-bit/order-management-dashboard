@@ -706,6 +706,7 @@ const UserModal: React.FC<{
             case 'Admin': return 'Akses manajemen operasional (User, Produk, Pengaturan), tetapi terbatas pada data sensitif tertentu.';
             case 'Keuangan': return 'Fokus pada verifikasi pembayaran, laporan penghasilan tim, dan data pesanan.';
             case 'Customer service': return 'Menangani pesanan, mengubah status, dan melihat penghasilan pribadi.';
+            case 'Gudang': return 'Mengelola pemrosesan gudang: cek pesanan selesai, siapkan pengiriman, dan update resi.';
             case 'Advertiser': return 'Mengelola formulir produk, melihat laporan iklan, dan penghasilan pribadi.';
             case 'Partner': return 'Mitra eksternal dengan akses terbatas (seperti melihat dasbor/laporan tertentu).';
             default: return '';
@@ -739,6 +740,7 @@ const UserModal: React.FC<{
                                         <option value="Admin">Admin</option>
                                         <option value="Keuangan">Keuangan</option>
                                         <option value="Customer service">Customer Service</option>
+                                        <option value="Gudang">Gudang</option>
                                         <option value="Advertiser">Advertiser</option>
                                         <option value="Partner">Partner</option>
                                     </>
@@ -1215,6 +1217,7 @@ const UserManagement: React.FC = () => {
     const activeCount = users.filter(u => u.status === 'Aktif').length;
     const superAdminCount = users.filter(u => u.role === 'Super Admin').length;
     const csCount = users.filter(u => u.role === 'Customer service').length;
+    const gudangCount = users.filter(u => u.role === 'Gudang').length;
     
     return (
         <div className="space-y-6">
@@ -1230,7 +1233,7 @@ const UserManagement: React.FC = () => {
                 </div>
                 
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                     <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-purple-100 dark:border-purple-800/50 hover:scale-105 transition-transform">
                         <div className="flex items-center justify-between">
                             <div>
@@ -1254,6 +1257,19 @@ const UserManagement: React.FC = () => {
                             <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl">
                                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/50 hover:scale-105 transition-transform">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tim Gudang</p>
+                                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{gudangCount}</p>
+                            </div>
+                            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-xl">
+                                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7l9-4 9 4-9 4-9-4zm0 6l9 4 9-4m-9 4v-4" />
                                 </svg>
                             </div>
                         </div>
@@ -1380,6 +1396,7 @@ const UserManagement: React.FC = () => {
                             <option value="Admin">👔 Admin</option>
                             <option value="Keuangan">💰 Keuangan</option>
                             <option value="Customer service">💬 Customer Service</option>
+                            <option value="Gudang">📦 Gudang</option>
                             <option value="Advertiser">📢 Advertiser</option>
                             <option value="Partner">🤝 Partner</option>
                         </select>
@@ -1566,6 +1583,11 @@ const DEFAULT_ROLES = [
         defaultDesc: 'Menangani pesanan masuk, melayani pelanggan, dan memproses COD.'
     },
     { 
+        name: 'Gudang', 
+        permissions: ['Proses Pesanan Selesai', 'Kelola Pengiriman & Resi', 'Koordinasi dengan CS', 'Kontrol Stok (terbatas)'],
+        defaultDesc: 'Tim warehouse untuk memproses pesanan yang sudah ditutup CS dan menyiapkan pengiriman.'
+    },
+    { 
         name: 'Advertiser', 
         permissions: ['Buat/Edit Formulir', 'Laporan Iklan', 'Pelacakan Pixel', 'Penghasilan Pribadi'],
         defaultDesc: 'Mengelola kampanye iklan, landing page, dan analisis performa.'
@@ -1610,6 +1632,7 @@ const EditRoleModal: React.FC<{
         'Admin': '👔',
         'Keuangan': '💰',
         'Customer service': '💬',
+        'Gudang': '📦',
         'Advertiser': '📢',
         'Partner': '🤝'
     };
@@ -1844,6 +1867,7 @@ const RoleManagement: React.FC = () => {
                                 'Admin': '👔',
                                 'Keuangan': '💰',
                                 'Customer service': '💬',
+                                'Gudang': '📦',
                                 'Advertiser': '📢',
                                 'Partner': '🤝'
                             };

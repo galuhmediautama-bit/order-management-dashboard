@@ -95,7 +95,7 @@ export interface CSAgent {
 
 
 // Re-added User and Role types for Settings pages
-export type UserRole = 'Super Admin' | 'Admin' | 'Keuangan' | 'Customer service' | 'Advertiser' | 'Partner';
+export type UserRole = 'Super Admin' | 'Admin' | 'Keuangan' | 'Customer service' | 'Gudang' | 'Advertiser' | 'Partner';
 export type UserStatus = 'Aktif' | 'Tidak Aktif';
 
 export interface User {
