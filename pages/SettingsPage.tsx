@@ -32,6 +32,7 @@ import ChatBubbleIcon from '../components/icons/ChatBubbleIcon'; // Ensure this 
 import BellIcon from '../components/icons/BellIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 import { useToast } from '../contexts/ToastContext'; // Import Toast Context
+import RolePermissionManager from '../components/RolePermissionManager'; // Import new component
 
 // ... (UserModal, DeleteUserModal, ResetPasswordConfirmModal, UserManagement, RoleManagement, WebsiteSettings, DomainSettings components remain unchanged) ...
 // (I will assume they are unchanged and skip outputting them to save space if allowed, but the instruction says "Full content of file_1". 
@@ -1769,6 +1770,7 @@ const RoleManagement: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingRole, setEditingRole] = useState<Role | null>(null);
+    const [managingPermissions, setManagingPermissions] = useState<string | null>(null);
     const { showToast } = useToast();
 
     const fetchRoles = async () => {
@@ -1812,6 +1814,32 @@ const RoleManagement: React.FC = () => {
         setRoles(prev => prev.map(r => r.id === roleId ? { ...r, description, permissions } : r));
         setEditingRole(null);
         showToast('Peran berhasil diperbarui', 'success');
+    };
+
+    const handleSavePermissions = async (roleName: string, menuIds: string[], featureIds: string[]) => {
+        try {
+            // Save role permissions to database
+            // For now, save to settings table as a JSON blob
+            const currentSettings = await supabase.from('settings').select('rolePermissions').eq('id', 'rolePermissions').single();
+            
+            const rolePermissions = currentSettings?.data?.rolePermissions || {};
+            rolePermissions[roleName] = {
+                menus: menuIds,
+                features: featureIds,
+                updatedAt: new Date().toISOString()
+            };
+
+            await supabase.from('settings').upsert({
+                id: 'rolePermissions',
+                rolePermissions: rolePermissions
+            });
+
+            showToast(`Izin untuk peran "${roleName}" berhasil disimpan`, 'success');
+            setManagingPermissions(null);
+        } catch (error) {
+            console.error('Error saving role permissions:', error);
+            showToast('Gagal menyimpan izin peran', 'error');
+        }
     };
 
     return (
@@ -1913,7 +1941,7 @@ const RoleManagement: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -1929,6 +1957,15 @@ const RoleManagement: React.FC = () => {
                                                 </svg>
                                             </button>
                                         </div>
+                                        <button
+                                            onClick={() => setManagingPermissions(role.name)}
+                                            className="w-full text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Kelola Menu & Fitur
+                                        </button>
                                     </div>
                                 </div>
                             );
@@ -1937,6 +1974,13 @@ const RoleManagement: React.FC = () => {
                 )}
             </div>
             {editingRole && <EditRoleModal role={editingRole} onClose={() => setEditingRole(null)} onSave={handleSaveRole} />}
+            {managingPermissions && (
+                <RolePermissionManager 
+                    roleName={managingPermissions}
+                    onClose={() => setManagingPermissions(null)}
+                    onSave={handleSavePermissions}
+                />
+            )}
         </div>
     );
 };

@@ -121,6 +121,24 @@ export interface Role {
   userCount: number;
 }
 
+// Menu dan Feature items untuk Role Permission Management
+export interface MenuAccess {
+  id: string;
+  name: string;
+  category: 'menu' | 'feature';
+  description: string;
+  icon?: string;
+}
+
+// Role Permission Mapping - stored in settings or separate table
+export interface RolePermissionMap {
+  roleId: string; // Key: role name (e.g., 'Advertiser', 'Admin')
+  permissions: {
+    menus: string[]; // Array of menu names (e.g., ['Dasbor', 'Produk', 'Laporan'])
+    features: string[]; // Array of feature IDs (e.g., ['export_csv', 'edit_form', 'view_reports'])
+  };
+}
+
 // Types for Domain Settings
 export type DomainStatus = 'Terverifikasi' | 'Menunggu Verifikasi';
 export interface Domain {
