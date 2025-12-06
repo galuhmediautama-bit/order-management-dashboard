@@ -11,6 +11,7 @@ import SpinnerIcon from './components/icons/SpinnerIcon';
 import { SettingsProvider, SettingsContext } from './contexts/SettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { NotificationCountProvider } from './contexts/NotificationCountContext';
 
 // Helper for lazy loading with retry mechanism to handle slow/unstable internet connections
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -298,7 +299,9 @@ const App: React.FC = () => (
   <LanguageProvider>
     <ToastProvider>
       <SettingsProvider>
-        <AppContent />
+        <NotificationCountProvider>
+          <AppContent />
+        </NotificationCountProvider>
       </SettingsProvider>
     </ToastProvider>
   </LanguageProvider>
