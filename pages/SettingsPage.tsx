@@ -2097,7 +2097,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ subPage }) => {
         case 'Merek': return <BrandsPage />;
         case 'Manajemen CS': return <CustomerServicePage />;
         case 'Pelacakan': return <TrackingPage />;
-        case 'Pengaturan Pengumuman': return <AnnouncementSettingsPage />;
         case 'Pengumuman': return null; // Redirected to /pengaturan/pengumuman/kelola
         case 'Permintaan Hapus': return <DeletionRequestsPage />;
         case 'CuanRank': return <CuanRankPage />;

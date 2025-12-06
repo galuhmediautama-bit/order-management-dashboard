@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import type { Announcement, AnnouncementType, AnnouncementDisplayMode } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
@@ -7,9 +8,11 @@ import PencilIcon from '../components/icons/PencilIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import CheckIcon from '../components/icons/CheckIcon';
 import XIcon from '../components/icons/XIcon';
+import SettingsIcon from '../components/icons/SettingsIcon';
 import { useToast } from '../contexts/ToastContext';
 
 const AnnouncementsPage: React.FC = () => {
+    const navigate = useNavigate();
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -171,6 +174,13 @@ const AnnouncementsPage: React.FC = () => {
                     >
                         <PlusIcon className="w-5 h-5" />
                         <span>Tambah Pengumuman</span>
+                    </button>
+                    <button
+                        onClick={() => navigate('/pengaturan')}
+                        className="inline-flex items-center gap-2 px-5 py-3 bg-slate-600 dark:bg-slate-700 text-white rounded-xl hover:bg-slate-700 dark:hover:bg-slate-600 font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                    >
+                        <SettingsIcon className="w-5 h-5" />
+                        <span>Pengaturan</span>
                     </button>
                 </div>
             </div>
