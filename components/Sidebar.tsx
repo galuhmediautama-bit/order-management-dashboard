@@ -174,28 +174,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         if (!currentUserRole) return false;
         if (currentUserRole === 'Super Admin') return true;
 
-        // ALWAYS use RBAC system - get menu ID and check permissions
+        // Get RBAC menu ID for this item
         const rbacMenuId = menuNameToRbacId[item.name];
         
-        if (rbacMenuId) {
-            // Menu has RBAC mapping - use it
-            const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
-            
-            console.log(`🔍 Sidebar canSee: ${item.name}`, { 
-                rbacMenuId, 
-                userRole: currentUserRole, 
-                hasAccess
-            });
-
-            return hasAccess;
-        } else {
-            // No RBAC mapping found - log warning and deny access
-            console.warn(`⚠️ No RBAC mapping for menu: "${item.name}". Add to menuNameToRbacId!`);
+        if (!rbacMenuId) {
+            console.warn(`⚠️ No RBAC mapping for: "${item.name}"`);
             return false;
         }
+
+        // Check dynamic permissions via RBAC
+        const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
+        
+        console.log(`🔍 canSee "${item.name}":`, { 
+            rbacMenuId, 
+            userRole: currentUserRole, 
+            hasAccess
+        });
+
+        return hasAccess;
     };
 
-    // Declarative Navigation Structure
+    // Declarative Navigation Structure - NO hardcoded allowedRoles, use RBAC only!
     const allNavItems: NavItem[] = [
       { 
           name: 'Dasbor', 
@@ -205,17 +204,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         name: 'Produk', 
         label: 'Produk',
         icon: Squares2x2Icon,
-        allowedRoles: ['Super Admin', 'Admin', 'Advertiser'],
         subItems: [
-            { name: 'Daftar Produk', icon: Squares2x2Icon, allowedRoles: ['Super Admin', 'Admin'] },
-            { name: 'Daftar Formulir', icon: FormsIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
+            { name: 'Daftar Produk', icon: Squares2x2Icon },
+            { name: 'Daftar Formulir', icon: FormsIcon },
         ]
       },
       { 
         name: 'Pesanan', 
         label: 'Pesanan',
         icon: OrdersIcon,
-                allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Gudang'],
         subItems: [
             { name: 'Daftar Pesanan', icon: ClipboardListIcon },
             { name: 'Pesanan Tertinggal', icon: ArchiveIcon },
@@ -223,36 +220,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
       },
       { 
           name: 'Pelanggan', 
-          icon: UsersIcon,
-                    allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Gudang']
+          icon: UsersIcon
       },
       { 
         name: 'Laporan', 
         icon: ReportsIcon,
-        allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser', 'Partner'],
         subItems: [
-            { name: 'Laporan Iklan', icon: TrendingUpIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Advertiser'] },
-            { name: 'Laporan CS', icon: UserGroupIcon, allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service'] },
+            { name: 'Laporan Iklan', icon: TrendingUpIcon },
+            { name: 'Laporan CS', icon: UserGroupIcon },
         ]
       },
       { 
           name: 'Penghasilan', 
-          icon: BanknotesIcon,
-          allowedRoles: ['Super Admin', 'Admin', 'Keuangan', 'Customer service', 'Advertiser']
+          icon: BanknotesIcon
       },
       { 
         name: 'Pengaturan', 
         icon: SettingsIcon,
-        allowedRoles: ['Super Admin', 'Admin'],
         subItems: [
-          { name: 'Pengaturan Website', icon: WebsiteIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'Merek', icon: BrandsIcon, allowedRoles: ['Super Admin'] },
-          { name: 'Manajemen Pengguna', icon: UsersIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'Manajemen Peran', icon: RoleIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'Manajemen CS', icon: CustomerServiceIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'CuanRank', icon: TrophyIcon, allowedRoles: ['Super Admin', 'Admin'] },
-          { name: 'Pelacakan', icon: TrackingIcon, allowedRoles: ['Super Admin', 'Admin', 'Advertiser'] },
-          { name: 'Pengumuman', icon: ChatBubbleIcon, allowedRoles: ['Super Admin', 'Admin'] },
+          { name: 'Pengaturan Website', icon: WebsiteIcon },
+          { name: 'Merek', icon: BrandsIcon },
+          { name: 'Manajemen Pengguna', icon: UsersIcon },
+          { name: 'Manajemen Peran', icon: RoleIcon },
+          { name: 'Manajemen CS', icon: CustomerServiceIcon },
+          { name: 'CuanRank', icon: TrophyIcon },
+          { name: 'Pelacakan', icon: TrackingIcon },
+          { name: 'Pengumuman', icon: ChatBubbleIcon },
         ]
       },
     ];    const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
