@@ -44,6 +44,12 @@ export const ALL_FEATURES = [
   { id: 'edit_settings', name: 'Edit Settings', category: 'feature', description: 'Can edit system settings' },
   { id: 'sound_notifications', name: 'Sound Notifications', category: 'feature', description: 'Can toggle notification sounds' },
   { id: 'manual_order_creation', name: 'Manual Order Creation', category: 'feature', description: 'Can manually create orders' },
+  { id: 'view_sales_stats', name: 'View Sales Stats', category: 'feature', description: 'Can view sales statistics on dashboard' },
+  { id: 'view_charts', name: 'View Charts', category: 'feature', description: 'Can view sales and order charts' },
+  { id: 'view_top_products', name: 'View Top Products', category: 'feature', description: 'Can view top products ranking' },
+  { id: 'view_top_advertisers', name: 'View Top Advertisers', category: 'feature', description: 'Can view top advertisers ranking' },
+  { id: 'view_top_cs', name: 'View Top CS', category: 'feature', description: 'Can view top CS ranking' },
+  { id: 'view_recent_orders', name: 'View Recent Orders', category: 'feature', description: 'Can view recent orders on dashboard' },
 ] as const;
 
 // Default role permissions
@@ -60,27 +66,28 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     ],
     features: [
       'export_csv', 'edit_form', 'delete_order', 'change_order_status', 'view_earnings',
-      'manage_users', 'view_reports', 'edit_settings', 'sound_notifications', 'manual_order_creation'
+      'manage_users', 'view_reports', 'edit_settings', 'sound_notifications', 'manual_order_creation',
+      'view_sales_stats', 'view_charts', 'view_top_products', 'view_top_advertisers', 'view_top_cs', 'view_recent_orders'
     ],
   },
   'Keuangan': {
     menus: ['dashboard', 'orders', 'order_list', 'customers', 'reports', 'cs_reports', 'earnings'],
-    features: ['export_csv', 'view_earnings', 'view_reports'],
+    features: ['export_csv', 'view_earnings', 'view_reports', 'view_sales_stats', 'view_charts', 'view_top_cs', 'view_recent_orders'],
   },
   'Customer service': {
     menus: ['dashboard', 'orders', 'order_list', 'abandoned_carts', 'customers', 'earnings'],
-    features: ['export_csv', 'change_order_status', 'view_earnings', 'sound_notifications', 'manual_order_creation'],
+    features: ['export_csv', 'change_order_status', 'view_earnings', 'sound_notifications', 'manual_order_creation', 'view_sales_stats', 'view_recent_orders'],
   },
   'Gudang': {
     menus: ['dashboard', 'orders', 'order_list'],
-    features: ['change_order_status', 'sound_notifications'],
+    features: ['change_order_status', 'sound_notifications', 'view_recent_orders'],
   },
   'Advertiser': {
     menus: ['dashboard', 'products', 'form_list', 'reports', 'ad_reports', 'earnings'],
-    features: ['export_csv', 'edit_form', 'view_earnings', 'sound_notifications'],
+    features: ['export_csv', 'edit_form', 'view_earnings', 'sound_notifications', 'view_sales_stats', 'view_charts', 'view_top_products'],
   },
   'Partner': {
     menus: ['dashboard', 'reports', 'ad_reports'],
-    features: ['view_reports'],
+    features: ['view_reports', 'view_sales_stats', 'view_charts'],
   },
 };

@@ -15,6 +15,7 @@ import ClockIcon from '../components/icons/ClockIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
 import { supabase } from '../supabase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
+import { useRolePermissions } from '../contexts/RolePermissionsContext';
 
 
 const StatCard: React.FC<{
@@ -51,6 +52,7 @@ const StatCard: React.FC<{
 };
 
 const DashboardPage: React.FC = () => {
+    const { canUseFeature } = useRolePermissions();
     const [dateRange, setDateRange] = useState<DateRange>(() => {
         const endDate = new Date();
         const startDate = new Date();
@@ -394,8 +396,8 @@ const DashboardPage: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* Only show full dashboard for non-Advertiser roles */}
-          {(!currentUser || getNormalizedRole(currentUser.role) !== 'Advertiser') && (
+          {/* Sales Stats Cards - Check feature permission */}
+          {currentUser && canUseFeature('view_sales_stats', getNormalizedRole(currentUser.role)) && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3 md:gap-4">
             <StatCard 
               title="Total Penjualan" 
@@ -480,7 +482,8 @@ const DashboardPage: React.FC = () => {
         </>
       )}
 
-      {/* Charts Row */}
+      {/* Charts Row - Check feature permission */}
+      {currentUser && canUseFeature('view_charts', getNormalizedRole(currentUser.role)) && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-4 md:gap-4">
         {/* Main Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
@@ -585,9 +588,10 @@ const DashboardPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
-      {/* Top Products */}
-      {filteredDashboardData.topProducts.length > 0 && (
+      {/* Top Products - Check feature permission */}
+      {currentUser && canUseFeature('view_top_products', getNormalizedRole(currentUser.role)) && filteredDashboardData.topProducts.length > 0 && (
         <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
           <h2 className="text-base sm:text-base md:text-lg font-bold mb-4 text-slate-900 dark:text-white">Top 5 Produk Terlaris</h2>
           <div className="space-y-2.5 sm:space-y-2.5 md:space-y-3">
@@ -614,8 +618,8 @@ const DashboardPage: React.FC = () => {
 
       {/* Top Advertiser & Top CS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-4 md:gap-4">
-        {/* Top Advertiser */}
-        {filteredDashboardData.topAdvertisers.length > 0 && (
+        {/* Top Advertiser - Check feature permission */}
+        {currentUser && canUseFeature('view_top_advertisers', getNormalizedRole(currentUser.role)) && filteredDashboardData.topAdvertisers.length > 0 && (
           <div className="bg-white dark:bg-slate-800 p-4 sm:p-4 md:p-5 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
             <h2 className="text-base sm:text-base md:text-lg font-bold mb-3 text-slate-900 dark:text-white">🏆 Top Advertiser</h2>
             <div className="space-y-2">
@@ -641,8 +645,8 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Top Customer Service */}
-        {filteredDashboardData.topCS.length > 0 && (
+        {/* Top Customer Service - Check feature permission */}
+        {currentUser && canUseFeature('view_top_cs', getNormalizedRole(currentUser.role)) && filteredDashboardData.topCS.length > 0 && (
           <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
             <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">⭐ Top 5 Customer Service</h2>
             <div className="space-y-4">
@@ -670,6 +674,8 @@ const DashboardPage: React.FC = () => {
         )}
         </div>
 
+      {/* Recent Orders - Check feature permission */}
+      {currentUser && canUseFeature('view_recent_orders', getNormalizedRole(currentUser.role)) && (
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 sm:p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 gap-4">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Pesanan Terbaru</h2>
@@ -755,6 +761,7 @@ const DashboardPage: React.FC = () => {
             </div>
         </div>
        </div>
+       )}
     </div>
   );
 };
