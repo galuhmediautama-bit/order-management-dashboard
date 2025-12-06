@@ -280,7 +280,6 @@ const AnnouncementsPage: React.FC = () => {
                                     <TrashIcon className="w-4 h-4" />
                                     <span>Hapus</span>
                                 </button>
-                                </div>
                             </div>
                         </div>
                     ))}
