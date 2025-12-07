@@ -15,6 +15,7 @@ import { NotificationCountProvider } from './contexts/NotificationCountContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { RolePermissionsProvider } from './contexts/RolePermissionsContext';
 import { DialogProvider } from './contexts/DialogContext';
+import { showDevModeBanner } from './utils/devMode';
 
 // 🔒 DISABLE BROWSER NOTIFICATIONS - Use custom system only
 if ('Notification' in window && typeof window !== 'undefined') {
@@ -231,6 +232,11 @@ const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
+    // Show development mode banner if in dev
+    if (import.meta.env.DEV) {
+      showDevModeBanner();
+    }
+
     // Handle form URLs only (let Supabase handle auth callbacks automatically)
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
