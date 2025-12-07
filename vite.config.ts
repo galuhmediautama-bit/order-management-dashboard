@@ -28,6 +28,27 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
+      build: {
+        // Production optimizations
+        minify: 'terser',
+        terserOptions: {
+          compress: {
+            drop_console: mode === 'production', // Remove console.* in production
+            drop_debugger: true,
+            pure_funcs: mode === 'production' ? ['console.log', 'console.info', 'console.debug'] : []
+          }
+        },
+        // Optimize chunk size
+        chunkSizeWarningLimit: 1000,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+              'supabase': ['@supabase/supabase-js']
+            }
+          }
+        }
+      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

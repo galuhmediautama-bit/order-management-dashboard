@@ -23,11 +23,15 @@ if ('Notification' in window && typeof window !== 'undefined') {
   (window as any).Notification = class {
     static permission = 'denied';
     static requestPermission() {
-      console.log('🔒 Browser notification request denied - using custom notification system');
+      if (import.meta.env.DEV) {
+        console.log('🔒 Browser notification request denied - using custom notification system');
+      }
       return Promise.resolve('denied');
     }
     constructor(...args: any[]) {
-      console.log('🔒 Browser notification blocked - using custom system instead');
+      if (import.meta.env.DEV) {
+        console.log('🔒 Browser notification blocked - using custom system instead');
+      }
     }
   } as any;
 }
@@ -50,7 +54,9 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
     try {
       return await componentImport();
     } catch (error) {
-      console.error("Lazy load failed, retrying...", error);
+      if (import.meta.env.DEV) {
+        console.error("Lazy load failed, retrying...", error);
+      }
       // Retry after 1s
       await new Promise(resolve => setTimeout(resolve, 1000));
       try {
