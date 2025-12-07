@@ -1,44 +1,200 @@
-// Stub notification service
-// This will be expanded in Phase 2
-
 import type { Notification } from '../types';
+import { supabase } from '../firebase';
 
-// Stub: Get notifications
+// Get notifications for current user
 export async function getNotifications(options?: { limit?: number }) {
-  return [] as Notification[];
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const limit = options?.limit || 50;
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+
+    return (data || []).map((n: any) => ({
+      id: n.id,
+      type: n.type,
+      message: n.message,
+      timestamp: n.created_at,
+      read: n.is_read,
+      user_id: n.user_id,
+      order_id: n.order_id,
+      created_at: n.created_at,
+    })) as Notification[];
+  } catch (error) {
+    console.error('Error in getNotifications:', error);
+    return [];
+  }
 }
 
-// Stub: Get unread count
+// Get unread count
 export async function getUnreadCount() {
-  return 0;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 0;
+
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getUnreadCount:', error);
+    return 0;
+  }
 }
 
-// Stub: Subscribe to notifications
+// Subscribe to new notifications (INSERT)
 export function subscribeToNotifications(userId: string, callback: (notification: Notification) => void) {
-  return null;
+  if (!userId) return null;
+
+  const channel = supabase
+    .channel(`notifications-insert-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload: any) => {
+        const n = payload.new;
+        callback({
+          id: n.id,
+          type: n.type,
+          message: n.message,
+          timestamp: n.created_at,
+          read: n.is_read,
+          user_id: n.user_id,
+          order_id: n.order_id,
+          created_at: n.created_at,
+        });
+      }
+    )
+    .subscribe();
+
+  return channel;
 }
 
-// Stub: Subscribe to notification updates
+// Subscribe to notification updates (UPDATE - for read status)
 export function subscribeToNotificationUpdates(userId: string, callback: (notification: Notification) => void) {
-  return null;
+  if (!userId) return null;
+
+  const channel = supabase
+    .channel(`notifications-update-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload: any) => {
+        const n = payload.new;
+        callback({
+          id: n.id,
+          type: n.type,
+          message: n.message,
+          timestamp: n.created_at,
+          read: n.is_read,
+          user_id: n.user_id,
+          order_id: n.order_id,
+          created_at: n.created_at,
+        });
+      }
+    )
+    .subscribe();
+
+  return channel;
 }
 
-// Stub: Mark as read
+// Mark single notification as read
 export async function markAsRead(id: string) {
-  return true;
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error marking as read:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in markAsRead:', error);
+    return false;
+  }
 }
 
-// Stub: Mark all as read
+// Mark all notifications as read
 export async function markAllAsRead() {
-  return true;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('is_deleted', false);
+
+    if (error) {
+      console.error('Error marking all as read:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in markAllAsRead:', error);
+    return false;
+  }
 }
 
-// Stub: Delete notification
+// Delete (soft delete) a notification
 export async function deleteNotification(id: string) {
-  return true;
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_deleted: true })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteNotification:', error);
+    return false;
+  }
 }
 
-// Stub: Filter by role
+// Filter notifications by user role (client-side filtering)
 export function filterNotificationsByRole(notifications: Notification[], role: string) {
+  // All notifications are already filtered by user_id on server
+  // This is for additional role-based filtering if needed
   return notifications;
 }
