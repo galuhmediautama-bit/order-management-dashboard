@@ -10,6 +10,9 @@ interface ThankYouPixelEventProps {
 /**
  * Component to fire pixel event on thank you page WITHOUT re-initializing pixel.
  * Pixel should already be initialized on form page.
+ * 
+ * EVENT CUSTOM: eventName bisa di-custom dari form.trackingSettings.thankYouPage.meta.eventName
+ * Biasanya "Purchase" tapi bisa juga "Lead", "AddPaymentInfo", dll sesuai pilihan admin
  */
 const ThankYouPixelEvent: React.FC<ThankYouPixelEventProps> = ({ eventName, order, contentName }) => {
     

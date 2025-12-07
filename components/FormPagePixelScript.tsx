@@ -10,9 +10,10 @@ interface FormPagePixelScriptProps {
  * Component untuk tracking pixel DI FORM PAGE SAJA
  * - Initialize pixel (sekali)
  * - Track PageView (sekali)
- * - Track ViewContent/InitiateCheckout (sekali)
+ * - Track custom event dari form settings (ViewContent/AddToCart/InitiateCheckout/dll)
  * 
  * PENTING: Component ini HANYA di-render di form page, TIDAK di thank you page
+ * EVENT CUSTOM: Ambil dari form.trackingSettings.formPage.meta.eventName (dapat di-ubah admin di form editor)
  */
 const FormPagePixelScript: React.FC<FormPagePixelScriptProps> = ({ pixelIds, eventName, contentName }) => {
     
