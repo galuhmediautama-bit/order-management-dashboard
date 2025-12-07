@@ -2568,6 +2568,53 @@ const FormEditorPage: React.FC = () => {
                     </div>
                 </EditorCard>
 
+                <EditorCard icon={CheckCircleFilledIcon} title="Platform Tracking Terpilih">
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Pilih platform untuk fokus tracking pada campaign tertentu. Hanya pixel dari platform yang dipilih yang akan dimuat di halaman formulir.
+                        </p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {(
+                                [
+                                    { value: null, name: 'Semua Platform', icon: CheckCircleFilledIcon },
+                                    { value: 'meta' as const, name: 'Meta Pixel', icon: MetaIcon },
+                                    { value: 'tiktok' as const, name: 'TikTok Pixel', icon: TikTokIcon },
+                                    { value: 'google' as const, name: 'Google Analytics', icon: GoogleIcon },
+                                    { value: 'snack' as const, name: 'Snack Video', icon: SnackVideoIcon },
+                                ] as const
+                            ).map((platform) => {
+                                const IconComponent = platform.icon;
+                                const isSelected = form.assignedPlatform === platform.value;
+                                
+                                return (
+                                    <button
+                                        key={platform.value || 'all'}
+                                        type="button"
+                                        onClick={() => handleFieldChange('assignedPlatform', platform.value)}
+                                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                                            isSelected
+                                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
+                                                : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
+                                        }`}
+                                    >
+                                        <IconComponent className={`w-5 h-5 ${
+                                            isSelected ? 'text-indigo-600' : 'text-slate-600 dark:text-slate-400'
+                                        }`} />
+                                        <span className={`text-xs font-medium text-center ${
+                                            isSelected ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-300'
+                                        }`}>
+                                            {platform.name}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg text-sm text-indigo-700 dark:text-indigo-200">
+                            <strong>Info:</strong> Setting ini adalah default. Kamu bisa override dengan parameter URL: <code className="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs">?platform=meta|tiktok|google|snack</code>
+                        </div>
+                    </div>
+                </EditorCard>
+
                 <EditorCard icon={TrackingIcon} title="Pelacakan & Pixel">
                     <div className="space-y-6">
                         <div>

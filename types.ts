@@ -267,12 +267,7 @@ export interface PaymentSetting {
     order?: number;
 }
 
-export interface BankAccount {
-    id: number;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-}
+
 
 export interface BankTransferSetting extends PaymentSetting {
     accounts: BankAccount[];
