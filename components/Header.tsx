@@ -8,8 +8,10 @@ import SearchIcon from './icons/SearchIcon';
 import UserIcon from './icons/UserIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
+import BellIcon from './icons/BellIcon';
 import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to Supabase type
 import { supabase } from '../firebase';
+import { useNotificationContext } from '../contexts/NotificationContext';
 
 const timeAgo = (isoString: string) => {
     const date = new Date(isoString);
@@ -38,6 +40,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentTheme, user, logout }) => {
     const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
     const [userAvatar, setUserAvatar] = useState<string | undefined>(user.user_metadata?.avatar_url);
+    const { unreadCount } = useNotificationContext();
 
     const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +135,20 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
             <button className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 <SearchIcon className="h-6 w-6" />
             </button>
+
+            {/* Notification Bell */}
+            <Link 
+              to="/notifikasi"
+              className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all group"
+              title="Notifikasi"
+            >
+              <BellIcon className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
 
             {/* Theme Toggle */}
             <ThemeToggle toggleTheme={toggleTheme} theme={currentTheme} />
