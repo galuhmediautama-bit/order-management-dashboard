@@ -98,6 +98,7 @@ const ProductSalesPage = lazyWithRetry(() => import('./pages/ProductSalesPage'))
 const ProductDetailsPage = lazyWithRetry(() => import('./pages/ProductDetailsPage'));
 const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'));
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
+const PerformanceDashboardPage = lazyWithRetry(() => import('./pages/PerformanceDashboardPage'));
 
 
 const FormViewerWrapper: React.FC = () => {
@@ -182,6 +183,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
               <Route path="/produk/:productId/sales" element={<ProductSalesPage />} />
               <Route path="/produk/:productId/details" element={<ProductDetailsPage />} />
               <Route path="/analitik-produk" element={<ProductAnalyticsPage />} />
+              <Route path="/monitoring/performance" element={<PerformanceDashboardPage />} />
               <Route path="*" element={<Navigate to="/dashboard" />} />
             </Routes>
           </Suspense>

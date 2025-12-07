@@ -10,6 +10,7 @@ import SettingsIcon from './icons/SettingsIcon';
 import BrandsIcon from './icons/BrandsIcon';
 import CustomerServiceIcon from './icons/CustomerServiceIcon';
 import TrackingIcon from './icons/TrackingIcon';
+import GaugeIcon from './icons/GaugeIcon';
 import ChevronDownIcon from './icons/ChevronDownIcon';
 import UserIcon from './icons/UserIcon';
 import RoleIcon from './icons/RoleIcon';
@@ -62,6 +63,8 @@ const pageToPath: Record<string, string> = {
     'Profil Saya': '/profil',
     'Pelanggan': '/pelanggan',
     'Penghasilan': '/penghasilan',
+    'Monitoring': '#',
+    'Performance Dashboard': '/monitoring/performance',
 };
 
 // Map sidebar menu names to RBAC menu IDs from rolePermissions.ts
@@ -78,6 +81,8 @@ const menuNameToRbacId: Record<string, string> = {
     'Laporan Iklan': 'ad_reports',
     'Laporan CS': 'cs_reports',
     'Penghasilan': 'earnings',
+    'Monitoring': 'monitoring',
+    'Performance Dashboard': 'performance_dashboard',
     'Pengaturan': 'settings',
     'Pengaturan Website': 'website_settings',
     'Manajemen Peran': 'role_management',
@@ -254,6 +259,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           { name: 'Announcements' as const, icon: ChatBubbleIcon },
         ]
       },
+            {
+                name: 'Monitoring',
+                icon: GaugeIcon,
+                subItems: [
+                    { name: 'Performance Dashboard', icon: GaugeIcon }
+                ]
+            },
     ];    const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => canSee(sub));

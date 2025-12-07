@@ -181,6 +181,14 @@ class PerformanceMonitor {
         this.totalBytes = 0;
         this.latencies = [];
     }
+
+    /**
+     * Get recent metrics (most recent first)
+     */
+    getMetrics(limit: number = 50): PerformanceMetrics[] {
+        const slice = this.metrics.slice(-limit);
+        return slice.reverse();
+    }
 }
 
 // Create global instance

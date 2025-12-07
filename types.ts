@@ -29,7 +29,9 @@ export type Page =
   | 'Permintaan Hapus'
   | 'Penghasilan'
   | 'CuanRank' // Added for new feature
-  | 'Pengaturan Akun';
+  | 'Pengaturan Akun'
+  | 'Monitoring'
+  | 'Performance Dashboard';
 
 export interface NavItem {
   name: Page;
