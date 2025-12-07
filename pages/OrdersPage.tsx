@@ -33,7 +33,7 @@ import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import AddressInput, { type AddressData } from '../components/AddressInput';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
-import FilterIcon from '../components/icons/FilterIcon'; 
+import FilterIcon from '../components/icons/FilterIcon';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
 import { useNotificationCount } from '../contexts/NotificationCountContext';
@@ -58,18 +58,18 @@ const formatWaNumber = (num: string | null | undefined) => {
 // ... Modals will be updated below ...
 
 const OrdersPage: React.FC = () => {
-  const { canUseFeature } = useRolePermissions();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [forms, setForms] = useState<Form[]>([]); // For manual order
-  const [csUsers, setCsUsers] = useState<User[]>([]); // List of CS agents for assignment
-  const [allUsers, setAllUsers] = useState<User[]>([]); // ALL users for modal lookups
-  const [csAgents, setCsAgents] = useState<any[]>([]); // CS agents for modal lookups
-  const [brands, setBrands] = useState<Brand[]>([]); // All brands for modal lookups
-  const [products, setProducts] = useState<any[]>([]); // All products for modal lookups
-  const [loading, setLoading] = useState(true);
-  const { showToast } = useToast();
-  const { setNewOrdersCount } = useNotificationCount();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const { canUseFeature } = useRolePermissions();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [forms, setForms] = useState<Form[]>([]); // For manual order
+    const [csUsers, setCsUsers] = useState<User[]>([]); // List of CS agents for assignment
+    const [allUsers, setAllUsers] = useState<User[]>([]); // ALL users for modal lookups
+    const [csAgents, setCsAgents] = useState<any[]>([]); // CS agents for modal lookups
+    const [brands, setBrands] = useState<Brand[]>([]); // All brands for modal lookups
+    const [products, setProducts] = useState<any[]>([]); // All products for modal lookups
+    const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
+    const { setNewOrdersCount } = useNotificationCount();
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [orderSoundEnabled, setOrderSoundEnabled] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
         const stored = localStorage.getItem('orders_sound_enabled');
@@ -77,219 +77,219 @@ const OrdersPage: React.FC = () => {
     });
     const lastOrderIdsRef = useRef<Set<string>>(new Set());
     const audioCtxRef = useRef<AudioContext | null>(null);
-  
-  // State for Filters
-  const [activeStatusFilter, setActiveStatusFilter] = useState<Set<OrderStatus>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - 30);
-    return { startDate, endDate };
-  });
-  const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
-  const [selectedProductFilter, setSelectedProductFilter] = useState<string>('all');
-  const [selectedPaymentFilter, setSelectedPaymentFilter] = useState<Set<string>>(new Set());
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const [paymentDropdownOpen, setPaymentDropdownOpen] = useState(false);
-  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
-  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
-  
-  // Bulk Actions
-  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  const [isExporting, setIsExporting] = useState(false);
-  
-  // Dropdown Actions
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  
-  // Pending Deletions
-  const [pendingDeletionsCount, setPendingDeletionsCount] = useState<number>(0);
-  
-  // Modal States
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
-  
-  // Action Modal States
-  const [orderToProcess, setOrderToProcess] = useState<Order | null>(null); 
-  const [orderToShip, setOrderToShip] = useState<Order | null>(null); 
-  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null); 
-  const [orderToNotify, setOrderToNotify] = useState<Order | null>(null); 
-  const [orderToChangePayment, setOrderToChangePayment] = useState<Order | null>(null);
-  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
-  const [cancellationReason, setCancellationReason] = useState<string>('');
 
-  const [templates, setTemplates] = useState<MessageTemplates | null>(null);
-  const [cancellationReasons, setCancellationReasons] = useState<string[]>([]);
+    // State for Filters
+    const [activeStatusFilter, setActiveStatusFilter] = useState<Set<OrderStatus>>(new Set());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = useState<DateRange>(() => {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        return { startDate, endDate };
+    });
+    const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('all');
+    const [selectedProductFilter, setSelectedProductFilter] = useState<string>('all');
+    const [selectedPaymentFilter, setSelectedPaymentFilter] = useState<Set<string>>(new Set());
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+    const [paymentDropdownOpen, setPaymentDropdownOpen] = useState(false);
+    const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+    const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+
+    // Bulk Actions
+    const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+    const [isExporting, setIsExporting] = useState(false);
+
+    // Dropdown Actions
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+    // Pending Deletions
+    const [pendingDeletionsCount, setPendingDeletionsCount] = useState<number>(0);
+
+    // Modal States
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
+
+    // Action Modal States
+    const [orderToProcess, setOrderToProcess] = useState<Order | null>(null);
+    const [orderToShip, setOrderToShip] = useState<Order | null>(null);
+    const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+    const [orderToNotify, setOrderToNotify] = useState<Order | null>(null);
+    const [orderToChangePayment, setOrderToChangePayment] = useState<Order | null>(null);
+    const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+    const [cancellationReason, setCancellationReason] = useState<string>('');
+
+    const [templates, setTemplates] = useState<MessageTemplates | null>(null);
+    const [cancellationReasons, setCancellationReasons] = useState<string[]>([]);
     // Assignment state for inline CS assign
     const [assignTargetOrderId, setAssignTargetOrderId] = useState<string | null>(null);
     const [assignSelectedCsId, setAssignSelectedCsId] = useState<string>('');
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.payment-dropdown') && !target.closest('.status-dropdown') && !target.closest('.brand-dropdown') && !target.closest('.product-dropdown')) {
-        setPaymentDropdownOpen(false);
-        setStatusDropdownOpen(false);
-        setBrandDropdownOpen(false);
-        setProductDropdownOpen(false);
-      }
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.payment-dropdown') && !target.closest('.status-dropdown') && !target.closest('.brand-dropdown') && !target.closest('.product-dropdown')) {
+                setPaymentDropdownOpen(false);
+                setStatusDropdownOpen(false);
+                setBrandDropdownOpen(false);
+                setProductDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Fetch Data
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            // 1. User & Role
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: userDoc } = await withRetry(() =>
+                    supabase.from('users').select('*').eq('id', user.id).single().then(r => ({
+                        data: r.data,
+                        error: r.error
+                    }))
+                );
+                if (userDoc) {
+                    const role = getNormalizedRole(userDoc.role, user.email);
+                    setCurrentUser({ id: user.id, ...userDoc, role } as User);
+
+                    // Fetch pending deletions count for admin
+                    if (role === 'Admin' || role === 'Super Admin') {
+                        console.log('🔍 Fetching pending deletions for role:', role);
+                        const { count } = await withRetry(() =>
+                            supabase
+                                .from('pending_deletions')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('status', 'pending')
+                                .then(r => ({ count: r.count, error: r.error }))
+                        );
+                        console.log('🔍 Pending deletions result:', { count });
+                        if (count !== null) {
+                            setPendingDeletionsCount(count);
+                            console.log('✅ Set pending deletions count:', count);
+                        }
+                    }
+                } else {
+                    const role = getNormalizedRole(undefined, user.email);
+                    setCurrentUser({ id: user.id, role, name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
+                }
+            }
+
+            // 2. Orders (exclude soft-deleted orders)
+            // Optimized: Only select needed columns + limit to recent 500 orders + withRetry
+            const { data: ordersData } = await withRetry(() =>
+                supabase
+                    .from('orders')
+                    .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
+                    .is('deletedAt', null)
+                    .order('date', { ascending: false })
+                    .limit(500)
+                    .then(r => ({ data: r.data, error: r.error }))
+            );
+
+            const ordersList = (ordersData || []).map(data => {
+                const typed = data as any;
+                return {
+                    ...typed,
+                    productId: typed.product_id ?? typed.productId ?? null,
+                } as Order;
+            });
+            setOrders(ordersList);
+            lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
+
+            // 3. Forms (for manual order dropdown)
+            // Optimized: Only select needed columns + withRetry
+            const { data: formsData } = await withRetry(() =>
+                supabase.from('forms').select('id, title, brandId').then(r => ({ data: r.data, error: r.error }))
+            );
+            setForms((formsData || []).map(f => ({ ...f }) as Form));
+
+            // 4. Users (for CS assignment and modal lookups)
+            // Optimized: Only select needed columns + withRetry
+            const { data: usersData } = await withRetry(() =>
+                supabase.from('users').select('id, name, role, assignedBrandIds, status').then(r => ({ data: r.data, error: r.error }))
+            );
+            if (usersData) {
+                setAllUsers(usersData as User[]); // Store ALL users
+                const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
+                setCsUsers(cs as User[]);
+            }
+
+            // 4.5. CS Agents (for modal lookups - separate table from users)
+            // Optimized: Only select needed columns + withRetry
+            const { data: csAgentsData } = await withRetry(() =>
+                supabase.from('cs_agents').select('id, name, phoneNumber').then(r => ({ data: r.data, error: r.error }))
+            );
+            if (csAgentsData) {
+                setCsAgents(csAgentsData);
+            }
+
+            // 5. Brands (for modal lookups)
+            // Optimized: Only select needed columns + withRetry
+            const { data: brandsData } = await withRetry(() =>
+                supabase.from('brands').select('id, name').then(r => ({ data: r.data, error: r.error }))
+            );
+            if (brandsData) {
+                setBrands(brandsData as Brand[]);
+            }
+
+            // 6. Products (for modal lookups)
+            // Optimized: Only select needed columns + withRetry
+            const { data: productsData } = await withRetry(() =>
+                supabase.from('products').select('id, name, brandId').then(r => ({ data: r.data, error: r.error }))
+            );
+            if (productsData) {
+                setProducts(productsData);
+            }
+
+            // 7. Templates
+            const { data: templatesData } = await withRetry(() =>
+                supabase.from('settings').select('*').eq('id', 'messageTemplates').single().then(r => ({ data: r.data, error: r.error }))
+            );
+            if (templatesData) {
+                setTemplates(templatesData as MessageTemplates);
+            }
+
+            // 8. Cancellation Reasons
+            const { data: cancellationData } = await withRetry(() =>
+                supabase.from('settings').select('*').eq('id', 'cancellationReasons').single().then(r => ({ data: r.data, error: r.error }))
+            );
+            if (cancellationData && cancellationData.reasons) {
+                setCancellationReasons(cancellationData.reasons);
+            } else {
+                // Default reasons if not in database
+                setCancellationReasons([
+                    'Pelanggan tidak merespons',
+                    'Pelanggan membatalkan sendiri',
+                    'Alamat tidak lengkap/salah',
+                    'Nomor telepon tidak aktif',
+                    'Produk tidak tersedia',
+                    'Harga tidak sesuai',
+                    'Pembayaran gagal',
+                    'Duplikat pesanan',
+                    'Lainnya'
+                ]);
+            }
+
+            // Update notification count
+            const pendingCount = (ordersData || []).filter((o: any) => o.status === 'Pending').length;
+            setNewOrdersCount(pendingCount);
+
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            showToast("Gagal memuat data pesanan.", "error");
+        } finally {
+            setLoading(false);
+        }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
-  // Fetch Data
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-        // 1. User & Role
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-             const { data: userDoc } = await withRetry(() =>
-               supabase.from('users').select('*').eq('id', user.id).single().then(r => ({ 
-                 data: r.data, 
-                 error: r.error 
-               }))
-             );
-             if (userDoc) {
-                 const role = getNormalizedRole(userDoc.role, user.email);
-                 setCurrentUser({ id: user.id, ...userDoc, role } as User);
-                 
-                 // Fetch pending deletions count for admin
-                 if (role === 'Admin' || role === 'Super Admin') {
-                     console.log('🔍 Fetching pending deletions for role:', role);
-                     const { count } = await withRetry(() =>
-                       supabase
-                         .from('pending_deletions')
-                         .select('*', { count: 'exact', head: true })
-                         .eq('status', 'pending')
-                         .then(r => ({ count: r.count, error: r.error }))
-                     );
-                     console.log('🔍 Pending deletions result:', { count });
-                     if (count !== null) {
-                         setPendingDeletionsCount(count);
-                         console.log('✅ Set pending deletions count:', count);
-                     }
-                 }
-             } else {
-                 const role = getNormalizedRole(undefined, user.email);
-                 setCurrentUser({ id: user.id, role, name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
-             }
-        }
-
-        // 2. Orders (exclude soft-deleted orders)
-        // Optimized: Only select needed columns + limit to recent 500 orders + withRetry
-        const { data: ordersData } = await withRetry(() =>
-          supabase
-            .from('orders')
-            .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
-            .is('deletedAt', null)
-            .order('date', { ascending: false })
-            .limit(500)
-            .then(r => ({ data: r.data, error: r.error }))
-        );
-        
-        const ordersList = (ordersData || []).map(data => {
-            const typed = data as any;
-            return {
-                ...typed,
-                productId: typed.product_id ?? typed.productId ?? null,
-            } as Order;
-        });
-        setOrders(ordersList);
-        lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
-
-        // 3. Forms (for manual order dropdown)
-        // Optimized: Only select needed columns + withRetry
-        const { data: formsData } = await withRetry(() =>
-          supabase.from('forms').select('id, title, brandId').then(r => ({ data: r.data, error: r.error }))
-        );
-        setForms((formsData || []).map(f => ({ ...f }) as Form));
-
-        // 4. Users (for CS assignment and modal lookups)
-        // Optimized: Only select needed columns + withRetry
-        const { data: usersData } = await withRetry(() =>
-          supabase.from('users').select('id, name, role, assignedBrandIds, status').then(r => ({ data: r.data, error: r.error }))
-        );
-        if (usersData) {
-            setAllUsers(usersData as User[]); // Store ALL users
-            const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
-            setCsUsers(cs as User[]);
-        }
-
-        // 4.5. CS Agents (for modal lookups - separate table from users)
-        // Optimized: Only select needed columns + withRetry
-        const { data: csAgentsData } = await withRetry(() =>
-          supabase.from('cs_agents').select('id, name, phoneNumber').then(r => ({ data: r.data, error: r.error }))
-        );
-        if (csAgentsData) {
-            setCsAgents(csAgentsData);
-        }
-
-        // 5. Brands (for modal lookups)
-        // Optimized: Only select needed columns + withRetry
-        const { data: brandsData } = await withRetry(() =>
-          supabase.from('brands').select('id, name').then(r => ({ data: r.data, error: r.error }))
-        );
-        if (brandsData) {
-            setBrands(brandsData as Brand[]);
-        }
-
-        // 6. Products (for modal lookups)
-        // Optimized: Only select needed columns + withRetry
-        const { data: productsData } = await withRetry(() =>
-          supabase.from('products').select('id, name, brandId').then(r => ({ data: r.data, error: r.error }))
-        );
-        if (productsData) {
-            setProducts(productsData);
-        }
-
-        // 7. Templates
-        const { data: templatesData } = await withRetry(() =>
-          supabase.from('settings').select('*').eq('id', 'messageTemplates').single().then(r => ({ data: r.data, error: r.error }))
-        );
-        if (templatesData) {
-            setTemplates(templatesData as MessageTemplates);
-        }
-
-        // 8. Cancellation Reasons
-        const { data: cancellationData } = await withRetry(() =>
-          supabase.from('settings').select('*').eq('id', 'cancellationReasons').single().then(r => ({ data: r.data, error: r.error }))
-        );
-        if (cancellationData && cancellationData.reasons) {
-            setCancellationReasons(cancellationData.reasons);
-        } else {
-            // Default reasons if not in database
-            setCancellationReasons([
-                'Pelanggan tidak merespons',
-                'Pelanggan membatalkan sendiri', 
-                'Alamat tidak lengkap/salah',
-                'Nomor telepon tidak aktif',
-                'Produk tidak tersedia',
-                'Harga tidak sesuai',
-                'Pembayaran gagal',
-                'Duplikat pesanan',
-                'Lainnya'
-            ]);
-        }
-
-        // Update notification count
-        const pendingCount = (ordersData || []).filter((o: any) => o.status === 'Pending').length;
-        setNewOrdersCount(pendingCount);
-
-    } catch (error) {
-        console.error("Error fetching data:", error);
-        showToast("Gagal memuat data pesanan.", "error");
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  useEffect(() => {
+    useEffect(() => {
         fetchData();
-  }, []);
+    }, []);
 
     // --- Play notification sound (Coin drop for orders) ---
     const playNotificationSound = useCallback(() => {
@@ -297,10 +297,10 @@ const OrdersPage: React.FC = () => {
         try {
             const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
             audioCtxRef.current = ctx;
-            
+
             // Coin drop sound effect - bright and resonant
             const now = ctx.currentTime;
-            
+
             // Initial impact (high frequency)
             const osc1 = ctx.createOscillator();
             const gain1 = ctx.createGain();
@@ -312,7 +312,7 @@ const OrdersPage: React.FC = () => {
             gain1.connect(ctx.destination);
             osc1.start(now);
             osc1.stop(now + 0.08);
-            
+
             // Bounce 1
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
@@ -324,7 +324,7 @@ const OrdersPage: React.FC = () => {
             gain2.connect(ctx.destination);
             osc2.start(now + 0.1);
             osc2.stop(now + 0.18);
-            
+
             // Bounce 2 (final ring)
             const osc3 = ctx.createOscillator();
             const gain3 = ctx.createGain();
@@ -341,501 +341,501 @@ const OrdersPage: React.FC = () => {
         }
     }, [orderSoundEnabled]);
 
-  // --- Real-time subscription for new orders ---
-  useEffect(() => {
-    if (!currentUser?.id) return; // Wait for user to load
-    
-    let subscription: any = null;
-    const userRole = getNormalizedRole(currentUser.role);
-    
-    const setupRealtimeListener = async () => {
-        try {
-            // Build filter based on role
-            let filterConfig: any = {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'orders'
-            };
-            
-            // CS: Only subscribe to assigned orders
-            if (userRole === 'Customer service' && currentUser.id) {
-                filterConfig.filter = `assignedCsId=eq.${currentUser.id}`;
-            }
-            // Advertiser: Only subscribe to brand orders
-            else if (userRole === 'Advertiser' && currentUser.assignedBrandIds?.length) {
-                // Note: Supabase real-time doesn't support IN operator well
-                // Will filter client-side after receiving
-            }
-            // Admin/Super Admin: Subscribe to all (no filter)
-            
-            subscription = supabase
-                .channel(`orders-channel-${currentUser.id}`)
-                .on('postgres_changes', filterConfig,
-                    async (payload: any) => {
-                        console.log('[Real-time] New order detected:', payload.new);
-                        
-                        // Add new order
-                        const newOrder = {
-                            ...payload.new,
-                            productId: payload.new.product_id ?? payload.new.productId ?? null,
-                        } as Order;
-                        
-                        // Client-side filter for Advertiser role
-                        if (userRole === 'Advertiser' && currentUser.assignedBrandIds?.length) {
-                            const orderBrandId = newOrder.brandId;
-                            if (!orderBrandId || !currentUser.assignedBrandIds.includes(orderBrandId)) {
-                                return; // Skip this order
+    // --- Real-time subscription for new orders ---
+    useEffect(() => {
+        if (!currentUser?.id) return; // Wait for user to load
+
+        let subscription: any = null;
+        const userRole = getNormalizedRole(currentUser.role);
+
+        const setupRealtimeListener = async () => {
+            try {
+                // Build filter based on role
+                let filterConfig: any = {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'orders'
+                };
+
+                // CS: Only subscribe to assigned orders
+                if (userRole === 'Customer service' && currentUser.id) {
+                    filterConfig.filter = `assignedCsId=eq.${currentUser.id}`;
+                }
+                // Advertiser: Only subscribe to brand orders
+                else if (userRole === 'Advertiser' && currentUser.assignedBrandIds?.length) {
+                    // Note: Supabase real-time doesn't support IN operator well
+                    // Will filter client-side after receiving
+                }
+                // Admin/Super Admin: Subscribe to all (no filter)
+
+                subscription = supabase
+                    .channel(`orders-channel-${currentUser.id}`)
+                    .on('postgres_changes', filterConfig,
+                        async (payload: any) => {
+                            console.log('[Real-time] New order detected:', payload.new);
+
+                            // Add new order
+                            const newOrder = {
+                                ...payload.new,
+                                productId: payload.new.product_id ?? payload.new.productId ?? null,
+                            } as Order;
+
+                            // Client-side filter for Advertiser role
+                            if (userRole === 'Advertiser' && currentUser.assignedBrandIds?.length) {
+                                const orderBrandId = newOrder.brandId;
+                                if (!orderBrandId || !currentUser.assignedBrandIds.includes(orderBrandId)) {
+                                    return; // Skip this order
+                                }
+                            }
+
+                            setOrders(prev => [newOrder, ...prev]);
+
+                            // Show notification
+                            showToast('📦 Pesanan baru masuk!', 'success');
+                            playNotificationSound();
+
+                            // Insert to notifications table
+                            try {
+                                await supabase.from('notifications').insert({
+                                    id: `order-${newOrder.id}`,
+                                    type: 'new_order',
+                                    message: `📦 Pesanan baru dari ${newOrder.customer || 'Pelanggan'} - Rp${(newOrder.totalPrice || 0).toLocaleString('id-ID')}`,
+                                    read: false,
+                                    timestamp: new Date().toISOString(),
+                                    user_id: currentUser?.id,
+                                    order_id: newOrder.id,
+                                    created_at: new Date().toISOString(),
+                                });
+                            } catch (err) {
+                                console.warn('Failed to insert notification:', err);
+                            }
+
+                            // Update counter
+                            if (newOrder.status === 'Pending') {
+                                setNewOrdersCount(prev => prev + 1);
                             }
                         }
-                        
-                        setOrders(prev => [newOrder, ...prev]);
-                        
-                        // Show notification
-                        showToast('📦 Pesanan baru masuk!', 'success');
-                        playNotificationSound();
-                        
-                        // Insert to notifications table
-                        try {
-                            await supabase.from('notifications').insert({
-                                id: `order-${newOrder.id}`,
-                                type: 'new_order',
-                                message: `📦 Pesanan baru dari ${newOrder.customer || 'Pelanggan'} - Rp${(newOrder.totalPrice || 0).toLocaleString('id-ID')}`,
-                                read: false,
-                                timestamp: new Date().toISOString(),
-                                user_id: currentUser?.id,
-                                order_id: newOrder.id,
-                                created_at: new Date().toISOString(),
-                            });
-                        } catch (err) {
-                            console.warn('Failed to insert notification:', err);
-                        }
-                        
-                        // Update counter
-                        if (newOrder.status === 'Pending') {
-                            setNewOrdersCount(prev => prev + 1);
-                        }
-                    }
-                )
-                .subscribe((status: any) => {
-                    console.log('[Real-time] Subscription status:', status);
-                });
+                    )
+                    .subscribe((status: any) => {
+                        console.log('[Real-time] Subscription status:', status);
+                    });
+            } catch (err) {
+                console.error('Error setting up real-time listener:', err);
+            }
+        };
+
+        setupRealtimeListener();
+
+        return () => {
+            if (subscription) {
+                console.log(`[Real-time] Unsubscribing from orders-channel-${currentUser?.id}`);
+                supabase.removeChannel(subscription);
+            }
+        };
+    }, [showToast, playNotificationSound, setNewOrdersCount, currentUser?.id, currentUser?.role, currentUser?.assignedBrandIds]);
+
+    // --- Fallback polling for new orders (faster interval) ---
+    const refreshOrdersSilently = useCallback(async () => {
+        try {
+            // Optimized: Only fetch recent orders for notification check
+            const { data: ordersData, error: ordersError } = await supabase
+                .from('orders')
+                .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
+                .is('deletedAt', null)
+                .order('date', { ascending: false })
+                .limit(100);
+
+            if (ordersError) throw ordersError;
+
+            const ordersList = (ordersData || []).map(data => {
+                const typed = data as any;
+                return {
+                    ...typed,
+                    productId: typed.product_id ?? typed.productId ?? null,
+                } as Order;
+            });
+
+            // Detect new arrivals
+            const previousIds = lastOrderIdsRef.current;
+            const newOnes = ordersList.filter(o => !previousIds.has(o.id));
+
+            if (previousIds.size > 0 && newOnes.length > 0) {
+                console.log('[Polling] New orders detected:', newOnes.length);
+                showToast(`📦 ${newOnes.length} pesanan baru masuk`, 'success');
+                playNotificationSound();
+            }
+
+            setOrders(ordersList);
+
+            // Update notification count for pending orders
+            const pendingCount = (ordersList || []).filter((o: any) => o.status === 'Pending').length;
+            setNewOrdersCount(pendingCount);
+
+            lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
         } catch (err) {
-            console.error('Error setting up real-time listener:', err);
+            console.error('Polling refresh failed:', err);
         }
-    };
-    
-    setupRealtimeListener();
-    
-    return () => {
-        if (subscription) {
-            console.log(`[Real-time] Unsubscribing from orders-channel-${currentUser?.id}`);
-            supabase.removeChannel(subscription);
-        }
-    };
-  }, [showToast, playNotificationSound, setNewOrdersCount, currentUser?.id, currentUser?.role, currentUser?.assignedBrandIds]);
+    }, [showToast, playNotificationSound, setNewOrdersCount]);
 
-  // --- Fallback polling for new orders (faster interval) ---
-  const refreshOrdersSilently = useCallback(async () => {
-    try {
-        // Optimized: Only fetch recent orders for notification check
-        const { data: ordersData, error: ordersError } = await supabase
-            .from('orders')
-            .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
-            .is('deletedAt', null)
-            .order('date', { ascending: false })
-            .limit(100);
+    // --- Polling interval (fallback if real-time fails) ---
+    // DISABLED: Real-time subscription is sufficient, polling causes high CPU usage
+    // useEffect(() => {
+    //   const interval = setInterval(() => {
+    //       refreshOrdersSilently();
+    //   }, 15000); // 15s polling (faster than before)
+    //   return () => clearInterval(interval);
+    // }, [refreshOrdersSilently]);
 
-        if (ordersError) throw ordersError;
-
-        const ordersList = (ordersData || []).map(data => {
-            const typed = data as any;
-            return {
-                ...typed,
-                productId: typed.product_id ?? typed.productId ?? null,
-            } as Order;
-        });
-
-        // Detect new arrivals
-        const previousIds = lastOrderIdsRef.current;
-        const newOnes = ordersList.filter(o => !previousIds.has(o.id));
-        
-        if (previousIds.size > 0 && newOnes.length > 0) {
-            console.log('[Polling] New orders detected:', newOnes.length);
-            showToast(`📦 ${newOnes.length} pesanan baru masuk`, 'success');
-            playNotificationSound();
-        }
-
-        setOrders(ordersList);
-        
-        // Update notification count for pending orders
-        const pendingCount = (ordersList || []).filter((o: any) => o.status === 'Pending').length;
-        setNewOrdersCount(pendingCount);
-        
-        lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
-    } catch (err) {
-        console.error('Polling refresh failed:', err);
-    }
-  }, [showToast, playNotificationSound, setNewOrdersCount]);
-
-  // --- Polling interval (fallback if real-time fails) ---
-  // DISABLED: Real-time subscription is sufficient, polling causes high CPU usage
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //       refreshOrdersSilently();
-  //   }, 15000); // 15s polling (faster than before)
-  //   return () => clearInterval(interval);
-  // }, [refreshOrdersSilently]);
-
-  useEffect(() => {
+    useEffect(() => {
         if (typeof window !== 'undefined') {
-                localStorage.setItem('orders_sound_enabled', orderSoundEnabled ? 'true' : 'false');
+            localStorage.setItem('orders_sound_enabled', orderSoundEnabled ? 'true' : 'false');
         }
     }, [orderSoundEnabled]);
 
-  // --- Actions ---
+    // --- Actions ---
 
-  const handleSaveManualOrder = async (newOrderData: Omit<Order, 'id'>) => {
-      try {
-          // If editing existing order (selectedOrder exists), update it
-          if (selectedOrder) {
-              const { error } = await supabase.from('orders')
-                  .update({
-                      customer: newOrderData.customer,
-                      customerPhone: newOrderData.customerPhone,
-                      shippingAddress: newOrderData.shippingAddress,
-                      totalPrice: newOrderData.totalPrice,
-                      assignedCsId: newOrderData.assignedCsId,
-                      notes: newOrderData.notes,
-                      variant: newOrderData.variant,
-                      quantity: newOrderData.quantity
-                  })
-                  .eq('id', selectedOrder.id);
-              
-              if (error) throw error;
-              
-              setOrders(prev => prev.map(o => 
-                  o.id === selectedOrder.id 
-                      ? { ...o, ...newOrderData } 
-                      : o
-              ));
-              showToast("Pesanan berhasil diupdate.", "success");
-          } else {
-              // Create new order
-              const { productId, ...restOrder } = newOrderData as any;
-              const dataWithTimestamp = {
-                  ...restOrder,
-                  product_id: productId ?? null,
-                  date: new Date().toISOString()
-              };
-              const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
-              if (error) throw error;
-              
-              const newOrder = {
-                  ...(data as Order),
-                  productId: (data as any)?.product_id ?? (data as any)?.productId ?? null,
-              } as Order;
-              setOrders(prev => [newOrder, ...prev]);
-              showToast("Pesanan manual berhasil dibuat.", "success");
-          }
-          
-          setIsManualOrderModalOpen(false);
-          setSelectedOrder(null);
-      } catch (error) {
-          console.error("Error saving order:", error);
-          showToast(selectedOrder ? "Gagal update pesanan." : "Gagal membuat pesanan.", "error");
-      }
-  };
+    const handleSaveManualOrder = async (newOrderData: Omit<Order, 'id'>) => {
+        try {
+            // If editing existing order (selectedOrder exists), update it
+            if (selectedOrder) {
+                const { error } = await supabase.from('orders')
+                    .update({
+                        customer: newOrderData.customer,
+                        customerPhone: newOrderData.customerPhone,
+                        shippingAddress: newOrderData.shippingAddress,
+                        totalPrice: newOrderData.totalPrice,
+                        assignedCsId: newOrderData.assignedCsId,
+                        notes: newOrderData.notes,
+                        variant: newOrderData.variant,
+                        quantity: newOrderData.quantity
+                    })
+                    .eq('id', selectedOrder.id);
 
-  const handleCancelOrder = async () => {
-      if (!orderToCancel || !cancellationReason) {
-          showToast("Mohon pilih alasan pembatalan.", "error");
-          return;
-      }
+                if (error) throw error;
 
-      try {
-          const { error } = await supabase.from('orders').update({ 
-              status: 'Canceled',
-              "cancellationReason": cancellationReason
-          }).eq('id', orderToCancel.id);
-          
-          if (error) {
-              console.error("Update error details:", error);
-              throw error;
-          }
+                setOrders(prev => prev.map(o =>
+                    o.id === selectedOrder.id
+                        ? { ...o, ...newOrderData }
+                        : o
+                ));
+                showToast("Pesanan berhasil diupdate.", "success");
+            } else {
+                // Create new order
+                const { productId, ...restOrder } = newOrderData as any;
+                const dataWithTimestamp = {
+                    ...restOrder,
+                    product_id: productId ?? null,
+                    date: new Date().toISOString()
+                };
+                const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
+                if (error) throw error;
 
-          setOrders(prev => prev.map(o => 
-              o.id === orderToCancel.id 
-                  ? { ...o, status: 'Canceled', cancellationReason: cancellationReason } 
-                  : o
-          ));
-          
-          showToast("Pesanan berhasil dibatalkan.", "success");
-          setOrderToCancel(null);
-          setCancellationReason('');
+                const newOrder = {
+                    ...(data as Order),
+                    productId: (data as any)?.product_id ?? (data as any)?.productId ?? null,
+                } as Order;
+                setOrders(prev => [newOrder, ...prev]);
+                showToast("Pesanan manual berhasil dibuat.", "success");
+            }
 
-      } catch (error: any) {
-          console.error("Error canceling order:", error);
-          const errorMsg = error?.message || error?.error_description || "Gagal membatalkan pesanan";
-          showToast(`Gagal membatalkan pesanan: ${errorMsg}`, "error");
-      }
-  };
+            setIsManualOrderModalOpen(false);
+            setSelectedOrder(null);
+        } catch (error) {
+            console.error("Error saving order:", error);
+            showToast(selectedOrder ? "Gagal update pesanan." : "Gagal membuat pesanan.", "error");
+        }
+    };
 
-  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus, extraData?: Partial<Order>) => {
-      // Check permission to change order status
-      if (!currentUser || !canUseFeature('change_order_status', getNormalizedRole(currentUser.role))) {
-          showToast("Anda tidak memiliki izin untuk mengubah status pesanan.", "error");
-          return;
-      }
+    const handleCancelOrder = async () => {
+        if (!orderToCancel || !cancellationReason) {
+            showToast("Mohon pilih alasan pembatalan.", "error");
+            return;
+        }
 
-      try {
-          const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
-          if (error) throw error;
+        try {
+            const { error } = await supabase.from('orders').update({
+                status: 'Canceled',
+                "cancellationReason": cancellationReason
+            }).eq('id', orderToCancel.id);
 
-          const updatedOrder = orders.find(o => o.id === orderId);
-          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, ...extraData } : o));
-          
-          // Close modals if open
-          setOrderToProcess(null);
-          setOrderToShip(null);
-          setOrderToDelete(null);
+            if (error) {
+                console.error("Update error details:", error);
+                throw error;
+            }
 
-          showToast(`Status pesanan diperbarui menjadi ${newStatus}.`, "success");
+            setOrders(prev => prev.map(o =>
+                o.id === orderToCancel.id
+                    ? { ...o, status: 'Canceled', cancellationReason: cancellationReason }
+                    : o
+            ));
 
-          // Insert notification for status change
-          try {
-              const statusMessages: Record<string, string> = {
-                  'Processing': '⚙️ Pesanan sedang diproses',
-                  'Shipped': '🚚 Pesanan telah dikirim',
-                  'Delivered': '✅ Pesanan telah diterima',
-                  'Canceled': '❌ Pesanan dibatalkan',
-              };
-              
-              const message = statusMessages[newStatus] || `Status pesanan berubah menjadi ${newStatus}`;
-              
-              await supabase.from('notifications').insert({
-                  id: `order-status-${orderId}-${Date.now()}`,
-                  type: 'order_status_change',
-                  message: `${message} - ${updatedOrder?.customer || 'Pesanan'}`,
-                  read: false,
-                  timestamp: new Date().toISOString(),
-                  user_id: currentUser?.id,
-                  order_id: orderId,
-                  created_at: new Date().toISOString(),
-              });
-          } catch (err) {
-              console.warn('Failed to insert status change notification:', err);
-          }
+            showToast("Pesanan berhasil dibatalkan.", "success");
+            setOrderToCancel(null);
+            setCancellationReason('');
 
-          // Trigger notification modal if shipped
-          if (newStatus === 'Shipped') {
-              if (updatedOrder) setOrderToNotify({ ...updatedOrder, status: 'Shipped', ...extraData });
-          }
+        } catch (error: any) {
+            console.error("Error canceling order:", error);
+            const errorMsg = error?.message || error?.error_description || "Gagal membatalkan pesanan";
+            showToast(`Gagal membatalkan pesanan: ${errorMsg}`, "error");
+        }
+    };
 
-      } catch (error) {
-          console.error("Error updating status:", error);
-          showToast("Gagal memperbarui status.", "error");
-      }
-  };
+    const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus, extraData?: Partial<Order>) => {
+        // Check permission to change order status
+        if (!currentUser || !canUseFeature('change_order_status', getNormalizedRole(currentUser.role))) {
+            showToast("Anda tidak memiliki izin untuk mengubah status pesanan.", "error");
+            return;
+        }
 
-  const handleFollowUp = async (orderId: string) => {
-      // Just update the counter locally and in DB, the WhatsApp link is handled in the component
-      try {
-          const order = orders.find(o => o.id === orderId);
-          if (!order) return;
-          const newCount = (order.followUps || 0) + 1;
-          await supabase.from('orders').update({ followUps: newCount }).eq('id', orderId);
-          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, followUps: newCount } : o));
-      } catch (error) {
-          console.error("Error updating follow up:", error);
-      }
-  };
+        try {
+            const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
+            if (error) throw error;
 
-  const handleChangePayment = async (method: string) => {
-      if (!orderToChangePayment) return;
-      try {
-          await supabase.from('orders').update({ paymentMethod: method }).eq('id', orderToChangePayment.id);
-          setOrders(prev => prev.map(o => o.id === orderToChangePayment.id ? { ...o, paymentMethod: method } : o));
-          setOrderToChangePayment(null);
-          showToast("Metode pembayaran berhasil diubah.", "success");
-      } catch (error) {
-          console.error("Error changing payment:", error);
-          showToast("Gagal mengubah metode pembayaran.", "error");
-      }
-  };
+            const updatedOrder = orders.find(o => o.id === orderId);
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, ...extraData } : o));
 
-  // --- CS Assignment Handlers ---
-  const handleOpenAssign = (orderId: string) => {
-      setAssignTargetOrderId(orderId);
-      setAssignSelectedCsId(csUsers[0]?.id || '');
-  };
+            // Close modals if open
+            setOrderToProcess(null);
+            setOrderToShip(null);
+            setOrderToDelete(null);
 
-  const handleCancelAssign = () => {
-      setAssignTargetOrderId(null);
-      setAssignSelectedCsId('');
-  };
+            showToast(`Status pesanan diperbarui menjadi ${newStatus}.`, "success");
 
-  const handleSaveAssign = async (orderId: string) => {
-      if (!assignSelectedCsId) {
-          showToast('Pilih CS terlebih dahulu.', 'error');
-          return;
-      }
+            // Insert notification for status change
+            try {
+                const statusMessages: Record<string, string> = {
+                    'Processing': '⚙️ Pesanan sedang diproses',
+                    'Shipped': '🚚 Pesanan telah dikirim',
+                    'Delivered': '✅ Pesanan telah diterima',
+                    'Canceled': '❌ Pesanan dibatalkan',
+                };
 
-      try {
-          const { error } = await supabase.from('orders').update({ assignedCsId: assignSelectedCsId }).eq('id', orderId);
-          if (error) throw error;
+                const message = statusMessages[newStatus] || `Status pesanan berubah menjadi ${newStatus}`;
 
-          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, assignedCsId: assignSelectedCsId } : o));
-          showToast('CS berhasil ditugaskan.', 'success');
-          setAssignTargetOrderId(null);
-          setAssignSelectedCsId('');
-      } catch (err) {
-          console.error('Error assigning CS:', err);
-          showToast('Gagal menugaskan CS.', 'error');
-      }
-  };
+                await supabase.from('notifications').insert({
+                    id: `order-status-${orderId}-${Date.now()}`,
+                    type: 'order_status_change',
+                    message: `${message} - ${updatedOrder?.customer || 'Pesanan'}`,
+                    read: false,
+                    timestamp: new Date().toISOString(),
+                    user_id: currentUser?.id,
+                    order_id: orderId,
+                    created_at: new Date().toISOString(),
+                });
+            } catch (err) {
+                console.warn('Failed to insert status change notification:', err);
+            }
 
-  // Export to Excel Function
-  const handleExportExcel = () => {
-    setIsExporting(true);
-    try {
-      const dataToExport = filteredOrders.map(order => ({
-        'ID Pesanan': order.id,
-        'Tanggal': new Date(order.date).toLocaleString('id-ID'),
-        'Pelanggan': order.customer,
-        'WhatsApp': order.customerPhone,
-        'Email': order.customerEmail,
-        'Alamat': order.shippingAddress,
-        'Produk': order.productName,
-        'Harga Produk': order.productPrice,
-        'Total': order.totalPrice,
-        'Status': order.status,
-        'Pembayaran': order.paymentMethod || 'COD',
-        'Pengiriman': order.shippingMethod || '-',
-        'Resi': order.shippingResi || '-',
-        'CS': csUsers.find(u => u.id === order.assignedCsId)?.name || 'Unassigned',
-        'Follow Up': order.followUps
-      }));
+            // Trigger notification modal if shipped
+            if (newStatus === 'Shipped') {
+                if (updatedOrder) setOrderToNotify({ ...updatedOrder, status: 'Shipped', ...extraData });
+            }
 
-      const csv = [
-        Object.keys(dataToExport[0] || {}).join(','),
-        ...dataToExport.map(row => Object.values(row).map(v => `"${v}"`).join(','))
-      ].join('\\n');
+        } catch (error) {
+            console.error("Error updating status:", error);
+            showToast("Gagal memperbarui status.", "error");
+        }
+    };
 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `pesanan_${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-      
-      showToast('Data berhasil diekspor!', 'success');
-    } catch (error) {
-      console.error('Export error:', error);
-      showToast('Gagal mengekspor data', 'error');
-    } finally {
-      setIsExporting(false);
-    }
-  };
+    const handleFollowUp = async (orderId: string) => {
+        // Just update the counter locally and in DB, the WhatsApp link is handled in the component
+        try {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            const newCount = (order.followUps || 0) + 1;
+            await supabase.from('orders').update({ followUps: newCount }).eq('id', orderId);
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, followUps: newCount } : o));
+        } catch (error) {
+            console.error("Error updating follow up:", error);
+        }
+    };
 
-  // Bulk Delete - All users must create deletion request for review
-  const handleBulkDelete = async () => {
-    if (selectedOrders.size === 0 || !currentUser) return;
-    
-    try {
-      // All users (including Super Admin) must create deletion request
-      const deletionRequests = Array.from(selectedOrders).map(orderId => {
-        const order = orders.find(o => o.id === orderId);
-        if (!order) return null;
-        
-        return {
-          orderId: order.id,
-          orderNumber: order.id.substring(0, 8),
-          customerName: order.customer,
-          customerPhone: order.customerPhone,
-          totalPrice: order.totalPrice,
-          requestedBy: currentUser.name,
-          requestedByEmail: currentUser.email,
-          reason: 'Bulk deletion request',
-          status: 'pending'
-        };
-      }).filter(Boolean);
-      
-      const { error: insertError } = await supabase
-        .from('pending_deletions')
-        .insert(deletionRequests);
-      
-      if (insertError) throw insertError;
-      
-      showToast(`${selectedOrders.size} permintaan hapus berhasil dibuat. Menunggu review di Permintaan Hapus.`, 'success');
-      
-      // Refresh pending deletions count
-      const { count } = await supabase
-        .from('pending_deletions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      if (count !== null) setPendingDeletionsCount(count);
-      
-      setSelectedOrders(new Set());
-      
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      showToast('Gagal menghapus pesanan', 'error');
-    }
-  };
+    const handleChangePayment = async (method: string) => {
+        if (!orderToChangePayment) return;
+        try {
+            await supabase.from('orders').update({ paymentMethod: method }).eq('id', orderToChangePayment.id);
+            setOrders(prev => prev.map(o => o.id === orderToChangePayment.id ? { ...o, paymentMethod: method } : o));
+            setOrderToChangePayment(null);
+            showToast("Metode pembayaran berhasil diubah.", "success");
+        } catch (error) {
+            console.error("Error changing payment:", error);
+            showToast("Gagal mengubah metode pembayaran.", "error");
+        }
+    };
 
-  const openDeleteConfirmation = (order: Order) => {
-      setOrderToDelete(order);
-  };
+    // --- CS Assignment Handlers ---
+    const handleOpenAssign = (orderId: string) => {
+        setAssignTargetOrderId(orderId);
+        setAssignSelectedCsId(csUsers[0]?.id || '');
+    };
 
-  const confirmDeleteOrder = async () => {
-      if (!orderToDelete || !currentUser) return;
-      
-      // Check permission to delete order
-      if (!canUseFeature('delete_order', getNormalizedRole(currentUser.role))) {
-          showToast("Anda tidak memiliki izin untuk menghapus pesanan.", "error");
-          setOrderToDelete(null);
-          return;
-      }
-      
-      try {
-          // All users (including Super Admin) must create deletion request for review
-          const { error: insertError } = await supabase
-              .from('pending_deletions')
-              .insert({
-                  orderId: orderToDelete.id,
-                  orderNumber: orderToDelete.id.substring(0, 8),
-                  customerName: orderToDelete.customer,
-                  customerPhone: orderToDelete.customerPhone,
-                  totalPrice: orderToDelete.totalPrice,
-                  requestedBy: currentUser.name,
-                  requestedByEmail: currentUser.email,
-                  status: 'pending'
-              });
-          
-          if (insertError) throw insertError;
-          
-          showToast('Permintaan hapus pesanan berhasil dibuat. Menunggu review di Permintaan Hapus.', 'success');
-          
-          // Refresh pending deletions count
-          const { count } = await supabase
-              .from('pending_deletions')
-              .select('*', { count: 'exact', head: true })
-              .eq('status', 'pending');
-          if (count !== null) setPendingDeletionsCount(count);
-          
-          setOrderToDelete(null);
-          
-      } catch (error) {
-          console.error('Error deleting order:', error);
-          showToast('Gagal menghapus pesanan', 'error');
-      }
-  };
+    const handleCancelAssign = () => {
+        setAssignTargetOrderId(null);
+        setAssignSelectedCsId('');
+    };
+
+    const handleSaveAssign = async (orderId: string) => {
+        if (!assignSelectedCsId) {
+            showToast('Pilih CS terlebih dahulu.', 'error');
+            return;
+        }
+
+        try {
+            const { error } = await supabase.from('orders').update({ assignedCsId: assignSelectedCsId }).eq('id', orderId);
+            if (error) throw error;
+
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, assignedCsId: assignSelectedCsId } : o));
+            showToast('CS berhasil ditugaskan.', 'success');
+            setAssignTargetOrderId(null);
+            setAssignSelectedCsId('');
+        } catch (err) {
+            console.error('Error assigning CS:', err);
+            showToast('Gagal menugaskan CS.', 'error');
+        }
+    };
+
+    // Export to Excel Function
+    const handleExportExcel = () => {
+        setIsExporting(true);
+        try {
+            const dataToExport = filteredOrders.map(order => ({
+                'ID Pesanan': order.id,
+                'Tanggal': new Date(order.date).toLocaleString('id-ID'),
+                'Pelanggan': order.customer,
+                'WhatsApp': order.customerPhone,
+                'Email': order.customerEmail,
+                'Alamat': order.shippingAddress,
+                'Produk': order.productName,
+                'Harga Produk': order.productPrice,
+                'Total': order.totalPrice,
+                'Status': order.status,
+                'Pembayaran': order.paymentMethod || 'COD',
+                'Pengiriman': order.shippingMethod || '-',
+                'Resi': order.shippingResi || '-',
+                'CS': csUsers.find(u => u.id === order.assignedCsId)?.name || 'Unassigned',
+                'Follow Up': order.followUps
+            }));
+
+            const csv = [
+                Object.keys(dataToExport[0] || {}).join(','),
+                ...dataToExport.map(row => Object.values(row).map(v => `"${v}"`).join(','))
+            ].join('\\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `pesanan_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+
+            showToast('Data berhasil diekspor!', 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            showToast('Gagal mengekspor data', 'error');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    // Bulk Delete - All users must create deletion request for review
+    const handleBulkDelete = async () => {
+        if (selectedOrders.size === 0 || !currentUser) return;
+
+        try {
+            // All users (including Super Admin) must create deletion request
+            const deletionRequests = Array.from(selectedOrders).map(orderId => {
+                const order = orders.find(o => o.id === orderId);
+                if (!order) return null;
+
+                return {
+                    orderId: order.id,
+                    orderNumber: order.id.substring(0, 8),
+                    customerName: order.customer,
+                    customerPhone: order.customerPhone,
+                    totalPrice: order.totalPrice,
+                    requestedBy: currentUser.name,
+                    requestedByEmail: currentUser.email,
+                    reason: 'Bulk deletion request',
+                    status: 'pending'
+                };
+            }).filter(Boolean);
+
+            const { error: insertError } = await supabase
+                .from('pending_deletions')
+                .insert(deletionRequests);
+
+            if (insertError) throw insertError;
+
+            showToast(`${selectedOrders.size} permintaan hapus berhasil dibuat. Menunggu review di Permintaan Hapus.`, 'success');
+
+            // Refresh pending deletions count
+            const { count } = await supabase
+                .from('pending_deletions')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending');
+            if (count !== null) setPendingDeletionsCount(count);
+
+            setSelectedOrders(new Set());
+
+        } catch (error) {
+            console.error('Bulk delete error:', error);
+            showToast('Gagal menghapus pesanan', 'error');
+        }
+    };
+
+    const openDeleteConfirmation = (order: Order) => {
+        setOrderToDelete(order);
+    };
+
+    const confirmDeleteOrder = async () => {
+        if (!orderToDelete || !currentUser) return;
+
+        // Check permission to delete order
+        if (!canUseFeature('delete_order', getNormalizedRole(currentUser.role))) {
+            showToast("Anda tidak memiliki izin untuk menghapus pesanan.", "error");
+            setOrderToDelete(null);
+            return;
+        }
+
+        try {
+            // All users (including Super Admin) must create deletion request for review
+            const { error: insertError } = await supabase
+                .from('pending_deletions')
+                .insert({
+                    orderId: orderToDelete.id,
+                    orderNumber: orderToDelete.id.substring(0, 8),
+                    customerName: orderToDelete.customer,
+                    customerPhone: orderToDelete.customerPhone,
+                    totalPrice: orderToDelete.totalPrice,
+                    requestedBy: currentUser.name,
+                    requestedByEmail: currentUser.email,
+                    status: 'pending'
+                });
+
+            if (insertError) throw insertError;
+
+            showToast('Permintaan hapus pesanan berhasil dibuat. Menunggu review di Permintaan Hapus.', 'success');
+
+            // Refresh pending deletions count
+            const { count } = await supabase
+                .from('pending_deletions')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending');
+            if (count !== null) setPendingDeletionsCount(count);
+
+            setOrderToDelete(null);
+
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            showToast('Gagal menghapus pesanan', 'error');
+        }
+    };
 
 
 
-  // --- Filtering Logic ---
-  const statusCounts = useMemo(() => {
+    // --- Filtering Logic ---
+    const statusCounts = useMemo(() => {
         const baseOrders = filterDataByBrand<Order>(orders, currentUser);
-        
+
         const counts: Record<string, number> = {
             All: baseOrders.length,
             Pending: 0,
@@ -853,106 +853,106 @@ const OrdersPage: React.FC = () => {
         });
 
         return counts;
-  }, [orders, currentUser]);
+    }, [orders, currentUser]);
 
-  const filteredOrders = useMemo(() => {
-      // 1. Brand Filter
-      let result = filterDataByBrand<Order>(orders, currentUser);
+    const filteredOrders = useMemo(() => {
+        // 1. Brand Filter
+        let result = filterDataByBrand<Order>(orders, currentUser);
 
-      // 2. Status Filter
-      if (activeStatusFilter.size > 0) {
-          result = result.filter(o => activeStatusFilter.has(o.status));
-      }
+        // 2. Status Filter
+        if (activeStatusFilter.size > 0) {
+            result = result.filter(o => activeStatusFilter.has(o.status));
+        }
 
-      // 3. Brand Filter
-      if (selectedBrandFilter !== 'all') {
-          result = result.filter(o => o.brandId === selectedBrandFilter);
-      }
+        // 3. Brand Filter
+        if (selectedBrandFilter !== 'all') {
+            result = result.filter(o => o.brandId === selectedBrandFilter);
+        }
 
-      // 4. Product Filter
-      if (selectedProductFilter !== 'all') {
-          result = result.filter(o => o.productName === selectedProductFilter);
-      }
+        // 4. Product Filter
+        if (selectedProductFilter !== 'all') {
+            result = result.filter(o => o.productName === selectedProductFilter);
+        }
 
-      // 5. Payment Filter
-      if (selectedPaymentFilter.size > 0) {
-          result = result.filter(o => o.paymentMethod && selectedPaymentFilter.has(o.paymentMethod));
-      }
+        // 5. Payment Filter
+        if (selectedPaymentFilter.size > 0) {
+            result = result.filter(o => o.paymentMethod && selectedPaymentFilter.has(o.paymentMethod));
+        }
 
-      // 6. Date Range
-      if (dateRange.startDate && dateRange.endDate) {
-          // Create start and end dates in UTC to avoid timezone mismatch
-          const start = new Date(dateRange.startDate);
-          const end = new Date(dateRange.endDate);
-          start.setUTCHours(0,0,0,0);
-          end.setUTCHours(23,59,59,999);
-          result = result.filter(o => {
-              const d = new Date(o.date);
-              return d >= start && d <= end;
-          });
-      }
+        // 6. Date Range
+        if (dateRange.startDate && dateRange.endDate) {
+            // Create start and end dates in UTC to avoid timezone mismatch
+            const start = new Date(dateRange.startDate);
+            const end = new Date(dateRange.endDate);
+            start.setUTCHours(0, 0, 0, 0);
+            end.setUTCHours(23, 59, 59, 999);
+            result = result.filter(o => {
+                const d = new Date(o.date);
+                return d >= start && d <= end;
+            });
+        }
 
-      // 7. Search
-      if (searchTerm) {
-          const lower = searchTerm.toLowerCase();
-          result = result.filter(o => 
-              o.customer.toLowerCase().includes(lower) ||
-              o.id.toLowerCase().includes(lower) ||
-              o.customerPhone.includes(lower)
-          );
-      }
+        // 7. Search
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            result = result.filter(o =>
+                o.customer.toLowerCase().includes(lower) ||
+                o.id.toLowerCase().includes(lower) ||
+                o.customerPhone.includes(lower)
+            );
+        }
 
-      return result;
-  }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedProductFilter, selectedPaymentFilter, currentUser]);
+        return result;
+    }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedProductFilter, selectedPaymentFilter, currentUser]);
 
-  // Statistics Cards Data
-  const stats = useMemo(() => {
-    const filtered = filterDataByBrand<Order>(orders, currentUser).filter(o => o.status !== 'Pending Deletion');
-    
-    return {
-      totalOrders: filtered.length,
-      totalRevenue: filtered.reduce((sum, o) => sum + (o.totalPrice || 0), 0),
-      pendingCount: filtered.filter(o => o.status === 'Pending').length,
-      processingCount: filtered.filter(o => o.status === 'Processing').length,
-      shippedCount: filtered.filter(o => o.status === 'Shipped').length,
-      deliveredCount: filtered.filter(o => o.status === 'Delivered').length,
-      canceledCount: filtered.filter(o => o.status === 'Canceled').length,
-    };
-  }, [orders, currentUser]);
+    // Statistics Cards Data
+    const stats = useMemo(() => {
+        const filtered = filterDataByBrand<Order>(orders, currentUser).filter(o => o.status !== 'Pending Deletion');
 
-  // Get unique brands for filter (with brand name lookup)
-  const uniqueBrands = useMemo(() => {
-    const brandIds = new Set<string>();
-    orders.forEach(o => {
-      if (o.brandId) brandIds.add(o.brandId);
-    });
-    // Return array with names from brands state
-    return Array.from(brandIds).map(id => {
-      const brandObj = brands.find(b => b.id === id);
-      return {
-        id,
-        name: brandObj?.name || id
-      };
-    });
-  }, [orders, brands]);
+        return {
+            totalOrders: filtered.length,
+            totalRevenue: filtered.reduce((sum, o) => sum + (o.totalPrice || 0), 0),
+            pendingCount: filtered.filter(o => o.status === 'Pending').length,
+            processingCount: filtered.filter(o => o.status === 'Processing').length,
+            shippedCount: filtered.filter(o => o.status === 'Shipped').length,
+            deliveredCount: filtered.filter(o => o.status === 'Delivered').length,
+            canceledCount: filtered.filter(o => o.status === 'Canceled').length,
+        };
+    }, [orders, currentUser]);
 
-  // Get unique products for filter
-  const uniqueProducts = useMemo(() => {
-    const products = new Set<string>();
-    orders.forEach(o => {
-      if (o.productName) products.add(o.productName);
-    });
-    return Array.from(products).sort();
-  }, [orders]);
+    // Get unique brands for filter (with brand name lookup)
+    const uniqueBrands = useMemo(() => {
+        const brandIds = new Set<string>();
+        orders.forEach(o => {
+            if (o.brandId) brandIds.add(o.brandId);
+        });
+        // Return array with names from brands state
+        return Array.from(brandIds).map(id => {
+            const brandObj = brands.find(b => b.id === id);
+            return {
+                id,
+                name: brandObj?.name || id
+            };
+        });
+    }, [orders, brands]);
 
-  // Get unique payment methods for filter
-  const uniquePaymentMethods = useMemo(() => {
-    const methods = new Set<string>();
-    orders.forEach(o => {
-      if (o.paymentMethod) methods.add(o.paymentMethod);
-    });
-    return Array.from(methods);
-  }, [orders]);
+    // Get unique products for filter
+    const uniqueProducts = useMemo(() => {
+        const products = new Set<string>();
+        orders.forEach(o => {
+            if (o.productName) products.add(o.productName);
+        });
+        return Array.from(products).sort();
+    }, [orders]);
+
+    // Get unique payment methods for filter
+    const uniquePaymentMethods = useMemo(() => {
+        const methods = new Set<string>();
+        orders.forEach(o => {
+            if (o.paymentMethod) methods.add(o.paymentMethod);
+        });
+        return Array.from(methods);
+    }, [orders]);
 
     // --- Pagination State ---
     const [pageSize, setPageSize] = useState<number>(10); // default 10 per page
@@ -973,803 +973,804 @@ const OrdersPage: React.FC = () => {
         return filteredOrders.slice(start, start + pageSizeEffective);
     }, [filteredOrders, page, pageSize, pageSizeEffective]);
 
-  // Toggle Select All (defined after paginatedOrders)
-  const handleToggleSelectAll = () => {
-    if (selectedOrders.size === paginatedOrders.length) {
-      setSelectedOrders(new Set());
-    } else {
-      setSelectedOrders(new Set(paginatedOrders.map(o => o.id)));
-    }
-  };
+    // Toggle Select All (defined after paginatedOrders)
+    const handleToggleSelectAll = () => {
+        if (selectedOrders.size === paginatedOrders.length) {
+            setSelectedOrders(new Set());
+        } else {
+            setSelectedOrders(new Set(paginatedOrders.map(o => o.id)));
+        }
+    };
 
-  // Toggle Individual Selection
-  const handleToggleSelect = (orderId: string) => {
-    const newSet = new Set(selectedOrders);
-    if (newSet.has(orderId)) {
-      newSet.delete(orderId);
-    } else {
-      newSet.add(orderId);
-    }
-    setSelectedOrders(newSet);
-  };
+    // Toggle Individual Selection
+    const handleToggleSelect = (orderId: string) => {
+        const newSet = new Set(selectedOrders);
+        if (newSet.has(orderId)) {
+            newSet.delete(orderId);
+        } else {
+            newSet.add(orderId);
+        }
+        setSelectedOrders(newSet);
+    };
 
 
-  return (
-    <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700">
-        <div>
-            <div className="flex items-center gap-3 mb-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
+    return (
+        <div className="space-y-6">
+            {/* Header Actions */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Daftar Pesanan</h1>
+                    </div>
+                    <p className="ml-12 text-sm text-slate-600 dark:text-slate-400">Kelola semua pesanan masuk, proses, dan pengiriman.</p>
                 </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Daftar Pesanan</h1>
-            </div>
-            <p className="ml-12 text-sm text-slate-600 dark:text-slate-400">Kelola semua pesanan masuk, proses, dan pengiriman.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
+                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                    <DateRangePicker value={dateRange} onChange={setDateRange} />
+                    <button
+                        onClick={() => setOrderSoundEnabled(prev => !prev)}
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold shadow-md transition-all ${orderSoundEnabled ? 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'}`}
+                        title="Toggle notifikasi suara pesanan"
+                    >
+                        <span>{orderSoundEnabled ? '🔔 Suara ON' : '🔕 Suara OFF'}</span>
+                    </button>
+                    {currentUser && canUseFeature('export_csv', getNormalizedRole(currentUser.role)) && (
                         <button
-                            onClick={() => setOrderSoundEnabled(prev => !prev)}
-                            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold shadow-md transition-all ${orderSoundEnabled ? 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'}`}
-                            title="Toggle notifikasi suara pesanan"
+                            onClick={handleExportExcel}
+                            disabled={isExporting || filteredOrders.length === 0}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-md shadow-green-500/20 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <span>{orderSoundEnabled ? '🔔 Suara ON' : '🔕 Suara OFF'}</span>
+                            {isExporting ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}
+                            <span>Ekspor CSV</span>
                         </button>
-            {currentUser && canUseFeature('export_csv', getNormalizedRole(currentUser.role)) && (
-            <button 
-              onClick={handleExportExcel} 
-              disabled={isExporting || filteredOrders.length === 0}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-md shadow-green-500/20 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isExporting ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}
-                <span>Ekspor CSV</span>
-            </button>
-            )}
-            {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
-            <button onClick={() => setIsManualOrderModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all">
-                <PlusIcon className="w-4 h-4" />
-                <span>Pesanan Manual</span>
-            </button>
-            )}
-            {/* Pending Deletions Button - Only for Admin/Super Admin */}
-            {(currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
-                <Link to="/pengaturan/permintaan-hapus" className="relative p-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all" title="Permintaan Hapus">
-                    <TrashIcon className="w-4 h-4" />
-                    {pendingDeletionsCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">
-                            {pendingDeletionsCount}
-                        </span>
                     )}
-                </Link>
+                    {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
+                        <button onClick={() => setIsManualOrderModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all">
+                            <PlusIcon className="w-4 h-4" />
+                            <span>Pesanan Manual</span>
+                        </button>
+                    )}
+                    {/* Pending Deletions Button - Only for Admin/Super Admin */}
+                    {(currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
+                        <Link to="/pengaturan/permintaan-hapus" className="relative p-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all" title="Permintaan Hapus">
+                            <TrashIcon className="w-4 h-4" />
+                            {pendingDeletionsCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">
+                                    {pendingDeletionsCount}
+                                </span>
+                            )}
+                        </Link>
+                    )}
+                </div>
+            </div>
+
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <ShoppingCartIcon className="w-5 h-5" />
+                        </div>
+                        <span className="text-2xl font-bold">{stats.totalOrders}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-blue-100 mt-2">Total Pesanan</h3>
+                    <p className="text-xs text-blue-200">Semua status</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <BanknotesIcon className="w-5 h-5" />
+                        </div>
+                        <span className="text-2xl font-bold">Rp {(stats.totalRevenue / 1000000).toFixed(1)}M</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-green-100 mt-2">Total Omzet</h3>
+                    <p className="text-xs text-green-200">Revenue keseluruhan</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span className="text-2xl font-bold">{stats.pendingCount}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-amber-100 mt-2">Pending</h3>
+                    <p className="text-xs text-amber-200">Menunggu diproses</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span className="text-2xl font-bold">{stats.deliveredCount}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-purple-100 mt-2">Delivered</h3>
+                    <p className="text-xs text-purple-200">Pesanan selesai</p>
+                </div>
+            </div>
+
+            {/* --- Filter & Search Section --- */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-3">
+                <div className="flex items-center gap-2">
+                    {/* Search */}
+                    <div className="flex-1 relative">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Cari ID, Nama, atau No. WA..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                    </div>
+
+                    {/* Brand Filter */}
+                    <div className="relative brand-dropdown">
+                        <button
+                            onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
+                            className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
+                        >
+                            <span className="flex-1 text-left truncate">
+                                {selectedBrandFilter === 'all' ? 'Brand' : uniqueBrands.find(b => b.id === selectedBrandFilter)?.name || selectedBrandFilter}
+                            </span>
+                            <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                        </button>
+                        {brandDropdownOpen && (
+                            <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div className="p-2">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedBrandFilter('all');
+                                            setBrandDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                    >
+                                        Semua Brand
+                                    </button>
+                                    {uniqueBrands.map(brand => (
+                                        <button
+                                            key={brand.id}
+                                            onClick={() => {
+                                                setSelectedBrandFilter(brand.id);
+                                                setBrandDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === brand.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                        >
+                                            {brand.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Product Filter */}
+                    <div className="relative product-dropdown">
+                        <button
+                            onClick={() => setProductDropdownOpen(!productDropdownOpen)}
+                            className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
+                        >
+                            <span className="flex-1 text-left truncate">
+                                {selectedProductFilter === 'all' ? 'Produk' : selectedProductFilter}
+                            </span>
+                            <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
+                        </button>
+                        {productDropdownOpen && (
+                            <div className="absolute top-full mt-1 left-0 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div className="p-2">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedProductFilter('all');
+                                            setProductDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedProductFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                    >
+                                        Semua Produk
+                                    </button>
+                                    {uniqueProducts.map(product => (
+                                        <button
+                                            key={product}
+                                            onClick={() => {
+                                                setSelectedProductFilter(product);
+                                                setProductDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm truncate ${selectedProductFilter === product ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                                            title={product}
+                                        >
+                                            {product}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Payment Method Multi-Select */}
+                    <div className="relative payment-dropdown">
+                        <button
+                            onClick={() => setPaymentDropdownOpen(!paymentDropdownOpen)}
+                            className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
+                        >
+                            <span className="flex-1 text-left">
+                                {selectedPaymentFilter.size === 0 ? 'Metode Bayar' : `${selectedPaymentFilter.size} dipilih`}
+                            </span>
+                            <ChevronDownIcon className="w-4 h-4" />
+                        </button>
+                        {paymentDropdownOpen && (
+                            <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div className="p-2">
+                                    {uniquePaymentMethods.map(method => (
+                                        <label key={method} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedPaymentFilter.has(method)}
+                                                onChange={(e) => {
+                                                    const newSet = new Set(selectedPaymentFilter);
+                                                    if (e.target.checked) {
+                                                        newSet.add(method);
+                                                    } else {
+                                                        newSet.delete(method);
+                                                    }
+                                                    setSelectedPaymentFilter(newSet);
+                                                }}
+                                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                            />
+                                            <span className="text-sm">{method}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Status Multi-Select */}
+                    <div className="relative status-dropdown">
+                        <button
+                            onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                            className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
+                        >
+                            <span className="flex-1 text-left">
+                                {activeStatusFilter.size === 0 ? 'Status' : `${activeStatusFilter.size} dipilih`}
+                            </span>
+                            <ChevronDownIcon className="w-4 h-4" />
+                        </button>
+                        {statusDropdownOpen && (
+                            <div className="absolute top-full mt-1 right-0 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div className="p-2">
+                                    {TABS.filter(s => s !== 'All').map(status => (
+                                        <label key={status} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={activeStatusFilter.has(status as OrderStatus)}
+                                                onChange={(e) => {
+                                                    const newSet = new Set(activeStatusFilter);
+                                                    if (e.target.checked) {
+                                                        newSet.add(status as OrderStatus);
+                                                    } else {
+                                                        newSet.delete(status as OrderStatus);
+                                                    }
+                                                    setActiveStatusFilter(newSet);
+                                                }}
+                                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                            />
+                                            <span className="text-sm">{status}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Pending Deletions Alert */}
+            {pendingDeletionsCount > 0 && (currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-l-4 border-orange-500 rounded-xl shadow-sm p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                                <TrashIcon className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                                    Ada {pendingDeletionsCount} pesanan menunggu konfirmasi hapus
+                                </p>
+                                <p className="text-xs text-orange-700 dark:text-orange-300">Tinjau dan proses permintaan penghapusan</p>
+                            </div>
+                        </div>
+                        <Link
+                            to="/pengaturan/permintaan-hapus"
+                            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+                        >
+                            Lihat Permintaan
+                            <ArrowRightIcon className="w-4 h-4" />
+                        </Link>
+                    </div>
+                </div>
             )}
-        </div>
-      </div>
 
-      {/* Statistics Cards */}
-    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <ShoppingCartIcon className="w-5 h-5" />
-            </div>
-            <span className="text-2xl font-bold">{stats.totalOrders}</span>
-          </div>
-          <h3 className="text-sm font-medium text-blue-100 mt-2">Total Pesanan</h3>
-          <p className="text-xs text-blue-200">Semua status</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <BanknotesIcon className="w-5 h-5" />
-            </div>
-            <span className="text-2xl font-bold">Rp {(stats.totalRevenue / 1000000).toFixed(1)}M</span>
-          </div>
-          <h3 className="text-sm font-medium text-green-100 mt-2">Total Omzet</h3>
-          <p className="text-xs text-green-200">Revenue keseluruhan</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <span className="text-2xl font-bold">{stats.pendingCount}</span>
-          </div>
-          <h3 className="text-sm font-medium text-amber-100 mt-2">Pending</h3>
-          <p className="text-xs text-amber-200">Menunggu diproses</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg hover:scale-105 transition-transform">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <span className="text-2xl font-bold">{stats.deliveredCount}</span>
-          </div>
-          <h3 className="text-sm font-medium text-purple-100 mt-2">Delivered</h3>
-          <p className="text-xs text-purple-200">Pesanan selesai</p>
-        </div>
-      </div>
-
-      {/* --- Filter & Search Section --- */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-3">
-          <div className="flex items-center gap-2">
-              {/* Search */}
-              <div className="flex-1 relative">
-                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Cari ID, Nama, atau No. WA..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-              </div>
-
-              {/* Brand Filter */}
-              <div className="relative brand-dropdown">
-                  <button
-                    onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
-                  >
-                    <span className="flex-1 text-left truncate">
-                      {selectedBrandFilter === 'all' ? 'Brand' : uniqueBrands.find(b => b.id === selectedBrandFilter)?.name || selectedBrandFilter}
-                    </span>
-                    <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
-                  </button>
-                  {brandDropdownOpen && (
-                    <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                      <div className="p-2">
-                        <button
-                          onClick={() => {
-                            setSelectedBrandFilter('all');
-                            setBrandDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
-                        >
-                          Semua Brand
-                        </button>
-                        {uniqueBrands.map(brand => (
-                          <button
-                            key={brand.id}
-                            onClick={() => {
-                              setSelectedBrandFilter(brand.id);
-                              setBrandDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === brand.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
-                          >
-                            {brand.name}
-                          </button>
-                        ))}
-                      </div>
+            {/* Bulk Actions Toolbar */}
+            {selectedOrders.size > 0 && (
+                <div className="bg-indigo-600 text-white rounded-2xl shadow-xl p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <span className="font-semibold">{selectedOrders.size} pesanan terpilih</span>
+                            <button
+                                onClick={() => setSelectedOrders(new Set())}
+                                className="text-sm underline hover:no-underline"
+                            >
+                                Batal Pilihan
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
+                            >
+                                <TrashIcon className="w-4 h-4" />
+                                Hapus Terpilih
+                            </button>
+                        </div>
                     </div>
-                  )}
-              </div>
-
-              {/* Product Filter */}
-              <div className="relative product-dropdown">
-                  <button
-                    onClick={() => setProductDropdownOpen(!productDropdownOpen)}
-                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
-                  >
-                    <span className="flex-1 text-left truncate">
-                      {selectedProductFilter === 'all' ? 'Produk' : selectedProductFilter}
-                    </span>
-                    <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
-                  </button>
-                  {productDropdownOpen && (
-                    <div className="absolute top-full mt-1 left-0 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                      <div className="p-2">
-                        <button
-                          onClick={() => {
-                            setSelectedProductFilter('all');
-                            setProductDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedProductFilter === 'all' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
-                        >
-                          Semua Produk
-                        </button>
-                        {uniqueProducts.map(product => (
-                          <button
-                            key={product}
-                            onClick={() => {
-                              setSelectedProductFilter(product);
-                              setProductDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm truncate ${selectedProductFilter === product ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
-                            title={product}
-                          >
-                            {product}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-
-              {/* Payment Method Multi-Select */}
-              <div className="relative payment-dropdown">
-                  <button
-                    onClick={() => setPaymentDropdownOpen(!paymentDropdownOpen)}
-                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[160px]"
-                  >
-                    <span className="flex-1 text-left">
-                      {selectedPaymentFilter.size === 0 ? 'Metode Bayar' : `${selectedPaymentFilter.size} dipilih`}
-                    </span>
-                    <ChevronDownIcon className="w-4 h-4" />
-                  </button>
-                  {paymentDropdownOpen && (
-                    <div className="absolute top-full mt-1 left-0 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                      <div className="p-2">
-                        {uniquePaymentMethods.map(method => (
-                          <label key={method} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedPaymentFilter.has(method)}
-                              onChange={(e) => {
-                                const newSet = new Set(selectedPaymentFilter);
-                                if (e.target.checked) {
-                                  newSet.add(method);
-                                } else {
-                                  newSet.delete(method);
-                                }
-                                setSelectedPaymentFilter(newSet);
-                              }}
-                              className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                            />
-                            <span className="text-sm">{method}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-
-              {/* Status Multi-Select */}
-              <div className="relative status-dropdown">
-                  <button
-                    onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
-                  >
-                    <span className="flex-1 text-left">
-                      {activeStatusFilter.size === 0 ? 'Status' : `${activeStatusFilter.size} dipilih`}
-                    </span>
-                    <ChevronDownIcon className="w-4 h-4" />
-                  </button>
-                  {statusDropdownOpen && (
-                    <div className="absolute top-full mt-1 right-0 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                      <div className="p-2">
-                        {TABS.filter(s => s !== 'All').map(status => (
-                          <label key={status} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={activeStatusFilter.has(status as OrderStatus)}
-                              onChange={(e) => {
-                                const newSet = new Set(activeStatusFilter);
-                                if (e.target.checked) {
-                                  newSet.add(status as OrderStatus);
-                                } else {
-                                  newSet.delete(status as OrderStatus);
-                                }
-                                setActiveStatusFilter(newSet);
-                              }}
-                              className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                            />
-                            <span className="text-sm">{status}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-          </div>
-      </div>
-
-      {/* Pending Deletions Alert */}
-          {pendingDeletionsCount > 0 && (currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin') && (
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-l-4 border-orange-500 rounded-xl shadow-sm p-4 mb-6">
-                  <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                              <TrashIcon className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                              <p className="text-sm font-semibold text-orange-900 dark:text-orange-200">
-                                  Ada {pendingDeletionsCount} pesanan menunggu konfirmasi hapus
-                              </p>
-                              <p className="text-xs text-orange-700 dark:text-orange-300">Tinjau dan proses permintaan penghapusan</p>
-                          </div>
-                      </div>
-                      <Link 
-                          to="/pengaturan/permintaan-hapus" 
-                          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
-                      >
-                          Lihat Permintaan
-                          <ArrowRightIcon className="w-4 h-4" />
-                      </Link>
-                  </div>
-              </div>
-          )}
-
-          {/* Bulk Actions Toolbar */}
-          {selectedOrders.size > 0 && (
-            <div className="bg-indigo-600 text-white rounded-2xl shadow-xl p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="font-semibold">{selectedOrders.size} pesanan terpilih</span>
-                  <button
-                    onClick={() => setSelectedOrders(new Set())}
-                    className="text-sm underline hover:no-underline"
-                  >
-                    Batal Pilihan
-                  </button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleBulkDelete}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                    Hapus Terpilih
-                  </button>
+            )}
+
+            {/* Orders Table */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <div className="min-w-[700px] md:min-w-0">
+                    {loading ? (
+                        <div className="flex flex-col justify-center items-center py-20">
+                            <SpinnerIcon className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                            <p className="text-slate-500 dark:text-slate-400 font-medium">Memuat data pesanan...</p>
+                        </div>
+                    ) : filteredOrders.length === 0 ? (
+                        <div className="text-center py-20">
+                            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+                                <SearchIcon className="w-10 h-10 text-slate-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tidak ada pesanan ditemukan</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Coba ubah filter status atau kata kunci pencarian Anda.</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0}
+                                            onChange={handleToggleSelectAll}
+                                            className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                        />
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>
+                                    {currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {paginatedOrders.map(order => {
+                                    // Find CS info if viewing as admin
+                                    const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
+
+                                    return (
+                                        <tr key={order.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                                            <td className="px-6 py-5 align-middle">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedOrders.has(order.id)}
+                                                    onChange={() => handleToggleSelect(order.id)}
+                                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <div className="flex flex-col">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedOrder(order);
+                                                            setIsDetailModalOpen(true);
+                                                        }}
+                                                        className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer text-left hover:underline"
+                                                    >
+                                                        #{order.id.substring(0, 8)}
+                                                    </button>
+                                                    <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                        <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(order.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
+                                                    <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                                                        <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
+                                                        {order.customerPhone}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <div className="max-w-xs">
+                                                    <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-1" title={order.productName}>{order.productName}</p>
+                                                    <p className="font-bold text-slate-900 dark:text-white">Rp {order.totalPrice?.toLocaleString('id-ID')}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <div className="flex flex-col gap-2 items-start">
+                                                    <StatusBadge status={order.status} />
+                                                    <button
+                                                        onClick={() => setOrderToChangePayment(order)}
+                                                        className="text-xs flex items-center gap-1 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 transition-colors"
+                                                    >
+                                                        <CreditCardIcon className="w-3 h-3" />
+                                                        {order.paymentMethod || 'COD'}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            {currentUser?.role !== 'Customer service' && (
+                                                <td className="px-6 py-5 align-top">
+                                                    {assignedCS ? (
+                                                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs font-bold">
+                                                                {assignedCS.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="truncate max-w-[80px]">{assignedCS.name.split(' ')[0]}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            {assignTargetOrderId === order.id ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <select value={assignSelectedCsId} onChange={e => setAssignSelectedCsId(e.target.value)} className="p-1 border rounded bg-white dark:bg-slate-800 text-sm">
+                                                                        <option value="">Pilih CS...</option>
+                                                                        {csUsers.map(cs => (
+                                                                            <option key={cs.id} value={cs.id}>{cs.name}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                    <button onClick={() => handleSaveAssign(order.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Simpan</button>
+                                                                    <button onClick={handleCancelAssign} className="px-2 py-1 border rounded text-sm">Batal</button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-slate-400 italic">Unassigned</span>
+                                                                    <button onClick={() => handleOpenAssign(order.id)} className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded">Assign</button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            )}
+                                            <td className="px-6 py-5 align-middle">
+                                                <div className="flex justify-center">
+                                                    <FollowUpIndicator order={order} onFollowUp={handleFollowUp} templates={templates} />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 align-middle text-right">
+                                                <div className="relative flex items-center justify-end">
+                                                    <button
+                                                        onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
+                                                        className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                                                        title="Aksi"
+                                                    >
+                                                        <DotsHorizontalIcon className="w-5 h-5" />
+                                                    </button>
+
+                                                    {openDropdownId === order.id && (
+                                                        <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedOrder(order);
+                                                                    setIsDetailModalOpen(true);
+                                                                    setOpenDropdownId(null);
+                                                                }}
+                                                                className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                            >
+                                                                <EyeIcon className="w-5 h-5 text-indigo-600" />
+                                                                <span>Detail</span>
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedOrder(order);
+                                                                    setIsManualOrderModalOpen(true);
+                                                                    setOpenDropdownId(null);
+                                                                }}
+                                                                className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                            >
+                                                                <PencilIcon className="w-5 h-5 text-slate-600" />
+                                                                <span>Edit</span>
+                                                            </button>
+
+                                                            {order.status === 'Pending' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setOrderToProcess(order);
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                >
+                                                                    <PlayIcon className="w-5 h-5 text-blue-600" />
+                                                                    <span>Proses</span>
+                                                                </button>
+                                                            )}
+
+                                                            {order.status === 'Processing' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setOrderToShip(order);
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                >
+                                                                    <ShipIcon className="w-5 h-5 text-cyan-600" />
+                                                                    <span>Kirim (Input Resi)</span>
+                                                                </button>
+                                                            )}
+
+                                                            {order.status === 'Shipped' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleUpdateStatus(order.id, 'Delivered');
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                >
+                                                                    <CheckCircleFilledIcon className="w-5 h-5 text-green-600" />
+                                                                    <span>Selesai (Delivered)</span>
+                                                                </button>
+                                                            )}
+
+                                                            {order.status !== 'Canceled' && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setOrderToCancel(order);
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                >
+                                                                    <XCircleIcon className="w-5 h-5 text-orange-600" />
+                                                                    <span>Batalkan</span>
+                                                                </button>
+                                                            )}
+
+                                                            <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+
+                                                            {currentUser && canUseFeature('delete_order', getNormalizedRole(currentUser.role)) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        openDeleteConfirmation(order);
+                                                                        setOpenDropdownId(null);
+                                                                    }}
+                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-colors"
+                                                                >
+                                                                    <TrashIcon className="w-5 h-5" />
+                                                                    <span>Hapus</span>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
-              </div>
             </div>
-          )}
 
-          {/* Orders Table */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
-              <div className="min-w-[700px] md:min-w-0">
-              {loading ? (
-                  <div className="flex flex-col justify-center items-center py-20">
-                      <SpinnerIcon className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
-                      <p className="text-slate-500 dark:text-slate-400 font-medium">Memuat data pesanan...</p>
-                  </div>
-              ) : filteredOrders.length === 0 ? (
-                  <div className="text-center py-20">
-                      <div className="mx-auto w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
-                          <SearchIcon className="w-10 h-10 text-slate-400" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tidak ada pesanan ditemukan</h3>
-                      <p className="text-slate-500 dark:text-slate-400">Coba ubah filter status atau kata kunci pencarian Anda.</p>
-                  </div>
-              ) : (
-                  <table className="w-full text-left border-collapse">
-                      <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
-                          <tr>
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0}
-                                  onChange={handleToggleSelectAll}
-                                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                                />
-                              </th>
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>
-                              {currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>
-                              <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
-                          </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                          {paginatedOrders.map(order => {
-                              // Find CS info if viewing as admin
-                              const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
-                              
-                              return (
-                              <tr key={order.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
-                                  <td className="px-6 py-5 align-middle">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedOrders.has(order.id)}
-                                      onChange={() => handleToggleSelect(order.id)}
-                                      className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                                    />
-                                  </td>
-                                  <td className="px-6 py-5 align-top">
-                                      <div className="flex flex-col">
-                                          <button
-                                              onClick={() => {
-                                                  setSelectedOrder(order);
-                                                  setIsDetailModalOpen(true);
-                                              }}
-                                              className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer text-left hover:underline"
-                                          >
-                                              #{order.id.substring(0, 8)}
-                                          </button>
-                                          <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                                              <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(order.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                          </span>
-                                      </div>
-                                  </td>
-                                  <td className="px-6 py-5 align-top">
-                                      <div className="flex flex-col">
-                                          <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
-                                          <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                                              <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
-                                              {order.customerPhone}
-                                          </div>
-                                      </div>
-                                  </td>
-                                  <td className="px-6 py-5 align-top">
-                                      <div className="max-w-xs">
-                                          <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-1" title={order.productName}>{order.productName}</p>
-                                          <p className="font-bold text-slate-900 dark:text-white">Rp {order.totalPrice?.toLocaleString('id-ID')}</p>
-                                      </div>
-                                  </td>
-                                  <td className="px-6 py-5 align-top">
-                                      <div className="flex flex-col gap-2 items-start">
-                                          <StatusBadge status={order.status} />
-                                          <button 
-                                            onClick={() => setOrderToChangePayment(order)}
-                                            className="text-xs flex items-center gap-1 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 transition-colors"
-                                          >
-                                              <CreditCardIcon className="w-3 h-3" />
-                                              {order.paymentMethod || 'COD'}
-                                          </button>
-                                      </div>
-                                  </td>
-                                  {currentUser?.role !== 'Customer service' && (
-                                      <td className="px-6 py-5 align-top">
-                                          {assignedCS ? (
-                                              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                                  <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs font-bold">
-                                                      {assignedCS.name.charAt(0).toUpperCase()}
-                                                  </div>
-                                                  <span className="truncate max-w-[80px]">{assignedCS.name.split(' ')[0]}</span>
-                                              </div>
-                                          ) : (
-                                              <div>
-                                                  {assignTargetOrderId === order.id ? (
-                                                      <div className="flex items-center gap-2">
-                                                          <select value={assignSelectedCsId} onChange={e => setAssignSelectedCsId(e.target.value)} className="p-1 border rounded bg-white dark:bg-slate-800 text-sm">
-                                                              <option value="">Pilih CS...</option>
-                                                              {csUsers.map(cs => (
-                                                                  <option key={cs.id} value={cs.id}>{cs.name}</option>
-                                                              ))}
-                                                          </select>
-                                                          <button onClick={() => handleSaveAssign(order.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Simpan</button>
-                                                          <button onClick={handleCancelAssign} className="px-2 py-1 border rounded text-sm">Batal</button>
-                                                      </div>
-                                                  ) : (
-                                                      <div className="flex items-center gap-2">
-                                                          <span className="text-xs text-slate-400 italic">Unassigned</span>
-                                                          <button onClick={() => handleOpenAssign(order.id)} className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded">Assign</button>
-                                                      </div>
-                                                  )}
-                                              </div>
-                                          )}
-                                      </td>
-                                  )}
-                                  <td className="px-6 py-5 align-middle">
-                                      <div className="flex justify-center">
-                                          <FollowUpIndicator order={order} onFollowUp={handleFollowUp} templates={templates} />
-                                      </div>
-                                  </td>
-                                  <td className="px-6 py-5 align-middle text-right">
-                                      <div className="relative flex items-center justify-end">
-                                          <button 
-                                              onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
-                                              className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
-                                              title="Aksi"
-                                          >
-                                              <DotsHorizontalIcon className="w-5 h-5" />
-                                          </button>
-                                          
-                                          {openDropdownId === order.id && (
-                                              <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50">
-                                                  <button 
-                                                      onClick={() => {
-                                                          setSelectedOrder(order);
-                                                          setIsDetailModalOpen(true);
-                                                          setOpenDropdownId(null);
-                                                      }}
-                                                      className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                  >
-                                                      <EyeIcon className="w-5 h-5 text-indigo-600" />
-                                                      <span>Detail</span>
-                                                  </button>
-                                                  
-                                                  <button 
-                                                      onClick={() => {
-                                                          setSelectedOrder(order);
-                                                          setIsManualOrderModalOpen(true);
-                                                          setOpenDropdownId(null);
-                                                      }}
-                                                      className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                  >
-                                                      <PencilIcon className="w-5 h-5 text-slate-600" />
-                                                      <span>Edit</span>
-                                                  </button>
-                                                  
-                                                  {order.status === 'Pending' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
-                                                      <button 
-                                                          onClick={() => {
-                                                              setOrderToProcess(order);
-                                                              setOpenDropdownId(null);
-                                                          }}
-                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                      >
-                                                          <PlayIcon className="w-5 h-5 text-blue-600" />
-                                                          <span>Proses</span>
-                                                      </button>
-                                                  )}
-                                                  
-                                                  {order.status === 'Processing' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
-                                                      <button 
-                                                          onClick={() => {
-                                                              setOrderToShip(order);
-                                                              setOpenDropdownId(null);
-                                                          }}
-                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                      >
-                                                          <ShipIcon className="w-5 h-5 text-cyan-600" />
-                                                          <span>Kirim (Input Resi)</span>
-                                                      </button>
-                                                  )}
+            {/* Pagination Controls */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                        <span className="font-medium">Jumlah per halaman:</span>
+                        <select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value, 10))} className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                        <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Total: {filteredOrders.length}</span>
+                    </div>
 
-                                                  {order.status === 'Shipped' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
-                                                      <button 
-                                                          onClick={() => {
-                                                              handleUpdateStatus(order.id, 'Delivered');
-                                                              setOpenDropdownId(null);
-                                                          }}
-                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                      >
-                                                          <CheckCircleFilledIcon className="w-5 h-5 text-green-600" />
-                                                          <span>Selesai (Delivered)</span>
-                                                      </button>
-                                                  )}
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
+                        <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Halaman {page} / {totalPages}</div>
+                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
+                    </div>
+                </div>
+            </div>
 
-                                                  {order.status !== 'Canceled' && (
-                                                      <button 
-                                                          onClick={() => {
-                                                              setOrderToCancel(order);
-                                                              setOpenDropdownId(null);
-                                                          }}
-                                                          className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                      >
-                                                          <XCircleIcon className="w-5 h-5 text-orange-600" />
-                                                          <span>Batalkan</span>
-                                                      </button>
-                                                  )}
+            {/* --- MODALS --- */}
+            {isDetailModalOpen && selectedOrder && (
+                <OrderDetailModal order={selectedOrder} onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }} allUsers={allUsers} csAgents={csAgents} brands={brands} products={products} />
+            )}
 
-                                                  <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+            {isManualOrderModalOpen && (
+                <ManualOrderModal
+                    forms={forms}
+                    csUsers={csUsers}
+                    currentUser={currentUser}
+                    editOrder={selectedOrder}
+                    onClose={() => {
+                        setIsManualOrderModalOpen(false);
+                        setSelectedOrder(null);
+                    }}
+                    onSave={handleSaveManualOrder}
+                />
+            )}
 
-                                                  {currentUser && canUseFeature('delete_order', getNormalizedRole(currentUser.role)) && (
-                                                  <button 
-                                                      onClick={() => {
-                                                          openDeleteConfirmation(order);
-                                                          setOpenDropdownId(null);
-                                                      }}
-                                                      className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-colors"
-                                                  >
-                                                      <TrashIcon className="w-5 h-5" />
-                                                      <span>Hapus</span>
-                                                  </button>
-                                                  )}
-                                              </div>
-                                          )}
-                                      </div>
-                                  </td>
-                              </tr>
-                          )})}
-                      </tbody>
-                  </table>
-              )}
-          </div>
-          </div>
+            {orderToProcess && (
+                <ConfirmProcessModal
+                    orderToAction={orderToProcess}
+                    onClose={() => setOrderToProcess(null)}
+                    onConfirm={() => handleUpdateStatus(orderToProcess.id, 'Processing')}
+                    isVerification={orderToProcess.paymentMethod !== 'Bayar di Tempat (COD)'}
+                />
+            )}
 
-          {/* Pagination Controls */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium">Jumlah per halaman:</span>
-                  <select value={pageSize} onChange={e => setPageSize(parseInt(e.target.value, 10))} className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
-                      <option value={10}>10</option>
-                      <option value={25}>25</option>
-                      <option value={50}>50</option>
-                      <option value={100}>100</option>
-                  </select>
-                  <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Total: {filteredOrders.length}</span>
-              </div>
+            {orderToShip && (
+                <ResiInputModal
+                    orderToAction={orderToShip}
+                    onClose={() => setOrderToShip(null)}
+                    onSave={(resi) => handleUpdateStatus(orderToShip.id, 'Shipped', { shippingResi: resi })}
+                />
+            )}
 
-              <div className="flex items-center gap-2">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
-                  <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold">Halaman {page} / {totalPages}</div>
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
-              </div>
-          </div>
-          </div>
+            {orderToNotify && (
+                <ShippingNotificationModal
+                    order={orderToNotify}
+                    templates={templates}
+                    onClose={() => setOrderToNotify(null)}
+                />
+            )}
 
-      {/* --- MODALS --- */}
-      {isDetailModalOpen && selectedOrder && (
-          <OrderDetailModal order={selectedOrder} onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }} allUsers={allUsers} csAgents={csAgents} brands={brands} products={products} />
-      )}
+            {orderToChangePayment && (
+                <ChangePaymentMethodModal
+                    order={orderToChangePayment}
+                    onClose={() => setOrderToChangePayment(null)}
+                    onSave={handleChangePayment}
+                />
+            )}
 
-      {isManualOrderModalOpen && (
-          <ManualOrderModal 
-            forms={forms} 
-            csUsers={csUsers}
-            currentUser={currentUser}
-            editOrder={selectedOrder}
-            onClose={() => {
-                setIsManualOrderModalOpen(false);
-                setSelectedOrder(null);
-            }} 
-            onSave={handleSaveManualOrder} 
-          />
-      )}
+            {orderToDelete && (
+                <ConfirmationModal
+                    isOpen={!!orderToDelete}
+                    title="Pindahkan ke Sampah"
+                    message={`Apakah Anda yakin ingin memindahkan pesanan #${orderToDelete.id.substring(0, 8)} ke sampah?`}
+                    confirmLabel="Ya, Pindahkan"
+                    cancelLabel="Batal"
+                    variant="danger"
+                    onConfirm={confirmDeleteOrder}
+                    onClose={() => setOrderToDelete(null)}
+                />
+            )}
 
-      {orderToProcess && (
-          <ConfirmProcessModal 
-            orderToAction={orderToProcess} 
-            onClose={() => setOrderToProcess(null)} 
-            onConfirm={() => handleUpdateStatus(orderToProcess.id, 'Processing')} 
-            isVerification={orderToProcess.paymentMethod !== 'Bayar di Tempat (COD)'}
-          />
-      )}
+            {orderToCancel && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setOrderToCancel(null)}>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6 border-b dark:border-slate-700">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Konfirmasi Pembatalan Pesanan</h2>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-slate-700 dark:text-slate-300">
+                                Apakah Anda yakin ingin membatalkan pesanan <span className="font-semibold">#{orderToCancel.id.substring(0, 8)}</span>?
+                            </p>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Alasan Pembatalan <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={cancellationReason}
+                                    onChange={(e) => setCancellationReason(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                >
+                                    <option value="">Pilih alasan pembatalan...</option>
+                                    {cancellationReasons.map((reason) => (
+                                        <option key={reason} value={reason}>{reason}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t dark:border-slate-700 flex justify-end space-x-3">
+                            <button
+                                onClick={() => {
+                                    setOrderToCancel(null);
+                                    setCancellationReason('');
+                                }}
+                                className="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleCancelOrder}
+                                disabled={!cancellationReason}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Konfirmasi Batalkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-      {orderToShip && (
-          <ResiInputModal 
-            orderToAction={orderToShip} 
-            onClose={() => setOrderToShip(null)} 
-            onSave={(resi) => handleUpdateStatus(orderToShip.id, 'Shipped', { shippingResi: resi })}
-          />
-      )}
-
-      {orderToNotify && (
-          <ShippingNotificationModal 
-            order={orderToNotify} 
-            templates={templates}
-            onClose={() => setOrderToNotify(null)}
-          />
-      )}
-
-      {orderToChangePayment && (
-          <ChangePaymentMethodModal 
-            order={orderToChangePayment}
-            onClose={() => setOrderToChangePayment(null)}
-            onSave={handleChangePayment}
-          />
-      )}
-
-      {orderToDelete && (
-          <ConfirmationModal
-            isOpen={!!orderToDelete}
-            title="Pindahkan ke Sampah"
-            message={`Apakah Anda yakin ingin memindahkan pesanan #${orderToDelete.id.substring(0, 8)} ke sampah?`}
-            confirmLabel="Ya, Pindahkan"
-            cancelLabel="Batal"
-            variant="danger"
-            onConfirm={confirmDeleteOrder}
-            onClose={() => setOrderToDelete(null)}
-          />
-      )}
-
-      {orderToCancel && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setOrderToCancel(null)}>
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                  <div className="p-6 border-b dark:border-slate-700">
-                      <h2 className="text-xl font-bold text-slate-900 dark:text-white">Konfirmasi Pembatalan Pesanan</h2>
-                  </div>
-                  <div className="p-6 space-y-4">
-                      <p className="text-slate-700 dark:text-slate-300">
-                          Apakah Anda yakin ingin membatalkan pesanan <span className="font-semibold">#{orderToCancel.id.substring(0, 8)}</span>?
-                      </p>
-                      <div>
-                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                              Alasan Pembatalan <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                              value={cancellationReason}
-                              onChange={(e) => setCancellationReason(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          >
-                              <option value="">Pilih alasan pembatalan...</option>
-                              {cancellationReasons.map((reason) => (
-                                  <option key={reason} value={reason}>{reason}</option>
-                              ))}
-                          </select>
-                      </div>
-                  </div>
-                  <div className="p-6 border-t dark:border-slate-700 flex justify-end space-x-3">
-                      <button
-                          onClick={() => {
-                              setOrderToCancel(null);
-                              setCancellationReason('');
-                          }}
-                          className="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                      >
-                          Batal
-                      </button>
-                      <button
-                          onClick={handleCancelOrder}
-                          disabled={!cancellationReason}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                          Konfirmasi Batalkan
-                      </button>
-                  </div>
-              </div>
-          </div>
-      )}
-
-    </div>
-  );
+        </div>
+    );
 };
 
 // --- Sub Components Definition ---
 
 const FollowUpIndicator: React.FC<{
-  order: Order;
-  onFollowUp: (orderId: string) => void;
-  templates: MessageTemplates | null;
+    order: Order;
+    onFollowUp: (orderId: string) => void;
+    templates: MessageTemplates | null;
 }> = ({ order, onFollowUp, templates }) => {
-  const { id, followUps, status, customerPhone } = order;
-  const totalFollowUps = 5;
-  const isActionable = status === 'Pending' || status === 'Processing';
+    const { id, followUps, status, customerPhone } = order;
+    const totalFollowUps = 5;
+    const isActionable = status === 'Pending' || status === 'Processing';
 
-  return (
-    <div className="flex items-center space-x-1.5">
-      {Array.from({ length: totalFollowUps }).map((_, i) => {
-        const followUpNumber = i + 1;
-        const isCompleted = followUpNumber <= followUps;
-        const isNext = followUpNumber === followUps + 1;
+    return (
+        <div className="flex items-center space-x-1.5">
+            {Array.from({ length: totalFollowUps }).map((_, i) => {
+                const followUpNumber = i + 1;
+                const isCompleted = followUpNumber <= followUps;
+                const isNext = followUpNumber === followUps + 1;
 
-        const handleClick = async () => {
-          const waNumber = formatWaNumber(customerPhone);
-          if (!waNumber) return;
+                const handleClick = async () => {
+                    const waNumber = formatWaNumber(customerPhone);
+                    if (!waNumber) return;
 
-          const followUpTemplateKey = `followUp${followUpNumber}` as keyof MessageTemplates;
-          let messageTemplate = templates?.[followUpTemplateKey] || `Halo [CUSTOMER_NAME], ini follow up ke-${followUpNumber} untuk pesanan Anda dengan ID [ORDER_ID].`;
-          
-          const message = messageTemplate
-              .replace(/\[CUSTOMER_NAME\]/g, capitalizeWords(order.customer))
-              .replace(/\[ORDER_ID\]/g, order.id)
-              .replace(/\[PRODUCT_NAME\]/g, order.productName)
-              .replace(/\[TOTAL_PRICE\]/g, `Rp ${order.totalPrice?.toLocaleString('id-ID') || '0'}`);
+                    const followUpTemplateKey = `followUp${followUpNumber}` as keyof MessageTemplates;
+                    let messageTemplate = templates?.[followUpTemplateKey] || `Halo [CUSTOMER_NAME], ini follow up ke-${followUpNumber} untuk pesanan Anda dengan ID [ORDER_ID].`;
 
-          window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
-          
-          if (isNext && isActionable) {
-            onFollowUp(id);
-          }
-        };
+                    const message = messageTemplate
+                        .replace(/\[CUSTOMER_NAME\]/g, capitalizeWords(order.customer))
+                        .replace(/\[ORDER_ID\]/g, order.id)
+                        .replace(/\[PRODUCT_NAME\]/g, order.productName)
+                        .replace(/\[TOTAL_PRICE\]/g, `Rp ${order.totalPrice?.toLocaleString('id-ID') || '0'}`);
 
-        let bgClass = 'bg-slate-100 dark:bg-slate-700 text-slate-400';
-        if (isCompleted) bgClass = 'bg-green-500 text-white';
-        else if (isNext && isActionable) bgClass = 'bg-indigo-600 text-white ring-2 ring-indigo-200 dark:ring-indigo-900';
+                    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
 
-        return (
-          <button
-            key={followUpNumber}
-            onClick={handleClick}
-            disabled={(!isNext && !isCompleted) || !customerPhone}
-            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all ${bgClass} ${isNext && isActionable ? 'hover:scale-110 cursor-pointer' : ''}`}
-            title={`Follow Up ${followUpNumber}`}
-          >
-            {isCompleted ? <CheckCircleFilledIcon className="w-5 h-5" /> : followUpNumber}
-          </button>
-        );
-      })}
-    </div>
-  );
+                    if (isNext && isActionable) {
+                        onFollowUp(id);
+                    }
+                };
+
+                let bgClass = 'bg-slate-100 dark:bg-slate-700 text-slate-400';
+                if (isCompleted) bgClass = 'bg-green-500 text-white';
+                else if (isNext && isActionable) bgClass = 'bg-indigo-600 text-white ring-2 ring-indigo-200 dark:ring-indigo-900';
+
+                return (
+                    <button
+                        key={followUpNumber}
+                        onClick={handleClick}
+                        disabled={(!isNext && !isCompleted) || !customerPhone}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all ${bgClass} ${isNext && isActionable ? 'hover:scale-110 cursor-pointer' : ''}`}
+                        title={`Follow Up ${followUpNumber}`}
+                    >
+                        {isCompleted ? <CheckCircleFilledIcon className="w-5 h-5" /> : followUpNumber}
+                    </button>
+                );
+            })}
+        </div>
+    );
 };
 
-const OrderDetailModal: React.FC<{ 
-    order: Order; 
+const OrderDetailModal: React.FC<{
+    order: Order;
     onClose: () => void;
     allUsers: User[];
     csAgents: any[];
@@ -1881,19 +1882,19 @@ const OrderDetailModal: React.FC<{
     );
 };
 
-const ManualOrderModal: React.FC<{ 
-    forms: Form[]; 
-    csUsers: User[]; 
+const ManualOrderModal: React.FC<{
+    forms: Form[];
+    csUsers: User[];
     currentUser: User | null;
     editOrder?: Order | null;
-    onClose: () => void; 
-    onSave: (o: Omit<Order, 'id'>) => void 
+    onClose: () => void;
+    onSave: (o: Omit<Order, 'id'>) => void
 }> = ({ forms, csUsers, currentUser, editOrder, onClose, onSave }) => {
     const [selectedFormId, setSelectedFormId] = useState(editOrder?.formId || forms[0]?.id || '');
-    const [customerData, setCustomerData] = useState({ 
-        name: editOrder?.customer || '', 
-        phone: editOrder?.customerPhone || '', 
-        address: editOrder?.shippingAddress || '' 
+    const [customerData, setCustomerData] = useState({
+        name: editOrder?.customer || '',
+        phone: editOrder?.customerPhone || '',
+        address: editOrder?.shippingAddress || ''
     });
     const [addressData, setAddressData] = useState<AddressData>({
         province: '',
@@ -1966,11 +1967,11 @@ const ManualOrderModal: React.FC<{
             address: addressData.fullAddress
         }));
     }, [addressData]);
-    
+
     const handleSubmit = () => {
         const form = forms.find(f => f.id === selectedFormId);
         if (!form) return;
-        
+
         onSave({
             customer: customerData.name,
             customerPhone: customerData.phone,
@@ -1997,7 +1998,7 @@ const ManualOrderModal: React.FC<{
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl p-6 my-8">
                 <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">{editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Kolom Kiri */}
                     <div className="space-y-4">
@@ -2010,13 +2011,13 @@ const ManualOrderModal: React.FC<{
                                 </select>
                             </div>
                         )}
-                        
+
                         {/* CS Assignment Field - Only for Admin */}
                         {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
-                                <select 
-                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                <select
+                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
                                     value={selectedCsId}
                                     onChange={e => setSelectedCsId(e.target.value)}
                                 >
@@ -2028,28 +2029,28 @@ const ManualOrderModal: React.FC<{
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Pelanggan</label>
-                            <input 
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
-                                placeholder="Nama Pelanggan" 
+                            <input
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                placeholder="Nama Pelanggan"
                                 value={customerData.name}
-                                onChange={e => setCustomerData({...customerData, name: e.target.value})} 
+                                onChange={e => setCustomerData({ ...customerData, name: e.target.value })}
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">WhatsApp</label>
-                            <input 
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
-                                placeholder="WhatsApp (e.g. 0812...)" 
+                            <input
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                placeholder="WhatsApp (e.g. 0812...)"
                                 value={customerData.phone}
-                                onChange={e => setCustomerData({...customerData, phone: e.target.value})} 
+                                onChange={e => setCustomerData({ ...customerData, phone: e.target.value })}
                             />
                         </div>
 
                         {(() => {
                             const selectedForm = forms.find(f => f.id === selectedFormId);
                             const variants = selectedForm?.variantCombinations || [];
-                            
+
                             // Find matching variant index based on stored variant string
                             const matchingIndex = variants.findIndex((v) => {
                                 const variantLabel = Object.entries(v.attributes || {})
@@ -2057,9 +2058,9 @@ const ManualOrderModal: React.FC<{
                                     .join(', ');
                                 return variant === variantLabel;
                             });
-                            
+
                             const currentValue = matchingIndex >= 0 ? `${matchingIndex}::${variant}` : variant;
-                            
+
                             return (
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Variant</label>
@@ -2097,15 +2098,15 @@ const ManualOrderModal: React.FC<{
                                         </select>
                                     ) : (
                                         variant ? (
-                                            <input 
-                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
+                                            <input
+                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
                                                 value={variant}
                                                 onChange={e => setVariant(e.target.value)}
                                             />
                                         ) : (
-                                            <input 
-                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 bg-gray-100 dark:bg-gray-900" 
-                                                placeholder="Tidak ada variant" 
+                                            <input
+                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 bg-gray-100 dark:bg-gray-900"
+                                                placeholder="Tidak ada variant"
                                                 value=""
                                                 disabled
                                             />
@@ -2117,11 +2118,11 @@ const ManualOrderModal: React.FC<{
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jumlah</label>
-                            <input 
-                                type="number" 
+                            <input
+                                type="number"
                                 min="1"
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
-                                placeholder="1" 
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                placeholder="1"
                                 value={quantity}
                                 onChange={e => {
                                     const newQty = parseInt(e.target.value) || 1;
@@ -2147,24 +2148,24 @@ const ManualOrderModal: React.FC<{
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Harga</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
-                                <input 
-                                    type="number" 
-                                    className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
-                                    placeholder="0" 
+                                <input
+                                    type="number"
+                                    className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                    placeholder="0"
                                     value={orderTotal}
-                                    onChange={e => setOrderTotal(parseFloat(e.target.value) || 0)} 
+                                    onChange={e => setOrderTotal(parseFloat(e.target.value) || 0)}
                                 />
                             </div>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Catatan</label>
-                            <textarea 
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" 
-                                placeholder="Catatan tambahan untuk pesanan ini" 
+                            <textarea
+                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                placeholder="Catatan tambahan untuk pesanan ini"
                                 rows={3}
                                 value={notes}
-                                onChange={e => setNotes(e.target.value)} 
+                                onChange={e => setNotes(e.target.value)}
                             />
                         </div>
                     </div>
@@ -2248,15 +2249,15 @@ const ShippingNotificationModal: React.FC<{
             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                        <WhatsAppIcon className="w-5 h-5 text-green-600 dark:text-green-400"/>
+                        <WhatsAppIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Kirim Notifikasi Resi</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Pratinjau pesan sebelum dikirim.</p>
                     </div>
                 </div>
-                
-                <textarea 
+
+                <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="w-full h-32 p-3 border border-slate-300 dark:border-slate-600 rounded-lg mb-4 text-sm bg-slate-50 dark:bg-slate-700/50 dark:text-slate-200 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none"

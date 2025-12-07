@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
   // Temporarily disable to prevent browser dialogs until custom system is ready
   const originalConfirm = window.confirm;
   const originalAlert = window.alert;
-  
+
   // Will be properly set in setupGlobalDialogs function
   (window as any).__originalConfirm = originalConfirm;
   (window as any).__originalAlert = originalAlert;
@@ -101,9 +101,9 @@ const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'
 
 
 const FormViewerWrapper: React.FC = () => {
-    const { identifier } = useParams<{ identifier: string }>();
-    if (!identifier) return <Navigate to="/" />;
-    return <FormViewerPage identifier={identifier} />;
+  const { identifier } = useParams<{ identifier: string }>();
+  if (!identifier) return <Navigate to="/" />;
+  return <FormViewerPage identifier={identifier} />;
 };
 
 interface AuthenticatedAppProps {
@@ -119,7 +119,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
 
   useEffect(() => {
     if (websiteName) {
-        document.title = websiteName;
+      document.title = websiteName;
     }
   }, [websiteName]);
 
@@ -135,54 +135,54 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
         websiteName={websiteName}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
+        <Header
           sidebarToggle={() => setSidebarOpen(!isSidebarOpen)}
           toggleTheme={toggleTheme}
           currentTheme={currentTheme}
           user={user}
           logout={handleLogout}
         />
-        
+
         {/* Global Announcement Line Bar - fetches from database */}
         <AnnouncementLineBar />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 dark:bg-slate-900 p-4 md:p-6 lg:p-8">
           <Suspense fallback={<div className="flex justify-center items-center h-64"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
-          <Routes>
-            <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/profil" element={<MyProfilePage />} />
-                <Route path="/pesanan" element={<OrdersPage />} />
-                <Route path="/keranjang-terabaikan" element={<AbandonedCartsPage />} />
-                <Route path="/pelanggan" element={<CustomersPage />} />
-                <Route path="/laporan-iklan" element={<AdReportsPage user={user} />} />
-                <Route path="/laporan-cs" element={<CSReportsPage />} />
-                <Route path="/penghasilan" element={<EarningsPage />} />
-                <Route path="/formulir" element={<FormsPage />} />
-                <Route path="/formulir/baru" element={<FormEditorPage />} />
-                <Route path="/formulir/edit/:formId" element={<FormEditorPage />} />
-                <Route path="/pengaturan-akun" element={<ProfilePage />} />
-                <Route path="/pengaturan" element={<SettingsPage subPage="Pengaturan Website" />} />
-                <Route path="/pengaturan/website" element={<SettingsPage subPage="Pengaturan Website" />} />
-                <Route path="/pengaturan/pengguna" element={<SettingsPage subPage="Manajemen Pengguna" />} />
-                <Route path="/pengaturan/peran" element={<SettingsPage subPage="Manajemen Peran" />} />
-                <Route path="/pengaturan/cs" element={<SettingsPage subPage="Manajemen CS" />} />
-                <Route path="/pengaturan/jam-kerja" element={<SettingsPage subPage="Jam Kerja" />} />
-                <Route path="/pengaturan/merek" element={<SettingsPage subPage="Merek" />} />
-                <Route path="/pengaturan/pelacakan" element={<SettingsPage subPage="Pelacakan" />} />
-                <Route path="/pengaturan/pending-users" element={<PendingUsersPage />} />
-                <Route path="/pengaturan/pengumuman/kelola" element={<AnnouncementsPage />} />
-                <Route path="/pengaturan/pengumuman/settings" element={<SettingsPage subPage="Pengaturan Pengumuman" />} />
-                <Route path="/notifikasi" element={<NotificationsPage />} />
-                <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
-                <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
-                <Route path="/daftar-produk" element={<ProductsPage />} />
-                <Route path="/daftar-produk/tambah" element={<ProductFormPage />} />
-                <Route path="/daftar-produk/edit/:id" element={<ProductFormPage />} />
-                <Route path="/produk/:productId/forms" element={<ProductFormsPage />} />
-                <Route path="/produk/:productId/sales" element={<ProductSalesPage />} />
-                <Route path="/produk/:productId/details" element={<ProductDetailsPage />} />
-                <Route path="/analitik-produk" element={<ProductAnalyticsPage />} />
-                <Route path="*" element={<Navigate to="/dashboard" />} />
+            <Routes>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/profil" element={<MyProfilePage />} />
+              <Route path="/pesanan" element={<OrdersPage />} />
+              <Route path="/keranjang-terabaikan" element={<AbandonedCartsPage />} />
+              <Route path="/pelanggan" element={<CustomersPage />} />
+              <Route path="/laporan-iklan" element={<AdReportsPage user={user} />} />
+              <Route path="/laporan-cs" element={<CSReportsPage />} />
+              <Route path="/penghasilan" element={<EarningsPage />} />
+              <Route path="/formulir" element={<FormsPage />} />
+              <Route path="/formulir/baru" element={<FormEditorPage />} />
+              <Route path="/formulir/edit/:formId" element={<FormEditorPage />} />
+              <Route path="/pengaturan-akun" element={<ProfilePage />} />
+              <Route path="/pengaturan" element={<SettingsPage subPage="Pengaturan Website" />} />
+              <Route path="/pengaturan/website" element={<SettingsPage subPage="Pengaturan Website" />} />
+              <Route path="/pengaturan/pengguna" element={<SettingsPage subPage="Manajemen Pengguna" />} />
+              <Route path="/pengaturan/peran" element={<SettingsPage subPage="Manajemen Peran" />} />
+              <Route path="/pengaturan/cs" element={<SettingsPage subPage="Manajemen CS" />} />
+              <Route path="/pengaturan/jam-kerja" element={<SettingsPage subPage="Jam Kerja" />} />
+              <Route path="/pengaturan/merek" element={<SettingsPage subPage="Merek" />} />
+              <Route path="/pengaturan/pelacakan" element={<SettingsPage subPage="Pelacakan" />} />
+              <Route path="/pengaturan/pending-users" element={<PendingUsersPage />} />
+              <Route path="/pengaturan/pengumuman/kelola" element={<AnnouncementsPage />} />
+              <Route path="/pengaturan/pengumuman/settings" element={<SettingsPage subPage="Pengaturan Pengumuman" />} />
+              <Route path="/notifikasi" element={<NotificationsPage />} />
+              <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
+              <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
+              <Route path="/daftar-produk" element={<ProductsPage />} />
+              <Route path="/daftar-produk/tambah" element={<ProductFormPage />} />
+              <Route path="/daftar-produk/edit/:id" element={<ProductFormPage />} />
+              <Route path="/produk/:productId/forms" element={<ProductFormsPage />} />
+              <Route path="/produk/:productId/sales" element={<ProductSalesPage />} />
+              <Route path="/produk/:productId/details" element={<ProductDetailsPage />} />
+              <Route path="/analitik-produk" element={<ProductAnalyticsPage />} />
+              <Route path="*" element={<Navigate to="/dashboard" />} />
             </Routes>
           </Suspense>
         </main>
@@ -241,11 +241,11 @@ const AppContent: React.FC = () => {
     // Handle form URLs only (let Supabase handle auth callbacks automatically)
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
-    
+
     // Smart redirect for clean form URLs (?form_id=...)
     if (formId) {
-        window.history.replaceState(null, '', window.location.pathname);
-        window.location.hash = `/f/${formId}`;
+      window.history.replaceState(null, '', window.location.pathname);
+      window.location.hash = `/f/${formId}`;
     }
   }, []);
 
@@ -254,9 +254,9 @@ const AppContent: React.FC = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       // Check if user is on reset password flow from email link
       const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
-      const isResetPasswordFlow = window.location.hash.includes('reset-password') || 
-                                    hashParams.get('type') === 'recovery';
-      
+      const isResetPasswordFlow = window.location.hash.includes('reset-password') ||
+        hashParams.get('type') === 'recovery';
+
       if (session?.user) {
         // If on reset password flow, don't auto-login - let user reset password first
         if (isResetPasswordFlow) {
@@ -277,14 +277,14 @@ const AppContent: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔐 Global Auth Event:', event);
-      
+
       // Handle password recovery flow
       if (event === 'PASSWORD_RECOVERY') {
         console.log('✅ PASSWORD_RECOVERY event detected globally, redirecting to reset password');
         window.location.hash = '#/reset-password';
         return;
       }
-      
+
       if (session?.user) {
         validateUserStatus(session.user);
       } else {
@@ -332,30 +332,30 @@ const AppContent: React.FC = () => {
   // Simple loading fallback for the lazy-loaded form
   const FormLoadingFallback = () => (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
-       <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-pulse">
-          <div className="h-48 bg-slate-200 dark:bg-slate-700 rounded-md mb-4"></div>
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4"></div>
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full mb-2"></div>
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6 mb-6"></div>
-          <div className="space-y-3">
-              <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
-              <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
-          </div>
-       </div>
+      <div className="w-full max-w-lg bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate-pulse">
+        <div className="h-48 bg-slate-200 dark:bg-slate-700 rounded-md mb-4"></div>
+        <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full mb-2"></div>
+        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6 mb-6"></div>
+        <div className="space-y-3">
+          <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
+        </div>
+      </div>
     </div>
   );
 
   return (
     <HashRouter>
       <Routes>
-        <Route 
-          path="/f/:identifier" 
+        <Route
+          path="/f/:identifier"
           element={
             <Suspense fallback={<FormLoadingFallback />}>
               <FormViewerWrapper />
             </Suspense>
-          } 
-        /> 
+          }
+        />
         {/* Reset Password Route - Must be before /* catch-all */}
         <Route path="/reset-password" element={
           <Suspense fallback={<div className="flex items-center justify-center h-screen"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
@@ -363,15 +363,15 @@ const AppContent: React.FC = () => {
           </Suspense>
         } />
         <Route path="/*" element={
-            <Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900"><div className="text-xl text-slate-600 dark:text-slate-400 animate-pulse">Memuat Aplikasi...</div></div>}>
-                {user ? (
-                    <AuthenticatedApp 
-                        user={user} 
-                        currentTheme={theme} 
-                        toggleTheme={toggleTheme} 
-                    /> 
-                ) : <LoginPage />}
-            </Suspense>
+          <Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900"><div className="text-xl text-slate-600 dark:text-slate-400 animate-pulse">Memuat Aplikasi...</div></div>}>
+            {user ? (
+              <AuthenticatedApp
+                user={user}
+                currentTheme={theme}
+                toggleTheme={toggleTheme}
+              />
+            ) : <LoginPage />}
+          </Suspense>
         } />
       </Routes>
     </HashRouter>

@@ -75,14 +75,14 @@ const AbandonedCartsPage: React.FC = () => {
             const fourteenDaysAgo = new Date();
             fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
             const isoDate = fourteenDaysAgo.toISOString();
-            
+
             await supabase
                 .from('abandoned_carts')
                 .delete()
                 .lt('timestamp', isoDate);
 
             const { data: cartsData } = await supabase.from('abandoned_carts').select('*').order('timestamp', { ascending: false });
-            
+
             const cartsList = (cartsData || []).map(cart => {
                 return {
                     ...cart,
@@ -90,11 +90,11 @@ const AbandonedCartsPage: React.FC = () => {
                 } as AbandonedCart;
             });
             setCarts(cartsList);
-            
+
             // Track new (uncontacted) abandoned carts for notification badge
             const newCartsCount = (cartsList || []).filter((c: AbandonedCart) => c.status === 'New').length;
             setNewAbandonedCount(newCartsCount);
-            
+
             lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
         } catch (error) {
             console.error("Error fetching abandoned carts:", error);
@@ -113,10 +113,10 @@ const AbandonedCartsPage: React.FC = () => {
         try {
             const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
             audioCtxRef.current = ctx;
-            
+
             // Beep-beep alert sound
             const now = ctx.currentTime;
-            
+
             // First beep - sharp and attention-grabbing
             const osc1 = ctx.createOscillator();
             const gain1 = ctx.createGain();
@@ -128,9 +128,9 @@ const AbandonedCartsPage: React.FC = () => {
             gain1.connect(ctx.destination);
             osc1.start(now);
             osc1.stop(now + 0.12);
-            
+
             // Short silence
-            
+
             // Second beep - same tone
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
@@ -150,15 +150,15 @@ const AbandonedCartsPage: React.FC = () => {
     // --- Real-time subscription for new abandoned carts ---
     useEffect(() => {
         if (!currentUser?.id) return; // Wait for user to load
-        
+
         let subscription: any = null;
-        
+
         const setupRealtimeListener = async () => {
             try {
                 // Each user gets unique channel to prevent cross-user notifications
                 subscription = supabase
                     .channel(`abandoned-carts-channel-${currentUser.id}`)
-                    .on('postgres_changes', 
+                    .on('postgres_changes',
                         {
                             event: 'INSERT',
                             schema: 'public',
@@ -168,14 +168,14 @@ const AbandonedCartsPage: React.FC = () => {
                         },
                         async (payload: any) => {
                             console.log('[Real-time] New abandoned cart:', payload.new);
-                            
+
                             const newCart = payload.new as AbandonedCart;
                             setCarts(prev => [newCart, ...prev]);
-                            
+
                             // Show notification
                             showToast(`🛒 Keranjang baru: ${newCart.customerName || 'Pelanggan'}`, 'info');
                             playNotificationSound();
-                            
+
                             // Insert to notifications table
                             try {
                                 await supabase.from('notifications').insert({
@@ -190,7 +190,7 @@ const AbandonedCartsPage: React.FC = () => {
                             } catch (err) {
                                 console.warn('Failed to insert cart notification:', err);
                             }
-                            
+
                             // Update counter
                             if (newCart.status === 'New') {
                                 setNewAbandonedCount(prev => prev + 1);
@@ -204,9 +204,9 @@ const AbandonedCartsPage: React.FC = () => {
                 console.error('Error setting up abandoned carts listener:', err);
             }
         };
-        
+
         setupRealtimeListener();
-        
+
         return () => {
             if (subscription) {
                 console.log(`[Real-time] Unsubscribing from abandoned-carts-channel-${currentUser?.id}`);
@@ -263,11 +263,11 @@ const AbandonedCartsPage: React.FC = () => {
             }
 
             setCarts(cartsList);
-            
+
             // Update notification count for new abandoned carts
             const newCartsCount = (cartsList || []).filter((c: AbandonedCart) => c.status === 'New').length;
             setNewAbandonedCount(newCartsCount);
-            
+
             lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
         } catch (err) {
             console.error('Silent refresh abandoned carts failed:', err);
@@ -294,7 +294,7 @@ const AbandonedCartsPage: React.FC = () => {
         }
         const message = `Halo ${capitalizeWords(cart.customerName)}, kami melihat Anda tertarik dengan produk ${cart.formTitle} (${cart.selectedVariant}). Apakah ada yang bisa kami bantu untuk menyelesaikan pesanan Anda?`;
         window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
-        
+
         // Auto update status to Contacted after follow up
         if (cart.status === 'New') {
             try {
@@ -361,7 +361,7 @@ const AbandonedCartsPage: React.FC = () => {
             link.href = URL.createObjectURL(blob);
             link.download = `keranjang-terabaikan_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            
+
             showToast('Data berhasil diekspor!', 'success');
         } catch (error) {
             console.error('Export error:', error);
@@ -373,7 +373,7 @@ const AbandonedCartsPage: React.FC = () => {
 
     const handleBulkDelete = async () => {
         if (selectedCarts.size === 0) return;
-        
+
         try {
             for (const cartId of selectedCarts) {
                 await supabase.from('abandoned_carts').delete().eq('id', cartId);
@@ -407,24 +407,24 @@ const AbandonedCartsPage: React.FC = () => {
 
     const filteredCarts = useMemo(() => {
         let results = filterDataByBrand<AbandonedCart>(carts, currentUser);
-        
+
         // Status filter
         if (statusFilter !== 'all') {
             results = results.filter(cart => cart.status === statusFilter);
         }
-        
+
         // Date range filter
         if (dateRange.startDate && dateRange.endDate) {
             const start = new Date(dateRange.startDate);
             const end = new Date(dateRange.endDate);
-            start.setUTCHours(0,0,0,0);
-            end.setUTCHours(23,59,59,999);
+            start.setUTCHours(0, 0, 0, 0);
+            end.setUTCHours(23, 59, 59, 999);
             results = results.filter(cart => {
                 const d = new Date(cart.timestamp);
                 return d >= start && d <= end;
             });
         }
-        
+
         // Search filter
         if (searchTerm) {
             const lowercasedTerm = searchTerm.toLowerCase();
@@ -470,7 +470,7 @@ const AbandonedCartsPage: React.FC = () => {
                     >
                         <span>{cartSoundEnabled ? '🔔 Suara ON' : '🔕 Suara OFF'}</span>
                     </button>
-                    <button 
+                    <button
                         onClick={handleExportCSV}
                         disabled={isExporting || filteredCarts.length === 0}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold shadow-md shadow-green-500/20 hover:shadow-lg transition-all disabled:opacity-50"
@@ -539,21 +539,19 @@ const AbandonedCartsPage: React.FC = () => {
                         const isActive = statusFilter === status;
                         const label = status === 'all' ? 'Semua' : status === 'New' ? 'Belum Dihubungi' : 'Sudah Dihubungi';
                         const count = status === 'all' ? stats.total : status === 'New' ? stats.new : stats.contacted;
-                        
+
                         return (
                             <button
                                 key={status}
                                 onClick={() => setStatusFilter(status as any)}
-                                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-                                    isActive 
-                                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md' 
+                                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${isActive
+                                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md'
                                         : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
-                                }`}
+                                    }`}
                             >
                                 {label}
-                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                                    isActive ? 'bg-white/20 text-white' : 'bg-amber-100 dark:bg-slate-600 text-amber-600 dark:text-amber-400'
-                                }`}>
+                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-amber-100 dark:bg-slate-600 text-amber-600 dark:text-amber-400'
+                                    }`}>
                                     {count}
                                 </span>
                             </button>
@@ -702,13 +700,12 @@ const AbandonedCartsPage: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-3 align-middle text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button 
-                                                    onClick={() => handleFollowUp(cart)} 
-                                                    className={`p-2 rounded-lg transition-all hover:scale-110 relative ${
-                                                        cart.status === 'Contacted' 
-                                                            ? 'text-green-600 bg-green-50 dark:bg-green-900/20' 
+                                                <button
+                                                    onClick={() => handleFollowUp(cart)}
+                                                    className={`p-2 rounded-lg transition-all hover:scale-110 relative ${cart.status === 'Contacted'
+                                                            ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
                                                             : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                                                    }`}
+                                                        }`}
                                                     title={cart.status === 'Contacted' ? 'Sudah dihubungi via WhatsApp' : 'Hubungi via WhatsApp'}
                                                 >
                                                     <WhatsAppIcon className="w-4 h-4" />
@@ -725,9 +722,9 @@ const AbandonedCartsPage: React.FC = () => {
                     )}
                 </div>
             </div>
-            
+
             {deleteModalOpen && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     isOpen={deleteModalOpen}
                     title="Hapus Data"
                     message="Anda yakin ingin menghapus data ini?"
