@@ -66,6 +66,7 @@ export interface Order {
   assignedCsId?: string;
   assignedAdvertiserId?: string; // FK to Users table (assigned advertiser)
   productId?: string; // FK to Products table (product source)
+  product_id?: string; // Snake case version for DB
   commissionSnapshot?: number; // Commission value at the time of order creation (DEPRECATED - use csCommission + advCommission)
   csCommission?: number; // Commission for Customer Service
   advCommission?: number; // Commission for Advertiser
@@ -77,6 +78,14 @@ export interface Order {
   cancellationReason?: string; // Reason for cancellation
   shippingCost?: number; // Shipping cost/biaya ongkir
   codFee?: number; // Cash on Delivery fee/biaya COD
+  // Tracking & UTM parameters
+  sourceForm?: string; // Source form ID (marks it as from a form)
+  utmSource?: string; // UTM source (meta, google, tiktok, etc)
+  utmMedium?: string; // UTM medium (cpc, social, organic, etc)
+  utmCampaign?: string; // UTM campaign name
+  utmContent?: string; // UTM content
+  created_at?: string; // Created timestamp
+  updated_at?: string; // Updated timestamp
 }
 
 export type CSOrderStatus = 'Pending' | 'Diproses' | 'Dibatalkan' | 'Dikirim';

@@ -1098,6 +1098,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         try {
             const assignedCsId = await assignCs();
             
+            // Capture UTM parameters from URL for tracking
+            const params = new URLSearchParams(window.location.search);
+            const utmSource = params.get('utm_source') || undefined;
+            const utmMedium = params.get('utm_medium') || undefined;
+            const utmCampaign = params.get('utm_campaign') || undefined;
+            const utmContent = params.get('utm_content') || undefined;
+            
             // Get both commission values
             const csCommissionValue = currentCombination.csCommission || 0;
             const advCommissionValue = currentCombination.advCommission || 0;
@@ -1126,6 +1133,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 formId: form.id || null,
                 formTitle: form.title,
                 assignedCsId: assignedCsId || null,
+                sourceForm: form.id, // Mark as from form (for Sumber display)
+                utmSource: utmSource || null, // Capture UTM source for tracking
+                utmMedium: utmMedium || null,
+                utmCampaign: utmCampaign || null,
+                utmContent: utmContent || null,
                 // Use snake_case column for Supabase insert
                 product_id: form.productId || null,
                 commissionSnapshot: finalCsCommission, // Legacy field for backwards compatibility
