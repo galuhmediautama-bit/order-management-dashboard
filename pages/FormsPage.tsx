@@ -17,6 +17,11 @@ import ClipboardListIcon from '../components/icons/ClipboardListIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import PlusIcon from '../components/icons/PlusIcon';
 import DotsHorizontalIcon from '../components/icons/DotsHorizontalIcon';
+import MetaIcon from '../components/icons/MetaIcon';
+import GoogleIcon from '../components/icons/GoogleIcon';
+import TikTokIcon from '../components/icons/TikTokIcon';
+import SnackVideoIcon from '../components/icons/SnackVideoIcon';
+import { useToast } from '../contexts/ToastContext';
 
 const MessageTemplatesModal: React.FC<{
     form: Form;
@@ -136,8 +141,10 @@ const FormsPage: React.FC = () => {
     const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
     const [productDropdownOpen, setProductDropdownOpen] = useState(false);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+    const [trackingLinksForm, setTrackingLinksForm] = useState<Form | null>(null);
     const actionMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     const fetchData = async () => {
         setLoading(true);
@@ -679,7 +686,7 @@ const FormsPage: React.FC = () => {
                                                             Template Pesan
                                                         </button>
                                                         <button 
-                                                            onClick={() => { handleCopyLink(form); setOpenActionMenuId(null); }}
+                                                            onClick={() => { setTrackingLinksForm(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <LinkIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -731,6 +738,64 @@ const FormsPage: React.FC = () => {
                         </div>
                     </div>
                  </div>
+            )}
+
+            {trackingLinksForm && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md">
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">🔗 Salin Link Tracking</h3>
+                                <button onClick={() => setTrackingLinksForm(null)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    <XIcon className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Form: <span className="font-semibold text-slate-900 dark:text-white">{trackingLinksForm.title}</span></p>
+                        </div>
+                        <div className="p-6 space-y-2">
+                            {[
+                                { name: 'Meta', source: 'meta', icon: MetaIcon, color: 'blue' },
+                                { name: 'Google', source: 'google', icon: GoogleIcon, color: 'red' },
+                                { name: 'TikTok', source: 'tiktok', icon: TikTokIcon, color: 'slate' },
+                                { name: 'Snack Video', source: 'snack', icon: SnackVideoIcon, color: 'green' },
+                            ].map((platform) => {
+                                const baseUrl = window.location.origin;
+                                const formIdentifier = trackingLinksForm.slug || trackingLinksForm.id;
+                                const trackingLink = `${baseUrl}?f=${formIdentifier}&utm_source=${platform.source}&utm_medium=social&utm_campaign=${trackingLinksForm.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
+                                const IconComponent = platform.icon;
+                                
+                                const colorClasses: Record<string, string> = {
+                                    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40',
+                                    red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40',
+                                    slate: 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600',
+                                    green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40'
+                                };
+
+                                return (
+                                    <button
+                                        key={platform.source}
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(trackingLink);
+                                            showToast(`Link ${platform.name} disalin!`, 'success');
+                                        }}
+                                        className={`w-full px-4 py-3 rounded-lg border flex items-center gap-3 transition-all text-left font-medium text-sm ${colorClasses[platform.color]}`}
+                                        title={trackingLink}
+                                    >
+                                        <IconComponent className="w-5 h-5 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-slate-900 dark:text-white">{platform.name}</div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{trackingLink}</div>
+                                        </div>
+                                        <span className="text-xs bg-white/70 dark:bg-slate-900/70 px-2 py-1 rounded whitespace-nowrap">Copy</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 rounded-b-xl flex justify-end">
+                            <button onClick={() => setTrackingLinksForm(null)} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">Tutup</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
