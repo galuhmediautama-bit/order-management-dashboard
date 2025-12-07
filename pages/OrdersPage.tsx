@@ -863,14 +863,21 @@ const OrdersPage: React.FC = () => {
     };
   }, [orders, currentUser]);
 
-  // Get unique brands for filter
+  // Get unique brands for filter (with brand name lookup)
   const uniqueBrands = useMemo(() => {
-    const brands = new Set<string>();
+    const brandIds = new Set<string>();
     orders.forEach(o => {
-      if (o.brandId) brands.add(o.brandId);
+      if (o.brandId) brandIds.add(o.brandId);
     });
-    return Array.from(brands);
-  }, [orders]);
+    // Return array with names from brands state
+    return Array.from(brandIds).map(id => {
+      const brandObj = brands.find(b => b.id === id);
+      return {
+        id,
+        name: brandObj?.name || id
+      };
+    });
+  }, [orders, brands]);
 
   // Get unique products for filter
   const uniqueProducts = useMemo(() => {
@@ -1057,7 +1064,7 @@ const OrdersPage: React.FC = () => {
                     className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 min-w-[140px]"
                   >
                     <span className="flex-1 text-left truncate">
-                      {selectedBrandFilter === 'all' ? 'Brand' : selectedBrandFilter}
+                      {selectedBrandFilter === 'all' ? 'Brand' : uniqueBrands.find(b => b.id === selectedBrandFilter)?.name || selectedBrandFilter}
                     </span>
                     <ChevronDownIcon className="w-4 h-4 flex-shrink-0" />
                   </button>
@@ -1075,14 +1082,14 @@ const OrdersPage: React.FC = () => {
                         </button>
                         {uniqueBrands.map(brand => (
                           <button
-                            key={brand}
+                            key={brand.id}
                             onClick={() => {
-                              setSelectedBrandFilter(brand);
+                              setSelectedBrandFilter(brand.id);
                               setBrandDropdownOpen(false);
                             }}
-                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === brand ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
+                            className={`w-full text-left px-3 py-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-sm ${selectedBrandFilter === brand.id ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold' : ''}`}
                           >
-                            {brand}
+                            {brand.name}
                           </button>
                         ))}
                       </div>
