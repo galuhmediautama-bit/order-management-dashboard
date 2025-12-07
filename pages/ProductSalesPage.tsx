@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { Order, Product } from '../types';
+import type { Order, Product, Brand } from '../types';
 import { supabase } from '../firebase';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import EyeIcon from '../components/icons/EyeIcon';
@@ -15,6 +15,7 @@ const ProductSalesPage: React.FC = () => {
     
     const [product, setProduct] = useState<Product | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [brandsMap, setBrandsMap] = useState<Map<string, Brand>>(new Map());
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalOrders: 0,
@@ -55,6 +56,26 @@ const ProductSalesPage: React.FC = () => {
             if (ordersData) {
                 const typedOrders = ordersData as Order[];
                 setOrders(typedOrders);
+
+                // Fetch all brands to map brand IDs to names
+                const brandIds = [...new Set(typedOrders
+                    .map(o => o.brandId)
+                    .filter((id): id is string => !!id))];
+
+                if (brandIds.length > 0) {
+                    const { data: brandsData } = await supabase
+                        .from('brands')
+                        .select('id, name')
+                        .in('id', brandIds);
+
+                    if (brandsData) {
+                        const newBrandsMap = new Map<string, Brand>();
+                        (brandsData as Brand[]).forEach(brand => {
+                            newBrandsMap.set(brand.id, brand);
+                        });
+                        setBrandsMap(newBrandsMap);
+                    }
+                }
 
                 // Calculate stats
                 const totalOrders = typedOrders.length;
@@ -148,6 +169,7 @@ const ProductSalesPage: React.FC = () => {
                                 <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Order ID</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Pelanggan</th>
+                                    <th className="px-6 py-3 text-left text-sm font-semibold">Brand</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Total</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Sumber</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Handler</th>
@@ -167,6 +189,11 @@ const ProductSalesPage: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <p className="font-medium">{order.customerName}</p>
                                             <p className="text-sm text-slate-600 dark:text-slate-400">{order.customerPhone}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                                {order.brandId ? brandsMap.get(order.brandId)?.name || 'Unknown' : '-'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 font-semibold">
                                             {formatCurrency(order.totalPrice || 0)}
