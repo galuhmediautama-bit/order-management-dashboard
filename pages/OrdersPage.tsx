@@ -321,18 +321,34 @@ const OrdersPage: React.FC = () => {
 
   // --- Real-time subscription for new orders ---
   useEffect(() => {
+    if (!currentUser?.id) return; // Wait for user to load
+    
     let subscription: any = null;
+    const userRole = getNormalizedRole(currentUser.role);
     
     const setupRealtimeListener = async () => {
         try {
+            // Build filter based on role
+            let filterConfig: any = {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'orders'
+            };
+            
+            // CS: Only subscribe to assigned orders
+            if (userRole === 'Customer service' && currentUser.id) {
+                filterConfig.filter = `assignedCsId=eq.${currentUser.id}`;
+            }
+            // Advertiser: Only subscribe to brand orders
+            else if (userRole === 'Advertiser' && currentUser.assignedBrandIds?.length) {
+                // Note: Supabase real-time doesn't support IN operator well
+                // Will filter client-side after receiving
+            }
+            // Admin/Super Admin: Subscribe to all (no filter)
+            
             subscription = supabase
-                .channel('orders-channel')
-                .on('postgres_changes', 
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'orders'
-                    },
+                .channel(`orders-channel-${currentUser.id}`)
+                .on('postgres_changes', filterConfig,
                     async (payload: any) => {
                         console.log('[Real-time] New order detected:', payload.new);
                         
@@ -341,6 +357,14 @@ const OrdersPage: React.FC = () => {
                             ...payload.new,
                             productId: payload.new.product_id ?? payload.new.productId ?? null,
                         } as Order;
+                        
+                        // Client-side filter for Advertiser role
+                        if (userRole === 'Advertiser' && currentUser.assignedBrandIds?.length) {
+                            const orderBrandId = newOrder.brandId;
+                            if (!orderBrandId || !currentUser.assignedBrandIds.includes(orderBrandId)) {
+                                return; // Skip this order
+                            }
+                        }
                         
                         setOrders(prev => [newOrder, ...prev]);
                         
@@ -382,10 +406,11 @@ const OrdersPage: React.FC = () => {
     
     return () => {
         if (subscription) {
+            console.log(`[Real-time] Unsubscribing from orders-channel-${currentUser?.id}`);
             supabase.removeChannel(subscription);
         }
     };
-  }, [showToast, playNotificationSound, setNewOrdersCount, currentUser?.id]);
+  }, [showToast, playNotificationSound, setNewOrdersCount, currentUser?.id, currentUser?.role, currentUser?.assignedBrandIds]);
 
   // --- Fallback polling for new orders (faster interval) ---
   const refreshOrdersSilently = useCallback(async () => {

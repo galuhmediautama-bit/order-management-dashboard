@@ -149,17 +149,22 @@ const AbandonedCartsPage: React.FC = () => {
 
     // --- Real-time subscription for new abandoned carts ---
     useEffect(() => {
+        if (!currentUser?.id) return; // Wait for user to load
+        
         let subscription: any = null;
         
         const setupRealtimeListener = async () => {
             try {
+                // Each user gets unique channel to prevent cross-user notifications
                 subscription = supabase
-                    .channel('abandoned-carts-channel')
+                    .channel(`abandoned-carts-channel-${currentUser.id}`)
                     .on('postgres_changes', 
                         {
                             event: 'INSERT',
                             schema: 'public',
                             table: 'abandoned_carts'
+                            // Note: Abandoned carts don't have assignedCsId, so all users see all carts
+                            // Consider adding filtering logic if needed
                         },
                         async (payload: any) => {
                             console.log('[Real-time] New abandoned cart:', payload.new);
@@ -204,6 +209,7 @@ const AbandonedCartsPage: React.FC = () => {
         
         return () => {
             if (subscription) {
+                console.log(`[Real-time] Unsubscribing from abandoned-carts-channel-${currentUser?.id}`);
                 supabase.removeChannel(subscription);
             }
         };

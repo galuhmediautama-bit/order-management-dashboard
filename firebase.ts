@@ -21,4 +21,20 @@ if (import.meta.env.PROD && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.
   console.error('🚨 PRODUCTION ERROR: Environment variables belum di-set!');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  realtime: {
+    // Optimize real-time connections
+    params: {
+      eventsPerSecond: 10, // Throttle events to max 10/second per client
+    },
+  },
+  global: {
+    headers: {
+      'x-client-info': 'order-management-dashboard',
+    },
+  },
+});
