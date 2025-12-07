@@ -38,6 +38,8 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
 import { useNotificationCount } from '../contexts/NotificationCountContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
+import { getCachedForms, getCachedUsers, getCachedCsAgents, getCachedBrands, getCachedProducts, getCachedSettings, getCachedMessageTemplates, getCachedCancellationReasons, warmCache, invalidateOnOrderChange, invalidateCache } from '../utils/cacheHelpers';
+import { CACHE_KEYS } from '../utils/cacheHelpers';
 
 // --- Helper Components & Functions ---
 
@@ -140,7 +142,7 @@ const OrdersPage: React.FC = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Fetch Data
+    // Fetch Data (with caching)
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -203,16 +205,14 @@ const OrdersPage: React.FC = () => {
 
             // 3. Forms (for manual order dropdown)
             // Optimized: Only select needed columns + withRetry
-            const { data: formsData } = await withRetry(() =>
-                supabase.from('forms').select('id, title, brandId').then(r => ({ data: r.data, error: r.error }))
-            );
-            setForms((formsData || []).map(f => ({ ...f }) as Form));
+            // Using caching helper
+            const cachedForms = await getCachedForms();
+            setForms((cachedForms || []).map(f => ({ ...f }) as Form));
 
             // 4. Users (for CS assignment and modal lookups)
             // Optimized: Only select needed columns + withRetry
-            const { data: usersData } = await withRetry(() =>
-                supabase.from('users').select('id, name, role, assignedBrandIds, status').then(r => ({ data: r.data, error: r.error }))
-            );
+            // Using caching helper
+            const usersData = await getCachedUsers();
             if (usersData) {
                 setAllUsers(usersData as User[]); // Store ALL users
                 const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
@@ -221,43 +221,38 @@ const OrdersPage: React.FC = () => {
 
             // 4.5. CS Agents (for modal lookups - separate table from users)
             // Optimized: Only select needed columns + withRetry
-            const { data: csAgentsData } = await withRetry(() =>
-                supabase.from('cs_agents').select('id, name, phoneNumber').then(r => ({ data: r.data, error: r.error }))
-            );
+            // Using caching helper
+            const csAgentsData = await getCachedCsAgents();
             if (csAgentsData) {
                 setCsAgents(csAgentsData);
             }
 
             // 5. Brands (for modal lookups)
             // Optimized: Only select needed columns + withRetry
-            const { data: brandsData } = await withRetry(() =>
-                supabase.from('brands').select('id, name').then(r => ({ data: r.data, error: r.error }))
-            );
+            // Using caching helper
+            const brandsData = await getCachedBrands();
             if (brandsData) {
                 setBrands(brandsData as Brand[]);
             }
 
             // 6. Products (for modal lookups)
             // Optimized: Only select needed columns + withRetry
-            const { data: productsData } = await withRetry(() =>
-                supabase.from('products').select('id, name, brandId').then(r => ({ data: r.data, error: r.error }))
-            );
+            // Using caching helper
+            const productsData = await getCachedProducts();
             if (productsData) {
                 setProducts(productsData);
             }
 
             // 7. Templates
-            const { data: templatesData } = await withRetry(() =>
-                supabase.from('settings').select('*').eq('id', 'messageTemplates').single().then(r => ({ data: r.data, error: r.error }))
-            );
+            // Using caching helper
+            const templatesData = await getCachedMessageTemplates();
             if (templatesData) {
                 setTemplates(templatesData as MessageTemplates);
             }
 
             // 8. Cancellation Reasons
-            const { data: cancellationData } = await withRetry(() =>
-                supabase.from('settings').select('*').eq('id', 'cancellationReasons').single().then(r => ({ data: r.data, error: r.error }))
-            );
+            // Using caching helper
+            const cancellationData = await getCachedCancellationReasons();
             if (cancellationData && cancellationData.reasons) {
                 setCancellationReasons(cancellationData.reasons);
             } else {
@@ -289,6 +284,8 @@ const OrdersPage: React.FC = () => {
 
     useEffect(() => {
         fetchData();
+        // Pre-warm cache on component mount for faster repeat loads
+        warmCache().catch(err => console.warn('Cache warming failed:', err));
     }, []);
 
     // --- Play notification sound (Coin drop for orders) ---
@@ -513,6 +510,9 @@ const OrdersPage: React.FC = () => {
 
                 if (error) throw error;
 
+                // Invalidate cache after order mutation
+                await invalidateOnOrderChange(selectedOrder.id);
+
                 setOrders(prev => prev.map(o =>
                     o.id === selectedOrder.id
                         ? { ...o, ...newOrderData }
@@ -528,6 +528,9 @@ const OrdersPage: React.FC = () => {
                     date: new Date().toISOString()
                 };
                 const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
+
+                                // Invalidate cache after order creation
+                                await invalidateOnOrderChange((data as any).id);
                 if (error) throw error;
 
                 const newOrder = {
@@ -561,6 +564,9 @@ const OrdersPage: React.FC = () => {
             if (error) {
                 console.error("Update error details:", error);
                 throw error;
+
+                        // Invalidate cache after order cancellation
+                        await invalidateOnOrderChange(orderToCancel.id);
             }
 
             setOrders(prev => prev.map(o =>
@@ -589,6 +595,9 @@ const OrdersPage: React.FC = () => {
 
         try {
             const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
+
+                        // Invalidate cache after status update
+                        await invalidateOnOrderChange(orderId);
             if (error) throw error;
 
             const updatedOrder = orders.find(o => o.id === orderId);
@@ -644,6 +653,8 @@ const OrdersPage: React.FC = () => {
             if (!order) return;
             const newCount = (order.followUps || 0) + 1;
             await supabase.from('orders').update({ followUps: newCount }).eq('id', orderId);
+                        // Invalidate cache after follow-up update
+                        await invalidateOnOrderChange(orderId);
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, followUps: newCount } : o));
         } catch (error) {
             console.error("Error updating follow up:", error);
@@ -654,6 +665,8 @@ const OrdersPage: React.FC = () => {
         if (!orderToChangePayment) return;
         try {
             await supabase.from('orders').update({ paymentMethod: method }).eq('id', orderToChangePayment.id);
+                        // Invalidate cache after payment method update
+                        await invalidateOnOrderChange(orderToChangePayment.id);
             setOrders(prev => prev.map(o => o.id === orderToChangePayment.id ? { ...o, paymentMethod: method } : o));
             setOrderToChangePayment(null);
             showToast("Metode pembayaran berhasil diubah.", "success");
@@ -682,6 +695,9 @@ const OrdersPage: React.FC = () => {
 
         try {
             const { error } = await supabase.from('orders').update({ assignedCsId: assignSelectedCsId }).eq('id', orderId);
+
+                        // Invalidate cache after CS assignment
+                        await invalidateOnOrderChange(orderId);
             if (error) throw error;
 
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, assignedCsId: assignSelectedCsId } : o));
