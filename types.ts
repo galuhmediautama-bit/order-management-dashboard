@@ -735,3 +735,43 @@ export interface AdvertiserProductPerformance {
     periodStart: string;
     isProfitable: boolean;
 }
+
+// ============================================
+// NOTIFICATION SYSTEM TYPES
+// ============================================
+
+export type NotificationType = 'ORDER_NEW' | 'CART_ABANDON' | 'SYSTEM_ALERT';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  metadata?: Record<string, any>;
+  isRead: boolean;
+  readAt?: string;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationCreatePayload {
+  type: NotificationType;
+  title: string;
+  message: string;
+  metadata?: Record<string, any>;
+}
+
+export interface NotificationContextType {
+  notifications: Notification[];
+  unreadCount: number;
+  isLoading: boolean;
+  error: string | null;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  addNotification: (notification: Notification) => void;
+}
+
+export type NotificationFilterType = 'all' | 'unread' | NotificationType;
