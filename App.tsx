@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AnnouncementPopup from './components/AnnouncementPopup';
 import AnnouncementLineBar from './components/AnnouncementLineBar';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './firebase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import SpinnerIcon from './components/icons/SpinnerIcon';
@@ -378,21 +379,23 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <LanguageProvider>
-    <ToastProvider>
-      <SettingsProvider>
-        <NotificationCountProvider>
-          <NotificationProvider>
-            <RolePermissionsProvider>
-              <DialogProvider>
-                <AppContent />
-              </DialogProvider>
-            </RolePermissionsProvider>
-          </NotificationProvider>
-        </NotificationCountProvider>
-      </SettingsProvider>
-    </ToastProvider>
-  </LanguageProvider>
+  <ErrorBoundary context="App">
+    <LanguageProvider>
+      <ToastProvider>
+        <SettingsProvider>
+          <NotificationCountProvider>
+            <NotificationProvider>
+              <RolePermissionsProvider>
+                <DialogProvider>
+                  <AppContent />
+                </DialogProvider>
+              </RolePermissionsProvider>
+            </NotificationProvider>
+          </NotificationCountProvider>
+        </SettingsProvider>
+      </ToastProvider>
+    </LanguageProvider>
+  </ErrorBoundary>
 );
 
 
