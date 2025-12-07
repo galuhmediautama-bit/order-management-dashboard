@@ -85,6 +85,9 @@ const PendingDeletionsPage = lazyWithRetry(() => import('./pages/PendingDeletion
 const ProductsPage = lazyWithRetry(() => import('./pages/ProductsPage'));
 const ProductAnalyticsPage = lazyWithRetry(() => import('./pages/ProductAnalyticsPage'));
 const ProductFormPage = lazyWithRetry(() => import('./pages/ProductFormPage'));
+const ProductFormsPage = lazyWithRetry(() => import('./pages/ProductFormsPage'));
+const ProductSalesPage = lazyWithRetry(() => import('./pages/ProductSalesPage'));
+const ProductDetailsPage = lazyWithRetry(() => import('./pages/ProductDetailsPage'));
 const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'));
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
 
@@ -167,6 +170,9 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/daftar-produk" element={<ProductsPage />} />
                 <Route path="/daftar-produk/tambah" element={<ProductFormPage />} />
                 <Route path="/daftar-produk/edit/:id" element={<ProductFormPage />} />
+                <Route path="/produk/:productId/forms" element={<ProductFormsPage />} />
+                <Route path="/produk/:productId/sales" element={<ProductSalesPage />} />
+                <Route path="/produk/:productId/details" element={<ProductDetailsPage />} />
                 <Route path="/analitik-produk" element={<ProductAnalyticsPage />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />
             </Routes>
