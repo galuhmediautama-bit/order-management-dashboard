@@ -266,10 +266,11 @@ const AbandonedCartsPage: React.FC = () => {
         }
     }, [showToast, playTone, setNewAbandonedCount]);
 
-    useEffect(() => {
-        const interval = setInterval(() => refreshAbandonedSilently(), 30000); // 30s polling (faster than before)
-        return () => clearInterval(interval);
-    }, [refreshAbandonedSilently]);
+    // DISABLED: Real-time subscription is sufficient, polling causes high CPU usage
+    // useEffect(() => {
+    //     const interval = setInterval(() => refreshAbandonedSilently(), 30000); // 30s polling (faster than before)
+    //     return () => clearInterval(interval);
+    // }, [refreshAbandonedSilently]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {

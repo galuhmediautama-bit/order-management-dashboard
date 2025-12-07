@@ -422,12 +422,13 @@ const OrdersPage: React.FC = () => {
   }, [showToast, playNotificationSound, setNewOrdersCount]);
 
   // --- Polling interval (fallback if real-time fails) ---
-  useEffect(() => {
-    const interval = setInterval(() => {
-        refreshOrdersSilently();
-    }, 15000); // 15s polling (faster than before)
-    return () => clearInterval(interval);
-  }, [refreshOrdersSilently]);
+  // DISABLED: Real-time subscription is sufficient, polling causes high CPU usage
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //       refreshOrdersSilently();
+  //   }, 15000); // 15s polling (faster than before)
+  //   return () => clearInterval(interval);
+  // }, [refreshOrdersSilently]);
 
   useEffect(() => {
         if (typeof window !== 'undefined') {
