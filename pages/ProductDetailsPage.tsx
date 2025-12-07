@@ -34,79 +34,8 @@ const ProductDetailsPage: React.FC = () => {
         topForm: null
     });
     const [loading, setLoading] = useState(true);
-    const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
     // Tracking links generator
-    const trackingPlatforms = [
-        {
-            name: 'Meta (Facebook/Instagram)',
-            platform: 'meta',
-            color: 'blue',
-            getLink: () => {
-                if (!product) return '';
-                const baseUrl = window.location.origin;
-                const slug = product.id;
-                return `${baseUrl}?utm_source=meta&utm_medium=social&utm_campaign=${product.name?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}&utm_content=feed`;
-            }
-        },
-        {
-            name: 'Google Ads',
-            platform: 'google',
-            color: 'red',
-            getLink: () => {
-                if (!product) return '';
-                const baseUrl = window.location.origin;
-                return `${baseUrl}?utm_source=google&utm_medium=cpc&utm_campaign=${product.name?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-            }
-        },
-        {
-            name: 'TikTok Ads',
-            platform: 'tiktok',
-            color: 'slate',
-            getLink: () => {
-                if (!product) return '';
-                const baseUrl = window.location.origin;
-                return `${baseUrl}?utm_source=tiktok&utm_medium=paid_social&utm_campaign=${product.name?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-            }
-        },
-        {
-            name: 'Instagram Organic',
-            platform: 'instagram',
-            color: 'pink',
-            getLink: () => {
-                if (!product) return '';
-                const baseUrl = window.location.origin;
-                return `${baseUrl}?utm_source=instagram&utm_medium=organic&utm_campaign=${product.name?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-            }
-        },
-        {
-            name: 'WhatsApp',
-            platform: 'whatsapp',
-            color: 'green',
-            getLink: () => {
-                if (!product) return '';
-                const baseUrl = window.location.origin;
-                return `${baseUrl}?utm_source=whatsapp&utm_medium=direct&utm_campaign=${product.name?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-            }
-        },
-        {
-            name: 'Email Marketing',
-            platform: 'email',
-            color: 'purple',
-            getLink: () => {
-                if (!product) return '';
-                const baseUrl = window.location.origin;
-                return `${baseUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=${product.name?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-            }
-        }
-    ];
-
-    const copyToClipboard = (text: string, platform: string) => {
-        navigator.clipboard.writeText(text);
-        setCopiedLink(platform);
-        showToast(`Link ${platform} disalin!`, 'success');
-        setTimeout(() => setCopiedLink(null), 2000);
-    };
 
     useEffect(() => {
         if (productId) {
@@ -277,61 +206,6 @@ const ProductDetailsPage: React.FC = () => {
                     Analytics data akan tersedia setelah kamu melihat statistik form dan penjualan di tab lain. 
                     Data ini diperbarui setiap jam.
                 </p>
-            </div>
-
-            {/* Tracking Links Section */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                <h3 className="text-lg font-bold mb-4">🔗 Tracking Links Generator</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                    Salin link tracking untuk setiap platform. Link ini sudah dilengkapi dengan UTM parameters untuk tracking campaign.
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {trackingPlatforms.map((platform) => {
-                        const trackingLink = platform.getLink();
-                        const colorMap: Record<string, string> = {
-                            blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-                            red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-                            slate: 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600',
-                            pink: 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800',
-                            green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
-                            purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
-                        };
-
-                        return (
-                            <div key={platform.platform} className={`border rounded-lg p-4 ${colorMap[platform.color]}`}>
-                                <p className="font-semibold text-sm mb-3">{platform.name}</p>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={trackingLink}
-                                        readOnly
-                                        className="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-600 dark:text-slate-300 truncate"
-                                    />
-                                    <button
-                                        onClick={() => copyToClipboard(trackingLink, platform.name)}
-                                        className={`px-4 py-2 rounded font-medium text-sm transition-all ${
-                                            copiedLink === platform.name
-                                                ? 'bg-green-600 text-white'
-                                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                        }`}
-                                    >
-                                        {copiedLink === platform.name ? '✓' : 'Copy'}
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p className="text-xs font-mono text-slate-700 dark:text-slate-300 break-all">
-                        <strong>Contoh parameter:</strong><br/>
-                        utm_source = Sumber traffic (meta, google, dll)<br/>
-                        utm_medium = Jenis media (cpc, social, organic)<br/>
-                        utm_campaign = Nama campaign
-                    </p>
-                </div>
             </div>
 
             {/* Quick Links */}
