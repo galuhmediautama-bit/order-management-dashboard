@@ -348,6 +348,7 @@ export interface Form {
     title: string;
     slug: string; // URL slug (auto-generated dari judul, bisa di-edit manual)
     assignedAdvertiserId?: string; // FK ke Users table (assigned advertiser)
+    assignedPlatform?: 'meta' | 'tiktok' | 'google' | 'snack'; // Which platform this form is assigned to
     brandId?: string;
     productId?: string; // FK ke Products table (induk produk)
     mainImage: string;

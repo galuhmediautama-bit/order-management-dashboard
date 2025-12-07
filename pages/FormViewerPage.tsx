@@ -312,6 +312,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [checkoutCount, setCheckoutCount] = useState(0);
     const [productOptionsOverride, setProductOptionsOverride] = useState<Form['productOptions']>([]);
     
+    // Platform Tracking State
+    const [activePlatform, setActivePlatform] = useState<'meta' | 'tiktok' | 'google' | 'snack' | null>(null);
+    
     // Pixel State
     const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
     const [eventNames, setEventNames] = useState<{ formPage: string; thankYouPage: string }>({
@@ -340,6 +343,24 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
     
     const debounceTimer = useRef<number | null>(null);
+
+    // Fetch product variant options (source of truth) untuk hindari gabungan di UI
+    useEffect(() => {
+        // Parse platform parameter dari URL (?platform=meta|tiktok|google|snack)
+        const params = new URLSearchParams(window.location.search);
+        const platformParam = params.get('platform') as 'meta' | 'tiktok' | 'google' | 'snack' | null;
+        
+        if (platformParam && ['meta', 'tiktok', 'google', 'snack'].includes(platformParam)) {
+            setActivePlatform(platformParam);
+            console.log(`[FormViewer] Platform parameter detected: ${platformParam}`);
+        } else if (form?.assignedPlatform) {
+            setActivePlatform(form.assignedPlatform);
+            console.log(`[FormViewer] Using form assigned platform: ${form.assignedPlatform}`);
+        } else {
+            setActivePlatform(null);
+            console.log('[FormViewer] No platform specified - will load all platforms');
+        }
+    }, [form?.assignedPlatform]);
 
     // Fetch product variant options (source of truth) untuk hindari gabungan di UI
     useEffect(() => {
@@ -486,12 +507,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         // Extract from form tracking settings
         if (trackingSettings) {
             Object.entries(trackingSettings).forEach(([platform, settings]) => {
-                if (settings?.pixelIds && settings.pixelIds.length > 0) {
+                // Smart filtering: only load pixel if platform matches OR no specific platform assigned
+                const shouldLoadPlatform = !activePlatform || activePlatform === platform;
+                
+                if (shouldLoadPlatform && settings?.pixelIds && settings.pixelIds.length > 0) {
                     newPixelsByPlatform[platform] = {
                         ids: settings.pixelIds,
                         eventName: settings.eventName || newPixelsByPlatform[platform].eventName
                     };
                     console.log(`[FormViewer] ${platform} - IDs: ${settings.pixelIds.join(', ')}, Event: ${settings.eventName}`);
+                } else if (activePlatform && activePlatform !== platform) {
+                    console.log(`[FormViewer] Skipping ${platform} pixel (active platform: ${activePlatform})`);
                 }
             });
         }
@@ -527,7 +553,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             [pageType]: metaEventName
         }));
 
-    }, [form, globalTrackingSettings, submission, settingsLoading]);
+    }, [form, globalTrackingSettings, submission, settingsLoading, activePlatform]);
 
 
     // --- Rest of your component logic ---
