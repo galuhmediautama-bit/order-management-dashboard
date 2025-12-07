@@ -48,9 +48,10 @@ const ProductsPage: React.FC = () => {
         try {
             const { data } = await supabase.auth.getSession();
             if (data.session?.user) {
+                // Optimized: Only select needed columns
                 const { data: userData } = await supabase
                     .from('users')
-                    .select('*')
+                    .select('id, name, role, assignedBrandIds, status')
                     .eq('id', data.session.user.id)
                     .single();
                 setCurrentUser(userData);

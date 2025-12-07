@@ -872,7 +872,8 @@ const UserManagement: React.FC = () => {
              const { data: { user: currentUser } } = await supabase.auth.getUser();
              
              // 2. Fetch Users from Public Table
-             const { data: usersData, error: fetchError } = await supabase.from('users').select('*');
+             // Optimized: Only select needed columns
+             const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, role, status, assignedBrandIds, avatarUrl, createdAt');
              
              // Update avatar timestamp for cache busting
              setAvatarTimestamp(Date.now());
@@ -917,7 +918,8 @@ const UserManagement: React.FC = () => {
             setUsers(usersList);
             
             // 4. Fetch Brands with fallback
-            const { data: brandsData, error: brandsError } = await supabase.from('brands').select('*');
+            // Optimized: Only select needed columns
+            const { data: brandsData, error: brandsError } = await supabase.from('brands').select('id, name');
             
             if (brandsError) {
                  // Fallback to local storage on ANY error during dev/setup

@@ -233,10 +233,12 @@ const AbandonedCartsPage: React.FC = () => {
 
     const refreshAbandonedSilently = useCallback(async () => {
         try {
+            // Optimized: Only fetch recent 200 abandoned carts
             const { data: cartsData, error } = await supabase
                 .from('abandoned_carts')
                 .select('*')
-                .order('timestamp', { ascending: false });
+                .order('timestamp', { ascending: false })
+                .limit(200);
 
             if (error) throw error;
 

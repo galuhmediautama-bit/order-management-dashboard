@@ -173,11 +173,13 @@ const OrdersPage: React.FC = () => {
         }
 
         // 2. Orders (exclude soft-deleted orders)
+        // Optimized: Only select needed columns + limit to recent 500 orders
         const { data: ordersData, error: ordersError } = await supabase
             .from('orders')
-            .select('*')
+            .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
             .is('deletedAt', null)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .limit(500);
         
         if (ordersError) throw ordersError;
         
@@ -192,11 +194,13 @@ const OrdersPage: React.FC = () => {
         lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
 
         // 3. Forms (for manual order dropdown)
-        const { data: formsData } = await supabase.from('forms').select('*');
+        // Optimized: Only select needed columns
+        const { data: formsData } = await supabase.from('forms').select('id, title, brandId');
         setForms((formsData || []).map(f => ({ ...f }) as Form));
 
         // 4. Users (for CS assignment and modal lookups)
-        const { data: usersData } = await supabase.from('users').select('*');
+        // Optimized: Only select needed columns
+        const { data: usersData } = await supabase.from('users').select('id, name, role, assignedBrandIds, status');
         if (usersData) {
             setAllUsers(usersData as User[]); // Store ALL users
             const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
@@ -204,19 +208,22 @@ const OrdersPage: React.FC = () => {
         }
 
         // 4.5. CS Agents (for modal lookups - separate table from users)
-        const { data: csAgentsData } = await supabase.from('cs_agents').select('*');
+        // Optimized: Only select needed columns
+        const { data: csAgentsData } = await supabase.from('cs_agents').select('id, name, phoneNumber');
         if (csAgentsData) {
             setCsAgents(csAgentsData);
         }
 
         // 5. Brands (for modal lookups)
-        const { data: brandsData } = await supabase.from('brands').select('*');
+        // Optimized: Only select needed columns
+        const { data: brandsData } = await supabase.from('brands').select('id, name');
         if (brandsData) {
             setBrands(brandsData as Brand[]);
         }
 
         // 6. Products (for modal lookups)
-        const { data: productsData } = await supabase.from('products').select('*');
+        // Optimized: Only select needed columns
+        const { data: productsData } = await supabase.from('products').select('id, name, brandId');
         if (productsData) {
             setProducts(productsData);
         }
@@ -383,11 +390,13 @@ const OrdersPage: React.FC = () => {
   // --- Fallback polling for new orders (faster interval) ---
   const refreshOrdersSilently = useCallback(async () => {
     try {
+        // Optimized: Only fetch recent orders for notification check
         const { data: ordersData, error: ordersError } = await supabase
             .from('orders')
-            .select('*')
+            .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
             .is('deletedAt', null)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .limit(100);
 
         if (ordersError) throw ordersError;
 
