@@ -251,7 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
           { name: 'Manajemen CS', icon: CustomerServiceIcon },
           { name: 'CuanRank', icon: TrophyIcon },
           { name: 'Pelacakan', icon: TrackingIcon },
-          { name: 'Pengumuman', icon: ChatBubbleIcon },
+          { name: 'Announcements' as const, icon: ChatBubbleIcon },
         ]
       },
     ];    const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {

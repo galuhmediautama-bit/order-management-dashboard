@@ -60,7 +60,7 @@ const ProductSalesPage: React.FC = () => {
                 const totalOrders = typedOrders.length;
                 const totalRevenue = typedOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
                 const shippedOrders = typedOrders.filter(o => o.status === 'Shipped').length;
-                const deliveredOrders = typedOrders.filter(o => o.status === 'Delivered' || o.status === 'Completed').length;
+                const deliveredOrders = typedOrders.filter(o => o.status === 'Delivered').length;
                 const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
                 setStats({
