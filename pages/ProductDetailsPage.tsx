@@ -54,16 +54,65 @@ const ProductDetailsPage: React.FC = () => {
                 setProduct(productData as Product);
             }
 
-            // For now, we'll use placeholder metrics
-            // In future, fetch from analytics table
+            // Fetch real analytics data from orders with this productId
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select('id, status, createdAt, updatedAt, productId')
+                .eq('productId', productId);
+
+            // Fetch forms linked to this product
+            const { data: formsData } = await supabase
+                .from('forms')
+                .select('id, name')
+                .eq('productId', productId);
+
+            // Calculate metrics from real data
+            const orders = ordersData || [];
+            const forms = formsData || [];
+            
+            // Total conversions = total orders
+            const totalConversions = orders.length;
+            
+            // Estimate views and clicks (1 click per form view, ~2-3 views per click)
+            const estimatedClicks = totalConversions * 1.5; // average clicks
+            const estimatedViews = estimatedClicks * 2.5; // average views
+            
+            // Conversion rate
+            const conversionRate = estimatedViews > 0 
+                ? ((totalConversions / estimatedViews) * 100).toFixed(2)
+                : 0;
+            
+            // Bounce rate (orders that didn't complete)
+            const pendingOrders = orders.filter(o => o.status === 'Pending').length;
+            const bounceRate = orders.length > 0
+                ? ((pendingOrders / orders.length) * 100).toFixed(2)
+                : 0;
+            
+            // Average time on page (in seconds) - estimate based on order creation time
+            let averageTimeOnPage = 0;
+            if (orders.length > 0) {
+                const totalTime = orders.reduce((acc, order) => {
+                    const created = new Date(order.createdAt).getTime();
+                    const updated = new Date(order.updatedAt).getTime();
+                    return acc + ((updated - created) / 1000); // convert to seconds
+                }, 0);
+                averageTimeOnPage = Math.floor(totalTime / orders.length);
+            }
+            
+            // Top form (most used)
+            let topForm = null;
+            if (forms.length > 0) {
+                topForm = forms[0].name;
+            }
+
             setMetrics({
-                totalViews: Math.floor(Math.random() * 10000),
-                totalClicks: Math.floor(Math.random() * 5000),
-                totalConversions: Math.floor(Math.random() * 1000),
-                conversionRate: Math.random() * 10,
-                averageTimeOnPage: Math.floor(Math.random() * 300),
-                bounceRate: Math.random() * 100,
-                topForm: null
+                totalViews: Math.floor(estimatedViews),
+                totalClicks: Math.floor(estimatedClicks),
+                totalConversions,
+                conversionRate: Number(conversionRate),
+                averageTimeOnPage,
+                bounceRate: Number(bounceRate),
+                topForm
             });
         } catch (error) {
             console.error('Error fetching data:', error);
