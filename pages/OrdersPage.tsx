@@ -187,7 +187,7 @@ const OrdersPage: React.FC = () => {
             const { data: ordersData } = await withRetry(() =>
                 supabase
                     .from('orders')
-                    .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
+                    .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
                     .is('deletedAt', null)
                     .order('date', { ascending: false })
                     .limit(500)
@@ -207,13 +207,13 @@ const OrdersPage: React.FC = () => {
             // 3. Forms (for manual order dropdown)
             // Optimized: Only select needed columns + withRetry
             // Using caching helper
-            const cachedForms = await getCachedForms();
+            const { data: cachedForms } = await getCachedForms();
             setForms((cachedForms || []).map(f => ({ ...f }) as Form));
 
             // 4. Users (for CS assignment and modal lookups)
             // Optimized: Only select needed columns + withRetry
             // Using caching helper
-            const usersData = await getCachedUsers();
+            const { data: usersData } = await getCachedUsers();
             if (usersData) {
                 setAllUsers(usersData as User[]); // Store ALL users
                 const cs = usersData.filter((u: any) => getNormalizedRole(u.role) === 'Customer service' && u.status === 'Aktif');
@@ -223,7 +223,7 @@ const OrdersPage: React.FC = () => {
             // 4.5. CS Agents (for modal lookups - separate table from users)
             // Optimized: Only select needed columns + withRetry
             // Using caching helper
-            const csAgentsData = await getCachedCsAgents();
+            const { data: csAgentsData } = await getCachedCsAgents();
             if (csAgentsData) {
                 setCsAgents(csAgentsData);
             }
@@ -231,7 +231,7 @@ const OrdersPage: React.FC = () => {
             // 5. Brands (for modal lookups)
             // Optimized: Only select needed columns + withRetry
             // Using caching helper
-            const brandsData = await getCachedBrands();
+            const { data: brandsData } = await getCachedBrands();
             if (brandsData) {
                 setBrands(brandsData as Brand[]);
             }
@@ -239,21 +239,21 @@ const OrdersPage: React.FC = () => {
             // 6. Products (for modal lookups)
             // Optimized: Only select needed columns + withRetry
             // Using caching helper
-            const productsData = await getCachedProducts();
+            const { data: productsData } = await getCachedProducts();
             if (productsData) {
                 setProducts(productsData);
             }
 
             // 7. Templates
             // Using caching helper
-            const templatesData = await getCachedMessageTemplates();
+            const { data: templatesData } = await getCachedMessageTemplates();
             if (templatesData) {
                 setTemplates(templatesData as MessageTemplates);
             }
 
             // 8. Cancellation Reasons
             // Using caching helper
-            const cancellationData = await getCachedCancellationReasons();
+            const { data: cancellationData } = await getCachedCancellationReasons();
             if (cancellationData && cancellationData.reasons) {
                 setCancellationReasons(cancellationData.reasons);
             } else {
@@ -275,9 +275,15 @@ const OrdersPage: React.FC = () => {
             const pendingCount = (ordersData || []).filter((o: any) => o.status === 'Pending').length;
             setNewOrdersCount(pendingCount);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching data:", error);
-            showToast("Gagal memuat data pesanan.", "error");
+            console.error("Error details:", {
+                message: error?.message,
+                code: error?.code,
+                details: error?.details,
+                hint: error?.hint
+            });
+            showToast(`Gagal memuat data pesanan: ${error?.message || 'Unknown error'}`, "error");
         } finally {
             setLoading(false);
         }
