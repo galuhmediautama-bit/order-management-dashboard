@@ -76,7 +76,7 @@ export async function getCachedFormsByBrand(brandId: string) {
 export async function getCachedUsers() {
     return cacheQuery(
         CACHE_KEYS.USERS_ALL,
-        () => supabase.from('users').select('id, fullName, role, assignedBrandIds, status'),
+        () => supabase.from('users').select('id, name, role, "assignedBrandIds", status'),
         5 * 60 * 1000
     );
 }
@@ -90,7 +90,7 @@ export async function getCachedCsUsers() {
         async () => {
             const users = await supabase
                 .from('users')
-                .select('id, fullName, role, status')
+                .select('id, name, role, status')
                 .eq('status', 'Aktif');
 
             return {
@@ -111,7 +111,7 @@ export async function getCachedUsersByRole(role: string) {
         () =>
             supabase
                 .from('users')
-                .select('id, fullName, role, assignedBrandIds, status')
+                .select('id, name, role, "assignedBrandIds", status')
                 .eq('role', role),
         5 * 60 * 1000
     );

@@ -187,7 +187,7 @@ const OrdersPage: React.FC = () => {
             const { data: ordersData } = await withRetry(() =>
                 supabase
                     .from('orders')
-                    .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
+                    .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, product_id, csCommission, advCommission, deletedAt')
                     .is('deletedAt', null)
                     .order('date', { ascending: false })
                     .limit(500)
