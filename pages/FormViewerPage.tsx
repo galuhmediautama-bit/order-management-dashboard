@@ -1133,11 +1133,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 formId: form.id || null,
                 formTitle: form.title,
                 assignedCsId: assignedCsId || null,
-                sourceForm: form.id, // Mark as from form (for Sumber display)
-                utmSource: utmSource || null, // Capture UTM source for tracking
-                utmMedium: utmMedium || null,
-                utmCampaign: utmCampaign || null,
-                utmContent: utmContent || null,
                 // Use snake_case column for Supabase insert
                 product_id: form.productId || null,
                 commissionSnapshot: finalCsCommission, // Legacy field for backwards compatibility

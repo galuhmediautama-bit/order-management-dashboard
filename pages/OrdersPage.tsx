@@ -444,7 +444,7 @@ const OrdersPage: React.FC = () => {
             // Optimized: Only fetch recent orders for notification check
             const { data: ordersData, error: ordersError } = await supabase
                 .from('orders')
-                .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, notes, productId, product_id, csCommission, advCommission, deletedAt, orderNumber')
+                .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, product_id, csCommission, advCommission, deletedAt')
                 .is('deletedAt', null)
                 .order('date', { ascending: false })
                 .limit(100);
