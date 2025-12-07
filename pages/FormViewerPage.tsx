@@ -561,88 +561,19 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const hasSubmittedRef = useRef(false);
 
     const saveAbandonedCart = async () => {
-        if (!form || (!customerData.name && !customerData.whatsapp)) {
+        // Skip jika form belum load
+        if (!form) {
+            return;
+        }
+
+        // Skip jika customer belum isi minimal nama ATAU whatsapp
+        if (!customerData.name && !customerData.whatsapp) {
             return;
         }
 
         // ✅ PENTING: Jangan simpan ke abandoned_carts jika user sudah submit order
         if (submission?.success || hasSubmittedRef.current) {
             return;
-        }
-
-        // ✅ PENTING: Cek apakah nomor telepon sudah ada di tabel orders
-        // Skip hanya jika nomor + form sama ATAU nomor + produk sama (id atau nama produk mendekati sama)
-        // Jika produk/form berbeda, tetap boleh buat abandoned cart.
-        if (customerData.whatsapp) {
-            // Normalisasi nomor untuk menangkap variasi 08 / 628 / +628
-            const raw = customerData.whatsapp || '';
-            const digitsOnly = raw.replace(/\D/g, '');
-            const variants: string[] = [];
-
-            // Bentuk dasar
-            if (raw) variants.push(raw);
-            if (digitsOnly) variants.push(digitsOnly);
-
-            // Jika dimulai 0, buat varian 62 dan +62
-            if (digitsOnly.startsWith('0')) {
-                const without0 = digitsOnly.slice(1);
-                variants.push(`62${without0}`);
-                variants.push(`+62${without0}`);
-            }
-
-            // Jika dimulai 62 atau +62, buat varian 0
-            if (digitsOnly.startsWith('62')) {
-                const without62 = digitsOnly.slice(2);
-                variants.push(`0${without62}`);
-                variants.push(`+62${without62}`);
-            }
-
-            // Dedup variants
-            const phoneVariants = Array.from(new Set(variants.filter(Boolean)));
-
-            try {
-                const { data: existingOrdersSamePhone } = await supabase
-                    .from('orders')
-                    .select('id, formId, form_id, product_id, productId, productName, product_name')
-                    .in('customerPhone', phoneVariants)
-                    .limit(50);
-
-                const currentProductId = (form.productId || '').toString().toLowerCase();
-                const currentFormId = form.id;
-                const currentProductName = (form.title || '').trim().toLowerCase();
-
-                const hasSameFormOrProduct = (existingOrdersSamePhone || []).some(order => {
-                    const orderFormId = order.formId || order.form_id;
-                    const orderProductId = (order.product_id || order.productId || '').toString().toLowerCase();
-                    const orderProductName = (order.productName || order.product_name || '').trim().toLowerCase();
-
-                    const sameForm = !!orderFormId && orderFormId === currentFormId;
-                    const sameProductId = !!currentProductId && !!orderProductId && orderProductId === currentProductId;
-                    const sameProductName = !!currentProductName && !!orderProductName && (
-                        orderProductName.includes(currentProductName) || currentProductName.includes(orderProductName)
-                    );
-
-                    return sameForm || sameProductId || sameProductName;
-                });
-
-                if (hasSameFormOrProduct) {
-                    // Sudah ada order dengan nomor + form/produk yang sama → jangan simpan abandoned cart
-                    // Sekaligus bersihkan abandoned cart yang mungkin tersimpan
-                    const cartId = sessionStorage.getItem(`abandonedCart_${form.id}`);
-                    if (cartId) {
-                        try {
-                            await supabase.from('abandoned_carts').delete().eq('id', cartId);
-                            sessionStorage.removeItem(`abandonedCart_${form.id}`);
-                        } catch (cleanupErr) {
-                            console.warn('Failed to cleanup abandoned cart after finding matching order:', cleanupErr);
-                        }
-                    }
-                    return;
-                }
-            } catch (error) {
-                console.error("Error checking existing orders:", error);
-                // Tetap lanjut untuk simpan abandoned cart jika ada error saat cek
-            }
         }
 
         const cartData = {
