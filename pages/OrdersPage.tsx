@@ -1772,8 +1772,8 @@ const FollowUpIndicator: React.FC<{
         <div className="flex items-center space-x-1.5">
             {Array.from({ length: totalFollowUps }).map((_, i) => {
                 const followUpNumber = i + 1;
-                const isCompleted = followUpNumber <= followUps;
-                const isNext = followUpNumber === followUps + 1;
+                const isCompleted = followUpNumber <= (followUps || 0);
+                const isNext = followUpNumber === (followUps || 0) + 1;
 
                 const handleClick = async () => {
                     const waNumber = formatWaNumber(customerPhone);
@@ -1796,18 +1796,24 @@ const FollowUpIndicator: React.FC<{
                 };
 
                 let bgClass = 'bg-slate-100 dark:bg-slate-700 text-slate-400';
-                if (isCompleted) bgClass = 'bg-green-500 text-white';
-                else if (isNext && isActionable) bgClass = 'bg-indigo-600 text-white ring-2 ring-indigo-200 dark:ring-indigo-900';
+                if (isCompleted) bgClass = 'bg-green-500 text-white shadow-md ring-2 ring-green-200 dark:ring-green-900';
+                else if (isNext && isActionable) bgClass = 'bg-indigo-600 text-white ring-2 ring-indigo-200 dark:ring-indigo-900 shadow-lg';
 
                 return (
                     <button
                         key={followUpNumber}
                         onClick={handleClick}
                         disabled={(!isNext && !isCompleted) || !customerPhone}
-                        className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all ${bgClass} ${isNext && isActionable ? 'hover:scale-110 cursor-pointer' : ''}`}
-                        title={`Follow Up ${followUpNumber}`}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all ${bgClass} ${isNext && isActionable ? 'hover:scale-110 cursor-pointer' : ''} ${isCompleted ? 'animate-pulse-slow' : ''}`}
+                        title={`Follow Up ${followUpNumber} ${isCompleted ? '(Selesai)' : isNext ? '(Berikutnya)' : ''}`}
                     >
-                        {isCompleted ? <CheckCircleFilledIcon className="w-5 h-5" /> : followUpNumber}
+                        {isCompleted ? (
+                          <span className="inline-flex items-center justify-center">
+                            <CheckCircleFilledIcon className="w-5 h-5" />
+                          </span>
+                        ) : (
+                          <span>{followUpNumber}</span>
+                        )}
                     </button>
                 );
             })}
