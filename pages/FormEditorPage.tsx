@@ -1785,7 +1785,54 @@ const FormEditorPage: React.FC = () => {
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Kelola dan kustomisasi formulir pesanan</p>
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 items-center">
+                            {formId && form && (
+                                <div className="relative group">
+                                    <button className="px-4 py-2.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-200 dark:hover:bg-indigo-900/50 font-semibold text-sm flex items-center gap-2 transition-all hover:scale-105 shadow-sm">
+                                        <LinkIcon className="w-4 h-4" /> Aksi
+                                    </button>
+                                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                        <div className="space-y-2">
+                                            {[
+                                                { name: 'Meta', source: 'meta', color: 'blue' },
+                                                { name: 'Google', source: 'google', color: 'red' },
+                                                { name: 'TikTok', source: 'tiktok', color: 'slate' },
+                                                { name: 'Instagram', source: 'instagram', color: 'pink' },
+                                                { name: 'WhatsApp', source: 'whatsapp', color: 'green' },
+                                            ].map((platform) => {
+                                                const baseUrl = window.location.origin;
+                                                const formIdentifier = form.slug || form.id;
+                                                const trackingLink = `${baseUrl}?f=${formIdentifier}&utm_source=${platform.source}&utm_medium=social&utm_campaign=${form.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
+                                                
+                                                const colorClasses: Record<string, string> = {
+                                                    blue: 'hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+                                                    red: 'hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400',
+                                                    slate: 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400',
+                                                    pink: 'hover:bg-pink-50 dark:hover:bg-pink-900/30 text-pink-600 dark:text-pink-400',
+                                                    green: 'hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400'
+                                                };
+
+                                                return (
+                                                    <button
+                                                        key={platform.source}
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(trackingLink);
+                                                            showToast(`Link ${platform.name} disalin!`, 'success');
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2 rounded text-xs font-medium border transition-all ${colorClasses[platform.color]} border-slate-200 dark:border-slate-600`}
+                                                        title={trackingLink}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span>🔗 {platform.name}</span>
+                                                            <span className="text-xs opacity-70">Copy</span>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {formId && (
                                  <button onClick={handleDelete} disabled={isSaving} className="px-4 py-2.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 font-semibold text-sm flex items-center gap-2 transition-all hover:scale-105 shadow-sm">
                                     <TrashIcon className="w-4 h-4" /> Hapus
@@ -2994,54 +3041,7 @@ const FormEditorPage: React.FC = () => {
             </div>
 
             <div className="hidden lg:block lg:col-span-4 sticky top-6">
-                {/* Tracking Links Section */}
-                {form && form.id && (
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-4">
-                        <h3 className="text-sm font-bold mb-3">🔗 Link Tracking</h3>
-                        <div className="space-y-2">
-                            {[
-                                { name: 'Meta', source: 'meta', color: 'blue' },
-                                { name: 'Google', source: 'google', color: 'red' },
-                                { name: 'TikTok', source: 'tiktok', color: 'slate' },
-                                { name: 'Instagram', source: 'instagram', color: 'pink' },
-                                { name: 'WhatsApp', source: 'whatsapp', color: 'green' },
-                            ].map((platform) => {
-                                const baseUrl = window.location.origin;
-                                const formIdentifier = form.slug || form.id;
-                                const trackingLink = `${baseUrl}?f=${formIdentifier}&utm_source=${platform.source}&utm_medium=social&utm_campaign=${form.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-                                
-                                const colorClasses: Record<string, string> = {
-                                    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-                                    red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-                                    slate: 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600',
-                                    pink: 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800',
-                                    green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                                };
-
-                                return (
-                                    <button
-                                        key={platform.source}
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(trackingLink);
-                                            showToast(`Link ${platform.name} disalin!`, 'success');
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded text-xs font-medium border transition-all hover:shadow-sm ${colorClasses[platform.color]}`}
-                                        title={trackingLink}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span>{platform.name}</span>
-                                            <span className="text-xs">Copy</span>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
-                            Salin link tracking dan pastekan di campaign Meta, Google, TikTok, dll. UTM parameters akan otomatis ter-capture.
-                        </p>
-                    </div>
-                )}
-
+                {/* Preview Section */}
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30">
                         <div className="flex items-center justify-between">
