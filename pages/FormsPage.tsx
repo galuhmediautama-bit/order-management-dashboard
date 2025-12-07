@@ -761,7 +761,7 @@ const FormsPage: React.FC = () => {
                             ].map((platform) => {
                                 const baseUrl = window.location.origin;
                                 const formIdentifier = trackingLinksForm.slug || trackingLinksForm.id;
-                                const trackingLink = `${baseUrl}?f=${formIdentifier}&utm_source=${platform.source}&utm_medium=social&utm_campaign=${trackingLinksForm.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
+                                const trackingLink = `${baseUrl}/#/f/${formIdentifier}?utm_source=${platform.source}&utm_medium=social&utm_campaign=${trackingLinksForm.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
                                 const IconComponent = platform.icon;
                                 
                                 const colorClasses: Record<string, string> = {

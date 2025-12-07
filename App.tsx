@@ -243,11 +243,23 @@ const AppContent: React.FC = () => {
     // Handle form URLs only (let Supabase handle auth callbacks automatically)
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
+    const formIdentifier = params.get('f');
 
-    // Smart redirect for clean form URLs (?form_id=...)
+    // Smart redirect for clean form URLs (?form_id=... or ?f=...)
     if (formId) {
       window.history.replaceState(null, '', window.location.pathname);
       window.location.hash = `/f/${formId}`;
+    } else if (formIdentifier) {
+      // Preserve query params for tracking
+      const trackingParams = new URLSearchParams();
+      params.forEach((value, key) => {
+        if (key.startsWith('utm_')) {
+          trackingParams.append(key, value);
+        }
+      });
+      const queryString = trackingParams.toString() ? `?${trackingParams.toString()}` : '';
+      window.history.replaceState(null, '', window.location.pathname);
+      window.location.hash = `/f/${formIdentifier}${queryString}`;
     }
   }, []);
 
