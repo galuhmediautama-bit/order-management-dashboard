@@ -255,7 +255,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                 { name: 'Manajemen CS', icon: CustomerServiceIcon },
                 { name: 'CuanRank', icon: TrophyIcon },
                 { name: 'Pelacakan', icon: TrackingIcon },
-                { name: 'Announcements' as const, icon: ChatBubbleIcon },
             ]
         },
         {

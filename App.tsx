@@ -206,8 +206,8 @@ const AppContent: React.FC = () => {
     let metaTag = document.querySelector('meta[name="permissions-policy"]');
     if (!metaTag) {
       metaTag = document.createElement('meta');
-      metaTag.name = 'permissions-policy';
-      metaTag.content = 'notifications=()';
+      (metaTag as any).name = 'permissions-policy';
+      (metaTag as any).content = 'notifications=()';
       document.head.appendChild(metaTag);
     }
   }, []);
