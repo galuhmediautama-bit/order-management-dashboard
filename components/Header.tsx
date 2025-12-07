@@ -9,6 +9,7 @@ import UserIcon from './icons/UserIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import BellIcon from './icons/BellIcon';
+import { NotificationDropdown } from './NotificationDropdown';
 import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to Supabase type
 import { supabase } from '../firebase';
 import { useNotificationContext } from '../contexts/NotificationContext';
@@ -39,10 +40,12 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentTheme, user, logout }) => {
     const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [isNotificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
     const [userAvatar, setUserAvatar] = useState<string | undefined>(user.user_metadata?.avatar_url);
     const { unreadCount } = useNotificationContext();
 
     const profileDropdownRef = useRef<HTMLDivElement>(null);
+    const notificationRef = useRef<HTMLDivElement>(null);
 
   const userDisplayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const userEmail = user.email || 'user@email.com';
@@ -137,18 +140,24 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
             </button>
 
             {/* Notification Bell */}
-            <Link 
-              to="/notifikasi"
-              className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all group"
-              title="Notifikasi"
-            >
-              <BellIcon className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Link>
+            <div className="relative" ref={notificationRef}>
+              <button
+                onClick={() => setNotificationDropdownOpen(!isNotificationDropdownOpen)}
+                className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all group"
+                title="Notifikasi"
+              >
+                <BellIcon className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <NotificationDropdown 
+                isOpen={isNotificationDropdownOpen} 
+                onClose={() => setNotificationDropdownOpen(false)} 
+              />
+            </div>
 
             {/* Theme Toggle */}
             <ThemeToggle toggleTheme={toggleTheme} theme={currentTheme} />
