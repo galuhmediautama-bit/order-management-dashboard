@@ -8,7 +8,6 @@ import SearchIcon from './icons/SearchIcon';
 import UserIcon from './icons/UserIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
-import NotificationBell from './NotificationBell';
 import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to Supabase type
 import { supabase } from '../firebase';
 
@@ -133,9 +132,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
             <button className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 <SearchIcon className="h-6 w-6" />
             </button>
-
-            {/* Notification Bell */}
-            <NotificationBell />
 
             {/* Theme Toggle */}
             <ThemeToggle toggleTheme={toggleTheme} theme={currentTheme} />
