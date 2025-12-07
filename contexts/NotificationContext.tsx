@@ -1,7 +1,7 @@
-import React, { createContext, useReducer, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useReducer, useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Notification, NotificationContextType } from '../types';
-import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../firebase';
 import {
   getNotifications,
   getUnreadCount,
@@ -116,12 +116,38 @@ interface NotificationProviderProps {
  */
 export function NotificationProvider({ children }: NotificationProviderProps) {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
-  const { user, userRole } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('');
 
   const channelsRef = useRef<{
     insert: RealtimeChannel | null;
     update: RealtimeChannel | null;
   }>({ insert: null, update: null });
+
+  // Get user and role from Supabase
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser?.id) {
+          setUser(authUser);
+          // Fetch user role from database
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', authUser.id)
+            .single();
+          if (userData?.role) {
+            setUserRole(userData.role);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // Load notifications dari database
   const loadNotifications = useCallback(async () => {

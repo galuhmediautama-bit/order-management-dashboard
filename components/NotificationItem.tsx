@@ -13,7 +13,7 @@ function getNotificationIcon(type: NotificationType) {
   switch (type) {
     case 'ORDER_NEW':
       return (
-        <div className="flex items-center justify-center w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full">
+        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-lg">
           <svg
             className="w-5 h-5 text-green-600 dark:text-green-300"
             fill="currentColor"
@@ -26,7 +26,7 @@ function getNotificationIcon(type: NotificationType) {
 
     case 'CART_ABANDON':
       return (
-        <div className="flex items-center justify-center w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-full">
+        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900 dark:to-amber-800 rounded-lg">
           <svg
             className="w-5 h-5 text-amber-600 dark:text-amber-300"
             fill="currentColor"
@@ -43,7 +43,7 @@ function getNotificationIcon(type: NotificationType) {
 
     case 'SYSTEM_ALERT':
       return (
-        <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full">
+        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 rounded-lg">
           <svg
             className="w-5 h-5 text-red-600 dark:text-red-300"
             fill="currentColor"
@@ -110,66 +110,89 @@ export default function NotificationItem({ notification, onClose }: Notification
 
   return (
     <div
-      onClick={handleMarkAsRead}
-      className={`p-4 border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition ${
-        !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+      className={`px-4 py-3.5 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-150 ${
+        !notification.isRead ? 'bg-indigo-50/40 dark:bg-indigo-900/15' : ''
       }`}
     >
       <div className="flex gap-3">
-        {/* Icon */}
-        <div className="flex-shrink-0">{getNotificationIcon(notification.type)}</div>
+        {/* Icon - Modern Gradient */}
+        <div className="flex-shrink-0 mt-0.5">{getNotificationIcon(notification.type)}</div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-semibold transition-colors ${
+                !notification.isRead
+                  ? 'text-slate-900 dark:text-white'
+                  : 'text-slate-700 dark:text-slate-200'
+              }`}>
                 {notification.title}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {getTypeLabel(notification.type)} • {timeAgo}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <span className="inline-block">{getTypeLabel(notification.type)}</span>
+                <span className="mx-1.5 text-slate-300 dark:text-slate-600">•</span>
+                <span className="inline-block">{timeAgo}</span>
               </p>
             </div>
+            
+            {/* Unread Indicator */}
+            {!notification.isRead && (
+              <div className="flex-shrink-0 w-2 h-2 bg-indigo-600 rounded-full animate-pulse mt-1"></div>
+            )}
+          </div>
 
-            {/* Delete Button */}
+          {/* Message */}
+          <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+            {notification.message}
+          </p>
+
+          {/* Metadata - if any */}
+          {notification.metadata && (
+            <div className="mt-2.5 text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+              {notification.metadata.orderId && (
+                <p><span className="font-medium">Order:</span> {notification.metadata.orderId}</p>
+              )}
+              {notification.metadata.customerId && (
+                <p><span className="font-medium">Customer:</span> {notification.metadata.customerId}</p>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 items-center mt-3 flex-wrap">
+            {!notification.isRead && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMarkAsRead();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 rounded-lg transition-colors duration-150"
+                title="Mark as read"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Tandai Sudah Baca</span>
+              </button>
+            )}
             <button
               onClick={handleDelete}
-              className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60 rounded-lg transition-colors duration-150"
               title="Delete notification"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                   clipRule="evenodd"
                 />
               </svg>
+              <span>Hapus</span>
             </button>
           </div>
-
-          {/* Message */}
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
-            {notification.message}
-          </p>
-
-          {/* Metadata - if any */}
-          {notification.metadata && (
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {notification.metadata.orderId && (
-                <p>Order ID: {notification.metadata.orderId}</p>
-              )}
-              {notification.metadata.customerId && (
-                <p>Customer: {notification.metadata.customerId}</p>
-              )}
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Read indicator */}
-      {!notification.isRead && (
-        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-1 bg-blue-600 rounded-full ml-2"></div>
-      )}
     </div>
   );
 }

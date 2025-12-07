@@ -2,8 +2,11 @@
 -- NOTIFICATIONS TABLE SCHEMA
 -- ============================================
 
+-- Drop existing table if it exists (to fix schema issues)
+DROP TABLE IF EXISTS public.notifications CASCADE;
+
 -- Create notifications table
-CREATE TABLE IF NOT EXISTS public.notifications (
+CREATE TABLE public.notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   type text NOT NULL CHECK (type IN ('ORDER_NEW', 'CART_ABANDON', 'SYSTEM_ALERT')),

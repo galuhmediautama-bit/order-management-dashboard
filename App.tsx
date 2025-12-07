@@ -12,6 +12,7 @@ import { SettingsProvider, SettingsContext } from './contexts/SettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationCountProvider } from './contexts/NotificationCountContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { RolePermissionsProvider } from './contexts/RolePermissionsContext';
 import { DialogProvider } from './contexts/DialogContext';
 
@@ -85,6 +86,7 @@ const ProductsPage = lazyWithRetry(() => import('./pages/ProductsPage'));
 const ProductAnalyticsPage = lazyWithRetry(() => import('./pages/ProductAnalyticsPage'));
 const ProductFormPage = lazyWithRetry(() => import('./pages/ProductFormPage'));
 const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'));
+const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
 
 
 const FormViewerWrapper: React.FC = () => {
@@ -159,6 +161,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/pengaturan/pending-users" element={<PendingUsersPage />} />
                 <Route path="/pengaturan/pengumuman/kelola" element={<AnnouncementsPage />} />
                 <Route path="/pengaturan/pengumuman/settings" element={<SettingsPage subPage="Pengaturan Pengumuman" />} />
+                <Route path="/notifikasi" element={<NotificationsPage />} />
                 <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
                 <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
                 <Route path="/daftar-produk" element={<ProductsPage />} />
@@ -361,11 +364,13 @@ const App: React.FC = () => (
     <ToastProvider>
       <SettingsProvider>
         <NotificationCountProvider>
-          <RolePermissionsProvider>
-            <DialogProvider>
-              <AppContent />
-            </DialogProvider>
-          </RolePermissionsProvider>
+          <NotificationProvider>
+            <RolePermissionsProvider>
+              <DialogProvider>
+                <AppContent />
+              </DialogProvider>
+            </RolePermissionsProvider>
+          </NotificationProvider>
         </NotificationCountProvider>
       </SettingsProvider>
     </ToastProvider>

@@ -11,7 +11,7 @@ import SpinnerIcon from '../components/icons/SpinnerIcon';
 import { capitalizeWords, normalizeForm } from '../utils';
 import { SettingsContext } from '../contexts/SettingsContext';
 import CustomScriptInjector from '../components/CustomScriptInjector';
-import MetaPixelScript from '../components/MetaPixelScript';
+import FormPagePixelScript from '../components/FormPagePixelScript';
 import ThankYouPixelEvent from '../components/ThankYouPixelEvent';
 import ProvinceInput from '../components/ProvinceInput';
 import AddressInput, { type AddressData } from '../components/AddressInput';
@@ -1190,6 +1190,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }
 
     if (submission.success && submission.order) {
+        // ✅ THANK YOU PAGE - HANYA fire event, JANGAN initialize pixel lagi
         return (
             <>
                 <ThankYouPixelEvent 
@@ -1203,7 +1204,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         );
     }
 
-    // Default View (Form Page)
+    // ✅ FORM PAGE - Initialize pixel + track event
+    // Pastikan di sini SAJA kita initialize dan track page-level events
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -1240,7 +1242,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     return (
         <>
             <style>{animationStyles}</style>
-            <MetaPixelScript 
+            <FormPagePixelScript 
                 key="formPage-pixel"
                 pixelIds={activePixelIds} 
                 eventName={eventNames.formPage} 
