@@ -1,0 +1,45 @@
+{
+  // Optimize file watching untuk reduce CPU usage saat edit
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.vite/**": true,
+    "**/.cache/**": true,
+    "**/build/**": true,
+    "**/*.log": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.vite": true,
+    "**/build": true,
+    "**/*.log": true,
+    "**/package-lock.json": true
+  },
+  // Disable auto-save untuk reduce file changes
+  "files.autoSave": "onFocusChange",
+  // Debounce file save events
+  "files.autoSaveDelay": 1000,
+  // TypeScript optimization
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  // Disable heavy extensions during dev
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "never",
+    "source.organizeImports": "never"
+  },
+  // Git optimization
+  "git.autorefresh": false,
+  "git.autofetch": false,
+  // Reduce CPU usage for Copilot
+  "github.copilot.enable": {
+    "*": true,
+    "markdown": false,
+    "plaintext": false
+  }
+}

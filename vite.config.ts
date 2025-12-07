@@ -8,9 +8,18 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        hmr: {
+          overlay: true, // Show errors in overlay
+          clientPort: 3000,
+        },
         watch: {
           usePolling: false, // Disable polling untuk mengurangi CPU usage
           interval: 1000, // Interval checking lebih lambat
+          // Debounce file change detection
+          awaitWriteFinish: {
+            stabilityThreshold: 1000,
+            pollInterval: 100
+          },
           ignored: [
             '**/node_modules/**',
             '**/.git/**',
@@ -20,10 +29,21 @@ export default defineConfig(({ mode }) => {
             '**/*.txt',
             '**/*.sh',
             '**/*.ps1',
+            '**/.github/**',
+            '**/public/service-worker.js',
+            '**/*.log',
+            '**/package-lock.json',
           ]
         }
       },
-      plugins: [react()],
+      plugins: [react({
+        // Optimize React Fast Refresh
+        fastRefresh: true,
+        // Exclude node_modules from refresh
+        exclude: /node_modules/,
+        // Optimize JSX runtime
+        jsxRuntime: 'automatic',
+      })],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
@@ -40,6 +60,8 @@ export default defineConfig(({ mode }) => {
         },
         // Optimize chunk size
         chunkSizeWarningLimit: 1000,
+        // Faster builds
+        sourcemap: mode === 'development' ? 'cheap-module-source-map' : false,
         rollupOptions: {
           output: {
             manualChunks: {
@@ -49,6 +71,13 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
+      // Optimize dependency pre-bundling
+      optimizeDeps: {
+        include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
+        exclude: ['@vite/client', '@vite/env'],
+      },
+      // Enable caching
+      cacheDir: 'node_modules/.vite',
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
