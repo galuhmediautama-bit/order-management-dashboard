@@ -149,6 +149,8 @@ const ProductSalesPage: React.FC = () => {
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Order ID</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Pelanggan</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Total</th>
+                                    <th className="px-6 py-3 text-left text-sm font-semibold">Sumber</th>
+                                    <th className="px-6 py-3 text-left text-sm font-semibold">Handler</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
                                     <th className="px-6 py-3 text-left text-sm font-semibold">Tanggal</th>
                                     <th className="px-6 py-3 text-right text-sm font-semibold">Aksi</th>
@@ -170,8 +172,22 @@ const ProductSalesPage: React.FC = () => {
                                             {formatCurrency(order.totalPrice || 0)}
                                         </td>
                                         <td className="px-6 py-4">
+                                            <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                                {order.sourceForm ? 'Form' : order.utmSource || 'Direct'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                order.assignedCsId 
+                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                                            }`}>
+                                                {order.assignedCsId ? 'CS' : 'Advertiser'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                order.status === 'Delivered' || order.status === 'Completed'
+                                                order.status === 'Delivered'
                                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                                                     : order.status === 'Shipped'
                                                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
