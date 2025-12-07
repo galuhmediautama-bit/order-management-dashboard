@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import performanceMonitor, { type PerformanceMetrics } from '../utils/performanceMonitor';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import TrendingUpIcon from '../components/icons/TrendingUpIcon';
-import GaugeIcon from '../components/icons/GaugeIcon';
-import CloudArrowDownIcon from '../components/icons/CloudArrowDownIcon';
+import DashboardIcon from '../components/icons/DashboardIcon';
+import DownloadIcon from '../components/icons/DownloadIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 
 interface MetricsSummary {
@@ -48,14 +48,14 @@ const PerformanceDashboardPage: React.FC = () => {
             title: 'Rata-rata Memory',
             value: `${summary.averageMemoryPercent.toFixed(1)}%`,
             helper: `${summary.memorySamples} sampel`,
-            icon: GaugeIcon,
+            icon: DashboardIcon,
             bg: 'from-indigo-500 to-indigo-600'
         },
         {
             title: 'Total Request',
             value: summary.requestCount.toString(),
             helper: formatBytes(summary.totalBytes),
-            icon: CloudArrowDownIcon,
+            icon: DownloadIcon,
             bg: 'from-emerald-500 to-emerald-600'
         },
         {

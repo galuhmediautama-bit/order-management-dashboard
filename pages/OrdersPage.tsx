@@ -530,8 +530,8 @@ const OrdersPage: React.FC = () => {
                 };
                 const { data, error } = await supabase.from('orders').insert(dataWithTimestamp).select().single();
 
-                                // Invalidate cache after order creation
-                                await invalidateOnOrderChange((data as any).id);
+                // Invalidate cache after order creation
+                await invalidateOnOrderChange((data as any).id);
                 if (error) throw error;
 
                 const newOrder = {
@@ -566,8 +566,8 @@ const OrdersPage: React.FC = () => {
                 console.error("Update error details:", error);
                 throw error;
 
-                        // Invalidate cache after order cancellation
-                        await invalidateOnOrderChange(orderToCancel.id);
+                // Invalidate cache after order cancellation
+                await invalidateOnOrderChange(orderToCancel.id);
             }
 
             setOrders(prev => prev.map(o =>
@@ -597,8 +597,8 @@ const OrdersPage: React.FC = () => {
         try {
             const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
 
-                        // Invalidate cache after status update
-                        await invalidateOnOrderChange(orderId);
+            // Invalidate cache after status update
+            await invalidateOnOrderChange(orderId);
             if (error) throw error;
 
             const updatedOrder = orders.find(o => o.id === orderId);
@@ -654,8 +654,8 @@ const OrdersPage: React.FC = () => {
             if (!order) return;
             const newCount = (order.followUps || 0) + 1;
             await supabase.from('orders').update({ followUps: newCount }).eq('id', orderId);
-                        // Invalidate cache after follow-up update
-                        await invalidateOnOrderChange(orderId);
+            // Invalidate cache after follow-up update
+            await invalidateOnOrderChange(orderId);
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, followUps: newCount } : o));
         } catch (error) {
             console.error("Error updating follow up:", error);
@@ -666,8 +666,8 @@ const OrdersPage: React.FC = () => {
         if (!orderToChangePayment) return;
         try {
             await supabase.from('orders').update({ paymentMethod: method }).eq('id', orderToChangePayment.id);
-                        // Invalidate cache after payment method update
-                        await invalidateOnOrderChange(orderToChangePayment.id);
+            // Invalidate cache after payment method update
+            await invalidateOnOrderChange(orderToChangePayment.id);
             setOrders(prev => prev.map(o => o.id === orderToChangePayment.id ? { ...o, paymentMethod: method } : o));
             setOrderToChangePayment(null);
             showToast("Metode pembayaran berhasil diubah.", "success");
@@ -697,8 +697,8 @@ const OrdersPage: React.FC = () => {
         try {
             const { error } = await supabase.from('orders').update({ assignedCsId: assignSelectedCsId }).eq('id', orderId);
 
-                        // Invalidate cache after CS assignment
-                        await invalidateOnOrderChange(orderId);
+            // Invalidate cache after CS assignment
+            await invalidateOnOrderChange(orderId);
             if (error) throw error;
 
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, assignedCsId: assignSelectedCsId } : o));

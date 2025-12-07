@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { Page, NavItem, UserRole } from '../types';
-import DashboardIcon from './icons/DashboardIcon';
 import OrdersIcon from './icons/OrdersIcon';
 import ReportsIcon from './icons/ReportsIcon';
 import FormsIcon from './icons/FormsIcon';
@@ -10,7 +9,6 @@ import SettingsIcon from './icons/SettingsIcon';
 import BrandsIcon from './icons/BrandsIcon';
 import CustomerServiceIcon from './icons/CustomerServiceIcon';
 import TrackingIcon from './icons/TrackingIcon';
-import GaugeIcon from './icons/GaugeIcon';
 import ChevronDownIcon from './icons/ChevronDownIcon';
 import UserIcon from './icons/UserIcon';
 import RoleIcon from './icons/RoleIcon';
@@ -27,15 +25,16 @@ import ClipboardListIcon from './icons/ClipboardListIcon';
 import TrashIcon from './icons/TrashIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import Squares2x2Icon from './icons/Squares2x2Icon';
+import DashboardIcon from './icons/DashboardIcon';
 import { supabase } from '../firebase';
 import { getNormalizedRole } from '../utils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
 
 interface SidebarProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-  websiteName?: string;
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    websiteName?: string;
 }
 
 const pageToPath: Record<string, string> = {
@@ -96,7 +95,7 @@ const menuNameToRbacId: Record<string, string> = {
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => {
-    const [openSubMenus, setOpenSubMenus] = useState<{[key: string]: boolean}>({});
+    const [openSubMenus, setOpenSubMenus] = useState<{ [key: string]: boolean }>({});
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
     const { t } = useLanguage();
     const { canAccessMenu } = useRolePermissions();
@@ -107,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         const fetchUserRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             console.log('🔐 Sidebar - Auth user:', user?.email);
-            
+
             if (user) {
                 try {
                     // Retry logic for race condition during registration
@@ -131,16 +130,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                             break;
                         }
                     }
-                    
+
                     if (error || !userDoc) {
                         console.error('⚠️ User profile not found in DB after retries. Auth user:', user.email, 'Error:', error);
                         console.log('❌ Setting currentUserRole to null - sidebar will only show Dashboard');
                         setCurrentUserRole(null);
                     } else {
                         const normalized = getNormalizedRole(userDoc.role, user.email);
-                        console.log('✅ Sidebar - User role from DB:', { 
-                            raw: userDoc.role, 
-                            normalized: normalized, 
+                        console.log('✅ Sidebar - User role from DB:', {
+                            raw: userDoc.role,
+                            normalized: normalized,
                             email: user.email,
                             userId: user.id
                         });
@@ -171,23 +170,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
     }, [currentPagePath]);
 
     const toggleSubMenu = (name: string) => {
-        setOpenSubMenus(prev => ({...prev, [name]: !prev[name]}));
+        setOpenSubMenus(prev => ({ ...prev, [name]: !prev[name] }));
     }
 
     const isSubItemActive = (item: NavItem) => {
-      return item.subItems?.some(sub => pageToPath[sub.name] === currentPagePath) ?? false;
+        return item.subItems?.some(sub => pageToPath[sub.name] === currentPagePath) ?? false;
     }
 
     const canSee = (item: NavItem): boolean => {
         // Always show Dashboard
         if (item.name === 'Dasbor') return true;
-        
+
         if (!currentUserRole) return false;
         if (currentUserRole === 'Super Admin') return true;
 
         // Get RBAC menu ID for this item
         const rbacMenuId = menuNameToRbacId[item.name];
-        
+
         if (!rbacMenuId) {
             console.warn(`⚠️ No RBAC mapping for: "${item.name}"`);
             return false;
@@ -195,10 +194,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
         // Check dynamic permissions via RBAC
         const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
-        
-        console.log(`🔍 canSee "${item.name}":`, { 
-            rbacMenuId, 
-            userRole: currentUserRole, 
+
+        console.log(`🔍 canSee "${item.name}":`, {
+            rbacMenuId,
+            userRole: currentUserRole,
             hasAccess
         });
 
@@ -207,66 +206,66 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
     // Declarative Navigation Structure - NO hardcoded allowedRoles, use RBAC only!
     const allNavItems: NavItem[] = [
-      { 
-          name: 'Dasbor', 
-          icon: DashboardIcon 
-      },
-      { 
-        name: 'Produk', 
-        label: 'Produk',
-        icon: Squares2x2Icon,
-        subItems: [
-            { name: 'Daftar Produk', icon: Squares2x2Icon },
-            { name: 'Daftar Formulir', icon: FormsIcon },
-        ]
-      },
-      { 
-        name: 'Pesanan', 
-        label: 'Pesanan',
-        icon: OrdersIcon,
-        subItems: [
-            { name: 'Daftar Pesanan', icon: ClipboardListIcon },
-            { name: 'Pesanan Tertinggal', icon: ArchiveIcon },
-        ]
-      },
-      { 
-          name: 'Pelanggan', 
-          icon: UsersIcon
-      },
-      { 
-        name: 'Laporan', 
-        icon: ReportsIcon,
-        subItems: [
-            { name: 'Laporan Iklan', icon: TrendingUpIcon },
-            { name: 'Laporan CS', icon: UserGroupIcon },
-        ]
-      },
-      { 
-          name: 'Penghasilan', 
-          icon: BanknotesIcon
-      },
-      { 
-        name: 'Pengaturan', 
-        icon: SettingsIcon,
-        subItems: [
-          { name: 'Pengaturan Website', icon: WebsiteIcon },
-          { name: 'Merek', icon: BrandsIcon },
-          { name: 'Manajemen Pengguna', icon: UsersIcon },
-          { name: 'Manajemen Peran', icon: RoleIcon },
-          { name: 'Manajemen CS', icon: CustomerServiceIcon },
-          { name: 'CuanRank', icon: TrophyIcon },
-          { name: 'Pelacakan', icon: TrackingIcon },
-          { name: 'Announcements' as const, icon: ChatBubbleIcon },
-        ]
-      },
-            {
+        {
+            name: 'Dasbor',
+            icon: DashboardIcon
+        },
+        {
+            name: 'Produk',
+            label: 'Produk',
+            icon: Squares2x2Icon,
+            subItems: [
+                { name: 'Daftar Produk', icon: Squares2x2Icon },
+                { name: 'Daftar Formulir', icon: FormsIcon },
+            ]
+        },
+        {
+            name: 'Pesanan',
+            label: 'Pesanan',
+            icon: OrdersIcon,
+            subItems: [
+                { name: 'Daftar Pesanan', icon: ClipboardListIcon },
+                { name: 'Pesanan Tertinggal', icon: ArchiveIcon },
+            ]
+        },
+        {
+            name: 'Pelanggan',
+            icon: UsersIcon
+        },
+        {
+            name: 'Laporan',
+            icon: ReportsIcon,
+            subItems: [
+                { name: 'Laporan Iklan', icon: TrendingUpIcon },
+                { name: 'Laporan CS', icon: UserGroupIcon },
+            ]
+        },
+        {
+            name: 'Penghasilan',
+            icon: BanknotesIcon
+        },
+        {
+            name: 'Pengaturan',
+            icon: SettingsIcon,
+            subItems: [
+                { name: 'Pengaturan Website', icon: WebsiteIcon },
+                { name: 'Merek', icon: BrandsIcon },
+                { name: 'Manajemen Pengguna', icon: UsersIcon },
+                { name: 'Manajemen Peran', icon: RoleIcon },
+                { name: 'Manajemen CS', icon: CustomerServiceIcon },
+                { name: 'CuanRank', icon: TrophyIcon },
+                { name: 'Pelacakan', icon: TrackingIcon },
+                { name: 'Announcements' as const, icon: ChatBubbleIcon },
+            ]
+        },
+        {
                 name: 'Monitoring',
-                icon: GaugeIcon,
-                subItems: [
-                    { name: 'Performance Dashboard', icon: GaugeIcon }
-                ]
-            },
-    ];    const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
+                icon: DashboardIcon,
+            subItems: [
+                    { name: 'Performance Dashboard', icon: DashboardIcon }
+            ]
+        },
+    ]; const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => canSee(sub));
             return {
@@ -283,111 +282,110 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         return true;
     });
 
-  return (
-    <>
-          <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-20 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}></div>
-      
+    return (
+        <>
+            <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-20 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}></div>
+
             <aside className={`absolute inset-y-0 left-0 w-64 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col shadow-xl border-r border-slate-800/80 bg-slate-950 text-slate-100`}>
 
-            <div className="h-16 flex items-center px-5 border-b border-slate-800/80 bg-gradient-to-br from-slate-900 via-slate-950 to-black rounded-br-2xl shadow-inner shrink-0">
-                 <Link to="/" className="flex items-center space-x-3 group w-full">
-                    <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <div className="flex flex-col text-left">
-                        <span className="text-sm font-semibold text-white leading-tight truncate">{websiteName || 'CuanMax Digital'}</span>
-                        <span className="text-xs text-slate-400">Dashboard</span>
-                    </div>
-                </Link>
-            </div>
-
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {filteredNavItems.map((item) => {
-            const path = pageToPath[item.name];
-            const isActive = currentPagePath === path || isSubItemActive(item);
-            const hasSubMenu = !!item.subItems;
-            const isMenuOpen = openSubMenus[item.name];
-            
-            const baseClasses = `flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group`;
-            const activeClasses = `bg-slate-800/80 text-white border border-slate-700 shadow-sm`;
-            const inactiveClasses = `text-slate-300 hover:bg-slate-900/80 hover:text-white`;
-
-            const content = (
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                    <span className="truncate">{item.label || item.name}</span>
-                </div>
-            );
-
-            return (
-                <div key={item.name} className="flex flex-col">
-                    {hasSubMenu ? (
-                        <button 
-                            onClick={() => toggleSubMenu(item.name)} 
-                            className={`${baseClasses} ${isActive && !isMenuOpen ? activeClasses : inactiveClasses} ${isMenuOpen ? 'bg-slate-900/70' : ''}`}
-                        >
-                            {content}
-                            <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                    ) : (
-                        <Link 
-                            to={path} 
-                            onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }} 
-                            className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-                        >
-                           {content}
-                        </Link>
-                    )}
-
-                    {hasSubMenu && (
-                        <div 
-                            className={`overflow-hidden transition-all duration-200 ${isMenuOpen ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}
-                        >
-                            <div className="ml-8 space-y-0.5 py-1">
-                                {item.subItems!.map(subItem => {
-                                    const subPath = pageToPath[subItem.name];
-                                    const isSubActive = currentPagePath === subPath;
-                                    
-                                    // Skip if path is undefined or '#'
-                                    if (!subPath || subPath === '#') {
-                                        console.warn(`⚠️ No route defined for submenu: ${subItem.name}`);
-                                        return null;
-                                    }
-                                    
-                                    return (
-                                        <Link
-                                            key={subItem.name}
-                                            to={subPath}
-                                            onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }}
-                                            className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
-                                            isSubActive 
-                                                ? 'text-white bg-slate-800/80' 
-                                                : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
-                                            }`}
-                                        >
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-3 ${isSubActive ? 'bg-indigo-400' : 'bg-slate-600'}`}></div>
-                                            <span className="truncate">{subItem.label || subItem.name}</span>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
+                <div className="h-16 flex items-center px-5 border-b border-slate-800/80 bg-gradient-to-br from-slate-900 via-slate-950 to-black rounded-br-2xl shadow-inner shrink-0">
+                    <Link to="/" className="flex items-center space-x-3 group w-full">
+                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                         </div>
-                    )}
+                        <div className="flex flex-col text-left">
+                            <span className="text-sm font-semibold text-white leading-tight truncate">{websiteName || 'CuanMax Digital'}</span>
+                            <span className="text-xs text-slate-400">Dashboard</span>
+                        </div>
+                    </Link>
                 </div>
-            );
-          })}
-        </nav>
+
+                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                    {filteredNavItems.map((item) => {
+                        const path = pageToPath[item.name];
+                        const isActive = currentPagePath === path || isSubItemActive(item);
+                        const hasSubMenu = !!item.subItems;
+                        const isMenuOpen = openSubMenus[item.name];
+
+                        const baseClasses = `flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group`;
+                        const activeClasses = `bg-slate-800/80 text-white border border-slate-700 shadow-sm`;
+                        const inactiveClasses = `text-slate-300 hover:bg-slate-900/80 hover:text-white`;
+
+                        const content = (
+                            <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                                <span className="truncate">{item.label || item.name}</span>
+                            </div>
+                        );
+
+                        return (
+                            <div key={item.name} className="flex flex-col">
+                                {hasSubMenu ? (
+                                    <button
+                                        onClick={() => toggleSubMenu(item.name)}
+                                        className={`${baseClasses} ${isActive && !isMenuOpen ? activeClasses : inactiveClasses} ${isMenuOpen ? 'bg-slate-900/70' : ''}`}
+                                    >
+                                        {content}
+                                        <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                ) : (
+                                    <Link
+                                        to={path}
+                                        onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }}
+                                        className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
+                                    >
+                                        {content}
+                                    </Link>
+                                )}
+
+                                {hasSubMenu && (
+                                    <div
+                                        className={`overflow-hidden transition-all duration-200 ${isMenuOpen ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}
+                                    >
+                                        <div className="ml-8 space-y-0.5 py-1">
+                                            {item.subItems!.map(subItem => {
+                                                const subPath = pageToPath[subItem.name];
+                                                const isSubActive = currentPagePath === subPath;
+
+                                                // Skip if path is undefined or '#'
+                                                if (!subPath || subPath === '#') {
+                                                    console.warn(`⚠️ No route defined for submenu: ${subItem.name}`);
+                                                    return null;
+                                                }
+
+                                                return (
+                                                    <Link
+                                                        key={subItem.name}
+                                                        to={subPath}
+                                                        onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }}
+                                                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${isSubActive
+                                                                ? 'text-white bg-slate-800/80'
+                                                                : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+                                                            }`}
+                                                    >
+                                                        <div className={`w-1.5 h-1.5 rounded-full mr-3 ${isSubActive ? 'bg-indigo-400' : 'bg-slate-600'}`}></div>
+                                                        <span className="truncate">{subItem.label || subItem.name}</span>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </nav>
 
                 <div className="p-4 border-t border-slate-800">
-                        <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
-                                <span>&copy; 2024</span>
-                                <span>•</span>
-                                <span className="font-medium">v1.2.6</span>
-                        </div>
+                    <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                        <span>&copy; 2024</span>
+                        <span>•</span>
+                        <span className="font-medium">v1.2.6</span>
+                    </div>
                 </div>
-      </aside>
-    </>
-  );
+            </aside>
+        </>
+    );
 };
 
 export default Sidebar;
