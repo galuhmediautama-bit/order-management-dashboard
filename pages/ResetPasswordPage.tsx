@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import LockClosedIcon from '../components/icons/LockClosedIcon';
 import EyeIcon from '../components/icons/EyeIcon';
 import EyeOffIcon from '../components/icons/EyeOffIcon';

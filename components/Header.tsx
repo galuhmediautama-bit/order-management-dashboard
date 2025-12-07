@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import MenuIcon from './icons/MenuIcon';
 import ChevronDownIcon from './icons/ChevronDownIcon';
@@ -9,11 +9,7 @@ import UserIcon from './icons/UserIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to Supabase type
-import type { Notification } from '../types';
-import BellIcon from './icons/BellIcon';
-import { supabase } from '../supabase';
-import { useNotificationCount } from '../contexts/NotificationCountContext';
-
+import { supabase } from '../firebase';
 
 const timeAgo = (isoString: string) => {
     const date = new Date(isoString);
@@ -40,16 +36,10 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentTheme, user, logout }) => {
-  const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [isNotificationsOpen, setNotificationsOpen] = useState(false);
-  const { newOrdersCount, newAbandonedCount } = useNotificationCount();
-  
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loadingNotifications, setLoadingNotifications] = useState(true);
-  const [userAvatar, setUserAvatar] = useState<string | undefined>(user.user_metadata?.avatar_url);
+    const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [userAvatar, setUserAvatar] = useState<string | undefined>(user.user_metadata?.avatar_url);
 
-  const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
+    const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const userDisplayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const userEmail = user.email || 'user@email.com';
@@ -80,43 +70,9 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
   }, [user.id, user.user_metadata?.avatar_url]);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-        setLoadingNotifications(true);
-        try {
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .order('timestamp', { ascending: false })
-                .limit(10);
-            
-            if (error) throw error;
-            setNotifications(data as Notification[]);
-        } catch (error: any) {
-            // Cek apakah error karena tabel belum ada (Postgres code 42P01 atau pesan spesifik client)
-            const isTableMissing = error.code === '42P01' || 
-                                   (error.message && error.message.includes('does not exist')) ||
-                                   (error.message && error.message.includes('Could not find the table'));
-
-            if (isTableMissing) {
-                console.warn("Fitur Notifikasi: Tabel 'notifications' belum dibuat di database Supabase.");
-                setNotifications([]); // Set kosong agar UI tidak loading selamanya
-            } else {
-                console.error("Error fetching notifications:", error.message || error);
-            }
-        } finally {
-            setLoadingNotifications(false);
-        }
-    };
-    fetchNotifications();
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
         if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
             setProfileMenuOpen(false);
-        }
-        if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target as Node)) {
-            setNotificationsOpen(false);
         }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -128,32 +84,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
   const handleProfileToggle = () => {
     const nextState = !isProfileMenuOpen;
     setProfileMenuOpen(nextState);
-    if (nextState) {
-        setNotificationsOpen(false);
-    }
-  };
-
-  const handleNotificationsToggle = () => {
-      const nextState = !isNotificationsOpen;
-      setNotificationsOpen(nextState);
-      if (nextState) {
-          setProfileMenuOpen(false);
-      }
-  };
-
-  const hasUnread = useMemo(() => notifications.some(n => !n.read), [notifications]);
-
-  const handleMarkAllAsRead = async () => {
-      const unreadNotifs = notifications.filter(n => !n.read);
-      if (unreadNotifs.length === 0) return;
-
-      try {
-          const ids = unreadNotifs.map(n => n.id);
-          await supabase.from('notifications').update({ read: true }).in('id', ids);
-          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      } catch (error) {
-          console.error("Error marking notifications as read:", error);
-      }
   };
 
   const handleLogoutClick = (e: React.MouseEvent) => {
@@ -205,105 +135,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
 
             {/* Theme Toggle */}
             <ThemeToggle toggleTheme={toggleTheme} theme={currentTheme} />
-
-            {/* Notifications */}
-            <div className="relative" ref={notificationsDropdownRef}>
-                <button 
-                  onClick={handleNotificationsToggle} 
-                  className="relative p-2 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                  aria-label="Notifications"
-                >
-                    {hasUnread && (
-                        <>
-                            <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-                            <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-ping"></span>
-                        </>
-                    )}
-                    {(newOrdersCount > 0 || newAbandonedCount > 0) && (
-                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-orange-600 rounded-full">
-                            {newOrdersCount + newAbandonedCount}
-                        </span>
-                    )}
-                    <BellIcon className="h-6 w-6" />
-                </button>
-                {isNotificationsOpen && (
-                    <div className="absolute right-0 mt-3 w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl z-50 border border-slate-200 dark:border-slate-700 origin-top-right animate-in slide-in-from-top-2">
-                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                            <div>
-                                <p className="text-lg font-bold text-slate-900 dark:text-white">Notifikasi</p>
-                                <div className="flex gap-4 mt-1">
-                                    {newOrdersCount > 0 && (
-                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                                            📦 {newOrdersCount} pesanan baru
-                                        </p>
-                                    )}
-                                    {newAbandonedCount > 0 && (
-                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                            🛒 {newAbandonedCount} keranjang baru
-                                        </p>
-                                    )}
-                                    {hasUnread && (
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {notifications.filter(n => !n.read).length} lainnya
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <button 
-                              onClick={handleMarkAllAsRead} 
-                              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors" 
-                              disabled={!hasUnread}
-                            >
-                                Tandai semua
-                            </button>
-                        </div>
-                        <ul className="py-2 max-h-96 overflow-y-auto custom-scrollbar">
-                            {loadingNotifications ? (
-                                <li className="px-6 py-8 text-center">
-                                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
-                                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Memuat notifikasi...</p>
-                                </li>
-                            ) : notifications.length === 0 ? (
-                                <li className="px-6 py-12 text-center">
-                                    <BellIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Tidak ada notifikasi</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Semua notifikasi akan muncul di sini</p>
-                                </li>
-                            ) : (
-                                notifications.map(notif => (
-                                <li key={notif.id} className={`border-l-4 ${notif.read ? 'border-transparent' : 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/10'}`}>
-                                    <a 
-                                      href="#" 
-                                      onClick={e => e.preventDefault()} 
-                                      className="block px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                                    >
-                                        <p className={`text-sm text-slate-800 dark:text-slate-200 ${!notif.read ? 'font-semibold' : 'font-normal'}`}>
-                                            {notif.message}
-                                        </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                            </svg>
-                                            {timeAgo(notif.timestamp)}
-                                        </p>
-                                    </a>
-                                </li>
-                                ))
-                            )}
-                        </ul>
-                        {notifications.length > 0 && (
-                            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700">
-                                <a href="#/notifikasi" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center justify-center gap-1">
-                                    Lihat semua notifikasi
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </a>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
 
             {/* User Profile Dropdown */}
             <div className="relative border-l border-slate-200 dark:border-slate-700 ml-2 pl-2 md:ml-4 md:pl-4" ref={profileDropdownRef}>

@@ -76,6 +76,23 @@ export const productService = {
     },
 
     /**
+     * Fetch all products for multiple brands (Advertiser/brand-level access)
+     */
+    async getProductsByBrands(brandIds: string[]): Promise<Product[]> {
+        if (!brandIds || brandIds.length === 0) return [];
+
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .in('brand_id', brandIds)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(transformProduct);
+    },
+
+    /**
      * Fetch single product by ID
      */
     async getProduct(productId: string): Promise<Product | null> {

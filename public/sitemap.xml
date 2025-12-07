@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Homepage / Dashboard -->
+  <url>
+    <loc>https://form.cuanmax.digital/</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Dashboard Pages -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/dashboard</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/pesanan</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/pelanggan</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Form Builder -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/formulir</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/formulir/baru</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Reports -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/laporan-iklan</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/laporan-cs</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/penghasilan</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Products & Analytics -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/produk</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/analitik-produk</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Settings -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/pengaturan</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://form.cuanmax.digital/#/profil</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Auth Pages -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/login</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <!-- Abandoned Carts -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/keranjang-terabaikan</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Notifications -->
+  <url>
+    <loc>https://form.cuanmax.digital/#/notifikasi</loc>
+    <lastmod>2025-12-07</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+</urlset>

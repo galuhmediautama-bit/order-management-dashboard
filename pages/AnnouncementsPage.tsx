@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import type { Announcement, AnnouncementType, AnnouncementDisplayMode, AnnouncementSettings } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
 import TrashIcon from '../components/icons/TrashIcon';

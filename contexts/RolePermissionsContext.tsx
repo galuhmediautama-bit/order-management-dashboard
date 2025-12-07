@@ -60,6 +60,16 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
     loadPermissions();
   }, [loadPermissions]);
 
+  // Listen for manual refresh events from permission manager
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('🔄 Role permissions update event received, reloading...');
+      loadPermissions();
+    };
+    window.addEventListener('rolePermissionsUpdated', handleRefresh);
+    return () => window.removeEventListener('rolePermissionsUpdated', handleRefresh);
+  }, [loadPermissions]);
+
   // Optional: Refresh permissions periodically (e.g., every 5 minutes)
   useEffect(() => {
     const interval = setInterval(loadPermissions, 5 * 60 * 1000);

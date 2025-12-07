@@ -9,7 +9,7 @@ import TrackingPage from './TrackingPage';
 import CustomerServicePage from './CustomerServicePage';
 import DeletionRequestsPage from './DeletionRequestsPage';
 import CuanRankPage from './CuanRankPage';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { uploadFileAndGetURL } from '../fileUploader'; // Import file uploader
 import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
@@ -1818,27 +1818,48 @@ const RoleManagement: React.FC = () => {
 
     const handleSavePermissions = async (roleName: string, menuIds: string[], featureIds: string[]) => {
         try {
-            // Save role permissions to database
-            // For now, save to settings table as a JSON blob
-            const currentSettings = await supabase.from('settings').select('rolePermissions').eq('id', 'rolePermissions').single();
+            console.log('💾 Saving permissions for', roleName, { menuIds, featureIds });
             
-            const rolePermissions = currentSettings?.data?.rolePermissions || {};
+            // Save role permissions to database with correct column name
+            const { data: currentSettings, error: fetchError } = await supabase
+                .from('settings')
+                .select('role_permissions')
+                .eq('id', 'rolePermissions')
+                .single();
+            
+            if (fetchError && fetchError.code !== 'PGRST116') {
+                throw fetchError;
+            }
+            
+            const rolePermissions = currentSettings?.role_permissions || {};
             rolePermissions[roleName] = {
                 menus: menuIds,
                 features: featureIds,
                 updatedAt: new Date().toISOString()
             };
 
-            await supabase.from('settings').upsert({
-                id: 'rolePermissions',
-                rolePermissions: rolePermissions
-            });
+            console.log('📝 Upserting to database:', rolePermissions);
+            const { error: upsertError } = await supabase
+                .from('settings')
+                .upsert({
+                    id: 'rolePermissions',
+                    role_permissions: rolePermissions
+                });
 
-            showToast(`Izin untuk peran "${roleName}" berhasil disimpan`, 'success');
+            if (upsertError) {
+                throw upsertError;
+            }
+
+            console.log('✅ Permissions saved successfully for', roleName);
+            showToast(`Izin untuk peran "${roleName}" berhasil disimpan dan akan berlaku segera`, 'success');
+            
+            // Force context to refresh by triggering a window event
+            window.dispatchEvent(new Event('rolePermissionsUpdated'));
+            
             setManagingPermissions(null);
-        } catch (error) {
-            console.error('Error saving role permissions:', error);
-            showToast('Gagal menyimpan izin peran', 'error');
+        } catch (error: any) {
+            console.error('❌ Error saving role permissions:', error);
+            showToast(`Gagal menyimpan izin peran: ${error.message}`, 'error');
         }
     };
 

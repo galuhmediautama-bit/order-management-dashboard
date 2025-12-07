@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import TrashIcon from '../components/icons/TrashIcon';

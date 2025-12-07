@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
+import { useDialog } from '../contexts/DialogContext';
 import { Product } from '../types';
 import { productService } from '../services/productService';
 import { supabase } from '../firebase';
@@ -23,6 +24,7 @@ interface ProductStats {
 const ProductsPage: React.FC = () => {
     const { t } = useLanguage();
     const { showToast } = useToast();
+    const { showDialog } = useDialog();
     const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -64,13 +66,18 @@ const ProductsPage: React.FC = () => {
         setIsLoading(true);
         try {
             let data: Product[];
-            
-            // Super Admin dapat melihat semua produk
-            if (currentUser.role === 'Super Admin') {
+            const brandIds = currentUser.assignedBrandIds?.length
+                ? currentUser.assignedBrandIds
+                : currentUser.brandId
+                    ? [currentUser.brandId]
+                    : [];
+
+            // Super Admin dan Advertiser dapat melihat semua produk
+            if (currentUser.role === 'Super Admin' || currentUser.role === 'Advertiser') {
                 data = await productService.getAllProducts();
             } else {
-                // Admin/Brand hanya melihat produk brand mereka sendiri
-                data = await productService.getProductsByBrand(currentUser.id);
+                // Admin/role lain hanya melihat produk brand yang di-assign
+                data = await productService.getProductsByBrands(brandIds);
             }
             
             setProducts(data);
@@ -81,9 +88,18 @@ const ProductsPage: React.FC = () => {
             setIsLoading(false);
         }
     };
-
     const handleDelete = async (productId: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
+        // Show professional confirmation dialog
+        const result = await showDialog({
+            title: 'Hapus Produk?',
+            description: 'Produk ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            type: 'danger',
+            icon: 'trash',
+        });
+
+        if (result !== 'confirm') return;
 
         setIsLoading(true);
         try {
@@ -91,7 +107,7 @@ const ProductsPage: React.FC = () => {
             const productToDelete = products.find(p => p.id === productId);
             
             await productService.deleteProduct(productId);
-            showToast('Produk berhasil dihapus', 'success');
+            showToast('✅ Produk berhasil dihapus', 'success');
             
             // Update brand's productCount
             if (productToDelete?.brandId) {
@@ -117,7 +133,7 @@ const ProductsPage: React.FC = () => {
             fetchProducts();
         } catch (error) {
             console.error('Error deleting product:', error);
-            showToast('Gagal menghapus produk', 'error');
+            showToast('❌ Gagal menghapus produk', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -134,16 +150,38 @@ const ProductsPage: React.FC = () => {
         return price ? `Rp ${price.toLocaleString('id-ID')}` : '-';
     };
 
+    const canEditProduct = (product: Product) => {
+        // Super Admin bisa edit semua
+        if (currentUser.role === 'Super Admin') return true;
+        
+        // Advertiser hanya bisa edit produk milik brand-nya
+        if (currentUser.role === 'Advertiser') {
+            const userBrandIds = currentUser.assignedBrandIds?.length
+                ? currentUser.assignedBrandIds
+                : currentUser.brandId ? [currentUser.brandId] : [];
+            return userBrandIds.includes(product.brandId);
+        }
+        
+        // Role lain cek brandId
+        return product.brandId === currentUser.brandId || 
+               currentUser.assignedBrandIds?.includes(product.brandId);
+    };
+
     const fetchProductStats = async () => {
         try {
             let productsToCheck: Product[] = [];
+            const brandIds = currentUser.assignedBrandIds?.length
+                ? currentUser.assignedBrandIds
+                : currentUser.brandId
+                    ? [currentUser.brandId]
+                    : [];
             
-            // Super Admin dapat melihat semua produk
-            if (currentUser.role === 'Super Admin') {
+            // Super Admin dan Advertiser dapat melihat semua produk
+            if (currentUser.role === 'Super Admin' || currentUser.role === 'Advertiser') {
                 productsToCheck = await productService.getAllProducts();
             } else {
-                // Admin/Brand hanya melihat produk brand mereka sendiri
-                productsToCheck = await productService.getProductsByBrand(currentUser.id);
+                // Admin/role lain hanya melihat produk brand yang di-assign
+                productsToCheck = await productService.getProductsByBrands(brandIds);
             }
 
             const stats: ProductStats = {};
@@ -296,13 +334,22 @@ const ProductsPage: React.FC = () => {
                                                 <div className="absolute right-0 mt-8 w-48 bg-white dark:bg-slate-700 rounded-lg shadow-lg z-10 border border-slate-200 dark:border-slate-600">
                                                     <button
                                                         onClick={() => {
+                                                            if (!canEditProduct(product)) {
+                                                                showToast('Anda hanya bisa edit produk milik brand Anda', 'error');
+                                                                return;
+                                                            }
                                                             navigate(`/daftar-produk/edit/${product.id}`);
                                                             setOpenDropdown(null);
                                                         }}
-                                                        className="w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600"
+                                                        disabled={!canEditProduct(product)}
+                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600 ${
+                                                            canEditProduct(product)
+                                                                ? 'hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 cursor-pointer'
+                                                                : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                                                        }`}
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
-                                                        Edit Produk
+                                                        Edit Produk {!canEditProduct(product) && '🔒'}
                                                     </button>
                                                     
                                                     <button
@@ -349,13 +396,22 @@ const ProductsPage: React.FC = () => {
 
                                                     <button
                                                         onClick={() => {
+                                                            if (!canEditProduct(product)) {
+                                                                showToast('Anda hanya bisa hapus produk milik brand Anda', 'error');
+                                                                return;
+                                                            }
                                                             handleDelete(product.id);
                                                             setOpenDropdown(null);
                                                         }}
-                                                        className="w-full text-left px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2"
+                                                        disabled={!canEditProduct(product)}
+                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 ${
+                                                            canEditProduct(product)
+                                                                ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 cursor-pointer'
+                                                                : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                                                        }`}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
-                                                        Hapus Produk
+                                                        Hapus Produk {!canEditProduct(product) && '🔒'}
                                                     </button>
                                                 </div>
                                             )}

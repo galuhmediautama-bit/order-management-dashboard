@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import type { User, Order } from '../types';
 import MailIcon from '../components/icons/MailIcon';
 import RoleIcon from '../components/icons/RoleIcon';

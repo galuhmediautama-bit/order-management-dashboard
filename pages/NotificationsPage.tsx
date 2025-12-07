@@ -6,6 +6,15 @@ import XIcon from '../components/icons/XIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
 
+// Simple UUID v4 generator
+const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+};
+
 const NotificationsPage: React.FC = () => {
     const { showToast } = useToast();
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -14,21 +23,78 @@ const NotificationsPage: React.FC = () => {
 
     useEffect(() => {
         fetchNotifications();
+    
+        // Realtime listener for notifications (INSERT/UPDATE/DELETE)
+        const channel = supabase.channel('notifications-page-channel')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+              console.log('[NotificationsPage] INSERT event:', payload);
+              const newNotif = payload.new as Notification;
+              setNotifications(prev => {
+                  // Prevent duplicates by id
+                  if (prev.some(n => n.id === newNotif.id)) return prev;
+                  return [newNotif, ...prev].sort((a, b) => {
+                      const timeA = new Date(b.timestamp || 0).getTime();
+                      const timeB = new Date(a.timestamp || 0).getTime();
+                      return timeA - timeB;
+                  });
+              });
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, payload => {
+              console.log('[NotificationsPage] UPDATE event:', payload);
+              const updated = payload.new as Notification;
+              setNotifications(prev => prev.map(n => n.id === updated.id ? { ...n, ...updated } : n));
+          })
+          .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, payload => {
+              console.log('[NotificationsPage] DELETE event:', payload.old.id);
+              setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
+          })
+          .subscribe(status => {
+              console.log('[NotificationsPage] Realtime subscription status:', status);
+          });
+
+        return () => {
+            try {
+                supabase.removeChannel(channel);
+            } catch (err) {
+                console.warn('Failed to remove notifications channel:', err);
+            }
+        };
     }, []);
 
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            console.log('[fetchNotifications] Starting fetch...');
+            
+            // Ambil semua notifikasi dari DB
+            const { data: existingNotifs, error } = await supabase
                 .from('notifications')
                 .select('*')
-                .order('timestamp', { ascending: false });
+                .order('timestamp', { ascending: false, nullsFirst: false })
+                .limit(200);
 
-            if (error) throw error;
-            setNotifications(data || []);
+            if (error) {
+                console.error('[fetchNotifications] Query error:', error);
+                throw error;
+            }
+
+            console.log('[fetchNotifications] Fetched notifications:', existingNotifs?.length || 0);
+            
+            // Gunakan apa yang ada di DB - JANGAN tambah fallback
+            const notifs = existingNotifs || [];
+            
+            // Ensure they're sorted properly
+            notifs.sort((a: any, b: any) => {
+                const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                return timeB - timeA; // Descending
+            });
+            
+            setNotifications(notifs);
+            console.log('[fetchNotifications] Notifications set in state, count:', notifs.length);
         } catch (error: any) {
-            console.error('Error fetching notifications:', error);
-            showToast('Gagal memuat notifikasi', 'error');
+            console.error('[fetchNotifications] Error:', error);
+            showToast('Gagal memuat notifikasi: ' + (error?.message || 'Unknown error'), 'error');
         } finally {
             setLoading(false);
         }
@@ -36,12 +102,21 @@ const NotificationsPage: React.FC = () => {
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const { error } = await supabase
+            console.log('[markAsRead] Updating notification:', { notificationId });
+            
+            // Update the notification
+            const { data, error } = await supabase
                 .from('notifications')
                 .update({ read: true })
-                .eq('id', notificationId);
+                .eq('id', notificationId)
+                .select();
 
-            if (error) throw error;
+            if (error) {
+                console.error('[markAsRead] Supabase error:', error);
+                throw error;
+            }
+            
+            console.log('[markAsRead] Update successful:', data);
 
             setNotifications(prev =>
                 prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -54,13 +129,20 @@ const NotificationsPage: React.FC = () => {
 
     const deleteNotification = async (notificationId: string) => {
         try {
+            console.log('[deleteNotification] Deleting notification:', { notificationId });
+            
+            // Delete the notification
             const { error } = await supabase
                 .from('notifications')
                 .delete()
                 .eq('id', notificationId);
 
-            if (error) throw error;
-
+            if (error) {
+                console.error('[deleteNotification] Supabase error:', error);
+                throw error;
+            }
+            
+            console.log('[deleteNotification] Delete successful');
             setNotifications(prev => prev.filter(n => n.id !== notificationId));
             showToast('Notifikasi dihapus', 'success');
         } catch (error: any) {
@@ -71,20 +153,23 @@ const NotificationsPage: React.FC = () => {
 
     const markAllAsRead = async () => {
         try {
-            const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-            if (unreadIds.length === 0) {
-                showToast('Semua notifikasi sudah dibaca', 'info');
-                return;
-            }
-
+            console.log('[NotificationsPage] Marking all as read...');
+            
+            // Update semua notifikasi dimana read = false
             const { error } = await supabase
                 .from('notifications')
                 .update({ read: true })
-                .in('id', unreadIds);
+                .eq('read', false);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error marking all as read:', error);
+                showToast('Gagal menandai semua: ' + error.message, 'error');
+                return;
+            }
 
+            // Update UI state
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setFilter('read');
             showToast('Semua notifikasi ditandai sebagai dibaca', 'success');
         } catch (error: any) {
             console.error('Error marking all as read:', error);
@@ -96,13 +181,21 @@ const NotificationsPage: React.FC = () => {
         if (!confirm('Apakah Anda yakin ingin menghapus semua notifikasi?')) return;
 
         try {
+            console.log('[NotificationsPage] Deleting all notifications...');
+            
+            // Delete semua notifikasi dari database
             const { error } = await supabase
                 .from('notifications')
                 .delete()
-                .gt('id', ''); // Delete all
+                .neq('id', null); // Delete all rows
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error deleting all:', error);
+                showToast('Gagal menghapus semua: ' + error.message, 'error');
+                return;
+            }
 
+            // Clear UI state
             setNotifications([]);
             showToast('Semua notifikasi dihapus', 'success');
         } catch (error: any) {

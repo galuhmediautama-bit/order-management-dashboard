@@ -26,7 +26,7 @@ import ClipboardListIcon from './icons/ClipboardListIcon';
 import TrashIcon from './icons/TrashIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import Squares2x2Icon from './icons/Squares2x2Icon';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { getNormalizedRole } from '../utils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';

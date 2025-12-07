@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import MailIcon from '../components/icons/MailIcon';
 import LockClosedIcon from '../components/icons/LockClosedIcon';
 import EyeIcon from '../components/icons/EyeIcon';

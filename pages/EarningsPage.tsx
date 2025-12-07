@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import type { User, Order, Form, CuanRankSettings, RankLevel, AdCampaignReport, UserRole } from '../types';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import BanknotesIcon from '../components/icons/BanknotesIcon';

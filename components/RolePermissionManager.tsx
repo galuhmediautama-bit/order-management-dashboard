@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ALL_MENUS, ALL_FEATURES, DEFAULT_ROLE_PERMISSIONS } from '../utils/rolePermissions';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import XIcon from './icons/XIcon';
 import CheckCircleFilledIcon from './icons/CheckCircleFilledIcon';
 
@@ -16,12 +16,40 @@ const RolePermissionManager: React.FC<RolePermissionManagerProps> = ({ roleName,
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // Load default permissions for role
-    const defaults = DEFAULT_ROLE_PERMISSIONS[roleName as keyof typeof DEFAULT_ROLE_PERMISSIONS];
-    if (defaults) {
-      setSelectedMenus(new Set(defaults.menus));
-      setSelectedFeatures(new Set(defaults.features));
-    }
+    const loadPermissions = async () => {
+      try {
+        // Try loading from database first
+        const { data, error } = await supabase
+          .from('settings')
+          .select('role_permissions')
+          .eq('id', 'rolePermissions')
+          .single();
+
+        if (!error && data?.role_permissions?.[roleName]) {
+          const saved = data.role_permissions[roleName];
+          console.log('✅ Loaded permissions for', roleName, 'from DB:', saved);
+          setSelectedMenus(new Set(saved.menus || []));
+          setSelectedFeatures(new Set(saved.features || []));
+        } else {
+          // Fallback to defaults if not found in DB
+          const defaults = DEFAULT_ROLE_PERMISSIONS[roleName as keyof typeof DEFAULT_ROLE_PERMISSIONS];
+          if (defaults) {
+            console.log('📋 Loading default permissions for', roleName);
+            setSelectedMenus(new Set(defaults.menus));
+            setSelectedFeatures(new Set(defaults.features));
+          }
+        }
+      } catch (err) {
+        console.error('Error loading permissions:', err);
+        // Fallback to defaults on error
+        const defaults = DEFAULT_ROLE_PERMISSIONS[roleName as keyof typeof DEFAULT_ROLE_PERMISSIONS];
+        if (defaults) {
+          setSelectedMenus(new Set(defaults.menus));
+          setSelectedFeatures(new Set(defaults.features));
+        }
+      }
+    };
+    loadPermissions();
   }, [roleName]);
 
   const handleMenuToggle = (menuId: string) => {

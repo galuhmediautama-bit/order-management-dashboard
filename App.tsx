@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AnnouncementPopup from './components/AnnouncementPopup';
 import AnnouncementLineBar from './components/AnnouncementLineBar';
-import { supabase } from './supabase';
+import { supabase } from './firebase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import SpinnerIcon from './components/icons/SpinnerIcon';
 import { SettingsProvider, SettingsContext } from './contexts/SettingsContext';
@@ -13,6 +13,35 @@ import { ToastProvider } from './contexts/ToastContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationCountProvider } from './contexts/NotificationCountContext';
 import { RolePermissionsProvider } from './contexts/RolePermissionsContext';
+import { DialogProvider } from './contexts/DialogContext';
+
+// 🔒 DISABLE BROWSER NOTIFICATIONS - Use custom system only
+if ('Notification' in window && typeof window !== 'undefined') {
+  // Override the Notification constructor to prevent browser notifications
+  const originalNotification = window.Notification;
+  (window as any).Notification = class {
+    static permission = 'denied';
+    static requestPermission() {
+      console.log('🔒 Browser notification request denied - using custom notification system');
+      return Promise.resolve('denied');
+    }
+    constructor(...args: any[]) {
+      console.log('🔒 Browser notification blocked - using custom system instead');
+    }
+  } as any;
+}
+
+// 🔒 DISABLE BROWSER DIALOGS - Use custom dialog system
+// This will be overridden by setupGlobalDialogs in index.tsx after DialogProvider mounts
+if (typeof window !== 'undefined') {
+  // Temporarily disable to prevent browser dialogs until custom system is ready
+  const originalConfirm = window.confirm;
+  const originalAlert = window.alert;
+  
+  // Will be properly set in setupGlobalDialogs function
+  (window as any).__originalConfirm = originalConfirm;
+  (window as any).__originalAlert = originalAlert;
+}
 
 // Helper for lazy loading with retry mechanism to handle slow/unstable internet connections
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -55,7 +84,6 @@ const PendingDeletionsPage = lazyWithRetry(() => import('./pages/PendingDeletion
 const ProductsPage = lazyWithRetry(() => import('./pages/ProductsPage'));
 const ProductAnalyticsPage = lazyWithRetry(() => import('./pages/ProductAnalyticsPage'));
 const ProductFormPage = lazyWithRetry(() => import('./pages/ProductFormPage'));
-const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
 const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'));
 
 
@@ -133,7 +161,6 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
                 <Route path="/pengaturan/pengumuman/settings" element={<SettingsPage subPage="Pengaturan Pengumuman" />} />
                 <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
                 <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
-                <Route path="/notifikasi" element={<NotificationsPage />} />
                 <Route path="/daftar-produk" element={<ProductsPage />} />
                 <Route path="/daftar-produk/tambah" element={<ProductFormPage />} />
                 <Route path="/daftar-produk/edit/:id" element={<ProductFormPage />} />
@@ -153,6 +180,18 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
 const AppContent: React.FC = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loadingAuthState, setLoadingAuthState] = useState(true);
+
+  // 🔒 Add meta tags to prevent browser notification prompts
+  useEffect(() => {
+    // Check if permission meta tag exists, if not add it
+    let metaTag = document.querySelector('meta[name="permissions-policy"]');
+    if (!metaTag) {
+      metaTag = document.createElement('meta');
+      metaTag.name = 'permissions-policy';
+      metaTag.content = 'notifications=()';
+      document.head.appendChild(metaTag);
+    }
+  }, []);
 
   // Theme state moved here to apply globally (including Login page)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -323,7 +362,9 @@ const App: React.FC = () => (
       <SettingsProvider>
         <NotificationCountProvider>
           <RolePermissionsProvider>
-            <AppContent />
+            <DialogProvider>
+              <AppContent />
+            </DialogProvider>
           </RolePermissionsProvider>
         </NotificationCountProvider>
       </SettingsProvider>

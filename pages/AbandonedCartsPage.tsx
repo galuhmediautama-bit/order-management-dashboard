@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import type { AbandonedCart, User, UserRole } from '../types';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
@@ -107,7 +107,109 @@ const AbandonedCartsPage: React.FC = () => {
         fetchData();
     }, []);
 
-    // --- Lightweight polling for new abandoned carts ---
+    // --- Play notification sound (Beep-beep for abandoned carts) ---
+    const playNotificationSound = useCallback(() => {
+        if (!cartSoundEnabled) return;
+        try {
+            const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioCtxRef.current = ctx;
+            
+            // Beep-beep alert sound
+            const now = ctx.currentTime;
+            
+            // First beep - sharp and attention-grabbing
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.frequency.value = 800;
+            osc1.type = 'square';
+            gain1.gain.setValueAtTime(0.25, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.12);
+            
+            // Short silence
+            
+            // Second beep - same tone
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.frequency.value = 800;
+            osc2.type = 'square';
+            gain2.gain.setValueAtTime(0.25, now + 0.18);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.30);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.18);
+            osc2.stop(now + 0.30);
+        } catch (err) {
+            console.warn('Audio notification failed:', err);
+        }
+    }, [cartSoundEnabled]);
+
+    // --- Real-time subscription for new abandoned carts ---
+    useEffect(() => {
+        let subscription: any = null;
+        
+        const setupRealtimeListener = async () => {
+            try {
+                subscription = supabase
+                    .channel('abandoned-carts-channel')
+                    .on('postgres_changes', 
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'abandoned_carts'
+                        },
+                        async (payload: any) => {
+                            console.log('[Real-time] New abandoned cart:', payload.new);
+                            
+                            const newCart = payload.new as AbandonedCart;
+                            setCarts(prev => [newCart, ...prev]);
+                            
+                            // Show notification
+                            showToast(`🛒 Keranjang baru: ${newCart.customerName || 'Pelanggan'}`, 'info');
+                            playNotificationSound();
+                            
+                            // Insert to notifications table
+                            try {
+                                await supabase.from('notifications').insert({
+                                    id: `cart-${newCart.id}`,
+                                    type: 'abandoned_cart',
+                                    message: `🛒 Keranjang ditinggalkan oleh ${newCart.customerName || 'Pelanggan'} - Rp${(newCart.totalAmount || 0).toLocaleString('id-ID')}`,
+                                    read: false,
+                                    timestamp: new Date().toISOString(),
+                                    user_id: currentUser?.id,
+                                    created_at: new Date().toISOString(),
+                                });
+                            } catch (err) {
+                                console.warn('Failed to insert cart notification:', err);
+                            }
+                            
+                            // Update counter
+                            if (newCart.status === 'New') {
+                                setNewAbandonedCount(prev => prev + 1);
+                            }
+                        }
+                    )
+                    .subscribe((status: any) => {
+                        console.log('[Real-time] Abandoned carts subscription status:', status);
+                    });
+            } catch (err) {
+                console.error('Error setting up abandoned carts listener:', err);
+            }
+        };
+        
+        setupRealtimeListener();
+        
+        return () => {
+            if (subscription) {
+                supabase.removeChannel(subscription);
+            }
+        };
+    }, [showToast, playNotificationSound, setNewAbandonedCount, currentUser?.id]);
+
+    // --- Lightweight polling for new abandoned carts (fallback) ---
     const playTone = (freq: number) => {
         if (!cartSoundEnabled) return;
         try {
@@ -148,7 +250,7 @@ const AbandonedCartsPage: React.FC = () => {
             console.log('[Polling Carts] Previous:', previousIds.size, 'New:', newOnes.length);
             if (previousIds.size > 0 && newOnes.length > 0) {
                 console.log('[Notification Carts] Showing toast for', newOnes.length, 'new carts');
-                showToast(`${newOnes.length} keranjang baru tercatat`, 'info');
+                showToast(`🛒 ${newOnes.length} keranjang baru tercatat`, 'info');
                 playTone(660);
             }
 
@@ -165,7 +267,7 @@ const AbandonedCartsPage: React.FC = () => {
     }, [showToast, playTone, setNewAbandonedCount]);
 
     useEffect(() => {
-        const interval = setInterval(() => refreshAbandonedSilently(), 60000); // 60s polling
+        const interval = setInterval(() => refreshAbandonedSilently(), 30000); // 30s polling (faster than before)
         return () => clearInterval(interval);
     }, [refreshAbandonedSilently]);
 

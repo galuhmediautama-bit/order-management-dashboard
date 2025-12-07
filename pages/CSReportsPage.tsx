@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { CSPerformanceData, Order, User } from '../types';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import CustomTooltip from '../components/CustomTooltip';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import UserGroupIcon from '../components/icons/UserGroupIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import TrendingUpIcon from '../components/icons/TrendingUpIcon';

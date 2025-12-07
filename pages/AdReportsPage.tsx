@@ -5,7 +5,7 @@ import type { AdCampaignReport, AdPlatform, CampaignObjective, CampaignStatus, A
 import type { User as FirebaseUser } from '@supabase/supabase-js';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import CustomTooltip from '../components/CustomTooltip';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import ReportsIcon from '../components/icons/ReportsIcon';
 import CursorClickIcon from '../components/icons/CursorClickIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';

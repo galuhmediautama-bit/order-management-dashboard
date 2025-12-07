@@ -13,7 +13,7 @@ import TrendingUpIcon from '../components/icons/TrendingUpIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
 import ClockIcon from '../components/icons/ClockIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
 

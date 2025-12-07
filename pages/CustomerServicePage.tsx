@@ -6,7 +6,7 @@ import SearchIcon from '../components/icons/SearchIcon';
 import XIcon from '../components/icons/XIcon';
 import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { uploadFileAndGetURL } from '../fileUploader';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';

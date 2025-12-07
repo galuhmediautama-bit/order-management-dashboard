@@ -1,0 +1,28 @@
+# Robots.txt for OrderDash - Order Management Dashboard
+# https://form.cuanmax.digital/
+
+User-agent: *
+Allow: /
+
+# Allow all search engines to crawl
+Allow: /#/dashboard
+Allow: /#/pesanan
+Allow: /#/pelanggan
+Allow: /#/formulir
+Allow: /#/laporan-iklan
+Allow: /#/laporan-cs
+Allow: /#/penghasilan
+Allow: /#/produk
+Allow: /#/analitik-produk
+Allow: /#/notifikasi
+
+# Disallow admin/sensitive pages
+Disallow: /#/pengaturan/pending-users
+Disallow: /#/pengaturan/pending-deletions
+Disallow: /#/reset-password
+
+# Sitemap location
+Sitemap: https://form.cuanmax.digital/sitemap.xml
+
+# Crawl delay (1 second)
+Crawl-delay: 1

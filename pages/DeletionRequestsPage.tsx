@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { User, Order } from '../types';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { capitalizeWords } from '../utils';
 import TrashIcon from '../components/icons/TrashIcon';
 

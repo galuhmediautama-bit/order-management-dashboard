@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import type { CSRankRule, AdvertiserRankRule, RankLevel, CuanRankSettings } from '../types';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 

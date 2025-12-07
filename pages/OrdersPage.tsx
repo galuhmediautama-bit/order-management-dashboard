@@ -26,7 +26,7 @@ import DownloadIcon from '../components/icons/DownloadIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
@@ -262,28 +262,125 @@ const OrdersPage: React.FC = () => {
         fetchData();
   }, []);
 
-    // --- Lightweight polling for new orders ---
-    const playTone = (freq: number) => {
+    // --- Play notification sound (Coin drop for orders) ---
+    const playNotificationSound = useCallback(() => {
         if (!orderSoundEnabled) return;
         try {
-                const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
-                audioCtxRef.current = ctx;
-                const oscillator = ctx.createOscillator();
-                const gain = ctx.createGain();
-                oscillator.type = 'sine';
-                oscillator.frequency.value = freq;
-                gain.gain.value = 0.2;
-                oscillator.connect(gain);
-                gain.connect(ctx.destination);
-                const now = ctx.currentTime;
-                oscillator.start(now);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-                oscillator.stop(now + 0.3);
+            const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioCtxRef.current = ctx;
+            
+            // Coin drop sound effect - bright and resonant
+            const now = ctx.currentTime;
+            
+            // Initial impact (high frequency)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.frequency.value = 1800;
+            osc1.type = 'sine';
+            gain1.gain.setValueAtTime(0.4, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.08);
+            
+            // Bounce 1
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.frequency.value = 1400;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.3, now + 0.1);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.1);
+            osc2.stop(now + 0.18);
+            
+            // Bounce 2 (final ring)
+            const osc3 = ctx.createOscillator();
+            const gain3 = ctx.createGain();
+            osc3.frequency.value = 1200;
+            osc3.type = 'sine';
+            gain3.gain.setValueAtTime(0.2, now + 0.2);
+            gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+            osc3.connect(gain3);
+            gain3.connect(ctx.destination);
+            osc3.start(now + 0.2);
+            osc3.stop(now + 0.35);
         } catch (err) {
-                console.warn('Audio notification failed:', err);
+            console.warn('Audio notification failed:', err);
+        }
+    }, [orderSoundEnabled]);
+
+  // --- Real-time subscription for new orders ---
+  useEffect(() => {
+    let subscription: any = null;
+    
+    const setupRealtimeListener = async () => {
+        try {
+            subscription = supabase
+                .channel('orders-channel')
+                .on('postgres_changes', 
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'orders'
+                    },
+                    async (payload: any) => {
+                        console.log('[Real-time] New order detected:', payload.new);
+                        
+                        // Add new order
+                        const newOrder = {
+                            ...payload.new,
+                            productId: payload.new.product_id ?? payload.new.productId ?? null,
+                        } as Order;
+                        
+                        setOrders(prev => [newOrder, ...prev]);
+                        
+                        // Show notification
+                        showToast('📦 Pesanan baru masuk!', 'success');
+                        playNotificationSound();
+                        
+                        // Insert to notifications table
+                        try {
+                            await supabase.from('notifications').insert({
+                                id: `order-${newOrder.id}`,
+                                type: 'new_order',
+                                message: `📦 Pesanan baru dari ${newOrder.customer || 'Pelanggan'} - Rp${(newOrder.totalPrice || 0).toLocaleString('id-ID')}`,
+                                read: false,
+                                timestamp: new Date().toISOString(),
+                                user_id: currentUser?.id,
+                                order_id: newOrder.id,
+                                created_at: new Date().toISOString(),
+                            });
+                        } catch (err) {
+                            console.warn('Failed to insert notification:', err);
+                        }
+                        
+                        // Update counter
+                        if (newOrder.status === 'Pending') {
+                            setNewOrdersCount(prev => prev + 1);
+                        }
+                    }
+                )
+                .subscribe((status: any) => {
+                    console.log('[Real-time] Subscription status:', status);
+                });
+        } catch (err) {
+            console.error('Error setting up real-time listener:', err);
         }
     };
+    
+    setupRealtimeListener();
+    
+    return () => {
+        if (subscription) {
+            supabase.removeChannel(subscription);
+        }
+    };
+  }, [showToast, playNotificationSound, setNewOrdersCount, currentUser?.id]);
 
+  // --- Fallback polling for new orders (faster interval) ---
   const refreshOrdersSilently = useCallback(async () => {
     try {
         const { data: ordersData, error: ordersError } = await supabase
@@ -305,11 +402,11 @@ const OrdersPage: React.FC = () => {
         // Detect new arrivals
         const previousIds = lastOrderIdsRef.current;
         const newOnes = ordersList.filter(o => !previousIds.has(o.id));
-        console.log('[Polling] Previous IDs:', previousIds.size, 'New orders:', newOnes.length);
+        
         if (previousIds.size > 0 && newOnes.length > 0) {
-            console.log('[Notification] Showing toast for', newOnes.length, 'new orders');
-            showToast(`${newOnes.length} pesanan baru masuk`, 'success');
-            playTone(880);
+            console.log('[Polling] New orders detected:', newOnes.length);
+            showToast(`📦 ${newOnes.length} pesanan baru masuk`, 'success');
+            playNotificationSound();
         }
 
         setOrders(ordersList);
@@ -320,14 +417,15 @@ const OrdersPage: React.FC = () => {
         
         lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
     } catch (err) {
-        console.error('Silent refresh orders failed:', err);
+        console.error('Polling refresh failed:', err);
     }
-  }, [showToast, playTone, setNewOrdersCount]);
+  }, [showToast, playNotificationSound, setNewOrdersCount]);
 
+  // --- Polling interval (fallback if real-time fails) ---
   useEffect(() => {
     const interval = setInterval(() => {
         refreshOrdersSilently();
-    }, 45000); // 45s polling
+    }, 15000); // 15s polling (faster than before)
     return () => clearInterval(interval);
   }, [refreshOrdersSilently]);
 
@@ -436,6 +534,7 @@ const OrdersPage: React.FC = () => {
           const { error } = await supabase.from('orders').update({ status: newStatus, ...extraData }).eq('id', orderId);
           if (error) throw error;
 
+          const updatedOrder = orders.find(o => o.id === orderId);
           setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, ...extraData } : o));
           
           // Close modals if open
@@ -445,9 +544,33 @@ const OrdersPage: React.FC = () => {
 
           showToast(`Status pesanan diperbarui menjadi ${newStatus}.`, "success");
 
+          // Insert notification for status change
+          try {
+              const statusMessages: Record<string, string> = {
+                  'Processing': '⚙️ Pesanan sedang diproses',
+                  'Shipped': '🚚 Pesanan telah dikirim',
+                  'Delivered': '✅ Pesanan telah diterima',
+                  'Canceled': '❌ Pesanan dibatalkan',
+              };
+              
+              const message = statusMessages[newStatus] || `Status pesanan berubah menjadi ${newStatus}`;
+              
+              await supabase.from('notifications').insert({
+                  id: `order-status-${orderId}-${Date.now()}`,
+                  type: 'order_status_change',
+                  message: `${message} - ${updatedOrder?.customer || 'Pesanan'}`,
+                  read: false,
+                  timestamp: new Date().toISOString(),
+                  user_id: currentUser?.id,
+                  order_id: orderId,
+                  created_at: new Date().toISOString(),
+              });
+          } catch (err) {
+              console.warn('Failed to insert status change notification:', err);
+          }
+
           // Trigger notification modal if shipped
           if (newStatus === 'Shipped') {
-              const updatedOrder = orders.find(o => o.id === orderId);
               if (updatedOrder) setOrderToNotify({ ...updatedOrder, status: 'Shipped', ...extraData });
           }
 
@@ -1202,7 +1325,7 @@ const OrdersPage: React.FC = () => {
                                               #{order.id.substring(0, 8)}
                                           </button>
                                           <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                                              <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                              <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(order.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                           </span>
                                       </div>
                                   </td>

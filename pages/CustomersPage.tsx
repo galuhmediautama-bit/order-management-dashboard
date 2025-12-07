@@ -14,7 +14,7 @@ import FilterIcon from '../components/icons/FilterIcon';
 import UserIcon from '../components/icons/UserIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { capitalizeWords } from '../utils';
 import { useToast } from '../contexts/ToastContext';
 import AddressInput, { type AddressData } from '../components/AddressInput';

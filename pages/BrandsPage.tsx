@@ -2,7 +2,7 @@
 // ... imports remain the same ...
 import React, { useState, useEffect } from 'react';
 import type { Brand } from '../types';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import { uploadFileAndGetURL } from '../fileUploader';
 import PlusIcon from '../components/icons/PlusIcon';
 import PencilIcon from '../components/icons/PencilIcon';

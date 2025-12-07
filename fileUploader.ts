@@ -1,5 +1,5 @@
 
-import { supabase } from './supabase';
+import { supabase } from './firebase';
 
 export const uploadFileAndGetURL = async (file: File): Promise<string> => {
     // Gunakan bucket 'images' atau nama bucket lain yang sudah Anda buat di Supabase

@@ -310,17 +310,25 @@ const FormsPage: React.FC = () => {
         if (!userId || userId.trim() === '') return '(No Agent)';
         
         // First try to find in cs_agents table (priority for CS agents)
-        let agent = csAgents.find(a => a.id === userId);
-        if (agent) return agent.name;
+        const agent = csAgents.find(a => a.id === userId);
+        if (agent?.name) return agent.name;
         
-        // Then try users table
-        let user = users.find(u => u.id === userId);
-        if (user) return user.name;
+        // Then try users table with multiple fallbacks for name fields
+        const user = users.find(u => u.id === userId);
+        if (user) {
+            const fallbackName =
+                (user as any).name ||
+                (user as any).fullName ||
+                (user as any).full_name ||
+                (user as any).displayName ||
+                (user as any).email;
+            if (fallbackName && typeof fallbackName === 'string') return fallbackName;
+        }
         
-        // If still not found, log a warning
+        // If still not found, log a warning and show short ID
         console.warn(`⚠️ Agent/User not found for ID: "${userId}"`);
         console.log(`Available CS Agents: ${csAgents.map(a => `${a.id}(${a.name})`).join(', ') || 'None'}`);
-        console.log(`Available Users: ${users.map(u => `${u.id}(${u.name})`).join(', ') || 'None'}`);
+        console.log(`Available Users: ${users.map(u => `${u.id}(${(u as any).name || (u as any).fullName || (u as any).full_name || (u as any).email || ''})`).join(', ') || 'None'}`);
         
         return `[ID: ${userId.substring(0, 8)}...]`;
     };

@@ -507,10 +507,13 @@ export interface Customer {
 // Types for Notifications
 export interface Notification {
   id: string;
-  type: 'new_order' | 'user_signup' | 'order_shipped';
+  type: 'new_order' | 'user_signup' | 'order_shipped' | 'abandoned_cart' | 'order_status_change';
   message: string;
   timestamp: string; // ISO string
   read: boolean;
+  user_id?: string;
+  order_id?: string;
+  created_at?: string;
 }
 
 export interface AnnouncementSettings {

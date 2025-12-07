@@ -23,7 +23,7 @@ import GoogleIcon from '../components/icons/GoogleIcon';
 import TikTokIcon from '../components/icons/TikTokIcon';
 import SnackVideoIcon from '../components/icons/SnackVideoIcon';
 import UserGroupIcon from '../components/icons/UserGroupIcon';
-import { supabase } from '../supabase';
+import { supabase } from '../firebase';
 import ToggleSwitch from '../components/ToggleSwitch';
 import { uploadFileAndGetURL } from '../fileUploader';
 import { normalizeForm, createDefaultTrackingSettings } from '../utils';
