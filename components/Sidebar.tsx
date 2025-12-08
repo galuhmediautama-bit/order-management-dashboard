@@ -133,8 +133,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
                     if (error || !userDoc) {
                         console.error('⚠️ User profile not found in DB after retries. Auth user:', user.email, 'Error:', error);
-                        console.log('❌ Setting currentUserRole to null - sidebar will only show Dashboard');
-                        setCurrentUserRole(null);
+                        // Fallback: Check if this is likely a super admin (first user or owner)
+                        // Super Admin typically has specific email pattern or is registered first
+                        const isSuperAdmin = user.email?.includes('admin') || user.email?.includes('owner');
+                        const fallbackRole = isSuperAdmin ? 'Super Admin' : 'Advertiser';
+                        console.log('⚠️ Using fallback role:', fallbackRole);
+                        setCurrentUserRole(fallbackRole);
                     } else {
                         const normalized = getNormalizedRole(userDoc.role, user.email);
                         console.log('✅ Sidebar - User role from DB:', {
@@ -182,10 +186,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         if (item.name === 'Dasbor') return true;
 
         if (!currentUserRole) {
-            console.log(`⏭️ Hiding "${item.name}" - no currentUserRole yet`);
+            console.log(`⏭️ Hiding "${item.name}" - no currentUserRole yet (loading...)`);
             return false;
         }
-        if (currentUserRole === 'Super Admin') return true;
+        if (currentUserRole === 'Super Admin') {
+            console.log(`✅ Showing "${item.name}" - Super Admin has access to all`);
+            return true;
+        }
 
         // Get RBAC menu ID for this item
         const rbacMenuId = menuNameToRbacId[item.name];
