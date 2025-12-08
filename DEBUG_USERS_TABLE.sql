@@ -57,7 +57,7 @@ SELECT
     email, 
     role, 
     status,
-    "avatarUrl",
+    avatar,
     "createdAt"
 FROM users LIMIT 1;
 
@@ -79,7 +79,7 @@ SELECT
     role, 
     status,
     "assignedBrandIds",
-    "avatarUrl",
+    avatar,
     "createdAt"
 FROM users LIMIT 1;
 

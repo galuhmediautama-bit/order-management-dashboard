@@ -30,7 +30,7 @@ SELECT id, name FROM users LIMIT 1;
 SELECT id, name, email FROM users LIMIT 1;
 
 -- Test 3: Add camelCase columns with quotes
-SELECT id, name, email, role, status, "avatarUrl", "createdAt" FROM users LIMIT 1;
+SELECT id, name, email, role, status, avatar, "createdAt" FROM users LIMIT 1;
 
 -- Test 4: Add assignedBrandIds
 SELECT id, name, email, role, status, "assignedBrandIds" FROM users LIMIT 1;
@@ -38,7 +38,7 @@ SELECT id, name, email, role, status, "assignedBrandIds" FROM users LIMIT 1;
 -- Test 5: Full query
 SELECT 
     id, name, email, role, status,
-    "assignedBrandIds", "avatarUrl", "createdAt"
+    "assignedBrandIds", avatar, "createdAt"
 FROM users LIMIT 1;
 ```
 
