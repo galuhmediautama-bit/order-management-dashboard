@@ -26,15 +26,23 @@ WITH CHECK (
 );
 
 -- 3) (Optional) Ensure SELECT policy allows Super Admin/Admin melihat semua user
--- Uncomment if SELECT masih dibatasi
--- DROP POLICY IF EXISTS users_select_policy ON public.users;
--- CREATE POLICY users_select_policy ON public.users
--- FOR SELECT
--- USING (
---     auth.jwt() ->> 'role' = 'Super Admin'
---     OR auth.jwt() ->> 'role' = 'Admin'
---     OR auth.uid() = id
--- );
+-- Rekomendasi: Ganti SELECT policy agar Admin/Super Admin bisa lihat semua row
+DROP POLICY IF EXISTS users_select_self_or_admin ON public.users;
+DROP POLICY IF EXISTS users_select_with_role_check ON public.users;
+
+CREATE POLICY users_select_admin_or_self ON public.users
+FOR SELECT TO authenticated
+USING (
+    -- Admin/Super Admin yang sedang login boleh lihat semua baris
+    EXISTS (
+        SELECT 1 FROM public.users u
+        WHERE u.id = auth.uid()
+        AND u.role IN ('Super Admin', 'Admin')
+    )
+    OR
+    -- User boleh melihat profilnya sendiri
+    auth.uid() = id
+);
 
 -- 4) Verify
 SELECT policyname, permissive, roles, cmd, qual, with_check
