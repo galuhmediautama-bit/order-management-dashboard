@@ -1060,7 +1060,7 @@ const UserManagement: React.FC = () => {
                     // Only set phone/address if they have a value, preserve existing if empty
                     phone: userData.phone && userData.phone.trim() ? userData.phone.trim() : null,
                     address: userData.address && userData.address.trim() ? userData.address.trim() : null,
-                    assignedBrandIds: userData.assignedBrandIds || []
+                    "assignedBrandIds": userData.assignedBrandIds || []
                 };
 
                 // Remove undefined values
@@ -1125,7 +1125,7 @@ const UserManagement: React.FC = () => {
                             status: userData.status,
                             phone: userData.phone || null,
                             address: userData.address || null,
-                            assignedBrandIds: userData.assignedBrandIds || [],
+                            "assignedBrandIds": userData.assignedBrandIds || [],
                             lastLogin: new Date().toISOString()
                         };
 
