@@ -42,7 +42,7 @@ import { useRolePermissions } from '../contexts/RolePermissionsContext';
 import { getCachedForms, getCachedUsers, getCachedCsAgents, getCachedBrands, getCachedProducts, getCachedSettings, getCachedMessageTemplates, getCachedCancellationReasons, warmCache, invalidateOnOrderChange, invalidateCache } from '../utils/cacheHelpers';
 import { CACHE_KEYS } from '../utils/cacheHelpers';
 import { ColumnVisibilityModal, type ColumnConfig } from '../components/ColumnVisibilityModal';
-import { Settings } from 'lucide-react';
+import SettingsIcon from '../components/icons/SettingsIcon';
 
 // --- Helper Components & Functions ---
 
@@ -1464,7 +1464,7 @@ const OrdersPage: React.FC = () => {
                                     className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors border border-slate-200 dark:border-slate-600"
                                     title="Atur tampilan kolom"
                                 >
-                                    <Settings className="w-4 h-4" />
+                                    <SettingsIcon className="w-4 h-4" />
                                     Tampilan Kolom
                                 </button>
                             </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import XIcon from './icons/XIcon';
 
 export interface ColumnConfig {
   key: string;
@@ -59,7 +59,7 @@ export const ColumnVisibilityModal: React.FC<ColumnVisibilityModalProps> = ({
             disabled={isSaving}
             className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors disabled:opacity-50"
           >
-            <X className="w-5 h-5" />
+            <XIcon className="w-5 h-5" />
           </button>
         </div>
 
