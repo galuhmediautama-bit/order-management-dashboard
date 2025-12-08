@@ -166,9 +166,10 @@ LIMIT 1;
 
 ## 📊 Monitor Notifikasi
 
-### Query: Lihat semua notifikasi user
+### Query: Lihat semua notifikasi user (ganti UUID)
 
 ```sql
+-- Ganti dengan actual user UUID dari auth.users
 SELECT 
   id,
   type,
@@ -177,9 +178,26 @@ SELECT
   is_read,
   created_at
 FROM notifications
-WHERE user_id = (SELECT id FROM auth.users LIMIT 1)
+WHERE user_id = '550e8400-e29b-41d4-a716-446655440000'  -- Replace with actual user UUID
 ORDER BY created_at DESC
 LIMIT 20;
+```
+
+### Query: Lihat semua notifikasi (tanpa filter user)
+
+```sql
+SELECT 
+  n.id,
+  u.name as user_name,
+  n.type,
+  n.title,
+  n.message,
+  n.is_read,
+  n.created_at
+FROM notifications n
+LEFT JOIN users u ON n.user_id = u.id
+ORDER BY n.created_at DESC
+LIMIT 50;
 ```
 
 ### Query: Lihat notifikasi yang belum dibaca
@@ -220,16 +238,30 @@ ORDER BY ac.timestamp DESC;
 2. ✅ CS Agent tidak ada / tidak aktif → Check users tabel status = 'Aktif'
 3. ✅ Brand tidak ada di user → Check assignedBrandIds
 
-**Cek SQL:**
+**Cek SQL (copy-paste UUID yang benar):**
 ```sql
 -- 1. Verify trigger exists
 SELECT * FROM pg_trigger WHERE tgname = 'trigger_notify_on_new_order';
 
--- 2. Check CS agent
-SELECT id, name, role, status FROM users WHERE id = 'cs-id-here';
+-- 2. Check CS agent exists dan aktif
+-- Ganti cs_id dengan UUID yang benar dari users table
+SELECT id, name, role, status FROM users 
+WHERE role = 'Customer service' 
+AND status = 'Aktif' 
+LIMIT 5;
 
--- 3. Check brand assignment
-SELECT id, name, "assignedBrandIds" FROM users WHERE role = 'Advertiser' AND id = 'advertiser-id';
+-- 3. Check brand assignment untuk Advertiser
+-- Ganti advertiser_id dengan UUID yang benar
+SELECT id, name, "assignedBrandIds" FROM users 
+WHERE role = 'Advertiser' 
+AND status = 'Aktif'
+LIMIT 5;
+
+-- 4. Lihat semua triggers
+SELECT trigger_name, event_object_table 
+FROM information_schema.triggers 
+WHERE trigger_schema = 'public' 
+AND trigger_name LIKE 'trigger_notify%';
 ```
 
 ### Notifikasi tidak dihapus saat order submit
