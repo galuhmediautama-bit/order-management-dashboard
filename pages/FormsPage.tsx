@@ -685,25 +685,6 @@ const FormsPage: React.FC = () => {
                                                             <ChatBubbleIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                                             Template Pesan
                                                         </button>
-                                                        <button
-                                                            onClick={() => { 
-                                                                const link = `${window.location.origin}/#/f/${form.slug || form.id}`;
-                                                                navigator.clipboard.writeText(link);
-                                                                showToast('Link berhasil disalin!', 'success');
-                                                                setOpenActionMenuId(null);
-                                                            }}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <LinkIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                                            Salin
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { handleViewForm(form); setOpenActionMenuId(null); }}
-                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
-                                                        >
-                                                            <EyeIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                                            Lihat
-                                                        </button>
                                                         <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
                                                         <button
                                                             onClick={() => handleDeleteForm(form)}
@@ -784,12 +765,8 @@ const FormsPage: React.FC = () => {
                                 };
 
                                 return (
-                                    <button
+                                    <div
                                         key={platform.source}
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(trackingLink);
-                                            showToast(`Link ${platform.name} disalin!`, 'success');
-                                        }}
                                         className={`w-full px-4 py-3 rounded-lg border flex items-center gap-3 transition-all text-left font-medium text-sm ${colorClasses[platform.color]}`}
                                         title={trackingLink}
                                     >
@@ -798,8 +775,26 @@ const FormsPage: React.FC = () => {
                                             <div className="font-semibold text-slate-900 dark:text-white">{platform.name}</div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{trackingLink}</div>
                                         </div>
-                                        <span className="text-xs bg-white/70 dark:bg-slate-900/70 px-2 py-1 rounded whitespace-nowrap">Copy</span>
-                                    </button>
+                                        <div className="flex gap-2 flex-shrink-0">
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(trackingLink);
+                                                    showToast(`Link ${platform.name} disalin!`, 'success');
+                                                }}
+                                                className="text-xs bg-white/70 dark:bg-slate-900/70 px-2 py-1 rounded whitespace-nowrap hover:bg-white dark:hover:bg-slate-800 transition-colors font-medium"
+                                            >
+                                                Copy
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    window.open(trackingLink, '_blank');
+                                                }}
+                                                className="text-xs bg-indigo-100 dark:bg-indigo-900/30 px-2 py-1 rounded whitespace-nowrap hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors text-indigo-700 dark:text-indigo-300 font-medium"
+                                            >
+                                                Lihat
+                                            </button>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
