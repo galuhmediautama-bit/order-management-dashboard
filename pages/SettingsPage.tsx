@@ -873,7 +873,7 @@ const UserManagement: React.FC = () => {
              
              // 2. Fetch Users from Public Table
              // Optimized: Only select needed columns
-             const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, role, status, "assignedBrandIds", avatar, "createdAt"');
+             const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, role, status, "assignedBrandIds", avatar, created_at');
              
              // Update avatar timestamp for cache busting
              setAvatarTimestamp(Date.now());
@@ -892,7 +892,10 @@ const UserManagement: React.FC = () => {
 
              // Debug raw fetch
              console.debug('[UserMgmt] raw usersData from supabase:', usersData);
-             let usersList = (usersData || []).map(doc => ({ ...doc } as User));
+             let usersList = (usersData || []).map((doc: any) => ({ 
+                 ...doc,
+                 lastLogin: doc.created_at || doc.lastLogin // Map created_at to lastLogin
+             } as User));
 
              // Normalize fields to avoid subtle mismatches (case/whitespace/null)
              usersList = usersList.map(u => ({
