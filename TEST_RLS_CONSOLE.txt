@@ -1,0 +1,87 @@
+// ============================================
+// RLS TEST - Copy-paste langsung ke browser console
+// ============================================
+
+(async function testRLS() {
+  console.log('🧪 Testing RLS after QUICK_FIX_RLS_SIMPLE.sql...\n');
+  
+  try {
+    // Check if supabase object exists in window
+    if (!window.supabaseClient) {
+      console.error('❌ Supabase client not found in window.supabaseClient');
+      console.log('Trying alternative: check for supabase in imported modules...');
+    }
+    
+    // Get auth token from localStorage
+    const authToken = localStorage.getItem('sb-jnkbysrjfdwsznsrvwhz-auth-token');
+    if (!authToken) {
+      console.error('❌ No auth token found - user not authenticated');
+      return;
+    }
+    
+    const tokenObj = JSON.parse(authToken);
+    const accessToken = tokenObj.access_token;
+    
+    console.log('✅ Found auth token, testing queries...\n');
+    
+    const supabaseUrl = 'https://jnkbysrjfdwsznsrvwhz.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua2J5c3JqZmR3c3puc3J2d2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODYwMzA4NDcsImV4cCI6MTk5OTY0MDg0N30.oRtYrSYszZXy_08-QdxAs22xC6NdIR-4';
+    
+    // Test 1: Users SELECT
+    console.log('📋 Test 1: SELECT from users table');
+    const usersRes = await fetch(
+      `${supabaseUrl}/rest/v1/users?select=id,email,role,status&limit=5`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const users = await usersRes.json();
+    console.log(`Status: ${usersRes.status}`, users.length > 0 ? `✅ Found ${users.length} users` : users[0]?.message ? `❌ ${users[0].message}` : '❌ No users');
+    if (users.length > 0) console.log('Sample user:', users[0]);
+    
+    // Test 2: Orders SELECT
+    console.log('\n📦 Test 2: SELECT from orders table');
+    const ordersRes = await fetch(
+      `${supabaseUrl}/rest/v1/orders?select=id,status&limit=10`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const orders = await ordersRes.json();
+    console.log(`Status: ${ordersRes.status}`, orders.length > 0 ? `✅ Found ${orders.length} orders` : orders[0]?.message ? `❌ ${orders[0].message}` : '❌ No orders');
+    
+    // Test 3: Settings SELECT
+    console.log('\n⚙️  Test 3: SELECT from settings table');
+    const settingsRes = await fetch(
+      `${supabaseUrl}/rest/v1/settings?select=id&limit=1`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const settings = await settingsRes.json();
+    console.log(`Status: ${settingsRes.status}`, settings.length > 0 ? `✅ Found settings` : settings[0]?.message ? `❌ ${settings[0].message}` : '⚠️  No settings');
+    
+    console.log('\n✨ RLS Test Complete!');
+    console.log('\n📊 Summary:');
+    console.log('- Users query:', usersRes.status === 200 ? '✅ OK' : `❌ ${usersRes.status}`);
+    console.log('- Orders query:', ordersRes.status === 200 ? '✅ OK' : `❌ ${ordersRes.status}`);
+    console.log('- Settings query:', settingsRes.status === 200 ? '✅ OK' : `❌ ${settingsRes.status}`);
+    console.log('\nIf all are 200: RLS is now permissive ✅');
+    console.log('If any are 403: RLS is still blocking queries ❌');
+    
+  } catch (error) {
+    console.error('❌ Error during test:', error);
+  }
+})();
