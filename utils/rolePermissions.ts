@@ -34,7 +34,6 @@ export const ALL_MENUS = [
 
 export const ALL_FEATURES = [
   { id: 'export_csv', name: 'Export CSV', category: 'feature', description: 'Can export data to CSV' },
-  { id: 'import_orders', name: 'Import Orders', category: 'feature', description: 'Can import orders from Excel/CSV' },
   { id: 'edit_product', name: 'Edit Product', category: 'feature', description: 'Can create and edit products' },
   { id: 'delete_product', name: 'Delete Product', category: 'feature', description: 'Can delete products' },
   { id: 'edit_form', name: 'Edit Form', category: 'feature', description: 'Can create and edit forms' },
@@ -68,18 +67,18 @@ export const DEFAULT_ROLE_PERMISSIONS = {
       'settings', 'website_settings', 'user_management', 'brands', 'cs_management', 'tracking', 'announcements'
     ],
     features: [
-      'export_csv', 'import_orders', 'edit_product', 'edit_form', 'delete_order', 'change_order_status', 'view_earnings',
+      'export_csv', 'edit_product', 'edit_form', 'delete_order', 'change_order_status', 'view_earnings',
       'manage_users', 'view_reports', 'edit_settings', 'sound_notifications', 'manual_order_creation',
       'view_sales_stats', 'view_charts', 'view_top_products', 'view_top_advertisers', 'view_top_cs', 'view_recent_orders'
     ],
   },
   'Keuangan': {
     menus: ['dashboard', 'orders', 'order_list', 'customers', 'reports', 'cs_reports', 'earnings'],
-    features: ['export_csv', 'import_orders', 'view_earnings', 'view_reports', 'view_sales_stats', 'view_charts', 'view_top_cs', 'view_recent_orders'],
+    features: ['export_csv', 'view_earnings', 'view_reports', 'view_sales_stats', 'view_charts', 'view_top_cs', 'view_recent_orders'],
   },
   'Customer service': {
     menus: ['dashboard', 'orders', 'order_list', 'abandoned_carts', 'customers', 'earnings'],
-    features: ['export_csv', 'import_orders', 'change_order_status', 'view_earnings', 'sound_notifications', 'manual_order_creation', 'view_sales_stats', 'view_recent_orders'],
+    features: ['export_csv', 'change_order_status', 'view_earnings', 'sound_notifications', 'manual_order_creation', 'view_sales_stats', 'view_recent_orders'],
   },
   'Gudang': {
     menus: ['dashboard', 'orders', 'order_list'],
@@ -87,7 +86,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
   },
   'Advertiser': {
     menus: ['dashboard', 'products', 'form_list', 'reports', 'ad_reports', 'earnings'],
-    features: ['export_csv', 'import_orders', 'edit_product', 'edit_form', 'view_earnings', 'sound_notifications', 'view_sales_stats', 'view_charts', 'view_top_products'],
+    features: ['export_csv', 'edit_product', 'edit_form', 'view_earnings', 'sound_notifications', 'view_sales_stats', 'view_charts', 'view_top_products'],
   },
   'Partner': {
     menus: ['dashboard', 'reports', 'ad_reports'],

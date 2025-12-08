@@ -158,16 +158,33 @@
     }
   </script>
 
+  <script type="importmap">
+{
+  "imports": {
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-router": "https://aistudiocdn.com/react-router@^6.25.1",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^6.25.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
+  }
+}
+</script>
   <style>
     body {
       font-family: 'Inter', sans-serif;
     }
   </style>
+  <link rel="stylesheet" href="/index.css">
 </head>
 
 <body>
   <div id="root"></div>
   <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
 </body>
 
 </html>

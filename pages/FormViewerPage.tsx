@@ -304,14 +304,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [form, setForm] = useState<Form | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
-
-    // Debug logging
-    useEffect(() => {
-        console.log('[FormViewerPage] Mounted with identifier:', identifier);
-        return () => {
-            console.log('[FormViewerPage] Unmounting');
-        };
-    }, [identifier]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submission, setSubmission] = useState<{ success: boolean, order?: Order, error?: string }>({ success: false });
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -760,12 +752,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     useEffect(() => {
         const fetchForm = async () => {
             if (!identifier) {
-                console.warn('[FormViewerPage] No identifier provided');
                 setNotFound(true);
                 setLoading(false);
                 return;
             }
-            console.log('[FormViewerPage] Starting fetch with identifier:', identifier);
             setLoading(true);
             setNotFound(false);
             let foundForm: Form | null = null;
@@ -774,15 +764,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             const normalizedIdentifier = rawIdentifier.replace(/^\//, '');
             const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(normalizedIdentifier);
 
-            console.log('[FormViewerPage] Normalized identifier:', normalizedIdentifier, 'isUuid:', isUuid);
-
             try {
                 // Cari form berdasarkan slug (case-insensitive). Jika identifier valid UUID, sertakan pencarian id.
                 const orFilters = isUuid
                     ? `slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier},id.eq.${normalizedIdentifier}`
                     : `slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier}`;
-
-                console.log('[FormViewerPage] Querying forms with filters:', orFilters);
 
                 const { data, error } = await supabase
                     .from('forms')
@@ -791,17 +777,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     .maybeSingle();
 
                 if (error) {
-                    console.error('[FormViewerPage] Error fetching form:', error);
+                    console.error('Error fetching form:', error);
                 }
 
                 if (data) {
-                    console.log('[FormViewerPage] ✅ Form found:', data.id, data.slug || data.title);
                     foundForm = data as Form;
-                } else {
-                    console.warn('[FormViewerPage] ❌ No form found with identifier:', normalizedIdentifier);
                 }
             } catch (error) {
-                console.error("[FormViewerPage] Error fetching form:", error);
+                console.error("Error fetching form:", error);
             }
 
             if (foundForm) {
@@ -811,7 +794,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 // Remove productImages array untuk menghindari galeri foto
                 const cleanForm = { ...normalizedForm, productImages: [] };
                 setForm(cleanForm);
-                console.log('[FormViewerPage] Form state updated successfully');
 
                 if (normalizedForm.countdownSettings?.active) {
                     setTimeLeft(normalizedForm.countdownSettings.duration);
@@ -827,7 +809,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     .sort((a, b) => (normalizedForm!.paymentSettings[a].order || 99) - (normalizedForm!.paymentSettings[b].order || 99));
                 setSelectedPaymentKey(sortedVisiblePayment[0]);
             } else {
-                console.log('[FormViewerPage] Setting notFound state to true');
                 setNotFound(true);
             }
             setLoading(false);
@@ -1298,20 +1279,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         return <FormSkeleton />;
     }
     if (notFound) {
-        return (
-            <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
-                <div className="max-w-md bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md text-center">
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">404</h1>
-                    <p className="text-slate-600 dark:text-slate-400 mb-4">Formulir tidak ditemukan.</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-500 mb-6">
-                        ID formulir yang dicari: <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{identifier}</code>
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-500">
-                        Hubungi penjual atau periksa ulang URL formulir Anda.
-                    </p>
-                </div>
-            </div>
-        );
+        return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400"><h1>404 | Formulir tidak ditemukan.</h1></div>;
     }
     if (!form) {
         return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-red-500">Terjadi kesalahan saat memuat formulir.</div>;

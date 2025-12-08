@@ -16,8 +16,7 @@
     "react-dom": "^19.2.0",
     "react-router": "^6.25.1",
     "react-router-dom": "^6.25.1",
-    "recharts": "^3.4.1",
-    "xlsx": "^0.18.5"
+    "recharts": "^3.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
