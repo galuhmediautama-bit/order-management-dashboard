@@ -104,10 +104,12 @@ const PerformanceDashboardPage = lazyWithRetry(() => import('./pages/Performance
 const FormViewerWrapper: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
   console.log('[FormViewerWrapper] Rendering with identifier:', identifier);
+  console.log('[FormViewerWrapper] Current location:', window.location.href);
   if (!identifier) {
     console.warn('[FormViewerWrapper] No identifier found, redirecting to home');
     return <Navigate to="/" />;
   }
+  console.log('[FormViewerWrapper] ✅ Passing identifier to FormViewerPage:', identifier);
   return <FormViewerPage identifier={identifier} />;
 };
 
@@ -387,13 +389,19 @@ const AppContent: React.FC = () => {
         } />
         <Route path="/*" element={
           <Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900"><div className="text-xl text-slate-600 dark:text-slate-400 animate-pulse">Memuat Aplikasi...</div></div>}>
-            {user ? (
-              <AuthenticatedApp
-                user={user}
-                currentTheme={theme}
-                toggleTheme={toggleTheme}
-              />
-            ) : <LoginPage />}
+            {(() => {
+              const isFormRoute = window.location.hash.includes('/f/');
+              if (isFormRoute) {
+                console.warn('[Routes] Catch-all matched form-like URL:', window.location.hash, '- This should have been caught by /f/:identifier route!');
+              }
+              return user ? (
+                <AuthenticatedApp
+                  user={user}
+                  currentTheme={theme}
+                  toggleTheme={toggleTheme}
+                />
+              ) : <LoginPage />;
+            })()}
           </Suspense>
         } />
       </Routes>
