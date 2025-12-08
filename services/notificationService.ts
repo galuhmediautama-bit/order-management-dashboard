@@ -1,6 +1,50 @@
 import type { Notification } from '../types';
 import { supabase } from '../firebase';
 
+// Create notification for a user
+export async function createNotification(
+  userId: string,
+  payload: { type: string; title: string; message: string; metadata?: Record<string, any> }
+) {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: payload.type,
+        title: payload.title,
+        message: payload.message,
+        metadata: payload.metadata || {},
+        is_read: false,
+        is_deleted: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating notification:', error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      metadata: data.metadata,
+      isRead: data.is_read,
+      isDeleted: data.is_deleted,
+      userId: data.user_id,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      readAt: data.read_at,
+    } as Notification;
+  } catch (err) {
+    console.error('Error in createNotification:', err);
+    return null;
+  }
+}
+
 // Get notifications for current user
 export async function getNotifications(options?: { limit?: number }) {
   try {

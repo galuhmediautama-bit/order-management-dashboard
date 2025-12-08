@@ -7,6 +7,7 @@ import EyeIcon from '../components/icons/EyeIcon';
 import EyeOffIcon from '../components/icons/EyeOffIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import { useLanguage } from '../contexts/LanguageContext';
+import { createNotification } from '../services/notificationService';
 
 const LoginPage: React.FC = () => {
     const { t } = useLanguage();
@@ -86,36 +87,63 @@ const LoginPage: React.FC = () => {
                         return;
                     }
 
-                    // Insert profile into public.users with status 'Tidak Aktif' (requires admin approval)
-                    const { error: dbError, data: insertedData } = await supabase.from('users').insert([{
-                        id: authData.user.id,
-                        email: email,
-                        name: fullName || email.split('@')[0],
-                        phone: whatsapp || null,
-                        address: address || null,
-                        role: selectedRole,
-                        status: 'Tidak Aktif', // Changed: User must be approved by admin before login
-                        lastLogin: null // Changed: No login timestamp until approved
-                    }]);
+                    if (authData.user) {
+                        // Insert profile into public.users with status 'Tidak Aktif' (requires admin approval)
+                        const newUserPayload: any = {
+                            id: authData.user.id,
+                            email: email,
+                            name: fullName || email.split('@')[0],
+                            phone: whatsapp || null,
+                            address: address || null,
+                            role: selectedRole,
+                            status: 'Tidak Aktif', // User must be approved by admin before active
+                            lastLogin: null
+                        };
 
-                    if (dbError) {
-                        console.error('❌ Gagal membuat profil user:', { error: dbError, selectedRole });
-                        setError(`Akun Auth dibuat, tapi gagal simpan profil: ${dbError.message || JSON.stringify(dbError)}`);
-                    } else {
-                        console.log('✅ User profile created successfully:', { 
-                            userId: authData.user.id, 
-                            email: email, 
-                            role: selectedRole, 
-                            data: insertedData 
-                        });
-                        setSuccessMsg('✅ Akun berhasil dibuat! Status: MENUNGGU APPROVAL dari Admin. Anda akan menerima notifikasi email setelah akun Anda disetujui dan dapat login.');
-                        setIsRegistering(false);
-                        setEmail('');
-                        setPassword('');
-                        setFullName('');
-                        setWhatsapp('');
-                        setAddress('');
-                        setSelectedRole('Advertiser');
+                        const { error: dbError, data: insertedData } = await supabase.from('users').insert([newUserPayload]);
+
+                        if (dbError) {
+                            console.error('❌ Gagal membuat profil user:', { error: dbError, selectedRole });
+                            setError(`Akun Auth dibuat, tapi gagal simpan profil: ${dbError.message || JSON.stringify(dbError)}`);
+                        } else {
+                            console.log('✅ User profile created successfully:', { 
+                                userId: authData.user.id, 
+                                email: email, 
+                                role: selectedRole, 
+                                data: insertedData 
+                            });
+
+                            // Kirim notifikasi ke Admin/Super Admin untuk approval
+                            const { data: admins, error: adminsError } = await supabase
+                                .from('users')
+                                .select('id')
+                                .in('role', ['Admin', 'Super Admin'])
+                                .eq('status', 'Aktif');
+
+                            if (!adminsError && admins && admins.length > 0) {
+                                for (const admin of admins) {
+                                    await createNotification(admin.id, {
+                                        type: 'SYSTEM_ALERT',
+                                        title: 'Pengguna baru menunggu approval',
+                                        message: `${newUserPayload.name} (${newUserPayload.email}) memerlukan approval`,
+                                        metadata: {
+                                            userId: newUserPayload.id,
+                                            email: newUserPayload.email,
+                                            name: newUserPayload.name,
+                                        },
+                                    });
+                                }
+                            }
+
+                            setSuccessMsg('✅ Akun berhasil dibuat! Status: MENUNGGU APPROVAL dari Admin. Anda akan menerima notifikasi email setelah akun Anda disetujui dan dapat login.');
+                            setIsRegistering(false);
+                            setEmail('');
+                            setPassword('');
+                            setFullName('');
+                            setWhatsapp('');
+                            setAddress('');
+                            setSelectedRole('Advertiser');
+                        }
                     }
                 }
             } else {
