@@ -6,23 +6,42 @@ const supabase = createClient(
 );
 
 async function testConnection() {
-    console.log('🔍 Testing Supabase connection...\n');
+    console.log('🔍 Checking Advertiser users and Syahrul...\n');
 
     try {
-        // Test: Check users column names
-        console.log('Test: Discover users column names\n');
-
-        const { data: sampleUser, error: userError } = await supabase
+        // Get all Advertiser users
+        const { data: advertisers, error: advError } = await supabase
             .from('users')
-            .select('*')
-            .limit(1);
+            .select('id, name, email, role, status, "assignedBrandIds"')
+            .eq('role', 'Advertiser')
+            .order('name');
 
-        if (userError) {
-            console.error('❌ Users error:', JSON.stringify(userError, null, 2));
-        } else if (sampleUser && sampleUser.length > 0) {
-            console.log('✅ Users columns:', Object.keys(sampleUser[0]));
+        if (advError) {
+            console.error('❌ Error getting advertisers:', advError.message);
+        } else if (advertisers && advertisers.length > 0) {
+            console.log(`✅ Found ${advertisers.length} Advertiser(s):\n`);
+            advertisers.forEach((user, i) => {
+                console.log(`${i + 1}. ${user.name} (${user.email})`);
+                console.log(`   Status: ${user.status}, Brands: ${JSON.stringify(user.assignedBrandIds)}\n`);
+            });
         } else {
-            console.log('⚠️ No users found in table');
+            console.log('⚠️ No Advertisers found\n');
+        }
+
+        // Also check for any user with wandika/syahrul
+        console.log('🔍 Searching for "wandika" or "syahrul"...\n');
+        const { data: matches, error: matchError } = await supabase
+            .from('users')
+            .select('id, name, email, role, status')
+            .or('email.ilike.%wandika%,name.ilike.%wandika%,email.ilike.%syahrul%,name.ilike.%syahrul%');
+
+        if (!matchError && matches && matches.length > 0) {
+            console.log(`✅ Found ${matches.length} match(es):\n`);
+            matches.forEach((user, i) => {
+                console.log(`${i + 1}. ${user.name} (${user.email}) - Role: ${user.role}, Status: ${user.status}`);
+            });
+        } else {
+            console.log('⚠️ No matches found');
         }
 
     } catch (error) {
