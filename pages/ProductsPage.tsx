@@ -51,7 +51,7 @@ const ProductsPage: React.FC = () => {
                 // Optimized: Only select needed columns
                 const { data: userData } = await supabase
                     .from('users')
-                    .select('id, name, role, assignedBrandIds, status')
+                    .select('id, name, role, "assignedBrandIds", status')
                     .eq('id', data.session.user.id)
                     .single();
                 setCurrentUser(userData);
