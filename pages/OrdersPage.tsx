@@ -41,6 +41,8 @@ import { useNotificationCount } from '../contexts/NotificationCountContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
 import { getCachedForms, getCachedUsers, getCachedCsAgents, getCachedBrands, getCachedProducts, getCachedSettings, getCachedMessageTemplates, getCachedCancellationReasons, warmCache, invalidateOnOrderChange, invalidateCache } from '../utils/cacheHelpers';
 import { CACHE_KEYS } from '../utils/cacheHelpers';
+import { ColumnVisibilityModal, type ColumnConfig } from '../components/ColumnVisibilityModal';
+import { Settings } from 'lucide-react';
 
 // --- Helper Components & Functions ---
 
@@ -128,7 +130,20 @@ const OrdersPage: React.FC = () => {
     const [assignTargetOrderId, setAssignTargetOrderId] = useState<string | null>(null);
     const [assignSelectedCsId, setAssignSelectedCsId] = useState<string>('');
 
-    // Close dropdowns when clicking outside
+    // Column Visibility State
+    const [isColumnVisibilityModalOpen, setIsColumnVisibilityModalOpen] = useState(false);
+    const [columnVisibility, setColumnVisibility] = useState<ColumnConfig[]>([
+        { key: 'orderId', label: 'Order ID & Tanggal', visible: true },
+        { key: 'customer', label: 'Pelanggan', visible: true },
+        { key: 'product', label: 'Produk & Total', visible: true },
+        { key: 'status', label: 'Status & Pembayaran', visible: true },
+        { key: 'platform', label: 'Platform', visible: true },
+        { key: 'cs', label: 'CS', visible: true },
+        { key: 'followUp', label: 'Follow Up', visible: true },
+        { key: 'actions', label: 'Aksi', visible: true },
+    ]);
+    const [isLoadingColumnPrefs, setIsLoadingColumnPrefs] = useState(false);
+    const [isSavingColumnPrefs, setIsSavingColumnPrefs] = useState(false);
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
@@ -289,11 +304,76 @@ const OrdersPage: React.FC = () => {
         }
     };
 
+    // Load column visibility preferences from currentUser
+    const loadColumnPreferences = async () => {
+        if (!currentUser?.id) return;
+        setIsLoadingColumnPrefs(true);
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('columnVisibility')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (error) throw error;
+
+            if (data?.columnVisibility) {
+                // Merge saved preferences with default columns
+                const saved = data.columnVisibility as Record<string, boolean>;
+                const updated = columnVisibility.map(col => ({
+                    ...col,
+                    visible: saved[col.key] !== undefined ? saved[col.key] : col.visible,
+                }));
+                setColumnVisibility(updated);
+            }
+        } catch (error) {
+            console.warn('Failed to load column preferences:', error);
+        } finally {
+            setIsLoadingColumnPrefs(false);
+        }
+    };
+
+    // Save column visibility preferences to database
+    const saveColumnPreferences = async (columns: ColumnConfig[]) => {
+        if (!currentUser?.id) return;
+        setIsSavingColumnPrefs(true);
+        try {
+            const visibility: Record<string, boolean> = {};
+            columns.forEach(col => {
+                visibility[col.key] = col.visible;
+            });
+
+            const { error } = await supabase
+                .from('users')
+                .update({ columnVisibility: visibility })
+                .eq('id', currentUser.id);
+
+            if (error) throw error;
+
+            setColumnVisibility(columns);
+            showToast('Pengaturan kolom berhasil disimpan', 'success');
+            setIsColumnVisibilityModalOpen(false);
+        } catch (error) {
+            console.error('Failed to save column preferences:', error);
+            showToast('Gagal menyimpan pengaturan kolom', 'error');
+        } finally {
+            setIsSavingColumnPrefs(false);
+        }
+    };
+
     useEffect(() => {
         fetchData();
+        loadColumnPreferences();
         // Pre-warm cache on component mount for faster repeat loads
         warmCache().catch(err => console.warn('Cache warming failed:', err));
     }, []);
+
+    // Reload column preferences when currentUser changes
+    useEffect(() => {
+        if (currentUser?.id) {
+            loadColumnPreferences();
+        }
+    }, [currentUser?.id]);
 
     // --- Play notification sound (Coin drop for orders) ---
     const playNotificationSound = useCallback(() => {
@@ -1376,6 +1456,22 @@ const OrdersPage: React.FC = () => {
                             <p className="text-slate-500 dark:text-slate-400">Coba ubah filter status atau kata kunci pencarian Anda.</p>
                         </div>
                     ) : (
+                        <>
+                            {/* Table Settings Bar */}
+                            <div className="flex justify-end mb-4 px-2">
+                                <button
+                                    onClick={() => setIsColumnVisibilityModalOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors border border-slate-200 dark:border-slate-600"
+                                    title="Atur tampilan kolom"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    Tampilan Kolom
+                                </button>
+                            </div>
+
+                            {/* Table */}
+                        </>
+                    ) ? (
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
                                 <tr>
@@ -1387,14 +1483,14 @@ const OrdersPage: React.FC = () => {
                                             className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                                         />
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>
-                                    {currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                    {columnVisibility.find(c => c.key === 'orderId')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>}
+                                    {columnVisibility.find(c => c.key === 'customer')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>}
+                                    {columnVisibility.find(c => c.key === 'product')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>}
+                                    {columnVisibility.find(c => c.key === 'status')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>}
+                                    {columnVisibility.find(c => c.key === 'platform')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>}
+                                    {columnVisibility.find(c => c.key === 'cs')?.visible && currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
+                                    {columnVisibility.find(c => c.key === 'followUp')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>}
+                                    {columnVisibility.find(c => c.key === 'actions')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -1412,6 +1508,7 @@ const OrdersPage: React.FC = () => {
                                                     className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                                                 />
                                             </td>
+                                            {columnVisibility.find(c => c.key === 'orderId')?.visible && (
                                             <td className="px-6 py-5 align-top">
                                                 <div className="flex flex-col">
                                                     <button
@@ -1428,6 +1525,8 @@ const OrdersPage: React.FC = () => {
                                                     </span>
                                                 </div>
                                             </td>
+                                            )}
+                                            {columnVisibility.find(c => c.key === 'customer')?.visible && (
                                             <td className="px-6 py-5 align-top">
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
@@ -1437,12 +1536,16 @@ const OrdersPage: React.FC = () => {
                                                     </div>
                                                 </div>
                                             </td>
+                                            )}
+                                            {columnVisibility.find(c => c.key === 'product')?.visible && (
                                             <td className="px-6 py-5 align-top">
                                                 <div className="max-w-xs">
                                                     <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-1" title={order.productName}>{order.productName}</p>
                                                     <p className="font-bold text-slate-900 dark:text-white">Rp {order.totalPrice?.toLocaleString('id-ID')}</p>
                                                 </div>
                                             </td>
+                                            )}
+                                            {columnVisibility.find(c => c.key === 'status')?.visible && (
                                             <td className="px-6 py-5 align-top">
                                                 <div className="flex flex-col gap-2 items-start">
                                                     <StatusBadge status={order.status} />
@@ -1455,6 +1558,8 @@ const OrdersPage: React.FC = () => {
                                                     </button>
                                                 </div>
                                             </td>
+                                            )}
+                                            {columnVisibility.find(c => c.key === 'platform')?.visible && (
                                             <td className="px-6 py-5 align-top">
                                                 <div className="flex items-center gap-2">
                                                     {order.utmSource ? (
@@ -1492,7 +1597,8 @@ const OrdersPage: React.FC = () => {
                                                     )}
                                                 </div>
                                             </td>
-                                            {currentUser?.role !== 'Customer service' && (
+                                            )}
+                                            {columnVisibility.find(c => c.key === 'cs')?.visible && currentUser?.role !== 'Customer service' && (
                                                 <td className="px-6 py-5 align-top">
                                                     {assignedCS ? (
                                                         <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
@@ -1524,11 +1630,14 @@ const OrdersPage: React.FC = () => {
                                                     )}
                                                 </td>
                                             )}
+                                            {columnVisibility.find(c => c.key === 'followUp')?.visible && (
                                             <td className="px-6 py-5 align-middle">
                                                 <div className="flex justify-center">
                                                     <FollowUpIndicator order={order} onFollowUp={handleFollowUp} templates={templates} />
                                                 </div>
                                             </td>
+                                            )}
+                                            {columnVisibility.find(c => c.key === 'actions')?.visible && (
                                             <td className="px-6 py-5 align-middle text-right">
                                                 <div className="relative flex items-center justify-end">
                                                     <button
@@ -1635,14 +1744,25 @@ const OrdersPage: React.FC = () => {
                                                     )}
                                                 </div>
                                             </td>
+                                            )}
                                         </tr>
                                     )
                                 })}
                             </tbody>
                         </table>
+                        </>
                     )}
                 </div>
             </div>
+
+            {/* Column Visibility Modal */}
+            <ColumnVisibilityModal
+                isOpen={isColumnVisibilityModalOpen}
+                onClose={() => setIsColumnVisibilityModalOpen(false)}
+                columns={columnVisibility}
+                onSave={saveColumnPreferences}
+                isSaving={isSavingColumnPrefs}
+            />
 
             {/* Pagination Controls */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">

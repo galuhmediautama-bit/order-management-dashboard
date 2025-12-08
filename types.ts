@@ -122,6 +122,7 @@ export interface User {
   avatar?: string;
   baseSalary?: number; // Gaji Pokok
   assignedBrandIds?: string[]; // Array of Brand IDs assigned to this user
+  columnVisibility?: Record<string, boolean>; // Column visibility preferences for orders table
 }
 
 export interface Role {
