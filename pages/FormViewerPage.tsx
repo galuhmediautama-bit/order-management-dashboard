@@ -909,6 +909,46 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         setCustomerData(prev => ({ ...prev, [name]: value }));
     };
 
+    const validateWhatsappNumber = (value: string) => {
+        const trimmed = (value || '').trim();
+        const withoutSpacing = trimmed.replace(/[	\s-]/g, '');
+        const digitsOnly = trimmed.replace(/\D/g, '');
+        const isNumeric = withoutSpacing !== '' && /^\d+$/.test(withoutSpacing);
+        const hasMinLength = digitsOnly.length >= 9;
+        const hasMaxLength = digitsOnly.length <= 15;
+
+        return {
+            isValid: isNumeric && hasMinLength && hasMaxLength,
+            normalized: digitsOnly
+        };
+    };
+
+    const isValidEmail = (value: string) => {
+        if (!value) return true;
+        const trimmed = value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(trimmed);
+    };
+
+    const validateAddress = () => {
+        const manualAddress = (customerData.address || '').trim();
+        const addressFromPicker = (addressData.detailAddress || addressData.fullAddress || '').trim();
+        const combined = manualAddress || addressFromPicker;
+
+        if (!combined) {
+            return { isValid: !(form?.customerFields.address.required), normalized: '' };
+        }
+
+        const hasMinLength = combined.length >= 15;
+        const requiresLocationDetail = Boolean(form?.customerFields.city?.visible || form?.customerFields.district?.visible);
+        const hasLocationDetail = !requiresLocationDetail || Boolean((addressData.city || '').trim() || (addressData.district || '').trim());
+
+        return {
+            isValid: hasMinLength && hasLocationDetail,
+            normalized: combined
+        };
+    };
+
     const assignCs = async (): Promise<string | undefined> => {
         try {
             if (!form?.thankYouPage.csAssignment) return undefined;
@@ -1026,6 +1066,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         if (form.customerFields.district?.required && !customerData.district) { alert("Kecamatan harus diisi."); setIsSubmitting(false); return; }
         if (form.customerFields.address.required && !customerData.address) { alert("Alamat harus diisi."); setIsSubmitting(false); return; }
 
+        const { isValid: whatsappValid, normalized: normalizedWhatsapp } = validateWhatsappNumber(customerData.whatsapp);
+        if (!whatsappValid) { alert("No. WhatsApp harus berupa angka 9-15 digit."); setIsSubmitting(false); return; }
+
+        if (customerData.email && !isValidEmail(customerData.email)) { alert("Format email tidak valid."); setIsSubmitting(false); return; }
+
+        const { isValid: addressValid, normalized: normalizedAddress } = validateAddress();
+        if (!addressValid) { alert("Alamat kurang lengkap. Sertakan jalan/RT/RW serta kecamatan/kota."); setIsSubmitting(false); return; }
+
         try {
             const assignedCsId = await assignCs();
 
@@ -1046,11 +1094,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
             const shippingMethodLabel = selectedShippingKey ? SHIPPING_LABELS[selectedShippingKey] : 'N/A';
 
+            const normalizedEmail = (customerData.email || '').trim();
+
             const newOrderData: any = {
                 customer: capitalizeWords(customerData.name),
-                customerPhone: customerData.whatsapp,
-                customerEmail: customerData.email || '',
-                shippingAddress: customerData.address || '',
+                customerPhone: normalizedWhatsapp || customerData.whatsapp,
+                customerEmail: normalizedEmail,
+                shippingAddress: normalizedAddress || '',
                 productName: `${form.title} ${Object.values(selectedOptions).join(' / ')}`.trim(),
                 productPrice: subtotal,
                 shippingMethod: shippingMethodLabel,
@@ -1095,14 +1145,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             try {
                 const notificationTitle = `Pesanan Baru dari ${data.customer}`;
                 const notificationMessage = `Pesanan dari ${data.customer} (${data.customerPhone}) - ${data.productName} - Rp ${(data.totalPrice || 0).toLocaleString('id-ID')}`;
-                
+
                 // Get users to notify
                 const { data: usersToNotify } = await supabase
                     .from('users')
                     .select('id, role')
                     .in('role', ['Super Admin', 'Admin'])
                     .eq('status', 'Aktif');
-                
+
                 if (usersToNotify && usersToNotify.length > 0) {
                     const notificationsToInsert = usersToNotify.map(user => ({
                         user_id: user.id,
@@ -1117,7 +1167,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                             productName: data.productName
                         }
                     }));
-                    
+
                     await supabase.from('notifications').insert(notificationsToInsert);
                     console.log('[FormViewer] Notifications created for', usersToNotify.length, 'users');
                 }
@@ -1351,8 +1401,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                                     <label
                                                                         key={val}
                                                                         className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${isSelected
-                                                                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
-                                                                                : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
+                                                                            : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                                                                             }`}
                                                                     >
                                                                         <div className="flex items-center gap-3">
