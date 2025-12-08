@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import { supabase } from '../firebase';
 import type { Form, Order, ShippingSettings, PaymentSettings, ShippingSetting, PaymentSetting, BankTransferSetting, CSAgent, VariantDisplayStyle, QRISSettings, FormPixelSetting, RankLevel } from '../types';
 import CODIcon from '../components/icons/CODIcon';
@@ -330,6 +330,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
     // Form state
     const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '', province: '', city: '', district: '' });
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [addressData, setAddressData] = useState<AddressData>({
         province: '',
         city: '',
@@ -949,6 +950,48 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         };
     };
 
+    const validateCustomerFields = useCallback(() => {
+        const next: Record<string, string> = {};
+
+        if (form?.customerFields.name.required && !customerData.name.trim()) {
+            next.name = 'Nama wajib diisi.';
+        }
+
+        const whatsappTrimmed = customerData.whatsapp.trim();
+        const whatsappCheck = validateWhatsappNumber(whatsappTrimmed);
+        if (form?.customerFields.whatsapp.required && !whatsappTrimmed) {
+            next.whatsapp = 'No. WhatsApp wajib diisi.';
+        } else if (whatsappTrimmed && !whatsappCheck.isValid) {
+            next.whatsapp = 'Format WhatsApp harus 9-15 digit angka.';
+        }
+
+        const emailTrimmed = customerData.email.trim();
+        if (form?.customerFields.email.required && !emailTrimmed) {
+            next.email = 'Email wajib diisi.';
+        } else if (emailTrimmed && !isValidEmail(emailTrimmed)) {
+            next.email = 'Format email tidak valid.';
+        }
+
+        if (form?.customerFields.province?.required && !customerData.province.trim()) {
+            next.province = 'Provinsi wajib diisi.';
+        }
+        if (form?.customerFields.city?.required && !customerData.city.trim()) {
+            next.city = 'Kota/Kabupaten wajib diisi.';
+        }
+        if (form?.customerFields.district?.required && !customerData.district.trim()) {
+            next.district = 'Kecamatan wajib diisi.';
+        }
+
+        const addressCheck = validateAddress();
+        if (form?.customerFields.address.required && !addressCheck.normalized) {
+            next.address = 'Alamat wajib diisi.';
+        } else if (!addressCheck.isValid) {
+            next.address = 'Alamat kurang lengkap (min. 15 karakter + kecamatan/kota).';
+        }
+
+        return next;
+    }, [customerData, form, validateAddress]);
+
     const assignCs = async (): Promise<string | undefined> => {
         try {
             if (!form?.thankYouPage.csAssignment) return undefined;
@@ -1044,6 +1087,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     };
 
 
+    useEffect(() => {
+        setFieldErrors(validateCustomerFields());
+    }, [customerData, addressData, validateCustomerFields]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form || !currentCombination) return;
@@ -1058,21 +1105,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             clearTimeout(debounceTimer.current);
         }
 
-        if (form.customerFields.name.required && !customerData.name) { alert("Nama harus diisi."); setIsSubmitting(false); return; }
-        if (form.customerFields.whatsapp.required && !customerData.whatsapp) { alert("No. WhatsApp harus diisi."); setIsSubmitting(false); return; }
-        if (form.customerFields.email.required && !customerData.email) { alert("Email harus diisi."); setIsSubmitting(false); return; }
-        if (form.customerFields.province?.required && !customerData.province) { alert("Provinsi harus diisi."); setIsSubmitting(false); return; }
-        if (form.customerFields.city?.required && !customerData.city) { alert("Kota/Kabupaten harus diisi."); setIsSubmitting(false); return; }
-        if (form.customerFields.district?.required && !customerData.district) { alert("Kecamatan harus diisi."); setIsSubmitting(false); return; }
-        if (form.customerFields.address.required && !customerData.address) { alert("Alamat harus diisi."); setIsSubmitting(false); return; }
+        const latestErrors = validateCustomerFields();
+        setFieldErrors(latestErrors);
+        if (Object.keys(latestErrors).length > 0) {
+            alert('Periksa kembali data yang ditandai.');
+            setIsSubmitting(false);
+            return;
+        }
 
-        const { isValid: whatsappValid, normalized: normalizedWhatsapp } = validateWhatsappNumber(customerData.whatsapp);
-        if (!whatsappValid) { alert("No. WhatsApp harus berupa angka 9-15 digit."); setIsSubmitting(false); return; }
+        const { normalized: normalizedWhatsapp } = validateWhatsappNumber(customerData.whatsapp);
 
-        if (customerData.email && !isValidEmail(customerData.email)) { alert("Format email tidak valid."); setIsSubmitting(false); return; }
-
-        const { isValid: addressValid, normalized: normalizedAddress } = validateAddress();
-        if (!addressValid) { alert("Alamat kurang lengkap. Sertakan jalan/RT/RW serta kecamatan/kota."); setIsSubmitting(false); return; }
+        const { normalized: normalizedAddress } = validateAddress();
 
         try {
             const assignedCsId = await assignCs();
@@ -1466,18 +1509,21 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
                                             <input type="text" name="name" value={customerData.name} onChange={handleCustomerDataChange} placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.name.required} />
+                                            {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
                                         </div>
                                     )}
                                     {form.customerFields.whatsapp.visible && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
                                             <input type="tel" name="whatsapp" value={customerData.whatsapp} onChange={handleCustomerDataChange} placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.whatsapp.required} />
+                                            {fieldErrors.whatsapp && <p className="text-xs text-red-500 mt-1">{fieldErrors.whatsapp}</p>}
                                         </div>
                                     )}
                                     {form.customerFields.email.visible && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email {form.customerFields.email.required && <span className="text-red-500">*</span>}</label>
                                             <input type="email" name="email" value={customerData.email} onChange={handleCustomerDataChange} placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.email.required} />
+                                            {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                                         </div>
                                     )}
                                     {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible) && (
@@ -1492,12 +1538,16 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 requiredCity={form.customerFields.city?.required || false}
                                                 requiredDistrict={form.customerFields.district?.required || false}
                                             />
+                                            {(fieldErrors.province || fieldErrors.city || fieldErrors.district) && (
+                                                <p className="text-xs text-red-500 mt-1">{[fieldErrors.province, fieldErrors.city, fieldErrors.district].filter(Boolean).join(' • ')}</p>
+                                            )}
                                         </div>
                                     )}
                                     {form.customerFields.address.visible && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
                                             <textarea name="address" value={customerData.address} onChange={handleCustomerDataChange} placeholder="Jl. Sudirman No. 123, RT 01/RW 05, Kecamatan, Kota" rows={3} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.address.required} />
+                                            {fieldErrors.address && <p className="text-xs text-red-500 mt-1">{fieldErrors.address}</p>}
                                         </div>
                                     )}
                                 </div>
