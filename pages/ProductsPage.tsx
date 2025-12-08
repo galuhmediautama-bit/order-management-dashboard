@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useDialog } from '../contexts/DialogContext';
+import { useRolePermissions } from '../contexts/RolePermissionsContext';
 import { Product } from '../types';
 import { productService } from '../services/productService';
 import { supabase } from '../firebase';
@@ -26,6 +27,7 @@ const ProductsPage: React.FC = () => {
     const { showToast } = useToast();
     const { showDialog } = useDialog();
     const navigate = useNavigate();
+    const { rolePermissions } = useRolePermissions();
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -176,8 +178,17 @@ const ProductsPage: React.FC = () => {
     };
 
     const canEditProduct = (product: Product) => {
+        // Check if user has edit_product permission
+        const userPermissions = rolePermissions?.userPermissions;
+        if (!userPermissions?.features?.includes('edit_product')) {
+            return false;
+        }
+
         // Super Admin bisa edit semua
         if (currentUser.role === 'Super Admin') return true;
+
+        // Admin dapat edit semua produk dengan permission
+        if (currentUser.role === 'Admin') return true;
 
         // Advertiser hanya bisa edit produk milik brand-nya
         if (currentUser.role === 'Advertiser') {
