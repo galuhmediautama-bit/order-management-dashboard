@@ -306,18 +306,31 @@ const OrdersPage: React.FC = () => {
 
     // Load column visibility preferences from currentUser
     const loadColumnPreferences = async () => {
-        if (!currentUser?.id) return;
+        if (!currentUser?.id) {
+            console.log('⏭️ Skipping load column preferences - no currentUser');
+            return;
+        }
         setIsLoadingColumnPrefs(true);
         try {
+            console.log('📂 Loading column preferences for user:', currentUser.id);
             const { data, error } = await supabase
                 .from('users')
                 .select('columnVisibility')
                 .eq('id', currentUser.id)
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                // Column might not exist yet - that's OK, just use defaults
+                if (error.message?.includes('columnVisibility') || error.message?.includes('column')) {
+                    console.warn('⚠️ columnVisibility column not found, using defaults. Run migration: ADD_COLUMN_VISIBILITY_FIELD.sql');
+                } else {
+                    console.warn('⚠️ Failed to load column preferences:', error);
+                }
+                return;
+            }
 
             if (data?.columnVisibility) {
+                console.log('✅ Loaded column preferences:', data.columnVisibility);
                 // Merge saved preferences with default columns
                 const saved = data.columnVisibility as Record<string, boolean>;
                 const updated = columnVisibility.map(col => ({
@@ -325,6 +338,8 @@ const OrdersPage: React.FC = () => {
                     visible: saved[col.key] !== undefined ? saved[col.key] : col.visible,
                 }));
                 setColumnVisibility(updated);
+            } else {
+                console.log('ℹ️ No saved column preferences found, using defaults');
             }
         } catch (error) {
             console.warn('Failed to load column preferences:', error);
@@ -335,7 +350,10 @@ const OrdersPage: React.FC = () => {
 
     // Save column visibility preferences to database
     const saveColumnPreferences = async (columns: ColumnConfig[]) => {
-        if (!currentUser?.id) return;
+        if (!currentUser?.id) {
+            showToast('User ID tidak ditemukan', 'error');
+            return;
+        }
         setIsSavingColumnPrefs(true);
         try {
             const visibility: Record<string, boolean> = {};
@@ -343,19 +361,30 @@ const OrdersPage: React.FC = () => {
                 visibility[col.key] = col.visible;
             });
 
+            console.log('💾 Saving column preferences:', { userId: currentUser.id, visibility });
+
             const { error } = await supabase
                 .from('users')
                 .update({ columnVisibility: visibility })
                 .eq('id', currentUser.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Save error:', error);
+                // Check if error is about missing column
+                if (error.message?.includes('columnVisibility') || error.message?.includes('column')) {
+                    showToast('Database belum diupdate. Hubungi admin untuk menjalankan migration.', 'error');
+                } else {
+                    showToast(`Gagal menyimpan pengaturan kolom: ${error.message}`, 'error');
+                }
+                throw error;
+            }
 
+            console.log('✅ Column preferences saved successfully');
             setColumnVisibility(columns);
             showToast('Pengaturan kolom berhasil disimpan', 'success');
             setIsColumnVisibilityModalOpen(false);
         } catch (error) {
             console.error('Failed to save column preferences:', error);
-            showToast('Gagal menyimpan pengaturan kolom', 'error');
         } finally {
             setIsSavingColumnPrefs(false);
         }
