@@ -1391,6 +1391,7 @@ const OrdersPage: React.FC = () => {
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>
                                     {currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
@@ -1452,6 +1453,43 @@ const OrdersPage: React.FC = () => {
                                                         <CreditCardIcon className="w-3 h-3" />
                                                         {order.paymentMethod || 'COD'}
                                                     </button>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <div className="flex items-center gap-2">
+                                                    {order.utmSource ? (
+                                                        <>
+                                                            {order.utmSource.toLowerCase() === 'meta' && (
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
+                                                                    <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
+                                                                    Meta
+                                                                </div>
+                                                            )}
+                                                            {order.utmSource.toLowerCase() === 'tiktok' && (
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-slate-900/10 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded text-xs font-medium">
+                                                                    <div className="w-4 h-4 bg-slate-900 dark:bg-slate-300 rounded-full"></div>
+                                                                    TikTok
+                                                                </div>
+                                                            )}
+                                                            {order.utmSource.toLowerCase() === 'google' && (
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded text-xs font-medium">
+                                                                    <div className="w-4 h-4 bg-red-600 rounded-full"></div>
+                                                                    Google
+                                                                </div>
+                                                            )}
+                                                            {order.utmSource.toLowerCase() === 'snack' && (
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded text-xs font-medium">
+                                                                    <div className="w-4 h-4 bg-green-600 rounded-full"></div>
+                                                                    Snack
+                                                                </div>
+                                                            )}
+                                                            {!['meta', 'tiktok', 'google', 'snack'].includes(order.utmSource.toLowerCase()) && (
+                                                                <span className="text-xs text-slate-500 dark:text-slate-400 italic">{order.utmSource}</span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 dark:text-slate-500 italic">—</span>
+                                                    )}
                                                 </div>
                                             </td>
                                             {currentUser?.role !== 'Customer service' && (
