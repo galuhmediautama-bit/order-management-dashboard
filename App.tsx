@@ -103,7 +103,11 @@ const PerformanceDashboardPage = lazyWithRetry(() => import('./pages/Performance
 
 const FormViewerWrapper: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
-  if (!identifier) return <Navigate to="/" />;
+  console.log('[FormViewerWrapper] Rendering with identifier:', identifier);
+  if (!identifier) {
+    console.warn('[FormViewerWrapper] No identifier found, redirecting to home');
+    return <Navigate to="/" />;
+  }
   return <FormViewerPage identifier={identifier} />;
 };
 
@@ -358,6 +362,11 @@ const AppContent: React.FC = () => {
       </div>
     </div>
   );
+
+  // Debug logging for routing
+  useEffect(() => {
+    console.log('[AppContent] Hash changed:', window.location.hash);
+  }, []);
 
   return (
     <HashRouter>
