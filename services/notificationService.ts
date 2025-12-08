@@ -30,6 +30,11 @@ export async function getNotifications(options?: { limit?: number }) {
       user_id: n.user_id,
       order_id: n.order_id,
       created_at: n.created_at,
+      // Normalize camelCase fields expected by UI components
+      createdAt: n.created_at,
+      updatedAt: n.updated_at,
+      isRead: n.is_read,
+      isDeleted: n.is_deleted,
     })) as Notification[];
   } catch (error) {
     console.error('Error in getNotifications:', error);
@@ -87,6 +92,10 @@ export function subscribeToNotifications(userId: string, callback: (notification
           user_id: n.user_id,
           order_id: n.order_id,
           created_at: n.created_at,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          isRead: n.is_read,
+          isDeleted: n.is_deleted,
         });
       }
     )
@@ -120,6 +129,10 @@ export function subscribeToNotificationUpdates(userId: string, callback: (notifi
           user_id: n.user_id,
           order_id: n.order_id,
           created_at: n.created_at,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          isRead: n.is_read,
+          isDeleted: n.is_deleted,
         });
       }
     )

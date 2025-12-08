@@ -121,12 +121,18 @@ export const NotificationDropdown: React.FC<{ isOpen: boolean; onClose: () => vo
                                                 {notification.message}
                                             </p>
                                             <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-                                                {new Date(notification.createdAt).toLocaleDateString('id-ID', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
+                                                {(() => {
+                                                    const dateValue = notification.createdAt || (notification as any).created_at || (notification as any).timestamp;
+                                                    if (!dateValue) return '—';
+                                                    const d = new Date(dateValue);
+                                                    if (isNaN(d.getTime())) return '—';
+                                                    return d.toLocaleDateString('id-ID', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    });
+                                                })()}
                                             </p>
                                         </div>
                                     </div>
