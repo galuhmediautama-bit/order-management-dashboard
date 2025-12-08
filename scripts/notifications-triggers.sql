@@ -14,17 +14,17 @@ DECLARE
   advertiser_ids uuid[];
 BEGIN
   -- Get CS user ID if assigned
-  IF NEW.assignedCsId IS NOT NULL THEN
-    cs_user_id := NEW.assignedCsId::uuid;
+  IF NEW."assignedCsId" IS NOT NULL THEN
+    cs_user_id := NEW."assignedCsId"::uuid;
   END IF;
 
   -- Get advertiser IDs from users table (match brandId)
-  IF NEW.brandId IS NOT NULL THEN
+  IF NEW."brandId" IS NOT NULL THEN
     SELECT ARRAY_AGG(id) INTO advertiser_ids
     FROM users
     WHERE role = 'Advertiser' 
     AND status = 'Aktif'
-    AND "assignedBrandIds" @> ARRAY[NEW.brandId::text];
+    AND "assignedBrandIds" @> ARRAY[NEW."brandId"::text];
   END IF;
 
   -- Notify CS Agent if assigned
@@ -58,7 +58,7 @@ BEGIN
         'customerName', NEW.customer,
         'customerPhone', NEW.customerPhone,
         'totalPrice', NEW.totalPrice,
-        'brandId', NEW.brandId
+        'brandId', NEW."brandId"
       );
   END IF;
 
@@ -158,8 +158,8 @@ BEGIN
   END CASE;
 
   -- Get CS user ID if assigned
-  IF NEW.assignedCsId IS NOT NULL THEN
-    cs_user_id := NEW.assignedCsId::uuid;
+  IF NEW."assignedCsId" IS NOT NULL THEN
+    cs_user_id := NEW."assignedCsId"::uuid;
     
     -- Insert notification for CS about status change
     INSERT INTO public.notifications (user_id, type, title, message, metadata)

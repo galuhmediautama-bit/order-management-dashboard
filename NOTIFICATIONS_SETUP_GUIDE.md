@@ -18,6 +18,15 @@ Buka Supabase dashboard → SQL Editor → buat query baru:
 -- Copy-paste seluruh isi dari: scripts/notifications-triggers.sql
 ```
 
+**⚠️ PENTING - Column Names:**
+PostgreSQL membedakan case untuk column names. File SQL sudah benar dengan double quotes:
+```sql
+NEW."assignedCsId"   -- ✅ Correct (camelCase)
+NEW."brandId"        -- ✅ Correct (camelCase)
+```
+
+Jika error: `"Error: record "new" has no field "assignedcsid""` berarti masalahnya di case sensitivity column.
+
 Atau gunakan Supabase CLI:
 ```bash
 supabase db push  # Jika sudah ada migration
