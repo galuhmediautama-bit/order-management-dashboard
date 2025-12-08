@@ -389,19 +389,13 @@ const AppContent: React.FC = () => {
         } />
         <Route path="/*" element={
           <Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900"><div className="text-xl text-slate-600 dark:text-slate-400 animate-pulse">Memuat Aplikasi...</div></div>}>
-            {(() => {
-              const isFormRoute = window.location.hash.includes('/f/');
-              if (isFormRoute) {
-                console.warn('[Routes] Catch-all matched form-like URL:', window.location.hash, '- This should have been caught by /f/:identifier route!');
-              }
-              return user ? (
-                <AuthenticatedApp
-                  user={user}
-                  currentTheme={theme}
-                  toggleTheme={toggleTheme}
-                />
-              ) : <LoginPage />;
-            })()}
+            {user ? (
+              <AuthenticatedApp
+                user={user}
+                currentTheme={theme}
+                toggleTheme={toggleTheme}
+              />
+            ) : <LoginPage />}
           </Suspense>
         } />
       </Routes>
