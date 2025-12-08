@@ -1,0 +1,98 @@
+# 🔑 USERS MANAGEMENT - QUICK REFERENCE
+
+## ✅ STATUS: ALL FIXED - Users showing in admin panel
+
+---
+
+## 5 CRITICAL FIXES (Committed)
+
+### 1️⃣ Permission Issue
+**File**: `CREATE_SETTINGS_TABLE.sql` + database update
+**Fix**: Added `user_management` to Admin role permissions
+**Commit**: `d0beb0a`
+
+### 2️⃣ Query Column Quotes
+**File**: `pages/SettingsPage.tsx` line 876
+**Fix**: Added quotes to camelCase columns: `"assignedBrandIds"`
+**Commit**: `4a3d1d3`
+
+### 3️⃣ Avatar Column Name
+**File**: `pages/SettingsPage.tsx` line 876
+**Fix**: Changed `avatarUrl` → `avatar`
+**Commit**: `824d178`
+
+### 4️⃣ RLS Policy
+**File**: Supabase (FIX_RLS_USERS_SELECT.sql)
+**Fix**: Replaced restrictive `users_select_basic` with `users_select_with_role_check`
+**Commit**: `19ffb27`
+
+### 5️⃣ Created At Column
+**File**: `pages/SettingsPage.tsx` line 876
+**Fix**: Changed `createdAt` → `created_at` + mapping to `lastLogin`
+**Commit**: `53a7d57`
+
+---
+
+## Working Query (Reference)
+
+```typescript
+// SettingsPage.tsx line 876
+select('id, name, email, role, status, "assignedBrandIds", avatar, created_at')
+
+// Map created_at to lastLogin
+lastLogin: doc.created_at
+```
+
+---
+
+## Column Name Mapping
+
+```
+Database Column  →  Use in Query  →  Properties
+───────────────────────────────────────────
+created_at       →  created_at    →  lastLogin
+avatar           →  avatar        →  avatar
+assignedBrandIds →  "assignedBrandIds" → assignedBrandIds
+```
+
+---
+
+## Master Documentation
+
+📄 **Read**: `USERS_MANAGEMENT_COMPLETE_FIX.md` for full details
+
+All fixes, verification steps, and prevention tips in one place.
+
+---
+
+## Last Commits (Copy to search GitHub)
+
+```
+381a4c3 - MASTER REFERENCE documentation
+53a7d57 - createdAt fix
+19ffb27 - RLS policy fix
+824d178 - avatarUrl fix
+4a3d1d3 - assignedBrandIds quotes fix
+d0beb0a - Permission fix
+```
+
+---
+
+## Quick Verification
+
+```sql
+-- In Supabase SQL Editor
+SELECT id, name, email, role FROM users LIMIT 5;
+-- Should return users
+```
+
+```
+In Browser:
+✅ Settings → Daftar Pengguna → See user list
+✅ No 400 errors in console
+✅ No column name errors
+```
+
+---
+
+**🎯 ALWAYS REFERENCE**: `USERS_MANAGEMENT_COMPLETE_FIX.md`
