@@ -671,16 +671,28 @@ const UserModal: React.FC<{
     const handleBrandToggle = (brandId: string) => {
         setFormData(prev => {
             const currentBrands = prev.assignedBrandIds || [];
-            if (currentBrands.includes(brandId)) {
-                return { ...prev, assignedBrandIds: currentBrands.filter(id => id !== brandId) };
-            } else {
-                return { ...prev, assignedBrandIds: [...currentBrands, brandId] };
-            }
+            const newBrands = currentBrands.includes(brandId)
+                ? currentBrands.filter(id => id !== brandId)
+                : [...currentBrands, brandId];
+            
+            console.log('🔍 BRAND TOGGLE:', {
+                brandId,
+                before: currentBrands,
+                after: newBrands
+            });
+            
+            return { ...prev, assignedBrandIds: newBrands };
         });
     };
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Debug: Check what's in formData before saving
+        console.log('🔍 FORM DATA BEFORE SAVE:', {
+            assignedBrandIds: formData.assignedBrandIds,
+            fullFormData: formData
+        });
         
         // SECURITY: Prevent anyone from creating/modifying Super Admin
         if (formData.role === 'Super Admin' && formData.email !== 'galuhmediautama@gmail.com') {
@@ -1070,11 +1082,21 @@ const UserManagement: React.FC = () => {
                     }
                 });
 
+                // Debug: Log what we're sending
+                console.log('🔍 UPDATE PAYLOAD:', {
+                    userId: userData.id,
+                    assignedBrandIds: updateData["assignedBrandIds"],
+                    fullPayload: updateData
+                });
+
                 // Update user data
-                const { error } = await supabase
+                const { error, data } = await supabase
                     .from('users')
                     .update(updateData)
-                    .eq('id', userData.id);
+                    .eq('id', userData.id)
+                    .select();
+
+                console.log('✅ UPDATE RESULT:', { error, data });
 
                 if (error) {
                     console.error('Update error:', error);
