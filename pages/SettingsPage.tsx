@@ -649,6 +649,12 @@ const UserModal: React.FC<{
     onClose: () => void;
     onSave: (user: User) => void;
 }> = ({ user, brands, currentUserRole, onClose, onSave }) => {
+    console.log('🔍 USERMODAL RENDER:', {
+        brandsCount: brands.length,
+        brands: brands,
+        userAssignedBrands: user?.assignedBrandIds
+    });
+    
     const [formData, setFormData] = useState<User>(
         user || { id: '', name: '', email: '', phone: '', address: '', role: 'Customer service', status: 'Aktif', lastLogin: '', assignedBrandIds: [] }
     );
@@ -657,6 +663,12 @@ const UserModal: React.FC<{
     // Update formData when user prop changes (e.g., editing different user)
     useEffect(() => {
         if (user) {
+            console.log('🔍 MODAL OPENED WITH USER:', {
+                userId: user.id,
+                userName: user.name,
+                assignedBrandIds: user.assignedBrandIds,
+                fullUser: user
+            });
             setFormData(user);
         } else {
             setFormData({ id: '', name: '', email: '', phone: '', address: '', role: 'Customer service', status: 'Aktif', lastLogin: '', assignedBrandIds: [] });
