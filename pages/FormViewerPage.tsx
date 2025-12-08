@@ -1,4 +1,7 @@
-
+/**
+ * FormViewerPage - Public order form viewer
+ * @version 2.1.0 - Fixed React Error #310 by ensuring all hooks are called unconditionally
+ */
 import React, { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import { supabase } from '../firebase';
 import type { Form, Order, ShippingSettings, PaymentSettings, ShippingSetting, PaymentSetting, BankTransferSetting, CSAgent, VariantDisplayStyle, QRISSettings, FormPixelSetting, RankLevel } from '../types';
