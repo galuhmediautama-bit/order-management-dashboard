@@ -245,8 +245,10 @@ const AppContent: React.FC = () => {
     if (import.meta.env.DEV) {
       showDevModeBanner();
     }
+  }, []);
 
-    // Fix double-encoded or malformed hash URLs
+  // Separate useEffect for URL normalization - no early returns to avoid hook ordering issues
+  useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes('%2F')) {
       // Detect double-encoded hash (e.g., #%2Ff%2Fparfum-khalifah-oud)
@@ -262,10 +264,11 @@ const AppContent: React.FC = () => {
       } catch (error) {
         console.error('[AppContent] Error decoding hash:', error);
       }
-      return; // Exit early to let React Router process the corrected hash
     }
+  }, []);
 
-    // Handle form URLs only (let Supabase handle auth callbacks automatically)
+  // Separate useEffect for query param handling
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
     const formIdentifier = params.get('f');
