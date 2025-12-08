@@ -29,37 +29,45 @@ BEGIN
 
   -- Notify CS Agent if assigned
   IF cs_user_id IS NOT NULL THEN
-    INSERT INTO public.notifications (user_id, type, title, message, metadata)
-    VALUES (
-      cs_user_id,
-      'ORDER_NEW',
-      'Pesanan Baru dari ' || NEW.customer,
-      'Pesanan dari ' || NEW.customer || ' (' || NEW."customerPhone" || ') - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
-      jsonb_build_object(
-        'orderId', NEW.id,
-        'customerName', NEW.customer,
-        'customerPhone', NEW."customerPhone",
-        'totalPrice', NEW."totalPrice",
-        'productName', NEW."productName"
-      )
-    );
+    BEGIN
+      INSERT INTO public.notifications (user_id, type, title, message, metadata)
+      VALUES (
+        cs_user_id,
+        'ORDER_NEW',
+        'Pesanan Baru dari ' || NEW.customer,
+        'Pesanan dari ' || NEW.customer || ' (' || COALESCE(NEW."customerPhone", '-') || ') - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
+        jsonb_build_object(
+          'orderId', NEW.id,
+          'customerName', NEW.customer,
+          'customerPhone', NEW."customerPhone",
+          'totalPrice', NEW."totalPrice",
+          'productName', NEW."productName"
+        )
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Error notifying CS: %', SQLERRM;
+    END;
   END IF;
 
   -- Notify all assigned Advertisers
   IF advertiser_ids IS NOT NULL AND array_length(advertiser_ids, 1) > 0 THEN
-    INSERT INTO public.notifications (user_id, type, title, message, metadata)
-    SELECT
-      unnest(advertiser_ids),
-      'ORDER_NEW',
-      'Pesanan dari Brand Anda - ' || NEW.customer,
-      'Pesanan baru untuk brand Anda: ' || NEW.customer || ' - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
-      jsonb_build_object(
-        'orderId', NEW.id,
-        'customerName', NEW.customer,
-        'customerPhone', NEW."customerPhone",
-        'totalPrice', NEW."totalPrice",
-        'brandId', NEW."brandId"
-      );
+    BEGIN
+      INSERT INTO public.notifications (user_id, type, title, message, metadata)
+      SELECT
+        unnest(advertiser_ids),
+        'ORDER_NEW',
+        'Pesanan dari Brand Anda - ' || NEW.customer,
+        'Pesanan baru untuk brand Anda: ' || NEW.customer || ' - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
+        jsonb_build_object(
+          'orderId', NEW.id,
+          'customerName', NEW.customer,
+          'customerPhone', NEW."customerPhone",
+          'totalPrice', NEW."totalPrice",
+          'brandId', NEW."brandId"
+        );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Error notifying advertisers: %', SQLERRM;
+    END;
   END IF;
 
   RETURN NEW;
@@ -93,19 +101,23 @@ BEGIN
 
   -- Notify admins about abandoned cart
   IF admin_users IS NOT NULL AND array_length(admin_users, 1) > 0 THEN
-    INSERT INTO public.notifications (user_id, type, title, message, metadata)
-    SELECT
-      unnest(admin_users),
-      'CART_ABANDON',
-      'Keranjang Ditinggalkan - ' || NEW."customerName",
-      NEW."customerName" || ' (' || NEW."customerPhone" || ') meninggalkan keranjang di form: ' || NEW."formTitle",
-      jsonb_build_object(
-        'cartId', NEW.id,
-        'customerName', NEW."customerName",
-        'customerPhone', NEW."customerPhone",
-        'formTitle', NEW."formTitle",
-        'selectedVariant', NEW."selectedVariant"
-      );
+    BEGIN
+      INSERT INTO public.notifications (user_id, type, title, message, metadata)
+      SELECT
+        unnest(admin_users),
+        'CART_ABANDON',
+        'Keranjang Ditinggalkan - ' || NEW."customerName",
+        NEW."customerName" || ' (' || COALESCE(NEW."customerPhone", '-') || ') meninggalkan keranjang di form: ' || COALESCE(NEW."formTitle", 'Form'),
+        jsonb_build_object(
+          'cartId', NEW.id,
+          'customerName', NEW."customerName",
+          'customerPhone', NEW."customerPhone",
+          'formTitle', NEW."formTitle",
+          'selectedVariant', NEW."selectedVariant"
+        );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Error notifying admins about cart: %', SQLERRM;
+    END;
   END IF;
 
   RETURN NEW;
@@ -162,19 +174,23 @@ BEGIN
     cs_user_id := NEW."assignedCsId"::uuid;
     
     -- Insert notification for CS about status change
-    INSERT INTO public.notifications (user_id, type, title, message, metadata)
-    VALUES (
-      cs_user_id,
-      'SYSTEM_ALERT',
-      status_emoji || ' ' || status_message,
-      'Pesanan ' || NEW.id || ' dari ' || NEW.customer || ' - ' || status_message,
-      jsonb_build_object(
-        'orderId', NEW.id,
-        'oldStatus', OLD.status,
-        'newStatus', NEW.status,
-        'customerName', NEW.customer
-      )
-    );
+    BEGIN
+      INSERT INTO public.notifications (user_id, type, title, message, metadata)
+      VALUES (
+        cs_user_id,
+        'SYSTEM_ALERT',
+        status_emoji || ' ' || status_message,
+        'Pesanan ' || NEW.id || ' dari ' || NEW.customer || ' - ' || status_message,
+        jsonb_build_object(
+          'orderId', NEW.id,
+          'oldStatus', OLD.status,
+          'newStatus', NEW.status,
+          'customerName', NEW.customer
+        )
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Error notifying CS about status change: %', SQLERRM;
+    END;
   END IF;
 
   RETURN NEW;
