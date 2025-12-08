@@ -1,45 +1,49 @@
-
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- 🔒 Disable browser notifications - use custom system -->
-    <meta name="permissions-policy" content="notifications=()" />
-    
-    <!-- Primary Meta Tags -->
-    <title>OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik</title>
-    <meta name="title" content="OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik" />
-    <meta name="description" content="Platform all-in-one untuk mengelola pesanan, pelanggan, komisi, dan penghasilan tim secara real-time. Dilengkapi form builder, analytics, dan tracking pixels." />
-    <meta name="keywords" content="manajemen pesanan, order management, e-commerce, form builder, landing page, komisi CS, advertiser dashboard, analytics, tracking pixels" />
-    <meta name="author" content="OrderDash Team" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://form.cuanmax.digital/" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://form.cuanmax.digital/" />
-    <meta property="og:title" content="OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik" />
-    <meta property="og:description" content="Platform all-in-one untuk mengelola pesanan, pelanggan, komisi, dan penghasilan tim secara real-time. Dilengkapi form builder, analytics, dan tracking pixels." />
-    <meta property="og:image" content="https://form.cuanmax.digital/og-image.png" />
-    <meta property="og:locale" content="id_ID" />
-    <meta property="og:site_name" content="OrderDash" />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://form.cuanmax.digital/" />
-    <meta property="twitter:title" content="OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik" />
-    <meta property="twitter:description" content="Platform all-in-one untuk mengelola pesanan, pelanggan, komisi, dan penghasilan tim secara real-time." />
-    <meta property="twitter:image" content="https://form.cuanmax.digital/og-image.png" />
-    
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#4f46e5" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1120" />
-    
-    <!-- Schema.org JSON-LD -->
-    <script type="application/ld+json">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 🔒 Disable browser notifications - use custom system -->
+  <meta name="permissions-policy" content="notifications=()" />
+
+  <!-- Primary Meta Tags -->
+  <title>OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik</title>
+  <meta name="title" content="OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik" />
+  <meta name="description"
+    content="Platform all-in-one untuk mengelola pesanan, pelanggan, komisi, dan penghasilan tim secara real-time. Dilengkapi form builder, analytics, dan tracking pixels." />
+  <meta name="keywords"
+    content="manajemen pesanan, order management, e-commerce, form builder, landing page, komisi CS, advertiser dashboard, analytics, tracking pixels" />
+  <meta name="author" content="OrderDash Team" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://form.cuanmax.digital/" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://form.cuanmax.digital/" />
+  <meta property="og:title" content="OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik" />
+  <meta property="og:description"
+    content="Platform all-in-one untuk mengelola pesanan, pelanggan, komisi, dan penghasilan tim secara real-time. Dilengkapi form builder, analytics, dan tracking pixels." />
+  <meta property="og:image" content="https://form.cuanmax.digital/og-image.png" />
+  <meta property="og:locale" content="id_ID" />
+  <meta property="og:site_name" content="OrderDash" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://form.cuanmax.digital/" />
+  <meta property="twitter:title" content="OrderDash - Sistem Manajemen Pesanan E-commerce Terbaik" />
+  <meta property="twitter:description"
+    content="Platform all-in-one untuk mengelola pesanan, pelanggan, komisi, dan penghasilan tim secara real-time." />
+  <meta property="twitter:image" content="https://form.cuanmax.digital/og-image.png" />
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1120" />
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
@@ -60,96 +64,99 @@
       }
     }
     </script>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Meta Pixel Code Stub (Global Init) -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-    </script>
-    <!-- End Meta Pixel Code Stub -->
 
-    <script>
-      // Enable class-based dark mode
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-                slate: {
-                    50: '#f8fafc',
-                    100: '#f1f5f9',
-                    200: '#e2e8f0',
-                    300: '#cbd5e1',
-                    400: '#94a3b8',
-                    500: '#64748b',
-                    600: '#475569',
-                    700: '#242f45', /* Custom Darker Border */
-                    800: '#151e32', /* Custom Surface Card */
-                    900: '#0b1120', /* Custom Deep Background */
-                    950: '#020617',
-                }
-            },
-            keyframes: {
-              buttonPulse: {
-                '0%, 100%': { opacity: '1', transform: 'scale(1)' },
-                '50%': { opacity: '0.85', transform: 'scale(1.02)' },
-              },
-              buttonShine: {
-                '0%': { backgroundPosition: '-1000px 0' },
-                '100%': { backgroundPosition: '1000px 0' },
-              },
-              buttonBounce: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-8px)' },
-              },
-              buttonScale: {
-                '0%, 100%': { transform: 'scale(1)' },
-                '50%': { transform: 'scale(1.08)' },
-              },
-              buttonGlow: {
-                '0%, 100%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3)' },
-                '50%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.9), 0 0 30px rgba(99, 102, 241, 0.5)' },
-              },
-              buttonRotate: {
-                '0%': { transform: 'rotate(0deg)' },
-                '100%': { transform: 'rotate(360deg)' },
-              },
-            },
-            animation: {
-              buttonPulse: 'buttonPulse 2s ease-in-out infinite',
-              buttonShine: 'buttonShine 3s linear infinite',
-              buttonBounce: 'buttonBounce 2s ease-in-out infinite',
-              buttonScale: 'buttonScale 2s ease-in-out infinite',
-              buttonGlow: 'buttonGlow 2s ease-in-out infinite',
-              buttonRotate: 'buttonRotate 3s linear infinite',
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Meta Pixel Code Stub (Global Init) -->
+  <script>
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+  </script>
+  <!-- End Meta Pixel Code Stub -->
+
+  <script>
+    // Enable class-based dark mode
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              400: '#94a3b8',
+              500: '#64748b',
+              600: '#475569',
+              700: '#242f45', /* Custom Darker Border */
+              800: '#151e32', /* Custom Surface Card */
+              900: '#0b1120', /* Custom Deep Background */
+              950: '#020617',
             }
           },
+          keyframes: {
+            buttonPulse: {
+              '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+              '50%': { opacity: '0.85', transform: 'scale(1.02)' },
+            },
+            buttonShine: {
+              '0%': { backgroundPosition: '-1000px 0' },
+              '100%': { backgroundPosition: '1000px 0' },
+            },
+            buttonBounce: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            buttonScale: {
+              '0%, 100%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.08)' },
+            },
+            buttonGlow: {
+              '0%, 100%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3)' },
+              '50%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.9), 0 0 30px rgba(99, 102, 241, 0.5)' },
+            },
+            buttonRotate: {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            },
+          },
+          animation: {
+            buttonPulse: 'buttonPulse 2s ease-in-out infinite',
+            buttonShine: 'buttonShine 3s linear infinite',
+            buttonBounce: 'buttonBounce 2s ease-in-out infinite',
+            buttonScale: 'buttonScale 2s ease-in-out infinite',
+            buttonGlow: 'buttonGlow 2s ease-in-out infinite',
+            buttonRotate: 'buttonRotate 3s linear infinite',
+          }
         },
-      }
-    </script>
-    
-    <script>
-      // Initialize theme: Default to light if not set or if set to light
-      if (localStorage.getItem('theme') === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    </script>
+      },
+    }
+  </script>
+
+  <script>
+    // Initialize theme: Default to light if not set or if set to light
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
 
   <script type="importmap">
 {
@@ -166,16 +173,18 @@
   }
 }
 </script>
-<style>
-  body {
-    font-family: 'Inter', sans-serif;
-  }
-</style>
-<link rel="stylesheet" href="/index.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="./index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

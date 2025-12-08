@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { Link } from 'react-router-dom';
 import type { Order, OrderStatus, MessageTemplates, Form, ShippingSettings, PaymentSettings, UserRole, User, Brand } from '../types';
 import PlusIcon from '../components/icons/PlusIcon';
@@ -23,6 +24,7 @@ import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
 import CreditCardIcon from '../components/icons/CreditCardIcon';
 import ShieldCheckIcon from '../components/icons/ShieldCheckIcon';
 import DownloadIcon from '../components/icons/DownloadIcon';
+import UploadIcon from '../components/icons/UploadIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
@@ -80,8 +82,10 @@ const OrdersPage: React.FC = () => {
         const stored = localStorage.getItem('orders_sound_enabled');
         return stored ? stored === 'true' : true;
     });
+    const [isImporting, setIsImporting] = useState(false);
     const lastOrderIdsRef = useRef<Set<string>>(new Set());
     const audioCtxRef = useRef<AudioContext | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // State for Filters
     const [activeStatusFilter, setActiveStatusFilter] = useState<Set<OrderStatus>>(new Set());
@@ -868,6 +872,141 @@ const OrdersPage: React.FC = () => {
         }
     };
 
+    const normalizeKey = (key: string) => key.trim().toLowerCase().replace(/\s+/g, '_');
+
+    const parseNumberValue = (value: any): number | null => {
+        if (value === null || value === undefined || value === '') return null;
+        if (typeof value === 'number' && !Number.isNaN(value)) return value;
+        const cleaned = String(value).replace(/[^0-9,.-]/g, '').replace(',', '.');
+        const parsed = parseFloat(cleaned);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const parseDateValue = (value: any): string | null => {
+        if (!value) return null;
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+        if (typeof value === 'number') {
+            const parsed = XLSX.SSF?.parse_date_code?.(value);
+            if (parsed) {
+                return new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d, parsed.H, parsed.M, parsed.S)).toISOString();
+            }
+        }
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date.toISOString();
+    };
+
+    const statusMap: Record<string, OrderStatus> = {
+        pending: 'Pending',
+        processing: 'Processing',
+        shipped: 'Shipped',
+        delivered: 'Delivered',
+        canceled: 'Canceled',
+        cancelled: 'Canceled',
+        'pending deletion': 'Pending Deletion',
+    };
+
+    type ParsedImportRow =
+        | { ok: true; record: Partial<Order> & { status: OrderStatus; date: string; paymentMethod: string; customer: string; customerPhone: string; productName: string; totalPrice: number; } }
+        | { ok: false; error: string; row: number };
+
+    const mapImportRow = (row: any, index: number): ParsedImportRow => {
+        const normalized: Record<string, any> = {};
+        Object.entries(row).forEach(([k, v]) => {
+            normalized[normalizeKey(String(k))] = v;
+        });
+
+        const get = (...keys: string[]) => {
+            for (const key of keys) {
+                const val = normalized[normalizeKey(key)];
+                if (val !== undefined && val !== null && val !== '') return val;
+            }
+            return undefined;
+        };
+
+        const customer = get('customer', 'nama', 'customer_name', 'name');
+        const phone = get('phone', 'whatsapp', 'customer_phone', 'telepon', 'no_hp');
+        const product = get('product', 'produk', 'product_name') || 'Produk';
+        const total = parseNumberValue(get('total', 'total_price', 'amount', 'harga_total'));
+        const statusRaw = String(get('status') || '').toLowerCase();
+        const status = statusMap[statusRaw] || 'Pending';
+        const paymentMethod = get('payment', 'payment_method', 'metode_pembayaran') || 'Tidak ditentukan';
+        const date = parseDateValue(get('date', 'tanggal', 'order_date')) || new Date().toISOString();
+
+        if (!customer || !phone || total === null) {
+            return { ok: false, row: index + 2, error: 'Kolom wajib (Nama, Telepon, Total) tidak lengkap' }; // +2 accounts for header row
+        }
+
+        const quantity = parseNumberValue(get('quantity', 'qty', 'jumlah')) ?? 1;
+        const csCommission = parseNumberValue(get('cs_commission', 'cs_fee'));
+        const advCommission = parseNumberValue(get('adv_commission', 'advertiser_fee'));
+
+        const record: Partial<Order> & { status: OrderStatus; date: string; paymentMethod: string; customer: string; customerPhone: string; productName: string; totalPrice: number; } = {
+            customer: String(customer),
+            customerPhone: String(phone),
+            shippingAddress: get('address', 'alamat', 'shipping_address') || '',
+            productName: String(product),
+            totalPrice: total,
+            status,
+            paymentMethod: String(paymentMethod),
+            date,
+            notes: get('notes', 'catatan') || '',
+            variant: get('variant', 'varian') || null,
+            quantity,
+            brandId: get('brand_id', 'brandid', 'brand') || null,
+            productId: get('product_id', 'productid') || null,
+            assignedCsId: get('assigned_cs_id', 'assignedcsid', 'cs_id') || null,
+            csCommission: csCommission ?? undefined,
+            advCommission: advCommission ?? undefined,
+        };
+
+        return { ok: true, record };
+    };
+
+    const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setIsImporting(true);
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json<any>(sheet, { defval: '' });
+
+            if (!rows.length) {
+                showToast('File kosong atau tidak ada data.', 'error');
+                return;
+            }
+
+            const parsed = rows.map(mapImportRow);
+            const validRecords = parsed.filter((p): p is Extract<ParsedImportRow, { ok: true }> => p.ok).map(p => p.record);
+            const errors = parsed.filter((p): p is Extract<ParsedImportRow, { ok: false }> => !p.ok);
+
+            if (!validRecords.length) {
+                showToast('Tidak ada baris valid yang bisa diimport.', 'error');
+                return;
+            }
+
+            const { data: insertedOrders, error } = await supabase.from('orders').insert(validRecords).select();
+            if (error) throw error;
+
+            setOrders(prev => [...(insertedOrders || []), ...prev]);
+            const errorNote = errors.length ? ` (${errors.length} baris dilewati)` : '';
+            showToast(`Berhasil import ${insertedOrders?.length || validRecords.length} pesanan${errorNote}.`, 'success');
+        } catch (err) {
+            console.error('Error importing orders:', err);
+            showToast('Gagal mengimport pesanan dari Excel.', 'error');
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
     // Bulk Delete - All users must create deletion request for review
     const handleBulkDelete = async () => {
         if (selectedOrders.size === 0 || !currentUser) return;
@@ -1161,6 +1300,25 @@ const OrdersPage: React.FC = () => {
                     >
                         <span className="text-lg">{orderSoundEnabled ? '🔔' : '🔕'}</span>
                     </button>
+                    {currentUser && canUseFeature('import_orders', getNormalizedRole(currentUser.role)) && (
+                        <>
+                            <button
+                                onClick={handleImportClick}
+                                disabled={isImporting}
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 text-white rounded-lg hover:from-emerald-700 hover:to-green-600 font-semibold shadow-md shadow-green-500/20 hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isImporting ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : <UploadIcon className="w-4 h-4" />}
+                                <span>Import</span>
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".xlsx,.xls,.csv"
+                                className="hidden"
+                                onChange={handleImportFile}
+                            />
+                        </>
+                    )}
                     {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
                         <button onClick={() => setIsManualOrderModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all">
                             <PlusIcon className="w-4 h-4" />

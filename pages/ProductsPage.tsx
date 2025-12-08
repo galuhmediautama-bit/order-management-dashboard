@@ -182,7 +182,7 @@ const ProductsPage: React.FC = () => {
         // Get user permissions, with fallback to DEFAULT_ROLE_PERMISSIONS if context not ready
         const userPermissions = rolePermissions?.userPermissions;
         const userRole = currentUser?.role;
-        
+
         // If no permissions data, check against DEFAULT_ROLE_PERMISSIONS as fallback
         if (!userPermissions?.features) {
             const rolePerms = DEFAULT_ROLE_PERMISSIONS[userRole as keyof typeof DEFAULT_ROLE_PERMISSIONS];
@@ -211,7 +211,7 @@ const ProductsPage: React.FC = () => {
         // Get user permissions
         const userPermissions = rolePermissions?.userPermissions;
         const userRole = currentUser?.role;
-        
+
         // Check delete_product permission
         if (!userPermissions?.features) {
             const rolePerms = DEFAULT_ROLE_PERMISSIONS[userRole as keyof typeof DEFAULT_ROLE_PERMISSIONS];
@@ -402,8 +402,8 @@ const ProductsPage: React.FC = () => {
                                                         }}
                                                         disabled={!canEditProduct(product)}
                                                         className={`w-full text-left px-4 py-3 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600 ${canEditProduct(product)
-                                                                ? 'hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 cursor-pointer'
-                                                                : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                                                            ? 'hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 cursor-pointer'
+                                                            : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
                                                             }`}
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
@@ -474,8 +474,8 @@ const ProductsPage: React.FC = () => {
                                                         }}
                                                         disabled={!canDeleteProduct(product)}
                                                         className={`w-full text-left px-4 py-3 flex items-center gap-2 ${canDeleteProduct(product)
-                                                                ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 cursor-pointer'
-                                                                : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                                                            ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 cursor-pointer'
+                                                            : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
                                                             }`}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />

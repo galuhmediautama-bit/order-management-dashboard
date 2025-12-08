@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState('Advertiser'); // Default: Advertiser
     const [whatsapp, setWhatsapp] = useState('');
     const [address, setAddress] = useState('');
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false); // Toggle Login/Register
     const [isForgotPassword, setIsForgotPassword] = useState(false); // Toggle Forgot Password
@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
                         metadata: authData.user.user_metadata,
                         metadata_stringified: JSON.stringify(authData.user.user_metadata, null, 2)
                     });
-                    
+
                     // If email confirmation is required, supabase may return no session
                     if (!authData.session && authData.user.identities?.length) {
                         setSuccessMsg('Akun dibuat! Silakan cek email Anda untuk konfirmasi sebelum masuk.');
@@ -106,11 +106,11 @@ const LoginPage: React.FC = () => {
                             console.error('❌ Gagal membuat profil user:', { error: dbError, selectedRole });
                             setError(`Akun Auth dibuat, tapi gagal simpan profil: ${dbError.message || JSON.stringify(dbError)}`);
                         } else {
-                            console.log('✅ User profile created successfully:', { 
-                                userId: authData.user.id, 
-                                email: email, 
-                                role: selectedRole, 
-                                data: insertedData 
+                            console.log('✅ User profile created successfully:', {
+                                userId: authData.user.id,
+                                email: email,
+                                role: selectedRole,
+                                data: insertedData
                             });
 
                             // Kirim notifikasi ke Admin/Super Admin untuk approval
@@ -158,7 +158,7 @@ const LoginPage: React.FC = () => {
             }
         } catch (err: any) {
             console.error("Auth error details:", err);
-            
+
             let errorMessage = err.message || 'Gagal memproses permintaan.';
 
             if (errorMessage.includes('Invalid login credentials')) {
@@ -356,39 +356,39 @@ const LoginPage: React.FC = () => {
                             </div>
 
                             {!isForgotPassword && (
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
-                                    Kata Sandi
-                                </label>
-                                <div className="relative">
-                                    <LockClosedIcon className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        name="password"
-                                        placeholder="••••••••"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="off"
-                                        spellCheck="false"
-                                        className="w-full pl-12 pr-12 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                    />
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
-                                    >
-                                        {showPassword ? (
-                                            <EyeOffIcon className="h-5 w-5" />
-                                        ) : (
-                                            <EyeIcon className="h-5 w-5" />
-                                        )}
-                                    </button>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
+                                        Kata Sandi
+                                    </label>
+                                    <div className="relative">
+                                        <LockClosedIcon className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            name="password"
+                                            placeholder="••••••••"
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            autoComplete="off"
+                                            autoCorrect="off"
+                                            autoCapitalize="off"
+                                            spellCheck="false"
+                                            className="w-full pl-12 pr-12 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
+                                        >
+                                            {showPassword ? (
+                                                <EyeOffIcon className="h-5 w-5" />
+                                            ) : (
+                                                <EyeIcon className="h-5 w-5" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    {isRegistering && <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Minimal 6 karakter, kombinasi huruf dan angka</p>}
                                 </div>
-                                {isRegistering && <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Minimal 6 karakter, kombinasi huruf dan angka</p>}
-                            </div>
                             )}
 
                             {!isRegistering && !isForgotPassword && (
@@ -397,7 +397,7 @@ const LoginPage: React.FC = () => {
                                         <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                                         <span className="text-slate-600 dark:text-slate-400">Ingat saya</span>
                                     </label>
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => {
                                             setIsForgotPassword(true);
@@ -411,12 +411,12 @@ const LoginPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 disabled={loading}
                                 className="w-full py-3 px-4 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                             >
-                                {loading && <SpinnerIcon className="h-5 w-5 animate-spin"/>}
+                                {loading && <SpinnerIcon className="h-5 w-5 animate-spin" />}
                                 {loading ? 'Memproses...' : (isForgotPassword ? '📧 Kirim Link Reset' : (isRegistering ? '🚀 Daftar Sekarang' : '✨ Masuk'))}
                             </button>
                         </form>
@@ -425,8 +425,8 @@ const LoginPage: React.FC = () => {
                         {isForgotPassword ? (
                             <div className="mt-8 text-center">
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    Sudah ingat password? 
-                                    <button 
+                                    Sudah ingat password?
+                                    <button
                                         type="button"
                                         onClick={() => {
                                             setIsForgotPassword(false);
@@ -443,7 +443,7 @@ const LoginPage: React.FC = () => {
                             <div className="mt-8 text-center">
                                 <p className="text-slate-600 dark:text-slate-400">
                                     {isRegistering ? 'Sudah punya akun? ' : 'Belum punya akun? '}
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => {
                                             setIsRegistering(!isRegistering);
