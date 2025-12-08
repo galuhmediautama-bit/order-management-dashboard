@@ -35,6 +35,7 @@ export const ALL_MENUS = [
 export const ALL_FEATURES = [
   { id: 'export_csv', name: 'Export CSV', category: 'feature', description: 'Can export data to CSV' },
   { id: 'edit_product', name: 'Edit Product', category: 'feature', description: 'Can create and edit products' },
+  { id: 'delete_product', name: 'Delete Product', category: 'feature', description: 'Can delete products' },
   { id: 'edit_form', name: 'Edit Form', category: 'feature', description: 'Can create and edit forms' },
   { id: 'delete_order', name: 'Delete Order', category: 'feature', description: 'Can delete orders' },
   { id: 'change_order_status', name: 'Change Order Status', category: 'feature', description: 'Can update order status' },

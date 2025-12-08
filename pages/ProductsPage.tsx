@@ -193,11 +193,8 @@ const ProductsPage: React.FC = () => {
             return false;
         }
 
-        // Super Admin bisa edit semua
-        if (currentUser.role === 'Super Admin') return true;
-
-        // Admin dapat edit semua produk dengan permission
-        if (currentUser.role === 'Admin') return true;
+        // Super Admin, Admin, dan Advertiser bisa edit
+        if (currentUser.role === 'Super Admin' || currentUser.role === 'Admin') return true;
 
         // Advertiser hanya bisa edit produk milik brand-nya
         if (currentUser.role === 'Advertiser') {
@@ -207,9 +204,26 @@ const ProductsPage: React.FC = () => {
             return userBrandIds.includes(product.brandId);
         }
 
-        // Role lain cek brandId
-        return product.brandId === currentUser.brandId ||
-            currentUser.assignedBrandIds?.includes(product.brandId);
+        return false;
+    };
+
+    const canDeleteProduct = (product: Product) => {
+        // Get user permissions
+        const userPermissions = rolePermissions?.userPermissions;
+        const userRole = currentUser?.role;
+        
+        // Check delete_product permission
+        if (!userPermissions?.features) {
+            const rolePerms = DEFAULT_ROLE_PERMISSIONS[userRole as keyof typeof DEFAULT_ROLE_PERMISSIONS];
+            if (!rolePerms?.features?.includes('delete_product')) {
+                return false;
+            }
+        } else if (!userPermissions.features.includes('delete_product')) {
+            return false;
+        }
+
+        // Hanya Super Admin yang bisa hapus
+        return currentUser.role === 'Super Admin';
     };
 
     const fetchProductStats = async () => {
@@ -451,21 +465,21 @@ const ProductsPage: React.FC = () => {
 
                                                     <button
                                                         onClick={() => {
-                                                            if (!canEditProduct(product)) {
-                                                                showToast('Anda hanya bisa hapus produk milik brand Anda', 'error');
+                                                            if (!canDeleteProduct(product)) {
+                                                                showToast('Hanya Super Admin yang bisa hapus produk', 'error');
                                                                 return;
                                                             }
                                                             handleDelete(product.id);
                                                             setOpenDropdown(null);
                                                         }}
-                                                        disabled={!canEditProduct(product)}
-                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 ${canEditProduct(product)
+                                                        disabled={!canDeleteProduct(product)}
+                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 ${canDeleteProduct(product)
                                                                 ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 cursor-pointer'
                                                                 : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
                                                             }`}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
-                                                        Hapus Produk {!canEditProduct(product) && '🔒'}
+                                                        Hapus Produk {!canDeleteProduct(product) && '🔒'}
                                                     </button>
                                                 </div>
                                             )}
