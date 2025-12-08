@@ -367,6 +367,11 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // Debug logging for routing - MUST be before any early returns!
+  useEffect(() => {
+    console.log('[AppContent] Hash changed:', window.location.hash);
+  }, []);
+
   if (loadingAuthState) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900">
@@ -390,11 +395,6 @@ const AppContent: React.FC = () => {
       </div>
     </div>
   );
-
-  // Debug logging for routing
-  useEffect(() => {
-    console.log('[AppContent] Hash changed:', window.location.hash);
-  }, []);
 
   return (
     <HashRouter>
