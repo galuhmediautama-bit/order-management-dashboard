@@ -99,29 +99,41 @@ const DashboardPage: React.FC = () => {
                 }
 
                 // Fetch Orders
-                const { data: ordersData, error } = await supabase
+                const { data: ordersData, error: ordersError } = await supabase
                     .from('orders')
                     .select('*')
                     .order('date', { ascending: false });
 
-                if (error) throw error;
-
-                // Mapper Supabase data to Order Type
-                const allOrdersList = (ordersData || []).map(data => {
-                    // Supabase returns date as string usually, ensure it matches
-                    return data as Order;
-                });
-
-                setAllOrders(allOrdersList);
+                if (ordersError) {
+                    console.error("⚠️ Error fetching orders:", ordersError);
+                    // Don't throw - continue with empty data
+                    setAllOrders([]);
+                } else {
+                    // Mapper Supabase data to Order Type
+                    const allOrdersList = (ordersData || []).map(data => {
+                        // Supabase returns date as string usually, ensure it matches
+                        return data as Order;
+                    });
+                    setAllOrders(allOrdersList);
+                }
 
                 // Fetch Users for CS ranking
-                const { data: usersData } = await supabase.from('users').select('*');
-                if (usersData) {
+                const { data: usersData, error: usersError } = await supabase
+                    .from('users')
+                    .select('*');
+                    
+                if (usersError) {
+                    console.error("⚠️ Error fetching users:", usersError);
+                    setUsers([]);
+                } else if (usersData) {
                     setUsers(usersData as User[]);
                 }
 
             } catch (error) {
-                console.error("Error fetching orders: ", error);
+                console.error("❌ Error in fetchAllData:", error);
+                // Set empty data to avoid "Tidak ada data" on all sections
+                setAllOrders([]);
+                setUsers([]);
             } finally {
                 setLoading(false);
             }

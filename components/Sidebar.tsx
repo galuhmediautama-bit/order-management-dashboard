@@ -185,10 +185,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         // Always show Dashboard
         if (item.name === 'Dasbor') return true;
 
+        // If role not loaded yet, show most items except admin-only ones
         if (!currentUserRole) {
-            console.log(`⏭️ Hiding "${item.name}" - no currentUserRole yet (loading...)`);
+            console.log(`⏭️ Role loading for "${item.name}" - using fallback visibility`);
+            // Show common items to all users while role loads
+            const commonItems = ['Produk', 'Pesanan', 'Pelanggan', 'Laporan', 'Penghasilan', 'Daftar Produk', 'Daftar Formulir', 'Pesanan Tertinggal', 'Daftar Pesanan', 'Laporan Iklan', 'Laporan CS'];
+            if (commonItems.includes(item.name)) {
+                console.log(`✅ Showing "${item.name}" (common item, role loading)`);
+                return true;
+            }
+            // Hide sensitive items while role loads
             return false;
         }
+
+        // Super Admin sees everything
         if (currentUserRole === 'Super Admin') {
             console.log(`✅ Showing "${item.name}" - Super Admin has access to all`);
             return true;
