@@ -12,6 +12,7 @@ RETURNS TRIGGER AS $$
 DECLARE
   cs_user_id uuid;
   advertiser_ids uuid[];
+  admin_ids uuid[];
 BEGIN
   -- Get CS user ID if assigned
   IF NEW."assignedCsId" IS NOT NULL THEN
@@ -46,6 +47,33 @@ BEGIN
       );
     EXCEPTION WHEN OTHERS THEN
       RAISE WARNING 'Error notifying CS: %', SQLERRM;
+    END;
+  ELSE
+    -- If no CS assigned, notify all admins instead
+    BEGIN
+      SELECT ARRAY_AGG(id) INTO admin_ids
+      FROM users
+      WHERE role IN ('Super Admin', 'Admin')
+      AND status = 'Aktif';
+      
+      IF admin_ids IS NOT NULL AND array_length(admin_ids, 1) > 0 THEN
+        INSERT INTO public.notifications (user_id, type, title, message, metadata)
+        SELECT
+          unnest(admin_ids),
+          'ORDER_NEW',
+          'Pesanan Baru (No CS) - ' || NEW.customer,
+          'Pesanan dari ' || NEW.customer || ' (' || COALESCE(NEW."customerPhone", '-') || ') - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
+          jsonb_build_object(
+            'orderId', NEW.id,
+            'customerName', NEW.customer,
+            'customerPhone', NEW."customerPhone",
+            'totalPrice', NEW."totalPrice",
+            'productName', NEW."productName",
+            'note', 'Order tanpa CS assignment'
+          );
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Error notifying admins for unassigned order: %', SQLERRM;
     END;
   END IF;
 
