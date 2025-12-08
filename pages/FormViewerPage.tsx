@@ -997,7 +997,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
 
         return next;
-    }, [customerData, form, validateAddress]);
+    }, [customerData, form, addressData]);
 
     const assignCs = async (): Promise<string | undefined> => {
         try {
@@ -1094,9 +1094,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     };
 
 
+    // Validate on data change - don't include validateCustomerFields in deps to avoid infinite loop
     useEffect(() => {
         setFieldErrors(validateCustomerFields());
-    }, [customerData, addressData, validateCustomerFields]);
+    }, [customerData, addressData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
