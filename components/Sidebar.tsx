@@ -63,7 +63,7 @@ const pageToPath: Record<string, string> = {
     'Pelanggan': '/pelanggan',
     'Penghasilan': '/penghasilan',
     'Monitoring': '#',
-    'Performance': '/monitoring/performance',
+    'Performance Dashboard': '/monitoring/performance',
 };
 
 // Map sidebar menu names to RBAC menu IDs from rolePermissions.ts
@@ -81,7 +81,7 @@ const menuNameToRbacId: Record<string, string> = {
     'Laporan CS': 'cs_reports',
     'Penghasilan': 'earnings',
     'Monitoring': 'monitoring',
-    'Performance': 'performance_dashboard',
+    'Performance Dashboard': 'performance_dashboard',
     'Pengaturan': 'settings',
     'Pengaturan Website': 'website_settings',
     'Manajemen Peran': 'role_management',
@@ -275,7 +275,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                 { name: 'Manajemen CS', icon: CustomerServiceIcon },
                 { name: 'CuanRank', icon: TrophyIcon },
                 { name: 'Pelacakan', icon: TrackingIcon },
-                { name: 'Performance', icon: DashboardIcon },
+            ]
+        },
+        {
+            name: 'Monitoring',
+            icon: DashboardIcon,
+            subItems: [
+                { name: 'Performance Dashboard', icon: DashboardIcon }
             ]
         },
     ]; const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {

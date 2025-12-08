@@ -31,7 +31,7 @@ export type Page =
   | 'CuanRank' // Added for new feature
   | 'Pengaturan Akun'
   | 'Monitoring'
-  | 'Performance';
+  | 'Performance Dashboard';
 
 export interface NavItem {
   name: Page;

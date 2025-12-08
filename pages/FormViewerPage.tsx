@@ -345,9 +345,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
     const debounceTimer = useRef<number | null>(null);
 
-    // Fetch product variant options (source of truth) untuk hindari gabungan di UI
+    // Parse platform parameter dari URL
     useEffect(() => {
-        // Parse platform parameter dari URL (?platform=meta|tiktok|google|snack)
         const params = new URLSearchParams(window.location.search);
         const platformParam = params.get('platform') as 'meta' | 'tiktok' | 'google' | 'snack' | null;
 
