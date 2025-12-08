@@ -41,10 +41,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     useEffect(() => {
         const fetchGlobalSettings = async () => {
             try {
-                // Fetch in parallel
-                const { data: websiteData } = await supabase.from('settings').select('*').eq('id', 'website').single();
-                const { data: trackingData } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').single();
-                const { data: announcementData } = await supabase.from('settings').select('*').eq('id', 'announcementSettings').single();
+                // Fetch in parallel - use maybeSingle() to avoid 406 error when row doesn't exist
+                const { data: websiteData } = await supabase.from('settings').select('*').eq('id', 'website').maybeSingle();
+                const { data: trackingData } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').maybeSingle();
+                const { data: announcementData } = await supabase.from('settings').select('*').eq('id', 'announcementSettings').maybeSingle();
 
                 if (websiteData) {
                     setWebsiteSettings(websiteData as WebsiteSettings);

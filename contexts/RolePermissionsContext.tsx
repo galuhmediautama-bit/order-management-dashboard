@@ -27,9 +27,9 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
         .from('settings')
         .select('role_permissions')
         .eq('id', 'rolePermissions')
-        .single();
+        .maybeSingle();
 
-      if (dbError && dbError.code !== 'PGRST116') { // PGRST116 = not found
+      if (dbError) {
         throw dbError;
       }
 
