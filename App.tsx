@@ -275,8 +275,10 @@ const AppContent: React.FC = () => {
 
     // Smart redirect for clean form URLs (?form_id=... or ?f=...)
     if (formId) {
-      window.history.replaceState(null, '', window.location.pathname);
-      window.location.hash = `/f/${formId}`;
+      // Use setTimeout to avoid React rendering conflict
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.pathname + '#/f/' + formId);
+      }, 0);
     } else if (formIdentifier) {
       // Preserve query params for tracking
       const trackingParams = new URLSearchParams();
@@ -286,8 +288,10 @@ const AppContent: React.FC = () => {
         }
       });
       const queryString = trackingParams.toString() ? `?${trackingParams.toString()}` : '';
-      window.history.replaceState(null, '', window.location.pathname);
-      window.location.hash = `/f/${formIdentifier}${queryString}`;
+      // Use setTimeout to avoid React rendering conflict
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.pathname + '#/f/' + formIdentifier + queryString);
+      }, 0);
     }
   }, []);
 
