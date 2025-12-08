@@ -1447,14 +1447,6 @@ const OrdersPage: React.FC = () => {
                             <SpinnerIcon className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
                             <p className="text-slate-500 dark:text-slate-400 font-medium">Memuat data pesanan...</p>
                         </div>
-                    ) : filteredOrders.length === 0 ? (
-                        <div className="text-center py-20">
-                            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
-                                <SearchIcon className="w-10 h-10 text-slate-400" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tidak ada pesanan ditemukan</h3>
-                            <p className="text-slate-500 dark:text-slate-400">Coba ubah filter status atau kata kunci pencarian Anda.</p>
-                        </div>
                     ) : (
                         <>
                             {/* Table Settings Bar */}
@@ -1470,9 +1462,7 @@ const OrdersPage: React.FC = () => {
                             </div>
 
                             {/* Table */}
-                        </>
-                    ) ? (
-                        <table className="w-full text-left border-collapse">
+                            <table className="w-full text-left border-collapse">
                             <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
