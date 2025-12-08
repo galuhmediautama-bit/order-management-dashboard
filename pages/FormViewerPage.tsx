@@ -953,8 +953,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const validateCustomerFields = useCallback(() => {
         const next: Record<string, string> = {};
 
-        if (form?.customerFields.name.required && !customerData.name.trim()) {
+        const nameTrimmed = customerData.name.trim();
+        if (form?.customerFields.name.required && !nameTrimmed) {
             next.name = 'Nama wajib diisi.';
+        } else if (nameTrimmed && nameTrimmed.length < 5) {
+            next.name = 'Nama minimal 5 huruf.';
         }
 
         const whatsappTrimmed = customerData.whatsapp.trim();
@@ -985,6 +988,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         const addressCheck = validateAddress();
         if (form?.customerFields.address.required && !addressCheck.normalized) {
             next.address = 'Alamat wajib diisi.';
+        } else if (addressCheck.normalized && addressCheck.normalized.length < 2) {
+            next.address = 'Alamat minimal 2 karakter.';
         } else if (!addressCheck.isValid) {
             next.address = 'Alamat kurang lengkap (min. 15 karakter + kecamatan/kota).';
         }
