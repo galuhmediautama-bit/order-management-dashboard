@@ -873,7 +873,7 @@ const UserManagement: React.FC = () => {
              
              // 2. Fetch Users from Public Table
              // Optimized: Only select needed columns
-             const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, role, status, "assignedBrandIds", avatar, created_at');
+             const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, phone, address, role, status, "assignedBrandIds", avatar, created_at');
              
              // Update avatar timestamp for cache busting
              setAvatarTimestamp(Date.now());
