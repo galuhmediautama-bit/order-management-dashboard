@@ -54,7 +54,7 @@ const MessageTemplatesSettings: React.FC = () => {
         const fetchTemplates = async () => {
             setLoading(true);
             const { data } = await supabase.from('settings').select('*').eq('id', 'messageTemplates').single();
-            
+
             const defaults: MessageTemplates = {
                 followUp1: 'Halo [CUSTOMER_NAME], kami melihat pesanan Anda ([ORDER_ID]) belum dibayar. Apakah ada kendala?',
                 followUp2: 'Halo [CUSTOMER_NAME], sekedar mengingatkan pesanan [ORDER_ID] masih menunggu pembayaran.',
@@ -111,19 +111,19 @@ const MessageTemplatesSettings: React.FC = () => {
                         </h2>
                         <p className="text-gray-600 dark:text-gray-300">Sesuaikan pesan otomatis untuk follow-up dan notifikasi status pesanan</p>
                     </div>
-                    <button 
-                        onClick={handleSave} 
-                        disabled={saving} 
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
                         className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {saving ? (
                             <>
-                                <SpinnerIcon className="w-5 h-5 animate-spin"/>
+                                <SpinnerIcon className="w-5 h-5 animate-spin" />
                                 <span>Menyimpan...</span>
                             </>
                         ) : (
                             <>
-                                <CheckIcon className="w-5 h-5"/>
+                                <CheckIcon className="w-5 h-5" />
                                 <span>Simpan Perubahan</span>
                             </>
                         )}
@@ -136,7 +136,7 @@ const MessageTemplatesSettings: React.FC = () => {
                         <div className="flex-shrink-0">
                             <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                 </svg>
                             </div>
                         </div>
@@ -192,10 +192,10 @@ const MessageTemplatesSettings: React.FC = () => {
                                         <span className="w-6 h-6 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-600 dark:text-orange-400 rounded-full flex items-center justify-center text-xs font-bold">{num}</span>
                                         Pesan Follow Up #{num}
                                     </label>
-                                    <textarea 
-                                        value={templates[key]} 
-                                        onChange={e => handleChange(key, e.target.value)} 
-                                        rows={3} 
+                                    <textarea
+                                        value={templates[key]}
+                                        onChange={e => handleChange(key, e.target.value)}
+                                        rows={3}
                                         className="w-full p-3 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none group-hover:border-orange-300 dark:group-hover:border-orange-700"
                                         placeholder="Tulis pesan follow up di sini..."
                                     />
@@ -227,10 +227,10 @@ const MessageTemplatesSettings: React.FC = () => {
                             <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">
                                 Pesan Notifikasi
                             </label>
-                            <textarea 
-                                value={templates.processing} 
-                                onChange={e => handleChange('processing', e.target.value)} 
-                                rows={4} 
+                            <textarea
+                                value={templates.processing}
+                                onChange={e => handleChange('processing', e.target.value)}
+                                rows={4}
                                 className="w-full p-3 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none hover:border-blue-300 dark:hover:border-blue-700"
                                 placeholder="Pesan konfirmasi pembayaran diterima..."
                             />
@@ -255,10 +255,10 @@ const MessageTemplatesSettings: React.FC = () => {
                             <label className="block text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">
                                 Pesan Notifikasi + Resi
                             </label>
-                            <textarea 
-                                value={templates.shipped} 
-                                onChange={e => handleChange('shipped', e.target.value)} 
-                                rows={4} 
+                            <textarea
+                                value={templates.shipped}
+                                onChange={e => handleChange('shipped', e.target.value)}
+                                rows={4}
                                 className="w-full p-3 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none hover:border-green-300 dark:hover:border-green-700"
                                 placeholder="Pesan konfirmasi pengiriman dengan nomor resi..."
                             />
@@ -526,8 +526,8 @@ const UserDetailModal: React.FC<{
     brands: Brand[];
     onClose: () => void;
 }> = ({ user, brands, onClose }) => {
-    const userBrandNames = user.role === 'Super Admin' 
-        ? 'Semua Merek' 
+    const userBrandNames = user.role === 'Super Admin'
+        ? 'Semua Merek'
         : (user.assignedBrandIds && user.assignedBrandIds.length > 0)
             ? user.assignedBrandIds.map(id => brands.find(b => b.id === id)?.name).filter(Boolean).join(', ')
             : 'Tidak ada merek ditugaskan';
@@ -541,13 +541,13 @@ const UserDetailModal: React.FC<{
                         <XIcon className="w-6 h-6" />
                     </button>
                 </div>
-                
+
                 <div className="p-6 space-y-6">
                     {/* Profile Header */}
                     <div className="flex items-center gap-4 pb-6 border-b dark:border-slate-700">
-                        <img 
-                            src={user.avatar ? user.avatar : `https://i.pravatar.cc/150?u=${user.id}`} 
-                            alt={user.name} 
+                        <img
+                            src={user.avatar ? user.avatar : `https://i.pravatar.cc/150?u=${user.id}`}
+                            alt={user.name}
                             className="w-20 h-20 rounded-full ring-4 ring-purple-200 dark:ring-purple-700"
                         />
                         <div>
@@ -577,7 +577,7 @@ const UserDetailModal: React.FC<{
                                 </div>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{user.phone || 'Tidak ada nomor'}</p>
                             </div>
-                            
+
                             <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -588,7 +588,7 @@ const UserDetailModal: React.FC<{
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
                             </div>
                         </div>
-                        
+
                         <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 mt-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -667,39 +667,39 @@ const UserModal: React.FC<{
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
-    
+
     const handleBrandToggle = (brandId: string) => {
         setFormData(prev => {
             const currentBrands = prev.assignedBrandIds || [];
             const newBrands = currentBrands.includes(brandId)
                 ? currentBrands.filter(id => id !== brandId)
                 : [...currentBrands, brandId];
-            
+
             console.log('🔍 BRAND TOGGLE:', {
                 brandId,
                 before: currentBrands,
                 after: newBrands
             });
-            
+
             return { ...prev, assignedBrandIds: newBrands };
         });
     };
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Debug: Check what's in formData before saving
         console.log('🔍 FORM DATA BEFORE SAVE:', {
             assignedBrandIds: formData.assignedBrandIds,
             fullFormData: formData
         });
-        
+
         // SECURITY: Prevent anyone from creating/modifying Super Admin
         if (formData.role === 'Super Admin' && formData.email !== 'galuhmediautama@gmail.com') {
             alert('⛔ FORBIDDEN: Only galuhmediautama@gmail.com can have Super Admin role!');
             return;
         }
-        
+
         // SECURITY: Prevent changing Super Admin email or role
         if (isEditing && user?.email === 'galuhmediautama@gmail.com') {
             if (formData.email !== 'galuhmediautama@gmail.com' || formData.role !== 'Super Admin') {
@@ -707,7 +707,7 @@ const UserModal: React.FC<{
                 return;
             }
         }
-        
+
         if (formData.name && formData.email) {
             onSave(formData);
         }
@@ -739,10 +739,10 @@ const UserModal: React.FC<{
                         <div><label className="text-sm text-slate-700 dark:text-slate-300">Email*</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600" required disabled={isEditing} /></div>
                         <div>
                             <label className="text-sm text-slate-700 dark:text-slate-300">Peran</label>
-                            <select 
-                                name="role" 
-                                value={formData.role} 
-                                onChange={handleChange} 
+                            <select
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
                                 className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600"
                                 disabled={formData.email === 'galuhmediautama@gmail.com'}
                             >
@@ -774,28 +774,28 @@ const UserModal: React.FC<{
                                     <strong>🔒 Security:</strong> Super Admin role is restricted to system owner only.
                                 </p>
                             )}
-                        
-                        <div>
-                            <label className="text-sm text-slate-700 dark:text-slate-300">Nomor WhatsApp</label>
-                            <input type="tel" name="phone" value={(formData.phone as string) || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600" placeholder="0812xxxx" />
-                            <p className="text-xs text-slate-500 mt-1">Simpan nomor WhatsApp pengguna untuk notifikasi dan kontak.</p>
+
+                            <div>
+                                <label className="text-sm text-slate-700 dark:text-slate-300">Nomor WhatsApp</label>
+                                <input type="tel" name="phone" value={(formData.phone as string) || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600" placeholder="0812xxxx" />
+                                <p className="text-xs text-slate-500 mt-1">Simpan nomor WhatsApp pengguna untuk notifikasi dan kontak.</p>
+                            </div>
+
+                            <div>
+                                <label className="text-sm text-slate-700 dark:text-slate-300">Alamat</label>
+                                <textarea name="address" value={(formData.address as string) || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600" placeholder="Alamat lengkap pengguna" rows={2} />
+                                <p className="text-xs text-slate-500 mt-1">Alamat untuk pengiriman atau keperluan administrasi.</p>
+                            </div>
                         </div>
-                        
-                        <div>
-                            <label className="text-sm text-slate-700 dark:text-slate-300">Alamat</label>
-                            <textarea name="address" value={(formData.address as string) || ''} onChange={handleChange} className="w-full mt-1 p-2 border rounded-md bg-slate-50 dark:bg-slate-700 dark:border-slate-600" placeholder="Alamat lengkap pengguna" rows={2} />
-                            <p className="text-xs text-slate-500 mt-1">Alamat untuk pengiriman atau keperluan administrasi.</p>
-                        </div>
-                        </div>
-                        
+
                         {formData.role !== 'Super Admin' && (
                             <div>
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 block">Merek yang Ditugaskan</label>
                                 <div className="border rounded-md p-3 max-h-40 overflow-y-auto bg-slate-50 dark:bg-slate-700 dark:border-slate-600">
                                     {brands.map(brand => (
                                         <label key={brand.id} className="flex items-center gap-2 p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded cursor-pointer">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 checked={(formData.assignedBrandIds || []).includes(brand.id)}
                                                 onChange={() => handleBrandToggle(brand.id)}
                                                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -880,71 +880,72 @@ const UserManagement: React.FC = () => {
     const fetchUsersAndBrands = async () => {
         setLoading(true);
         try {
-             // 1. Get Current Auth User
-             const { data: { user: currentUser } } = await supabase.auth.getUser();
-             
-             // 2. Fetch Users from Public Table
-             // Optimized: Only select needed columns
-             const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, phone, address, role, status, "assignedBrandIds", avatar, created_at');
-             
-             // Update avatar timestamp for cache busting
-             setAvatarTimestamp(Date.now());
-             
-             let tableExists = true;
-             if (fetchError) {
-                 // Check specifically for missing table error
-                 const isTableMissing = fetchError.code === '42P01' || fetchError.message.includes('Could not find the table') || fetchError.message.includes('does not exist');
-                 if (!isTableMissing) {
-                     console.error("Error fetching users:", fetchError);
-                 } else {
-                     console.warn("Table 'public.users' missing. Using optimistic mode (local state only).");
-                     tableExists = false;
-                 }
-             }
+            // 1. Get Current Auth User
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-             // Debug raw fetch
-             console.debug('[UserMgmt] raw usersData from supabase:', usersData);
-             let usersList = (usersData || []).map((doc: any) => ({ 
-                 ...doc,
-                 lastLogin: doc.created_at || doc.lastLogin // Map created_at to lastLogin
-             } as User));
+            // 2. Fetch Users from Public Table
+            // Optimized: Only select needed columns
+            const { data: usersData, error: fetchError } = await supabase.from('users').select('id, name, email, phone, address, role, status, "assignedBrandIds", avatar, created_at');
 
-             // Normalize fields to avoid subtle mismatches (case/whitespace/null)
-             usersList = usersList.map(u => ({
-                 ...u,
-                 status: (u.status || '').toString().trim(),
-                 role: (u.role || '').toString().trim(),
-                 name: u.name || (u.email ? u.email.split('@')[0] : 'User'),
-                 email: u.email || '',
-                 phone: (u.phone || '').toString().trim(),
-                 address: (u.address || '').toString().trim(),
-             } as User));
+            // Update avatar timestamp for cache busting
+            setAvatarTimestamp(Date.now());
 
-             // Debugging: log counts to help surface missing users during dev
-             console.debug('[UserMgmt] fetched users count:', usersList.length, 'sample:', usersList.slice(0,3));
+            let tableExists = true;
+            if (fetchError) {
+                // Check specifically for missing table error
+                const isTableMissing = fetchError.code === '42P01' || fetchError.message.includes('Could not find the table') || fetchError.message.includes('does not exist');
+                if (!isTableMissing) {
+                    console.error("Error fetching users:", fetchError);
+                } else {
+                    console.warn("Table 'public.users' missing. Using optimistic mode (local state only).");
+                    tableExists = false;
+                }
+            }
 
-             // Update current user role if they're logged in
-             if (currentUser) {
-                 const existingUser = usersList.find(u => u.id === currentUser.id);
-                 const normalizedRole = getNormalizedRole(existingUser?.role || 'Super Admin', currentUser.email);
-                 setCurrentUserRole(normalizedRole);
-             }
+            // Debug raw fetch
+            console.debug('[UserMgmt] raw usersData from supabase:', usersData);
+            let usersList = (usersData || []).map((doc: any) => ({
+                ...doc,
+                lastLogin: doc.created_at || doc.lastLogin // Map created_at to lastLogin
+            } as User));
+
+            // Normalize fields to avoid subtle mismatches (case/whitespace/null)
+            usersList = usersList.map(u => ({
+                ...u,
+                status: (u.status || '').toString().trim(),
+                role: (u.role || '').toString().trim(),
+                name: u.name || (u.email ? u.email.split('@')[0] : 'User'),
+                email: u.email || '',
+                phone: (u.phone || '').toString().trim(),
+                address: (u.address || '').toString().trim(),
+                assignedBrandIds: u.assignedBrandIds || [], // Preserve assignedBrandIds
+            } as User));
+
+            // Debugging: log counts to help surface missing users during dev
+            console.debug('[UserMgmt] fetched users count:', usersList.length, 'sample:', usersList.slice(0, 3));
+
+            // Update current user role if they're logged in
+            if (currentUser) {
+                const existingUser = usersList.find(u => u.id === currentUser.id);
+                const normalizedRole = getNormalizedRole(existingUser?.role || 'Super Admin', currentUser.email);
+                setCurrentUserRole(normalizedRole);
+            }
 
             setUsers(usersList);
-            
+
             // 4. Fetch Brands with fallback
             // Optimized: Only select needed columns
             const { data: brandsData, error: brandsError } = await supabase.from('brands').select('id, name');
-            
+
             if (brandsError) {
-                 // Fallback to local storage on ANY error during dev/setup
-                 console.warn("DB Error fetching brands (UserMgmt), falling back to local:", brandsError.message);
-                 const localBrands = localStorage.getItem('brands_local_data');
-                 if (localBrands) {
-                     setBrands(JSON.parse(localBrands));
-                 } else {
-                     setBrands([]);
-                 }
+                // Fallback to local storage on ANY error during dev/setup
+                console.warn("DB Error fetching brands (UserMgmt), falling back to local:", brandsError.message);
+                const localBrands = localStorage.getItem('brands_local_data');
+                if (localBrands) {
+                    setBrands(JSON.parse(localBrands));
+                } else {
+                    setBrands([]);
+                }
             } else {
                 if (brandsData && brandsData.length > 0) {
                     const brandsList = brandsData.map(doc => ({ ...doc } as Brand));
@@ -960,7 +961,7 @@ const UserManagement: React.FC = () => {
                 }
             }
 
-        } catch(e: any) {
+        } catch (e: any) {
             console.error("Error fetching data:", e?.message || e);
         } finally {
             setLoading(false);
@@ -972,7 +973,7 @@ const UserManagement: React.FC = () => {
         setSyncingAuthUsers(true);
         try {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
-            
+
             if (!currentUser) {
                 console.error('No authenticated user found');
                 showToast('Anda harus login sebagai admin untuk sync', 'error');
@@ -983,12 +984,12 @@ const UserManagement: React.FC = () => {
             // Try admin.listUsers first (requires admin token)
             let allAuthUsers = null;
             const { data: adminUsers, error: adminError } = await supabase.auth.admin.listUsers();
-            
+
             if (adminError) {
                 // Fallback: try fetching from a view or call an edge function
                 console.warn('[Sync] Admin listUsers not available:', adminError.message);
                 console.info('[Sync] Fallback: You need to use Edge Function or import via CSV/API');
-                
+
                 // Try to query a custom endpoint if available
                 try {
                     const response = await fetch('/api/sync-auth-users', {
@@ -996,7 +997,7 @@ const UserManagement: React.FC = () => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ token: (await supabase.auth.getSession()).data.session?.access_token })
                     });
-                    
+
                     if (response.ok) {
                         const result = await response.json();
                         console.log('[Sync] API sync result:', result);
@@ -1010,15 +1011,15 @@ const UserManagement: React.FC = () => {
             } else if (adminUsers?.users) {
                 // Admin access successful
                 console.log('[Sync] Found', adminUsers.users.length, 'users in Auth');
-                
+
                 let syncedCount = 0;
                 const { data: existingUsers } = await supabase.from('users').select('id');
                 const existingIds = new Set((existingUsers || []).map(u => u.id));
-                
+
                 for (const authUser of adminUsers.users) {
                     if (!existingIds.has(authUser.id)) {
                         const normalizedRole = getNormalizedRole('Super Admin', authUser.email);
-                        
+
                         const newProfile = {
                             id: authUser.id,
                             email: authUser.email || '',
@@ -1030,7 +1031,7 @@ const UserManagement: React.FC = () => {
                             phone: authUser.phone || '',
                             address: ''
                         };
-                        
+
                         const { error: syncError } = await supabase.from('users').upsert(newProfile);
                         if (!syncError) {
                             syncedCount++;
@@ -1038,7 +1039,7 @@ const UserManagement: React.FC = () => {
                         }
                     }
                 }
-                
+
                 showToast(`Berhasil sync ${syncedCount} pengguna baru dari Auth`, 'success');
                 fetchUsersAndBrands();
             }
@@ -1054,7 +1055,7 @@ const UserManagement: React.FC = () => {
     useEffect(() => {
         fetchUsersAndBrands();
     }, []);
-    
+
     const handleOpenModal = (user: User | null = null) => {
         setEditingUser(user);
         setIsModalOpen(true);
@@ -1119,7 +1120,7 @@ const UserManagement: React.FC = () => {
             } else { // Adding new user via Supabase Auth
                 // Generate a temporary password
                 const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
-                
+
                 try {
                     // Create user via signUp (this doesn't require admin privileges)
                     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -1139,7 +1140,7 @@ const UserManagement: React.FC = () => {
 
                     if (authData.user) {
                         // Now insert profile into public.users with the auth user's id
-                        const newUserPayload: any = { 
+                        const newUserPayload: any = {
                             id: authData.user.id, // Use the id from auth user
                             name: userData.name,
                             email: userData.email,
@@ -1179,9 +1180,9 @@ const UserManagement: React.FC = () => {
             // Step 1: Delete from public.users (profile)
             const { error: deleteProfileError } = await supabase.from('users').delete().eq('id', userId);
             if (deleteProfileError) {
-                 if (deleteProfileError.code !== '42P01') {
-                     throw deleteProfileError;
-                 }
+                if (deleteProfileError.code !== '42P01') {
+                    throw deleteProfileError;
+                }
             }
 
             // Step 2: Delete from auth.users (authentication account)
@@ -1246,7 +1247,7 @@ const UserManagement: React.FC = () => {
     const superAdminCount = users.filter(u => u.role === 'Super Admin').length;
     const csCount = users.filter(u => u.role === 'Customer service').length;
     const gudangCount = users.filter(u => u.role === 'Gudang').length;
-    
+
     return (
         <div className="space-y-6">
             {/* Gradient Header */}
@@ -1259,7 +1260,7 @@ const UserManagement: React.FC = () => {
                         <p className="text-gray-600 dark:text-gray-300">Kelola akses pengguna, peran, dan izin sistem</p>
                     </div>
                 </div>
-                
+
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                     <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-purple-100 dark:border-purple-800/50 hover:scale-105 transition-transform">
@@ -1275,7 +1276,7 @@ const UserManagement: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-green-100 dark:border-green-800/50 hover:scale-105 transition-transform">
                         <div className="flex items-center justify-between">
                             <div>
@@ -1302,7 +1303,7 @@ const UserManagement: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-yellow-100 dark:border-yellow-800/50 hover:scale-105 transition-transform">
                         <div className="flex items-center justify-between">
                             <div>
@@ -1316,7 +1317,7 @@ const UserManagement: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/50 hover:scale-105 transition-transform">
                         <div className="flex items-center justify-between">
                             <div>
@@ -1347,8 +1348,8 @@ const UserManagement: React.FC = () => {
                                 <p className="text-sm text-yellow-700 dark:text-yellow-300">{pendingCount} pengguna menunggu untuk disetujui</p>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => navigate('/pengaturan/pending-users')} 
+                        <button
+                            onClick={() => navigate('/pengaturan/pending-users')}
                             className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors shadow-sm"
                         >
                             Lihat Semua
@@ -1358,9 +1359,9 @@ const UserManagement: React.FC = () => {
                         {users.filter(u => u.status === 'Tidak Aktif').slice(0, 3).map(user => (
                             <div key={user.id} className="flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800/50 shadow-sm">
                                 <div className="flex items-center gap-3">
-                                    <img 
-                                        src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`} 
-                                        alt={user.name} 
+                                    <img
+                                        src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`}
+                                        alt={user.name}
                                         className="w-10 h-10 rounded-full"
                                     />
                                     <div>
@@ -1401,11 +1402,11 @@ const UserManagement: React.FC = () => {
                     <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <input 
-                        type="text" 
-                        placeholder="Cari nama atau email..." 
-                        value={searchTerm} 
-                        onChange={e => setSearchTerm(e.target.value)} 
+                    <input
+                        type="text"
+                        placeholder="Cari nama atau email..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                 </div>
@@ -1414,9 +1415,9 @@ const UserManagement: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-3 items-end">
                     {/* Filter Dropdowns */}
                     <div className="flex gap-3 flex-wrap">
-                        <select 
-                            value={roleFilter} 
-                            onChange={e => setRoleFilter(e.target.value)} 
+                        <select
+                            value={roleFilter}
+                            onChange={e => setRoleFilter(e.target.value)}
                             className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium text-sm"
                         >
                             <option value="Semua">🏷️ Semua Peran</option>
@@ -1428,16 +1429,16 @@ const UserManagement: React.FC = () => {
                             <option value="Advertiser">📢 Advertiser</option>
                             <option value="Partner">🤝 Partner</option>
                         </select>
-                        <select 
-                            value={statusFilter} 
-                            onChange={e => setStatusFilter(e.target.value)} 
+                        <select
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
                             className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium text-sm"
                         >
                             <option value="Semua">📊 Semua Status</option>
                             <option value="Aktif">✅ Aktif</option>
                             <option value="Tidak Aktif">⏳ Tidak Aktif</option>
                         </select>
-                        <button 
+                        <button
                             onClick={() => fetchUsersAndBrands()}
                             disabled={loading}
                             className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-all disabled:opacity-50 text-sm"
@@ -1448,135 +1449,135 @@ const UserManagement: React.FC = () => {
 
                     {/* Action Buttons - Flex Grow to Push Right */}
                     <div className="flex gap-3 ml-auto w-full sm:w-auto">
-                        <button 
-                            onClick={() => navigate('/pengaturan/peran')} 
+                        <button
+                            onClick={() => navigate('/pengaturan/peran')}
                             className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg whitespace-nowrap text-sm"
                         >
                             🔐 Manajemen Peran
                         </button>
-                        <button 
-                            onClick={() => handleOpenModal()} 
+                        <button
+                            onClick={() => handleOpenModal()}
                             className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg whitespace-nowrap text-sm"
                         >
                             + Tambah Pengguna
                         </button>
                     </div>
                 </div>
-                
+
                 {/* Users Table */}
                 <div className="overflow-x-auto mt-6">
-                {loading ? (
-                    <div className="text-center p-20">
-                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                        <p className="mt-4 text-gray-600 dark:text-gray-400">Memuat data pengguna...</p>
-                    </div>
-                ) : (
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-purple-200 dark:border-purple-800">
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Nama</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Email</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Peran</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Merek</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Login Terakhir</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredUsers.map(user => {
-                                const userBrandNames = user.role === 'Super Admin' 
-                                    ? 'Semua Merek' 
-                                    : (user.assignedBrandIds && user.assignedBrandIds.length > 0)
-                                        ? user.assignedBrandIds.map(id => brands.find(b => b.id === id)?.name).filter(Boolean).join(', ')
-                                        : '-';
+                    {loading ? (
+                        <div className="text-center p-20">
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Memuat data pengguna...</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-purple-200 dark:border-purple-800">
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Nama</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Email</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Peran</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Merek</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Login Terakhir</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredUsers.map(user => {
+                                    const userBrandNames = user.role === 'Super Admin'
+                                        ? 'Semua Merek'
+                                        : (user.assignedBrandIds && user.assignedBrandIds.length > 0)
+                                            ? user.assignedBrandIds.map(id => brands.find(b => b.id === id)?.name).filter(Boolean).join(', ')
+                                            : '-';
 
-                                return (
-                                    <tr key={user.id} className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <img 
-                                                src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`} 
-                                                alt={user.name} 
-                                                className="w-10 h-10 rounded-full bg-gray-200 ring-2 ring-purple-200 dark:ring-purple-700"
-                                            />
-                                            <span className="font-semibold text-slate-800 dark:text-slate-200">{user.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{user.email}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`text-xs font-medium ${user.role === 'Super Admin' ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-slate-600 dark:text-slate-400'}`}>
-                                            {userBrandNames}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 text-xs rounded-full font-bold ${user.status === 'Aktif' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900/30 dark:to-green-800/30 dark:text-green-400' : 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 dark:from-yellow-900/30 dark:to-yellow-800/30 dark:text-yellow-400'}`}>
-                                            {user.status === 'Aktif' ? '✓ Aktif' : '⏳ Pending'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{user.lastLogin}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-1">
-                                            <button 
-                                                onClick={() => setViewingUser(user)}
-                                                title="Lihat Detail" 
-                                                className="p-2 text-slate-500 hover:text-white hover:bg-blue-600 rounded-lg transition-all"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    return (
+                                        <tr key={user.id} className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <img
+                                                        src={user.avatar ? `${user.avatar}?t=${avatarTimestamp}` : `https://i.pravatar.cc/150?u=${user.id}`}
+                                                        alt={user.name}
+                                                        className="w-10 h-10 rounded-full bg-gray-200 ring-2 ring-purple-200 dark:ring-purple-700"
+                                                    />
+                                                    <span className="font-semibold text-slate-800 dark:text-slate-200">{user.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{user.email}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                                    {user.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`text-xs font-medium ${user.role === 'Super Admin' ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {userBrandNames}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-3 py-1 text-xs rounded-full font-bold ${user.status === 'Aktif' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900/30 dark:to-green-800/30 dark:text-green-400' : 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 dark:from-yellow-900/30 dark:to-yellow-800/30 dark:text-yellow-400'}`}>
+                                                    {user.status === 'Aktif' ? '✓ Aktif' : '⏳ Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{user.lastLogin}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <button
+                                                        onClick={() => setViewingUser(user)}
+                                                        title="Lihat Detail"
+                                                        className="p-2 text-slate-500 hover:text-white hover:bg-blue-600 rounded-lg transition-all"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenModal(user)}
+                                                        title="Edit Pengguna"
+                                                        className="p-2 text-slate-500 hover:text-white hover:bg-indigo-600 rounded-lg transition-all"
+                                                    >
+                                                        <PencilIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setUserToResetPassword(user)}
+                                                        title="Reset Password"
+                                                        className="p-2 text-slate-500 hover:text-white hover:bg-green-600 rounded-lg transition-all"
+                                                    >
+                                                        <KeyIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setUserToDelete(user)}
+                                                        title="Hapus Pengguna"
+                                                        className="p-2 text-slate-500 hover:text-white hover:bg-red-600 rounded-lg transition-all"
+                                                    >
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filteredUsers.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-16">
+                                            <div className="flex flex-col items-center">
+                                                <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                                 </svg>
-                                            </button>
-                                            <button 
-                                                onClick={() => handleOpenModal(user)} 
-                                                title="Edit Pengguna" 
-                                                className="p-2 text-slate-500 hover:text-white hover:bg-indigo-600 rounded-lg transition-all"
-                                            >
-                                                <PencilIcon className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => setUserToResetPassword(user)} 
-                                                title="Reset Password" 
-                                                className="p-2 text-slate-500 hover:text-white hover:bg-green-600 rounded-lg transition-all"
-                                            >
-                                                <KeyIcon className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => setUserToDelete(user)} 
-                                                title="Hapus Pengguna" 
-                                                className="p-2 text-slate-500 hover:text-white hover:bg-red-600 rounded-lg transition-all"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                );
-                            })}
-                            {filteredUsers.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-16">
-                                        <div className="flex flex-col items-center">
-                                            <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            </svg>
-                                            <p className="text-gray-500 dark:text-gray-400 font-medium">Tidak ada pengguna ditemukan</p>
-                                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Coba ubah filter atau pencarian</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                )}
+                                                <p className="text-gray-500 dark:text-gray-400 font-medium">Tidak ada pengguna ditemukan</p>
+                                                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Coba ubah filter atau pencarian</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
-            
+
             {viewingUser && <UserDetailModal user={viewingUser} brands={brands} onClose={() => setViewingUser(null)} />}
             {isModalOpen && <UserModal user={editingUser} brands={brands} currentUserRole={currentUserRole} onClose={() => setIsModalOpen(false)} onSave={handleSaveUser} />}
             {userToDelete && <DeleteUserModal user={userToDelete} onClose={() => setUserToDelete(null)} onConfirm={handleDeleteUser} />}
@@ -1590,38 +1591,38 @@ const UserManagement: React.FC = () => {
 
 // Define standard roles and their default descriptions/permissions
 const DEFAULT_ROLES = [
-    { 
-        name: 'Super Admin', 
+    {
+        name: 'Super Admin',
         permissions: ['Akses Penuh Sistem', 'Manajemen Pengguna & Gaji', 'Hapus Data Permanen', 'Pengaturan Sistem'],
         defaultDesc: 'Memiliki akses penuh ke seluruh fitur dan pengaturan sistem.'
     },
-    { 
-        name: 'Admin', 
+    {
+        name: 'Admin',
         permissions: ['Manajemen Pengguna (Terbatas)', 'Manajemen Produk', 'Laporan Lengkap', 'Pengaturan Dasar'],
         defaultDesc: 'Mengelola operasional harian toko, produk, dan memantau tim.'
     },
-    { 
-        name: 'Keuangan', 
+    {
+        name: 'Keuangan',
         permissions: ['Verifikasi Pembayaran', 'Laporan Keuangan', 'Penghasilan Tim', 'Ekspor Data'],
         defaultDesc: 'Fokus pada validasi pesanan masuk dan pemantauan arus kas.'
     },
-    { 
-        name: 'Customer service', 
+    {
+        name: 'Customer service',
         permissions: ['Kelola Pesanan (COD)', 'Follow-up Pelanggan', 'Database Pelanggan', 'Penghasilan Pribadi'],
         defaultDesc: 'Menangani pesanan masuk, melayani pelanggan, dan memproses COD.'
     },
-    { 
-        name: 'Gudang', 
+    {
+        name: 'Gudang',
         permissions: ['Proses Pesanan Selesai', 'Kelola Pengiriman & Resi', 'Koordinasi dengan CS', 'Kontrol Stok (terbatas)'],
         defaultDesc: 'Tim warehouse untuk memproses pesanan yang sudah ditutup CS dan menyiapkan pengiriman.'
     },
-    { 
-        name: 'Advertiser', 
+    {
+        name: 'Advertiser',
         permissions: ['Buat/Edit Formulir', 'Laporan Iklan', 'Pelacakan Pixel', 'Penghasilan Pribadi'],
         defaultDesc: 'Mengelola kampanye iklan, landing page, dan analisis performa.'
     },
-    { 
-        name: 'Partner', 
+    {
+        name: 'Partner',
         permissions: ['Lihat Dasbor', 'Lihat Laporan Terbatas'],
         defaultDesc: 'Mitra eksternal yang dapat melihat performa penjualan tertentu.'
     }
@@ -1678,7 +1679,7 @@ const EditRoleModal: React.FC<{
                                 <p className="text-indigo-100 text-sm">Kelola izin dan deskripsi peran</p>
                             </div>
                         </div>
-                        <button 
+                        <button
                             onClick={onClose}
                             className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                         >
@@ -1694,9 +1695,9 @@ const EditRoleModal: React.FC<{
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">
                             📝 Deskripsi Peran
                         </label>
-                        <textarea 
-                            value={desc} 
-                            onChange={(e) => setDesc(e.target.value)} 
+                        <textarea
+                            value={desc}
+                            onChange={(e) => setDesc(e.target.value)}
                             className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                             rows={3}
                             placeholder="Jelaskan tugas dan tanggung jawab peran ini..."
@@ -1711,24 +1712,24 @@ const EditRoleModal: React.FC<{
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wide">
                             🔐 Izin & Akses (Permissions)
                         </label>
-                        
+
                         {/* Add Permission Input */}
                         <div className="flex gap-2 mb-4">
                             <div className="relative flex-grow">
                                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
-                                <input 
-                                    type="text" 
-                                    value={newPermission} 
-                                    onChange={(e) => setNewPermission(e.target.value)} 
+                                <input
+                                    type="text"
+                                    value={newPermission}
+                                    onChange={(e) => setNewPermission(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
                                     placeholder="Contoh: Lihat Laporan, Edit Produk, dll..."
                                 />
                             </div>
-                            <button 
-                                onClick={handleAddPermission} 
+                            <button
+                                onClick={handleAddPermission}
                                 className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all"
                             >
                                 + Tambah
@@ -1747,16 +1748,16 @@ const EditRoleModal: React.FC<{
                             ) : (
                                 <div className="flex flex-wrap gap-2">
                                     {permissions.map((perm, idx) => (
-                                        <span 
-                                            key={idx} 
+                                        <span
+                                            key={idx}
                                             className="group bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-800 dark:text-indigo-300 text-sm px-3 py-2 rounded-lg flex items-center gap-2 font-medium hover:shadow-md transition-all"
                                         >
                                             <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             {perm}
-                                            <button 
-                                                onClick={() => handleRemovePermission(perm)} 
+                                            <button
+                                                onClick={() => handleRemovePermission(perm)}
                                                 className="ml-1 p-1 hover:bg-red-500 hover:text-white rounded transition-colors"
                                                 title="Hapus izin"
                                             >
@@ -1775,14 +1776,14 @@ const EditRoleModal: React.FC<{
 
                 {/* Footer */}
                 <div className="sticky bottom-0 p-6 bg-gray-50 dark:bg-slate-900/50 border-t dark:border-slate-700 flex justify-end gap-3 rounded-b-2xl">
-                    <button 
-                        onClick={onClose} 
+                    <button
+                        onClick={onClose}
                         className="px-6 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-colors"
                     >
                         Batal
                     </button>
-                    <button 
-                        onClick={() => onSave(role.id, desc, permissions)} 
+                    <button
+                        onClick={() => onSave(role.id, desc, permissions)}
                         className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
                     >
                         💾 Simpan Perubahan
@@ -1806,7 +1807,7 @@ const RoleManagement: React.FC = () => {
             // Fetch users to count them per role
             const { data: usersData } = await supabase.from('users').select('role');
             const userCounts: Record<string, number> = {};
-            
+
             (usersData || []).forEach((u: any) => {
                 const r = u.role || 'Super Admin';
                 userCounts[r] = (userCounts[r] || 0) + 1;
@@ -1815,7 +1816,7 @@ const RoleManagement: React.FC = () => {
             // Fetch custom role definitions from 'settings' table (if we stored them there),
             // For now, we'll use the hardcoded DEFAULT_ROLES but merge with any potential stored overrides.
             // In a real app, you might have a 'roles' table.
-            
+
             const rolesList: Role[] = DEFAULT_ROLES.map(def => ({
                 id: def.name, // Using name as ID for simplicity in this context
                 name: def.name,
@@ -1846,18 +1847,18 @@ const RoleManagement: React.FC = () => {
     const handleSavePermissions = async (roleName: string, menuIds: string[], featureIds: string[]) => {
         try {
             console.log('💾 Saving permissions for', roleName, { menuIds, featureIds });
-            
+
             // Save role permissions to database with correct column name
             const { data: currentSettings, error: fetchError } = await supabase
                 .from('settings')
                 .select('role_permissions')
                 .eq('id', 'rolePermissions')
                 .single();
-            
+
             if (fetchError && fetchError.code !== 'PGRST116') {
                 throw fetchError;
             }
-            
+
             const rolePermissions = currentSettings?.role_permissions || {};
             rolePermissions[roleName] = {
                 menus: menuIds,
@@ -1879,10 +1880,10 @@ const RoleManagement: React.FC = () => {
 
             console.log('✅ Permissions saved successfully for', roleName);
             showToast(`Izin untuk peran "${roleName}" berhasil disimpan dan akan berlaku segera`, 'success');
-            
+
             // Force context to refresh by triggering a window event
             window.dispatchEvent(new Event('rolePermissionsUpdated'));
-            
+
             setManagingPermissions(null);
         } catch (error: any) {
             console.error('❌ Error saving role permissions:', error);
@@ -1902,7 +1903,7 @@ const RoleManagement: React.FC = () => {
                         <p className="text-gray-600 dark:text-gray-300">Kelola izin dan hak akses untuk setiap peran pengguna</p>
                     </div>
                 </div>
-                
+
                 {/* Statistics Summary */}
                 {!loading && (
                     <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -1947,7 +1948,7 @@ const RoleManagement: React.FC = () => {
                                 'Advertiser': '📢',
                                 'Partner': '🤝'
                             };
-                            
+
                             return (
                                 <div key={role.id} className="group border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg hover:border-indigo-400 dark:hover:border-indigo-600 transition-all bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
                                     <div className="flex justify-between items-start mb-4">
@@ -1960,19 +1961,19 @@ const RoleManagement: React.FC = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        <button 
-                                            onClick={() => setEditingRole(role)} 
+                                        <button
+                                            onClick={() => setEditingRole(role)}
                                             className="opacity-0 group-hover:opacity-100 p-2 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 rounded-lg transition-all"
                                             title="Edit Peran"
                                         >
                                             <PencilIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                         </button>
                                     </div>
-                                    
+
                                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 min-h-[40px] leading-relaxed">
                                         {role.description}
                                     </p>
-                                    
+
                                     <div className="space-y-2 mb-4">
                                         <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Izin Akses:</p>
                                         <div className="flex flex-wrap gap-2">
@@ -1995,7 +1996,7 @@ const RoleManagement: React.FC = () => {
                                                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
                                                 <span className="text-xs text-gray-600 dark:text-gray-400">Aktif</span>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => setEditingRole(role)}
                                                 className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1"
                                             >
@@ -2023,7 +2024,7 @@ const RoleManagement: React.FC = () => {
             </div>
             {editingRole && <EditRoleModal role={editingRole} onClose={() => setEditingRole(null)} onSave={handleSaveRole} />}
             {managingPermissions && (
-                <RolePermissionManager 
+                <RolePermissionManager
                     roleName={managingPermissions}
                     onClose={() => setManagingPermissions(null)}
                     onSave={handleSavePermissions}
@@ -2102,12 +2103,12 @@ const WebsiteSettings: React.FC = () => {
                     </div>
                     <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Konfigurasi identitas dan informasi dasar website Anda.</p>
                 </div>
-                <button 
-                    onClick={handleSave} 
-                    disabled={saving} 
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50"
                 >
-                    {saving ? <SpinnerIcon className="w-5 h-5 animate-spin"/> : <CheckIcon className="w-5 h-5"/>}
+                    {saving ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <CheckIcon className="w-5 h-5" />}
                     <span>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
                 </button>
             </div>
@@ -2143,12 +2144,12 @@ const WebsiteSettings: React.FC = () => {
                             <label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">Nama Situs</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <WebsiteIcon className="h-5 w-5 text-slate-400"/>
+                                    <WebsiteIcon className="h-5 w-5 text-slate-400" />
                                 </div>
-                                <input 
-                                    type="text" 
-                                    value={settings.siteName} 
-                                    onChange={e => setSettings({...settings, siteName: e.target.value})} 
+                                <input
+                                    type="text"
+                                    value={settings.siteName}
+                                    onChange={e => setSettings({ ...settings, siteName: e.target.value })}
                                     className="w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     placeholder="Nama website Anda"
                                 />
@@ -2159,10 +2160,10 @@ const WebsiteSettings: React.FC = () => {
                         {/* Description */}
                         <div>
                             <label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">Deskripsi Meta</label>
-                            <textarea 
-                                value={settings.siteDescription} 
-                                onChange={e => setSettings({...settings, siteDescription: e.target.value})} 
-                                rows={4} 
+                            <textarea
+                                value={settings.siteDescription}
+                                onChange={e => setSettings({ ...settings, siteDescription: e.target.value })}
+                                rows={4}
                                 className="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
                                 placeholder="Deskripsi singkat tentang website Anda untuk SEO..."
                             />
@@ -2174,12 +2175,12 @@ const WebsiteSettings: React.FC = () => {
                             <label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">Email Dukungan</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <MailIcon className="h-5 w-5 text-slate-400"/>
+                                    <MailIcon className="h-5 w-5 text-slate-400" />
                                 </div>
-                                <input 
-                                    type="email" 
-                                    value={settings.supportEmail} 
-                                    onChange={e => setSettings({...settings, supportEmail: e.target.value})} 
+                                <input
+                                    type="email"
+                                    value={settings.supportEmail}
+                                    onChange={e => setSettings({ ...settings, supportEmail: e.target.value })}
                                     className="w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     placeholder="support@example.com"
                                 />
@@ -2193,7 +2194,7 @@ const WebsiteSettings: React.FC = () => {
                                 <div className="flex-shrink-0">
                                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                                         <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                         </svg>
                                     </div>
                                 </div>

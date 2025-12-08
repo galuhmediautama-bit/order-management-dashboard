@@ -79,7 +79,7 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
   const canAccessMenu = useCallback((menuId: string, userRole: string): boolean => {
     // Normalize user role for consistency
     const normalizedRole = userRole.trim();
-    
+
     const permissions = rolePermissions[normalizedRole as keyof RolePermissionMap];
     if (!permissions) {
       console.warn(`⚠️ No permissions found for role: "${normalizedRole}"`, {
@@ -100,7 +100,7 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
   const canUseFeature = useCallback((featureId: string, userRole: string): boolean => {
     // Normalize user role for consistency
     const normalizedRole = userRole.trim();
-    
+
     const permissions = rolePermissions[normalizedRole as keyof RolePermissionMap];
     if (!permissions) {
       console.warn(`⚠️ No permissions found for role: "${normalizedRole}" when checking feature: "${featureId}"`);

@@ -1492,283 +1492,283 @@ const OrdersPage: React.FC = () => {
 
                             {/* Table */}
                             <table className="w-full text-left border-collapse">
-                            <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0}
-                                            onChange={handleToggleSelectAll}
-                                            className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                                        />
-                                    </th>
-                                    {columnVisibility.find(c => c.key === 'orderId')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>}
-                                    {columnVisibility.find(c => c.key === 'customer')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>}
-                                    {columnVisibility.find(c => c.key === 'product')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>}
-                                    {columnVisibility.find(c => c.key === 'status')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>}
-                                    {columnVisibility.find(c => c.key === 'platform')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>}
-                                    {columnVisibility.find(c => c.key === 'cs')?.visible && currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
-                                    {columnVisibility.find(c => c.key === 'followUp')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>}
-                                    {columnVisibility.find(c => c.key === 'actions')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                {paginatedOrders.map(order => {
-                                    // Find CS info if viewing as admin
-                                    const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
+                                <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b-2 border-indigo-100 dark:border-indigo-900/30">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedOrders.size === paginatedOrders.length && paginatedOrders.length > 0}
+                                                onChange={handleToggleSelectAll}
+                                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                            />
+                                        </th>
+                                        {columnVisibility.find(c => c.key === 'orderId')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>}
+                                        {columnVisibility.find(c => c.key === 'customer')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>}
+                                        {columnVisibility.find(c => c.key === 'product')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>}
+                                        {columnVisibility.find(c => c.key === 'status')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>}
+                                        {columnVisibility.find(c => c.key === 'platform')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>}
+                                        {columnVisibility.find(c => c.key === 'cs')?.visible && currentUser?.role !== 'Customer service' && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CS</th>}
+                                        {columnVisibility.find(c => c.key === 'followUp')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center">Follow Up</th>}
+                                        {columnVisibility.find(c => c.key === 'actions')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                    {paginatedOrders.map(order => {
+                                        // Find CS info if viewing as admin
+                                        const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
 
-                                    return (
-                                        <tr key={order.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
-                                            <td className="px-6 py-5 align-middle">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedOrders.has(order.id)}
-                                                    onChange={() => handleToggleSelect(order.id)}
-                                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                                                />
-                                            </td>
-                                            {columnVisibility.find(c => c.key === 'orderId')?.visible && (
-                                            <td className="px-6 py-5 align-top">
-                                                <div className="flex flex-col">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedOrder(order);
-                                                            setIsDetailModalOpen(true);
-                                                        }}
-                                                        className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer text-left hover:underline"
-                                                    >
-                                                        #{order.id.substring(0, 8)}
-                                                    </button>
-                                                    <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                                                        <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(order.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'customer')?.visible && (
-                                            <td className="px-6 py-5 align-top">
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
-                                                    <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                                                        <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
-                                                        {order.customerPhone}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'product')?.visible && (
-                                            <td className="px-6 py-5 align-top">
-                                                <div className="max-w-xs">
-                                                    <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-1" title={order.productName}>{order.productName}</p>
-                                                    <p className="font-bold text-slate-900 dark:text-white">Rp {order.totalPrice?.toLocaleString('id-ID')}</p>
-                                                </div>
-                                            </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'status')?.visible && (
-                                            <td className="px-6 py-5 align-top">
-                                                <div className="flex flex-col gap-2 items-start">
-                                                    <StatusBadge status={order.status} />
-                                                    <button
-                                                        onClick={() => setOrderToChangePayment(order)}
-                                                        className="text-xs flex items-center gap-1 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 transition-colors"
-                                                    >
-                                                        <CreditCardIcon className="w-3 h-3" />
-                                                        {order.paymentMethod || 'COD'}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'platform')?.visible && (
-                                            <td className="px-6 py-5 align-top">
-                                                <div className="flex items-center gap-2">
-                                                    {order.utmSource ? (
-                                                        <>
-                                                            {order.utmSource.toLowerCase() === 'meta' && (
-                                                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
-                                                                    <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
-                                                                    Meta
-                                                                </div>
-                                                            )}
-                                                            {order.utmSource.toLowerCase() === 'tiktok' && (
-                                                                <div className="flex items-center gap-1 px-2 py-1 bg-slate-900/10 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded text-xs font-medium">
-                                                                    <div className="w-4 h-4 bg-slate-900 dark:bg-slate-300 rounded-full"></div>
-                                                                    TikTok
-                                                                </div>
-                                                            )}
-                                                            {order.utmSource.toLowerCase() === 'google' && (
-                                                                <div className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded text-xs font-medium">
-                                                                    <div className="w-4 h-4 bg-red-600 rounded-full"></div>
-                                                                    Google
-                                                                </div>
-                                                            )}
-                                                            {order.utmSource.toLowerCase() === 'snack' && (
-                                                                <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded text-xs font-medium">
-                                                                    <div className="w-4 h-4 bg-green-600 rounded-full"></div>
-                                                                    Snack
-                                                                </div>
-                                                            )}
-                                                            {!['meta', 'tiktok', 'google', 'snack'].includes(order.utmSource.toLowerCase()) && (
-                                                                <span className="text-xs text-slate-500 dark:text-slate-400 italic">{order.utmSource}</span>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-xs text-slate-400 dark:text-slate-500 italic">—</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'cs')?.visible && currentUser?.role !== 'Customer service' && (
-                                                <td className="px-6 py-5 align-top">
-                                                    {assignedCS ? (
-                                                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs font-bold">
-                                                                {assignedCS.name.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <span className="truncate max-w-[80px]">{assignedCS.name.split(' ')[0]}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div>
-                                                            {assignTargetOrderId === order.id ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <select value={assignSelectedCsId} onChange={e => setAssignSelectedCsId(e.target.value)} className="p-1 border rounded bg-white dark:bg-slate-800 text-sm">
-                                                                        <option value="">Pilih CS...</option>
-                                                                        {csUsers.map(cs => (
-                                                                            <option key={cs.id} value={cs.id}>{cs.name}</option>
-                                                                        ))}
-                                                                    </select>
-                                                                    <button onClick={() => handleSaveAssign(order.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Simpan</button>
-                                                                    <button onClick={handleCancelAssign} className="px-2 py-1 border rounded text-sm">Batal</button>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-xs text-slate-400 italic">Unassigned</span>
-                                                                    <button onClick={() => handleOpenAssign(order.id)} className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded">Assign</button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                        return (
+                                            <tr key={order.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                                                <td className="px-6 py-5 align-middle">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedOrders.has(order.id)}
+                                                        onChange={() => handleToggleSelect(order.id)}
+                                                        className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                                    />
                                                 </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'followUp')?.visible && (
-                                            <td className="px-6 py-5 align-middle">
-                                                <div className="flex justify-center">
-                                                    <FollowUpIndicator order={order} onFollowUp={handleFollowUp} templates={templates} />
-                                                </div>
-                                            </td>
-                                            )}
-                                            {columnVisibility.find(c => c.key === 'actions')?.visible && (
-                                            <td className="px-6 py-5 align-middle text-right">
-                                                <div className="relative flex items-center justify-end">
-                                                    <button
-                                                        onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
-                                                        className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
-                                                        title="Aksi"
-                                                    >
-                                                        <DotsHorizontalIcon className="w-5 h-5" />
-                                                    </button>
-
-                                                    {openDropdownId === order.id && (
-                                                        <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50">
+                                                {columnVisibility.find(c => c.key === 'orderId')?.visible && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        <div className="flex flex-col">
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedOrder(order);
                                                                     setIsDetailModalOpen(true);
-                                                                    setOpenDropdownId(null);
                                                                 }}
-                                                                className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-base mb-1 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer text-left hover:underline"
                                                             >
-                                                                <EyeIcon className="w-5 h-5 text-indigo-600" />
-                                                                <span>Detail</span>
+                                                                #{order.id.substring(0, 8)}
                                                             </button>
-
+                                                            <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                                <CalendarIcon className="w-4 h-4" /> {new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(order.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'customer')?.visible && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
+                                                            <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                                                                <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
+                                                                {order.customerPhone}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'product')?.visible && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        <div className="max-w-xs">
+                                                            <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2 mb-1" title={order.productName}>{order.productName}</p>
+                                                            <p className="font-bold text-slate-900 dark:text-white">Rp {order.totalPrice?.toLocaleString('id-ID')}</p>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'status')?.visible && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        <div className="flex flex-col gap-2 items-start">
+                                                            <StatusBadge status={order.status} />
                                                             <button
-                                                                onClick={() => {
-                                                                    setSelectedOrder(order);
-                                                                    setIsManualOrderModalOpen(true);
-                                                                    setOpenDropdownId(null);
-                                                                }}
-                                                                className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                onClick={() => setOrderToChangePayment(order)}
+                                                                className="text-xs flex items-center gap-1 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 transition-colors"
                                                             >
-                                                                <PencilIcon className="w-5 h-5 text-slate-600" />
-                                                                <span>Edit</span>
+                                                                <CreditCardIcon className="w-3 h-3" />
+                                                                {order.paymentMethod || 'COD'}
                                                             </button>
-
-                                                            {order.status === 'Pending' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setOrderToProcess(order);
-                                                                        setOpenDropdownId(null);
-                                                                    }}
-                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                                >
-                                                                    <PlayIcon className="w-5 h-5 text-blue-600" />
-                                                                    <span>Proses</span>
-                                                                </button>
-                                                            )}
-
-                                                            {order.status === 'Processing' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setOrderToShip(order);
-                                                                        setOpenDropdownId(null);
-                                                                    }}
-                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                                >
-                                                                    <ShipIcon className="w-5 h-5 text-cyan-600" />
-                                                                    <span>Kirim (Input Resi)</span>
-                                                                </button>
-                                                            )}
-
-                                                            {order.status === 'Shipped' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        handleUpdateStatus(order.id, 'Delivered');
-                                                                        setOpenDropdownId(null);
-                                                                    }}
-                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                                >
-                                                                    <CheckCircleFilledIcon className="w-5 h-5 text-green-600" />
-                                                                    <span>Selesai (Delivered)</span>
-                                                                </button>
-                                                            )}
-
-                                                            {order.status !== 'Canceled' && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setOrderToCancel(order);
-                                                                        setOpenDropdownId(null);
-                                                                    }}
-                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                                                                >
-                                                                    <XCircleIcon className="w-5 h-5 text-orange-600" />
-                                                                    <span>Batalkan</span>
-                                                                </button>
-                                                            )}
-
-                                                            <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
-
-                                                            {currentUser && canUseFeature('delete_order', getNormalizedRole(currentUser.role)) && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        openDeleteConfirmation(order);
-                                                                        setOpenDropdownId(null);
-                                                                    }}
-                                                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-colors"
-                                                                >
-                                                                    <TrashIcon className="w-5 h-5" />
-                                                                    <span>Hapus</span>
-                                                                </button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'platform')?.visible && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        <div className="flex items-center gap-2">
+                                                            {order.utmSource ? (
+                                                                <>
+                                                                    {order.utmSource.toLowerCase() === 'meta' && (
+                                                                        <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
+                                                                            <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
+                                                                            Meta
+                                                                        </div>
+                                                                    )}
+                                                                    {order.utmSource.toLowerCase() === 'tiktok' && (
+                                                                        <div className="flex items-center gap-1 px-2 py-1 bg-slate-900/10 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded text-xs font-medium">
+                                                                            <div className="w-4 h-4 bg-slate-900 dark:bg-slate-300 rounded-full"></div>
+                                                                            TikTok
+                                                                        </div>
+                                                                    )}
+                                                                    {order.utmSource.toLowerCase() === 'google' && (
+                                                                        <div className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded text-xs font-medium">
+                                                                            <div className="w-4 h-4 bg-red-600 rounded-full"></div>
+                                                                            Google
+                                                                        </div>
+                                                                    )}
+                                                                    {order.utmSource.toLowerCase() === 'snack' && (
+                                                                        <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded text-xs font-medium">
+                                                                            <div className="w-4 h-4 bg-green-600 rounded-full"></div>
+                                                                            Snack
+                                                                        </div>
+                                                                    )}
+                                                                    {!['meta', 'tiktok', 'google', 'snack'].includes(order.utmSource.toLowerCase()) && (
+                                                                        <span className="text-xs text-slate-500 dark:text-slate-400 italic">{order.utmSource}</span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-xs text-slate-400 dark:text-slate-500 italic">—</span>
                                                             )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            )}
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'cs')?.visible && currentUser?.role !== 'Customer service' && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        {assignedCS ? (
+                                                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs font-bold">
+                                                                    {assignedCS.name.charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <span className="truncate max-w-[80px]">{assignedCS.name.split(' ')[0]}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div>
+                                                                {assignTargetOrderId === order.id ? (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <select value={assignSelectedCsId} onChange={e => setAssignSelectedCsId(e.target.value)} className="p-1 border rounded bg-white dark:bg-slate-800 text-sm">
+                                                                            <option value="">Pilih CS...</option>
+                                                                            {csUsers.map(cs => (
+                                                                                <option key={cs.id} value={cs.id}>{cs.name}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                        <button onClick={() => handleSaveAssign(order.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Simpan</button>
+                                                                        <button onClick={handleCancelAssign} className="px-2 py-1 border rounded text-sm">Batal</button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xs text-slate-400 italic">Unassigned</span>
+                                                                        <button onClick={() => handleOpenAssign(order.id)} className="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded">Assign</button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'followUp')?.visible && (
+                                                    <td className="px-6 py-5 align-middle">
+                                                        <div className="flex justify-center">
+                                                            <FollowUpIndicator order={order} onFollowUp={handleFollowUp} templates={templates} />
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'actions')?.visible && (
+                                                    <td className="px-6 py-5 align-middle text-right">
+                                                        <div className="relative flex items-center justify-end">
+                                                            <button
+                                                                onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
+                                                                className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                                                                title="Aksi"
+                                                            >
+                                                                <DotsHorizontalIcon className="w-5 h-5" />
+                                                            </button>
+
+                                                            {openDropdownId === order.id && (
+                                                                <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedOrder(order);
+                                                                            setIsDetailModalOpen(true);
+                                                                            setOpenDropdownId(null);
+                                                                        }}
+                                                                        className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                    >
+                                                                        <EyeIcon className="w-5 h-5 text-indigo-600" />
+                                                                        <span>Detail</span>
+                                                                    </button>
+
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedOrder(order);
+                                                                            setIsManualOrderModalOpen(true);
+                                                                            setOpenDropdownId(null);
+                                                                        }}
+                                                                        className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                    >
+                                                                        <PencilIcon className="w-5 h-5 text-slate-600" />
+                                                                        <span>Edit</span>
+                                                                    </button>
+
+                                                                    {order.status === 'Pending' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setOrderToProcess(order);
+                                                                                setOpenDropdownId(null);
+                                                                            }}
+                                                                            className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                        >
+                                                                            <PlayIcon className="w-5 h-5 text-blue-600" />
+                                                                            <span>Proses</span>
+                                                                        </button>
+                                                                    )}
+
+                                                                    {order.status === 'Processing' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setOrderToShip(order);
+                                                                                setOpenDropdownId(null);
+                                                                            }}
+                                                                            className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                        >
+                                                                            <ShipIcon className="w-5 h-5 text-cyan-600" />
+                                                                            <span>Kirim (Input Resi)</span>
+                                                                        </button>
+                                                                    )}
+
+                                                                    {order.status === 'Shipped' && currentUser && canUseFeature('change_order_status', getNormalizedRole(currentUser.role)) && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                handleUpdateStatus(order.id, 'Delivered');
+                                                                                setOpenDropdownId(null);
+                                                                            }}
+                                                                            className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                        >
+                                                                            <CheckCircleFilledIcon className="w-5 h-5 text-green-600" />
+                                                                            <span>Selesai (Delivered)</span>
+                                                                        </button>
+                                                                    )}
+
+                                                                    {order.status !== 'Canceled' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setOrderToCancel(order);
+                                                                                setOpenDropdownId(null);
+                                                                            }}
+                                                                            className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                                                                        >
+                                                                            <XCircleIcon className="w-5 h-5 text-orange-600" />
+                                                                            <span>Batalkan</span>
+                                                                        </button>
+                                                                    )}
+
+                                                                    <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+
+                                                                    {currentUser && canUseFeature('delete_order', getNormalizedRole(currentUser.role)) && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                openDeleteConfirmation(order);
+                                                                                setOpenDropdownId(null);
+                                                                            }}
+                                                                            className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-colors"
+                                                                        >
+                                                                            <TrashIcon className="w-5 h-5" />
+                                                                            <span>Hapus</span>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
                         </>
                     )}
                 </div>

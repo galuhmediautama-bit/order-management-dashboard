@@ -80,7 +80,7 @@ const ProductsPage: React.FC = () => {
                 // Admin/role lain hanya melihat produk brand yang di-assign
                 data = await productService.getProductsByBrands(brandIds);
             }
-            
+
             setProducts(data);
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -106,10 +106,10 @@ const ProductsPage: React.FC = () => {
         try {
             // Get product to find its brandId
             const productToDelete = products.find(p => p.id === productId);
-            
+
             await productService.deleteProduct(productId);
             showToast('✅ Produk berhasil dihapus', 'success');
-            
+
             // Update brand's productCount
             if (productToDelete?.brandId) {
                 try {
@@ -118,7 +118,7 @@ const ProductsPage: React.FC = () => {
                         .select('productCount')
                         .eq('id', productToDelete.brandId)
                         .single();
-                    
+
                     if (brand) {
                         const newCount = Math.max(0, (brand.productCount || 0) - 1);
                         await supabase
@@ -130,7 +130,7 @@ const ProductsPage: React.FC = () => {
                     console.warn('Warning: Could not update brand productCount:', error);
                 }
             }
-            
+
             fetchProducts();
         } catch (error) {
             console.error('Error deleting product:', error);
@@ -151,12 +151,12 @@ const ProductsPage: React.FC = () => {
             const prices = product.variants
                 .map(v => v.price)
                 .filter(p => p !== undefined && p !== null) as number[];
-            
+
             if (prices.length > 1) {
                 // Jika ada multiple variants, tampilkan rentang harga
                 const minPrice = Math.min(...prices);
                 const maxPrice = Math.max(...prices);
-                
+
                 if (minPrice === maxPrice) {
                     // Semua variant harga sama
                     return `Rp ${minPrice.toLocaleString('id-ID')}`;
@@ -169,7 +169,7 @@ const ProductsPage: React.FC = () => {
                 return `Rp ${prices[0].toLocaleString('id-ID')}`;
             }
         }
-        
+
         // Fallback ke basePrice jika tidak ada variants
         const price = product.basePrice || product.attributes?.basePrice;
         return price ? `Rp ${price.toLocaleString('id-ID')}` : '-';
@@ -178,7 +178,7 @@ const ProductsPage: React.FC = () => {
     const canEditProduct = (product: Product) => {
         // Super Admin bisa edit semua
         if (currentUser.role === 'Super Admin') return true;
-        
+
         // Advertiser hanya bisa edit produk milik brand-nya
         if (currentUser.role === 'Advertiser') {
             const userBrandIds = currentUser.assignedBrandIds?.length
@@ -186,10 +186,10 @@ const ProductsPage: React.FC = () => {
                 : currentUser.brandId ? [currentUser.brandId] : [];
             return userBrandIds.includes(product.brandId);
         }
-        
+
         // Role lain cek brandId
-        return product.brandId === currentUser.brandId || 
-               currentUser.assignedBrandIds?.includes(product.brandId);
+        return product.brandId === currentUser.brandId ||
+            currentUser.assignedBrandIds?.includes(product.brandId);
     };
 
     const fetchProductStats = async () => {
@@ -200,7 +200,7 @@ const ProductsPage: React.FC = () => {
                 : currentUser.brandId
                     ? [currentUser.brandId]
                     : [];
-            
+
             // Super Admin dan Advertiser dapat melihat semua produk
             if (currentUser.role === 'Super Admin' || currentUser.role === 'Advertiser') {
                 productsToCheck = await productService.getAllProducts();
@@ -214,14 +214,14 @@ const ProductsPage: React.FC = () => {
             for (const product of productsToCheck) {
                 // Hitung jumlah form yang diassign
                 const forms = await productService.getProductForms(product.id);
-                
+
                 // Hitung jumlah terjual (dari orders table)
                 const { data: orders, error } = await supabase
                     .from('orders')
                     .select('id')
                     .eq('product_id', product.id)
                     .eq('status', 'Delivered');
-                
+
                 if (!error) {
                     stats[product.id] = {
                         salesCount: orders?.length || 0,
@@ -353,7 +353,7 @@ const ProductsPage: React.FC = () => {
                                             >
                                                 <EllipsisVerticalIcon className="w-5 h-5" />
                                             </button>
-                                            
+
                                             {/* Dropdown Menu */}
                                             {openDropdown === product.id && (
                                                 <div className="absolute right-0 mt-8 w-48 bg-white dark:bg-slate-700 rounded-lg shadow-lg z-10 border border-slate-200 dark:border-slate-600">
@@ -367,16 +367,15 @@ const ProductsPage: React.FC = () => {
                                                             setOpenDropdown(null);
                                                         }}
                                                         disabled={!canEditProduct(product)}
-                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600 ${
-                                                            canEditProduct(product)
+                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 border-b border-slate-200 dark:border-slate-600 ${canEditProduct(product)
                                                                 ? 'hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 cursor-pointer'
                                                                 : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
                                                         Edit Produk {!canEditProduct(product) && '🔒'}
                                                     </button>
-                                                    
+
                                                     <button
                                                         onClick={() => {
                                                             // Implementasi view forms untuk produk ini
@@ -390,7 +389,7 @@ const ProductsPage: React.FC = () => {
                                                         </svg>
                                                         Lihat Form ({productStats[product.id]?.formCount || 0})
                                                     </button>
-                                                    
+
                                                     <button
                                                         onClick={() => {
                                                             navigate(`/produk/${product.id}/forms`);
@@ -403,7 +402,7 @@ const ProductsPage: React.FC = () => {
                                                         </svg>
                                                         Lihat Form ({productStats[product.id]?.formCount || 0})
                                                     </button>
-                                                    
+
                                                     <button
                                                         onClick={() => {
                                                             navigate(`/produk/${product.id}/sales`);
@@ -416,7 +415,7 @@ const ProductsPage: React.FC = () => {
                                                         </svg>
                                                         Penjualan ({productStats[product.id]?.salesCount || 0})
                                                     </button>
-                                                    
+
                                                     <button
                                                         onClick={() => {
                                                             navigate(`/produk/${product.id}/details`);
@@ -440,11 +439,10 @@ const ProductsPage: React.FC = () => {
                                                             setOpenDropdown(null);
                                                         }}
                                                         disabled={!canEditProduct(product)}
-                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 ${
-                                                            canEditProduct(product)
+                                                        className={`w-full text-left px-4 py-3 flex items-center gap-2 ${canEditProduct(product)
                                                                 ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 cursor-pointer'
                                                                 : 'text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
                                                         Hapus Produk {!canEditProduct(product) && '🔒'}
