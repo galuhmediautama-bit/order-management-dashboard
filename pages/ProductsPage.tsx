@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useDialog } from '../contexts/DialogContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
+import { DEFAULT_ROLE_PERMISSIONS } from '../utils/rolePermissions';
 import { Product } from '../types';
 import { productService } from '../services/productService';
 import { supabase } from '../firebase';
@@ -184,9 +185,7 @@ const ProductsPage: React.FC = () => {
         
         // If no permissions data, check against DEFAULT_ROLE_PERMISSIONS as fallback
         if (!userPermissions?.features) {
-            // Fallback: Check if role has edit_product in default permissions
-            const { DEFAULT_ROLE_PERMISSIONS } = require('../utils/rolePermissions');
-            const rolePerms = DEFAULT_ROLE_PERMISSIONS[userRole];
+            const rolePerms = DEFAULT_ROLE_PERMISSIONS[userRole as keyof typeof DEFAULT_ROLE_PERMISSIONS];
             if (!rolePerms?.features?.includes('edit_product')) {
                 return false;
             }
