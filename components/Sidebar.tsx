@@ -258,10 +258,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             ]
         },
         {
-                name: 'Monitoring',
-                icon: DashboardIcon,
+            name: 'Monitoring',
+            icon: DashboardIcon,
             subItems: [
-                    { name: 'Performance Dashboard', icon: DashboardIcon }
+                { name: 'Performance Dashboard', icon: DashboardIcon }
             ]
         },
     ]; const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
@@ -358,8 +358,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                                                         to={subPath}
                                                         onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }}
                                                         className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${isSubActive
-                                                                ? 'text-white bg-slate-800/80'
-                                                                : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+                                                            ? 'text-white bg-slate-800/80'
+                                                            : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
                                                             }`}
                                                     >
                                                         <div className={`w-1.5 h-1.5 rounded-full mr-3 ${isSubActive ? 'bg-indigo-400' : 'bg-slate-600'}`}></div>

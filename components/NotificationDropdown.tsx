@@ -99,9 +99,8 @@ export const NotificationDropdown: React.FC<{ isOpen: boolean; onClose: () => vo
                         {previewNotifications.map((notification) => (
                             <div
                                 key={notification.id}
-                                className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group ${
-                                    !notification.isRead ? 'bg-indigo-50 dark:bg-indigo-950' : ''
-                                }`}
+                                className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group ${!notification.isRead ? 'bg-indigo-50 dark:bg-indigo-950' : ''
+                                    }`}
                                 onClick={() => {
                                     if (!notification.isRead) {
                                         handleMarkAsRead(notification.id, new MouseEvent('click') as any);

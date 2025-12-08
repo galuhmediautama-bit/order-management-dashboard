@@ -79,15 +79,15 @@ const FormSkeleton: React.FC = () => (
                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
             </div>
             <div className="mb-6">
-                 <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-2"></div>
-                 <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-2"></div>
+                <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
             </div>
             <div className="space-y-4 mb-6">
                 <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
                 <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
                 <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
             </div>
-             <div className="h-14 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+            <div className="h-14 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
         </div>
     </div>
 );
@@ -124,13 +124,13 @@ const SocialProofPopup: React.FC<{
                 setIsVisible(false);
             }, settings.displayDurationSeconds * 1000);
         };
-        
+
         const cycleTime = (settings.intervalSeconds + settings.displayDurationSeconds) * 1000;
 
         const initialTimeout = setTimeout(() => {
             showNextProof();
             if (cycleTime > 0) {
-                 intervalId = window.setInterval(showNextProof, cycleTime);
+                intervalId = window.setInterval(showNextProof, cycleTime);
             }
         }, settings.initialDelaySeconds * 1000);
 
@@ -150,7 +150,7 @@ const SocialProofPopup: React.FC<{
         'top-left': 'top-4 left-4',
         'top-right': 'top-4 right-4',
     };
-    
+
     const animationClasses: Record<NonNullable<Form['socialProofSettings']>['animation'], string> = {
         'slide-up': `transition-all duration-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`,
         'slide-down': `transition-all duration-500 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0'}`,
@@ -159,7 +159,7 @@ const SocialProofPopup: React.FC<{
 
     return (
         <div className={`fixed ${positionClasses[settings.position]} z-50 ${animationClasses[settings.animation]}`}>
-             <div className="bg-slate-800/90 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg max-w-xs text-sm">
+            <div className="bg-slate-800/90 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg max-w-xs text-sm">
                 <p><span className="font-bold">{currentProof.name}</span> dari <span className="font-semibold">{currentProof.city}</span></p>
                 <p className="text-slate-300">baru saja membeli <strong>{productName}</strong></p>
             </div>
@@ -179,7 +179,7 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
             document.title = originalTitle;
         };
     }, [thankYouPage.title]);
-    
+
     useEffect(() => {
         const fetchCsPhone = async () => {
             if (thankYouPage.whatsappConfirmation.active && thankYouPage.whatsappConfirmation.destination === 'assigned_cs' && order.assignedCsId) {
@@ -208,10 +208,10 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
 
     let whatsappLink = '#';
     if (thankYouPage.whatsappConfirmation.active) {
-        const productDisplay = order.variant 
+        const productDisplay = order.variant
             ? `${order.productName || 'Produk'} / ${order.variant}`
             : (order.productName || 'Produk');
-        
+
         const message = thankYouPage.whatsappConfirmation.messageTemplate
             .replace('[PRODUCT_NAME]', productDisplay)
             .replace('[ORDER_ID]', order.id.substring(0, 8))
@@ -225,7 +225,7 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
         } else {
             destinationNumber = formatWaNumber(thankYouPage.whatsappConfirmation.number);
         }
-        
+
         if (destinationNumber) {
             whatsappLink = `https://wa.me/${destinationNumber}?text=${encodeURIComponent(message)}`;
         }
@@ -286,7 +286,7 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
                 )}
 
                 {thankYouPage.whatsappConfirmation.active && (
-                        <FadeInBlock delay={600}>
+                    <FadeInBlock delay={600}>
                         <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="w-full mt-4 bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
                             <WhatsAppIcon className="w-5 h-5" />
                             Konfirmasi via WhatsApp
@@ -305,16 +305,16 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submission, setSubmission] = useState<{success: boolean, order?: Order, error?: string}>({success: false});
+    const [submission, setSubmission] = useState<{ success: boolean, order?: Order, error?: string }>({ success: false });
     const [imageLoaded, setImageLoaded] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
     const [variantStock, setVariantStock] = useState<Record<string, number>>({});
     const [checkoutCount, setCheckoutCount] = useState(0);
     const [productOptionsOverride, setProductOptionsOverride] = useState<Form['productOptions']>([]);
-    
+
     // Platform Tracking State
     const [activePlatform, setActivePlatform] = useState<'meta' | 'tiktok' | 'google' | 'snack' | null>(null);
-    
+
     // Pixel State
     const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
     const [eventNames, setEventNames] = useState<{ formPage: string; thankYouPage: string }>({
@@ -327,7 +327,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         tiktok: { ids: [], eventName: 'ViewContent' },
         snack: { ids: [], eventName: 'ViewContent' },
     });
-    
+
     // Form state
     const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '', province: '', city: '', district: '' });
     const [addressData, setAddressData] = useState<AddressData>({
@@ -341,7 +341,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
     const [selectedShippingKey, setSelectedShippingKey] = useState<keyof ShippingSettings | undefined>();
     const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
-    
+
     const debounceTimer = useRef<number | null>(null);
 
     // Fetch product variant options (source of truth) untuk hindari gabungan di UI
@@ -349,7 +349,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         // Parse platform parameter dari URL (?platform=meta|tiktok|google|snack)
         const params = new URLSearchParams(window.location.search);
         const platformParam = params.get('platform') as 'meta' | 'tiktok' | 'google' | 'snack' | null;
-        
+
         if (platformParam && ['meta', 'tiktok', 'google', 'snack'].includes(platformParam)) {
             setActivePlatform(platformParam);
             console.log(`[FormViewer] Platform parameter detected: ${platformParam}`);
@@ -490,12 +490,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         const isThankYouPage = submission.success && !!submission.order;
         const pageType = isThankYouPage ? 'thankYouPage' : 'formPage';
-        
+
         console.log('[FormViewer] Calculating pixels for page:', pageType);
         console.log('[FormViewer] Form tracking settings:', form.trackingSettings);
-        
+
         const trackingSettings = form.trackingSettings?.[pageType];
-        
+
         // Build pixel data for each platform
         const newPixelsByPlatform: Record<string, { ids: string[]; eventName: string }> = {
             meta: { ids: [], eventName: 'ViewContent' },
@@ -503,13 +503,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             tiktok: { ids: [], eventName: 'ViewContent' },
             snack: { ids: [], eventName: 'ViewContent' },
         };
-        
+
         // Extract from form tracking settings
         if (trackingSettings) {
             Object.entries(trackingSettings).forEach(([platform, settings]) => {
                 // Smart filtering: only load pixel if platform matches OR no specific platform assigned
                 const shouldLoadPlatform = !activePlatform || activePlatform === platform;
-                
+
                 if (shouldLoadPlatform && settings?.pixelIds && settings.pixelIds.length > 0) {
                     newPixelsByPlatform[platform] = {
                         ids: settings.pixelIds,
@@ -521,7 +521,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 }
             });
         }
-        
+
         // Fallback to global if no form-specific settings
         const hasCoverageFromForm = Object.values(newPixelsByPlatform).some(p => p.ids.length > 0);
         if (!hasCoverageFromForm && !settingsLoading && globalTrackingSettings) {
@@ -535,12 +535,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
 
         setPixelsByPlatform(newPixelsByPlatform);
-        
+
         // For backward compatibility - Meta pixel IDs
         const metaIds = newPixelsByPlatform.meta.ids;
         console.log(`[FormViewer] Final Meta IDs: ${metaIds.length > 0 ? metaIds.join(', ') : 'NONE'}`);
         setActivePixelIds(metaIds);
-        
+
         // Update event names - use Meta platform event as primary
         let metaEventName = newPixelsByPlatform.meta.eventName;
         // Guard: jangan pernah fire InitiateCheckout di Thank You page; pakai AddToCart
@@ -586,7 +586,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             timestamp: new Date().toISOString(),
             status: 'New' as const,
         };
-        
+
         try {
             const cartId = sessionStorage.getItem(`abandonedCart_${form.id}`);
             if (cartId) {
@@ -610,7 +610,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
         debounceTimer.current = window.setTimeout(() => {
             saveAbandonedCart();
-        }, 5000); 
+        }, 5000);
 
         return () => {
             if (debounceTimer.current) {
@@ -681,23 +681,23 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 x = x ^ (x >>> 13);
                 return x >>> 0;
             };
-    
+
             const initialStocks: Record<string, number> = {};
             const maxStock = form.stockCountdownSettings.initialStock; // This is now the MAX, not base
-            
+
             // Build stock map for each resolved variant combination with random values below max
             resolvedVariantCombinations.forEach((combo, index) => {
                 const variantKey = Object.values(combo.attributes).join(' / ') || 'Produk Tunggal';
-                
+
                 // Create unique seed with more aggressive mixing
                 let seed = index * 73856093; // Large prime
                 for (let i = 0; i < variantKey.length; i++) {
                     seed = seed ^ ((variantKey.charCodeAt(i) << (i % 16)) >>> 0);
                 }
                 seed = (seed * 19349663) >>> 0; // Additional mixing
-                
+
                 const hashValue = getRandomStock(seed);
-                
+
                 if (combo.initialStock) {
                     // If variant has custom initialStock, use it as max and get random below it
                     const maxForVariant = combo.initialStock;
@@ -709,9 +709,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     initialStocks[variantKey] = Math.max(2, Math.floor(maxStock * randomPercent / 100));
                 }
             });
-            
+
             setVariantStock(initialStocks);
-    
+
             const interval = setInterval(() => {
                 setVariantStock(prevStocks => {
                     const newStocks = { ...prevStocks };
@@ -723,11 +723,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     return newStocks;
                 });
             }, (form.stockCountdownSettings.intervalSeconds || 5) * 1000);
-    
+
             return () => clearInterval(interval);
         }
     }, [form?.stockCountdownSettings, resolvedVariantCombinations]);
-    
+
     useEffect(() => {
         if (form?.ctaSettings) {
             setCheckoutCount(form.ctaSettings.initialCount);
@@ -789,7 +789,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             if (foundForm) {
                 const normalizedForm = normalizeForm(foundForm);
                 console.log('Normalized form customerFields:', normalizedForm.customerFields);
-                
+
                 // Remove productImages array untuk menghindari galeri foto
                 const cleanForm = { ...normalizedForm, productImages: [] };
                 setForm(cleanForm);
@@ -840,7 +840,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             return changed ? next : prev;
         });
     }, [displayOptions]);
-    
+
     const currentCombination = useMemo(() => {
         if (!form) return null;
         if (resolvedVariantCombinations.length === 0) return null;
@@ -872,17 +872,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }, [currentCombination, variantStock]);
 
     const subtotal = currentCombination?.sellingPrice ?? 0;
-    
+
     const shippingCost = useMemo(() => {
         if (!form || !selectedShippingKey) return 0;
-    
+
         const setting = form.shippingSettings[selectedShippingKey];
         if (!setting || !setting.visible) return 0;
-    
+
         if (selectedShippingKey.startsWith('flat_')) {
             const costPerKg = setting.cost || 0;
             const weightInGrams = currentCombination?.weight || 0;
-            
+
             if (weightInGrams > 0) {
                 const weightInKg = weightInGrams / 1000;
                 return Math.ceil(weightInKg) * costPerKg;
@@ -914,11 +914,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             if (!form?.thankYouPage.csAssignment) return undefined;
 
             const { mode, singleAgentId, roundRobinAgents } = form.thankYouPage.csAssignment;
-            
+
             if (mode === 'single' && singleAgentId) {
                 return singleAgentId;
             }
-            
+
             if (mode === 'round_robin' && roundRobinAgents && roundRobinAgents.length > 0) {
                 // 1. Fetch Candidates Info
                 const agentIds = roundRobinAgents.map(a => a.csAgentId);
@@ -927,10 +927,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
                 // 2. Fetch Rank Rules & Today's Orders Count
                 const { data: rankSettingsDoc } = await supabase.from('settings').select('*').eq('id', 'cuanRank').single();
-                
+
                 // Get start of today (UTC)
                 const today = new Date();
-                today.setUTCHours(0,0,0,0);
+                today.setUTCHours(0, 0, 0, 0);
                 const { data: todayOrders } = await supabase
                     .from('orders')
                     .select('assignedCsId')
@@ -957,17 +957,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
                     // Get Limit for this Rank
                     const rule = rankSettingsDoc?.csRules?.find((r: any) => r.rank === rank);
-                    
+
                     // If no rule or limit is undefined/null/0, treat as unlimited or check specific implementation
                     // Here we assume explicit limit.
                     if (!rule || rule.maxDailyLeads === undefined || rule.maxDailyLeads === null) return true;
 
                     // Count Today's Orders
                     const agentTodayCount = todayOrders?.filter(o => o.assignedCsId === agent.id).length || 0;
-                    
+
                     return agentTodayCount < rule.maxDailyLeads;
                 });
-                
+
                 // --- OVERFLOW LOGIC ---
                 // If ALL agents are full (eligibleAgents is empty), ignore limits and distribute to ALL active agents.
                 // This prevents losing leads when traffic > capacity.
@@ -992,7 +992,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 // Normalize random if total percentage < 100 due to filtering
                 const rand = Math.random() * cumulativePercentage;
                 const assigned = ranges.find(range => rand >= range.start && rand < (range.start + range.percentage));
-                
+
                 return assigned?.csAgentId;
             }
         } catch (error) {
@@ -1012,7 +1012,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         // ✅ Set submission flag ASAP to prevent abandoned cart timer from firing
         hasSubmittedRef.current = true;
-        
+
         // ✅ Clear debounce timer to prevent abandoned cart save after submission
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
@@ -1025,17 +1025,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         if (form.customerFields.city?.required && !customerData.city) { alert("Kota/Kabupaten harus diisi."); setIsSubmitting(false); return; }
         if (form.customerFields.district?.required && !customerData.district) { alert("Kecamatan harus diisi."); setIsSubmitting(false); return; }
         if (form.customerFields.address.required && !customerData.address) { alert("Alamat harus diisi."); setIsSubmitting(false); return; }
-        
+
         try {
             const assignedCsId = await assignCs();
-            
+
             // Capture UTM parameters from URL for tracking
             const params = new URLSearchParams(window.location.search);
             const utmSource = params.get('utm_source') || undefined;
             const utmMedium = params.get('utm_medium') || undefined;
             const utmCampaign = params.get('utm_campaign') || undefined;
             const utmContent = params.get('utm_content') || undefined;
-            
+
             // Get both commission values
             const csCommissionValue = currentCombination.csCommission || 0;
             const advCommissionValue = currentCombination.advCommission || 0;
@@ -1059,7 +1059,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 status: 'Pending',
                 urgency: 'Low',
                 followUps: 0,
-                date: new Date().toISOString(), 
+                date: new Date().toISOString(),
                 quantity: 1,
                 formId: form.id || null,
                 formTitle: form.title,
@@ -1090,7 +1090,41 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             await supabase.from('forms').update({
                 submissionCount: (form.submissionCount || 0) + 1
             }).eq('id', form.id);
-            
+
+            // ✅ CREATE NOTIFICATION for order (manual insert - fallback if trigger doesn't fire)
+            try {
+                const notificationTitle = `Pesanan Baru dari ${data.customer}`;
+                const notificationMessage = `Pesanan dari ${data.customer} (${data.customerPhone}) - ${data.productName} - Rp ${(data.totalPrice || 0).toLocaleString('id-ID')}`;
+                
+                // Get users to notify
+                const { data: usersToNotify } = await supabase
+                    .from('users')
+                    .select('id, role')
+                    .in('role', ['Super Admin', 'Admin'])
+                    .eq('status', 'Aktif');
+                
+                if (usersToNotify && usersToNotify.length > 0) {
+                    const notificationsToInsert = usersToNotify.map(user => ({
+                        user_id: user.id,
+                        type: 'ORDER_NEW',
+                        title: notificationTitle,
+                        message: notificationMessage,
+                        metadata: {
+                            orderId: data.id,
+                            customerName: data.customer,
+                            customerPhone: data.customerPhone,
+                            totalPrice: data.totalPrice,
+                            productName: data.productName
+                        }
+                    }));
+                    
+                    await supabase.from('notifications').insert(notificationsToInsert);
+                    console.log('[FormViewer] Notifications created for', usersToNotify.length, 'users');
+                }
+            } catch (err) {
+                console.warn('Failed to create notification:', err);
+            }
+
             // ✅ DELETE abandoned cart record saat order berhasil dibuat
             // (jangan masukkan order yang sudah completed ke abandoned carts)
             const cartId = sessionStorage.getItem(`abandonedCart_${form.id}`);
@@ -1101,23 +1135,23 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     console.warn("Failed to delete abandoned cart record:", err);
                 }
             }
-            
+
             const newOrder = {
                 ...(data as Order),
                 productId: (data as any)?.product_id ?? (data as any)?.productId ?? null,
             } as Order;
-            
+
             sessionStorage.removeItem(`abandonedCart_${form.id}`);
 
             if (form.thankYouPage.submissionAction === 'redirect_to_url' && form.thankYouPage.redirectUrl) {
                 let finalUrl = form.thankYouPage.redirectUrl;
-                
+
                 finalUrl = finalUrl.replace(/\[ORDER_ID\]/g, newOrder.id);
                 finalUrl = finalUrl.replace(/\[TOTAL_PRICE\]/g, String(newOrder.totalPrice || 0));
                 finalUrl = finalUrl.replace(/\[CUSTOMER_NAME\]/g, encodeURIComponent(newOrder.customer));
                 finalUrl = finalUrl.replace(/\[CUSTOMER_EMAIL\]/g, encodeURIComponent(newOrder.customerEmail));
                 finalUrl = finalUrl.replace(/\[CUSTOMER_PHONE\]/g, encodeURIComponent(newOrder.customerPhone));
-                
+
                 window.location.replace(finalUrl);
             } else {
                 setSubmission({ success: true, order: newOrder });
@@ -1125,7 +1159,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         } catch (error) {
             console.error("Error creating order:", error);
             console.error("Error details:", JSON.stringify(error, null, 2));
-            
+
             // More detailed error message
             let errorMessage = 'Terjadi kesalahan saat mengirim pesanan. Silakan coba lagi.';
             if (error instanceof Error) {
@@ -1133,14 +1167,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             } else if (typeof error === 'object' && error !== null && 'message' in error) {
                 errorMessage = `Error: ${(error as any).message}`;
             }
-            
+
             setSubmission({ success: false, error: errorMessage });
             alert(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
     };
-    
+
     // ... rest of the existing rendering logic ...
 
     if (loading) {
@@ -1150,17 +1184,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400"><h1>404 | Formulir tidak ditemukan.</h1></div>;
     }
     if (!form) {
-         return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-red-500">Terjadi kesalahan saat memuat formulir.</div>;
+        return <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-red-500">Terjadi kesalahan saat memuat formulir.</div>;
     }
 
     if (submission.success && submission.order) {
         // ✅ THANK YOU PAGE - HANYA fire event, JANGAN initialize pixel lagi
         return (
             <>
-                <ThankYouPixelEvent 
-                    eventName={eventNames.thankYouPage} 
-                    order={submission.order} 
-                    contentName={form.title} 
+                <ThankYouPixelEvent
+                    eventName={eventNames.thankYouPage}
+                    order={submission.order}
+                    contentName={form.title}
                 />
                 <CustomScriptInjector scriptContent={form.customScripts?.thankYouPage || ''} />
                 <ThankYouDisplay form={form} order={submission.order} />
@@ -1184,7 +1218,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const sortedPaymentKeys = (Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>)
         .filter(key => form.paymentSettings[key].visible)
         .sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99));
-    
+
     const hasVisiblePayment = sortedPaymentKeys.length > 0;
 
     // Add inline styles for animations
@@ -1206,14 +1240,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     return (
         <>
             <style>{animationStyles}</style>
-            <FormPagePixelScript 
+            <FormPagePixelScript
                 key="formPage-pixel"
-                pixelIds={activePixelIds} 
-                eventName={eventNames.formPage} 
-                contentName={form.title} 
+                pixelIds={activePixelIds}
+                eventName={eventNames.formPage}
+                contentName={form.title}
             />
             <CustomScriptInjector scriptContent={form.customScripts?.formPage || ''} />
-            
+
             <div className="min-h-screen bg-slate-100 dark:bg-slate-900 py-8 px-4">
                 <div className="w-full max-w-lg mx-auto">
                     <form onSubmit={handleSubmit}>
@@ -1227,157 +1261,154 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                             alt={form.title}
                                             className={`w-full aspect-square object-cover rounded-lg transition-all duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                             onLoad={() => setImageLoaded(true)}
-                                            loading="eager" 
+                                            loading="eager"
                                             fetchPriority="high"
                                         />
                                     )}
                                     {!form.mainImage && <div className="h-8"></div>}
                                 </div>
                             </FadeInBlock>
-                            
+
                             <FadeInBlock delay={150}>
                                 {(form.showTitle ?? true) && <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{form.title}</h1>}
                                 {(form.showDescription ?? true) && <p className={descriptionClasses}>{form.description}</p>}
-                                
+
                                 {form.countdownSettings?.active && (
                                     <div className="my-4 text-center bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg shadow-sm font-medium">
                                         ⏳ Pesanan Anda akan di-hold selama <span className="font-bold tabular-nums">{formatTime(timeLeft)}</span>.
                                     </div>
                                 )}
                             </FadeInBlock>
-                            
+
                             <FadeInBlock delay={300}>
                                 {displayOptions.length > 0 && (
                                     <div className="mb-4 space-y-6">
-                                    {displayOptions.map((option, index) => {
-                                        const displayStyle = option.displayStyle || 'radio';
-                                        
-                                        // Helper: Get price/details for a specific value of this attribute
-                                        const getVariantDetails = (attributeValue: string) => {
-                                            if (!resolvedVariantCombinations || resolvedVariantCombinations.length === 0) return null;
-                                            
-                                            // Build current selection with this value
-                                            const testSelection = { ...selectedOptions, [option.name]: attributeValue };
+                                        {displayOptions.map((option, index) => {
+                                            const displayStyle = option.displayStyle || 'radio';
 
-                                            // Composite mode: gabungkan Atribut 1 & Atribut 2 ke nilai tunggal
-                                            if (compositeFallback) {
-                                                const combined = compositeFallback.buildCombinedValue(testSelection);
-                                                if (!combined) return null;
-                                                return resolvedVariantCombinations.find(combo => {
-                                                    const keys = Object.keys(combo.attributes || {});
-                                                    const key = keys[0];
-                                                    return key && combo.attributes[key] === combined;
-                                                }) || null;
-                                            }
-                                            
-                                            // Find matching combination (normal mode)
-                                            const match = resolvedVariantCombinations.find(combo => {
-                                                return Object.entries(testSelection).every(([key, val]) => 
-                                                    combo.attributes[key] === val
-                                                );
-                                            });
-                                            
-                                            return match;
-                                        };
-                                        
-                                        return (
-                                            <div key={option.id} className="space-y-3">
-                                                {/* Header Variasi */}
-                                                <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
-                                                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                                                        {option.name}
-                                                    </h3>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Pilih salah satu opsi di bawah
-                                                    </p>
-                                                </div>
-                                                
-                                                {displayStyle === 'dropdown' && (
-                                                    <select
-                                                        onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))}
-                                                        value={selectedOptions[option.name] || ''}
-                                                        className="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 font-medium"
-                                                    >
-                                                        {option.values.map(val => {
-                                                            const details = getVariantDetails(val);
-                                                            const label = details?.sellingPrice 
-                                                                ? `${val} - Rp ${details.sellingPrice.toLocaleString('id-ID')}`
-                                                                : val;
-                                                            return <option key={val} value={val}>{label}</option>;
-                                                        })}
-                                                    </select>
-                                                )}
-                                                {displayStyle === 'radio' && (
-                                                    <div className="space-y-2">
-                                                        {option.values.map(val => {
-                                                            const details = getVariantDetails(val);
-                                                            const isSelected = selectedOptions[option.name] === val;
-                                                            
-                                                            return (
-                                                                <label 
-                                                                    key={val} 
-                                                                    className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
-                                                                        isSelected
-                                                                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]' 
-                                                                            : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                                                    }`}
-                                                                >
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                                                            isSelected ? 'border-white' : 'border-gray-400'
-                                                                        }`}>
-                                                                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                            // Helper: Get price/details for a specific value of this attribute
+                                            const getVariantDetails = (attributeValue: string) => {
+                                                if (!resolvedVariantCombinations || resolvedVariantCombinations.length === 0) return null;
+
+                                                // Build current selection with this value
+                                                const testSelection = { ...selectedOptions, [option.name]: attributeValue };
+
+                                                // Composite mode: gabungkan Atribut 1 & Atribut 2 ke nilai tunggal
+                                                if (compositeFallback) {
+                                                    const combined = compositeFallback.buildCombinedValue(testSelection);
+                                                    if (!combined) return null;
+                                                    return resolvedVariantCombinations.find(combo => {
+                                                        const keys = Object.keys(combo.attributes || {});
+                                                        const key = keys[0];
+                                                        return key && combo.attributes[key] === combined;
+                                                    }) || null;
+                                                }
+
+                                                // Find matching combination (normal mode)
+                                                const match = resolvedVariantCombinations.find(combo => {
+                                                    return Object.entries(testSelection).every(([key, val]) =>
+                                                        combo.attributes[key] === val
+                                                    );
+                                                });
+
+                                                return match;
+                                            };
+
+                                            return (
+                                                <div key={option.id} className="space-y-3">
+                                                    {/* Header Variasi */}
+                                                    <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                        <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                                            {option.name}
+                                                        </h3>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                            Pilih salah satu opsi di bawah
+                                                        </p>
+                                                    </div>
+
+                                                    {displayStyle === 'dropdown' && (
+                                                        <select
+                                                            onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
+                                                            value={selectedOptions[option.name] || ''}
+                                                            className="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 font-medium"
+                                                        >
+                                                            {option.values.map(val => {
+                                                                const details = getVariantDetails(val);
+                                                                const label = details?.sellingPrice
+                                                                    ? `${val} - Rp ${details.sellingPrice.toLocaleString('id-ID')}`
+                                                                    : val;
+                                                                return <option key={val} value={val}>{label}</option>;
+                                                            })}
+                                                        </select>
+                                                    )}
+                                                    {displayStyle === 'radio' && (
+                                                        <div className="space-y-2">
+                                                            {option.values.map(val => {
+                                                                const details = getVariantDetails(val);
+                                                                const isSelected = selectedOptions[option.name] === val;
+
+                                                                return (
+                                                                    <label
+                                                                        key={val}
+                                                                        className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${isSelected
+                                                                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
+                                                                                : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                            }`}
+                                                                    >
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-white' : 'border-gray-400'
+                                                                                }`}>
+                                                                                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                                            </div>
+                                                                            <input
+                                                                                type="radio"
+                                                                                name={option.name}
+                                                                                value={val}
+                                                                                checked={isSelected}
+                                                                                onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
+                                                                                className="hidden"
+                                                                            />
+                                                                            <div className="flex flex-col">
+                                                                                <span className="font-medium">{val}</span>
+                                                                                {details?.sellingPrice && (
+                                                                                    <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                                        Rp {details.sellingPrice.toLocaleString('id-ID')}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
-                                                                        <input 
-                                                                            type="radio" 
-                                                                            name={option.name} 
-                                                                            value={val} 
-                                                                            checked={isSelected} 
-                                                                            onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))} 
-                                                                            className="hidden" 
-                                                                        />
-                                                                        <div className="flex flex-col">
-                                                                            <span className="font-medium">{val}</span>
-                                                                            {details?.sellingPrice && (
-                                                                                <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                                                    Rp {details.sellingPrice.toLocaleString('id-ID')}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    {form.stockCountdownSettings?.active && details && (
-                                                                        <span className={`text-sm font-medium animate-pulse ${
-                                                                            isSelected ? 'text-red-200' : 'text-red-600 dark:text-red-400'
-                                                                        }`}>
-                                                                            Stok: {variantStock[Object.values(details.attributes).join(' / ')] || 0} pcs
+                                                                        {form.stockCountdownSettings?.active && details && (
+                                                                            <span className={`text-sm font-medium animate-pulse ${isSelected ? 'text-red-200' : 'text-red-600 dark:text-red-400'
+                                                                                }`}>
+                                                                                Stok: {variantStock[Object.values(details.attributes).join(' / ')] || 0} pcs
+                                                                            </span>
+                                                                        )}
+                                                                    </label>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                    {displayStyle === 'modern' && (
+                                                        <div className="flex flex-col gap-2">
+                                                            {option.values.map(val => (
+                                                                <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))} className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
+                                                                    <span>{val}</span>
+                                                                    {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
+                                                                        <span className="text-xs font-medium opacity-80 animate-pulse">
+                                                                            Stok: {currentVariantStock}
                                                                         </span>
                                                                     )}
-                                                                </label>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                                {displayStyle === 'modern' && (
-                                                    <div className="flex flex-col gap-2">
-                                                        {option.values.map(val => (
-                                                            <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({...prev, [option.name]: val}))} className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
-                                                                <span>{val}</span>
-                                                                {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
-                                                                    <span className="text-xs font-medium opacity-80 animate-pulse">
-                                                                        Stok: {currentVariantStock}
-                                                                    </span>
-                                                                )}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </FadeInBlock>
-                                
+
                             <FadeInBlock delay={450}>
                                 <div className="mb-4 space-y-3">
                                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
@@ -1440,7 +1471,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                     <div key={key}>
                                                         <label htmlFor={`shipping-${key}`} className={`p-3 border rounded-lg flex justify-between items-center cursor-pointer ${selectedShippingKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
                                                             <div className="flex items-center gap-3">
-                                                                <input type="radio" id={`shipping-${key}`} name="shippingMethod" value={key} checked={selectedShippingKey === key} onChange={() => setSelectedShippingKey(key)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"/>
+                                                                <input type="radio" id={`shipping-${key}`} name="shippingMethod" value={key} checked={selectedShippingKey === key} onChange={() => setSelectedShippingKey(key)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" />
                                                                 <span>{SHIPPING_LABELS[key as keyof typeof SHIPPING_LABELS]}</span>
                                                             </div>
                                                             <span className="font-semibold">{costLabel}</span>
@@ -1460,14 +1491,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 const setting = form.paymentSettings[key];
                                                 const config = PAYMENT_CONFIG[key];
                                                 const Icon = config.icon;
-                                                
+
                                                 const accounts = (setting as BankTransferSetting).accounts;
                                                 const qrImageUrl = (setting as QRISSettings).qrImageUrl;
 
                                                 return (
                                                     <div key={key}>
                                                         <label htmlFor={`payment-${key}`} className={`p-3 border rounded-lg flex items-center gap-3 cursor-pointer ${selectedPaymentKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
-                                                            <input type="radio" id={`payment-${key}`} name="paymentMethod" value={key} checked={selectedPaymentKey === key} onChange={() => setSelectedPaymentKey(key)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"/>
+                                                            <input type="radio" id={`payment-${key}`} name="paymentMethod" value={key} checked={selectedPaymentKey === key} onChange={() => setSelectedPaymentKey(key)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700" />
                                                             <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
                                                             <span className="font-medium">{config.label}</span>
                                                         </label>
@@ -1478,7 +1509,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     </div>
                                 )}
                             </FadeInBlock>
-                                
+
                             <FadeInBlock delay={750}>
                                 <div className="border-t dark:border-gray-700 pt-4 mt-4 space-y-2">
                                     <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
@@ -1505,7 +1536,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                         <>
                                             <span className="text-lg leading-tight">{form.ctaSettings?.mainText || 'Kirim Pesanan'}</span>
                                             {form.ctaSettings && (
-                                                 <span className="text-xs font-normal opacity-80 leading-tight">
+                                                <span className="text-xs font-normal opacity-80 leading-tight">
                                                     {form.ctaSettings.urgencyText.replace('{count}', String(checkoutCount))}
                                                 </span>
                                             )}
@@ -1519,7 +1550,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     </form>
                 </div>
             </div>
-             {form.socialProofSettings && <SocialProofPopup settings={form.socialProofSettings} productName={form.title} />}
+            {form.socialProofSettings && <SocialProofPopup settings={form.socialProofSettings} productName={form.title} />}
         </>
     );
 };

@@ -51,7 +51,7 @@ const MessageTemplatesModal: React.FC<{
             return { ...prev, templates: newTemplates };
         });
     };
-    
+
     const handleReset = (key: keyof MessageTemplates) => {
         setTemplates(prev => {
             if (!prev) return prev;
@@ -62,23 +62,23 @@ const MessageTemplatesModal: React.FC<{
             };
         });
     };
-    
+
     if (!globalTemplates) return null;
 
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl transform transition-all flex flex-col">
-                 <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
+                <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">Template Pesan untuk "{form.title}"</h2>
                     <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"><XIcon className="w-6 h-6" /></button>
                 </div>
                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-md">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-md">
                         <ToggleSwitch checked={templates?.active || false} onChange={v => setTemplates(prev => ({ ...prev!, active: v }))} />
                         <span className="text-sm">Gunakan template kustom untuk formulir ini</span>
                     </div>
                     {templates?.active && (
-                         <div className="space-y-4 mt-4">
+                        <div className="space-y-4 mt-4">
                             {Object.keys(globalTemplates).map(keyStr => {
                                 const key = keyStr as keyof MessageTemplates;
                                 const customTemplate = templates?.templates[key];
@@ -117,7 +117,7 @@ const MessageTemplatesModal: React.FC<{
                         </div>
                     )}
                 </div>
-                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
                     <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-sm font-medium rounded-lg">Batal</button>
                     <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">Simpan Template</button>
                 </div>
@@ -151,13 +151,13 @@ const FormsPage: React.FC = () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                 const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
-                 if (userDoc) {
-                     setCurrentUser({ id: user.id, ...userDoc } as User);
-                 } else {
-                     // Fallback for super admin
-                     setCurrentUser({ id: user.id, role: 'Super Admin', name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
-                 }
+                const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
+                if (userDoc) {
+                    setCurrentUser({ id: user.id, ...userDoc } as User);
+                } else {
+                    // Fallback for super admin
+                    setCurrentUser({ id: user.id, role: 'Super Admin', name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
+                }
             }
 
             const { data: formsData } = await supabase.from('forms').select('*');
@@ -219,14 +219,14 @@ const FormsPage: React.FC = () => {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
-            
+
             // Close action menu
             if (openActionMenuId && actionMenuRefs.current[openActionMenuId]) {
                 if (!actionMenuRefs.current[openActionMenuId]?.contains(target)) {
                     setOpenActionMenuId(null);
                 }
             }
-            
+
             // Close filter dropdowns
             const targetElement = target as HTMLElement;
             if (!targetElement.closest('.brand-dropdown')) {
@@ -253,7 +253,7 @@ const FormsPage: React.FC = () => {
         setFormToDelete(form);
         setOpenActionMenuId(null);
     };
-    
+
     const confirmDelete = async () => {
         if (!formToDelete) return;
         try {
@@ -262,7 +262,7 @@ const FormsPage: React.FC = () => {
                 .from('forms')
                 .delete()
                 .eq('id', formToDelete.id);
-            
+
             setForms(prev => prev.filter(f => f.id !== formToDelete.id));
         } catch (error) {
             console.error("Error deleting form:", error);
@@ -270,7 +270,7 @@ const FormsPage: React.FC = () => {
             setFormToDelete(null);
         }
     };
-    
+
     // Helper to get the correct URL using slug
     const getFormUrl = (form: Form) => {
         const baseUrl = window.location.origin;
@@ -291,7 +291,7 @@ const FormsPage: React.FC = () => {
     const handleViewStandalone = (form: Form) => {
         window.open(getStandaloneUrl(form), '_blank');
     };
-    
+
     const handleCopyLink = (form: Form) => {
         const url = getFormUrl(form);
         navigator.clipboard.writeText(url).then(() => {
@@ -315,11 +315,11 @@ const FormsPage: React.FC = () => {
     // Helper function to get user name by ID (from users or cs_agents table)
     const getUserName = (userId?: string): string => {
         if (!userId || userId.trim() === '') return '(No Agent)';
-        
+
         // First try to find in cs_agents table (priority for CS agents)
         const agent = csAgents.find(a => a.id === userId);
         if (agent?.name) return agent.name;
-        
+
         // Then try users table with multiple fallbacks for name fields
         const user = users.find(u => u.id === userId);
         if (user) {
@@ -331,19 +331,19 @@ const FormsPage: React.FC = () => {
                 (user as any).email;
             if (fallbackName && typeof fallbackName === 'string') return fallbackName;
         }
-        
+
         // If still not found, log a warning and show short ID
         console.warn(`⚠️ Agent/User not found for ID: "${userId}"`);
         console.log(`Available CS Agents: ${csAgents.map(a => `${a.id}(${a.name})`).join(', ') || 'None'}`);
         console.log(`Available Users: ${users.map(u => `${u.id}(${(u as any).name || (u as any).fullName || (u as any).full_name || (u as any).email || ''})`).join(', ') || 'None'}`);
-        
+
         return `[ID: ${userId.substring(0, 8)}...]`;
     };
 
     // Helper function to get CS agent names by mode - showing all details
     const getCsAssignmentDisplay = (csAssignment?: any): string => {
         if (!csAssignment) return '-';
-        
+
         try {
             if (csAssignment.mode === 'single') {
                 if (!csAssignment.singleAgentId) {
@@ -352,12 +352,12 @@ const FormsPage: React.FC = () => {
                 const agentName = getUserName(csAssignment.singleAgentId);
                 return agentName;
             }
-            
+
             if (csAssignment.mode === 'round_robin') {
                 if (!csAssignment.roundRobinAgents || csAssignment.roundRobinAgents.length === 0) {
                     return '-';
                 }
-                
+
                 const agentDetails = csAssignment.roundRobinAgents
                     .map((ra: any) => {
                         const agentName = getUserName(ra.csAgentId);
@@ -365,39 +365,39 @@ const FormsPage: React.FC = () => {
                         return `${agentName}${percentage}`;
                     })
                     .filter((name: string) => name); // Filter empty
-                    
+
                 if (agentDetails.length === 0) {
                     return '-';
                 }
-                
+
                 return agentDetails.join(', ');
             }
-            
+
             return '-';
         } catch (error) {
             console.error('Error in getCsAssignmentDisplay:', error);
             return '-';
         }
     };
-    
+
     const filteredForms = useMemo(() => {
         let result = filterDataByBrand(forms, currentUser);
-        
+
         // Brand Filter
         if (selectedBrandFilter !== 'all') {
             result = result.filter((form: Form) => form.brandId === selectedBrandFilter);
         }
-        
+
         // Product Filter (by form title)
         if (selectedProductFilter !== 'all') {
             result = result.filter((form: Form) => form.title === selectedProductFilter);
         }
-        
+
         // Search
         if (!searchTerm.trim()) return result;
-        
+
         const term = searchTerm.toLowerCase();
-        return result.filter((form: Form) => 
+        return result.filter((form: Form) =>
             form.title.toLowerCase().includes(term) ||
             form.slug.toLowerCase().includes(term)
         );
@@ -435,15 +435,15 @@ const FormsPage: React.FC = () => {
                     <p className="ml-12 text-sm text-slate-600 dark:text-slate-400">Kelola semua formulir pemesanan produk Anda.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                    <Link 
+                    <Link
                         to="/pengaturan/template-pesan"
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-700 border border-indigo-100 dark:border-slate-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold shadow-sm hover:shadow-md transition-all"
                     >
                         <ChatBubbleIcon className="w-4 h-4" />
                         <span>Template Pesan</span>
                     </Link>
-                    <button 
-                        onClick={handleNewForm} 
+                    <button
+                        onClick={handleNewForm}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all"
                     >
                         <PlusIcon className="w-4 h-4" />
@@ -564,7 +564,7 @@ const FormsPage: React.FC = () => {
                     <span>Menampilkan {filteredForms.length} dari {forms.length} formulir</span>
                 </div>
             </div>
-            
+
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <SpinnerIcon className="w-10 h-10 text-indigo-600 animate-spin" />
@@ -576,8 +576,8 @@ const FormsPage: React.FC = () => {
                     </div>
                     <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Belum ada formulir</h3>
                     <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">Buat formulir pemesanan pertama Anda untuk mulai menerima pesanan dari pelanggan</p>
-                    <button 
-                        onClick={handleNewForm} 
+                    <button
+                        onClick={handleNewForm}
                         className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold inline-flex items-center gap-3 shadow-xl shadow-indigo-500/30 hover:scale-105 transition-all"
                     >
                         <PlusIcon className="w-6 h-6" />
@@ -603,9 +603,9 @@ const FormsPage: React.FC = () => {
                                     <tr key={form.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
-                                                <img 
-                                                    src={form.mainImage || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'} 
-                                                    alt={form.title} 
+                                                <img
+                                                    src={form.mainImage || 'https://placehold.co/100x100/e2e8f0/94a3b8?text=No+Image'}
+                                                    alt={form.title}
                                                     className="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600"
                                                 />
                                                 <div>
@@ -648,7 +648,7 @@ const FormsPage: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="relative inline-block" ref={el => { if (el) actionMenuRefs.current[form.id] = el; }}>
-                                                <button 
+                                                <button
                                                     onClick={() => setOpenActionMenuId(openActionMenuId === form.id ? null : form.id)}
                                                     className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all hover:scale-110"
                                                     title="Aksi"
@@ -657,35 +657,35 @@ const FormsPage: React.FC = () => {
                                                 </button>
                                                 {openActionMenuId === form.id && (
                                                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl z-50 border border-slate-200 dark:border-slate-700 py-2">
-                                                        <button 
+                                                        <button
                                                             onClick={() => { handleViewForm(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <EyeIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                                             Lihat Formulir
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleEditForm(form)}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <PencilIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                                                             Edit Formulir
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => { handleViewStandalone(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <CodeIcon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                                                             Lihat HTML
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => { setEditingTemplatesFor(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <ChatBubbleIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                                             Template Pesan
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => { setTrackingLinksForm(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
@@ -693,7 +693,7 @@ const FormsPage: React.FC = () => {
                                                             Salin Tautan
                                                         </button>
                                                         <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleDeleteForm(form)}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
                                                         >
@@ -713,7 +713,7 @@ const FormsPage: React.FC = () => {
             )}
 
             {editingTemplatesFor && (
-                <MessageTemplatesModal 
+                <MessageTemplatesModal
                     form={editingTemplatesFor}
                     globalTemplates={globalTemplates}
                     onClose={() => setEditingTemplatesFor(null)}
@@ -722,7 +722,7 @@ const FormsPage: React.FC = () => {
             )}
 
             {formToDelete && (
-                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm">
                         <div className="p-6 text-center">
                             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -737,7 +737,7 @@ const FormsPage: React.FC = () => {
                             <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all hover:scale-105">Ya, Hapus Permanen</button>
                         </div>
                     </div>
-                 </div>
+                </div>
             )}
 
             {trackingLinksForm && (
@@ -763,7 +763,7 @@ const FormsPage: React.FC = () => {
                                 const formIdentifier = trackingLinksForm.slug || trackingLinksForm.id;
                                 const trackingLink = `${baseUrl}/#/f/${formIdentifier}?utm_source=${platform.source}&utm_medium=social&utm_campaign=${trackingLinksForm.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
                                 const IconComponent = platform.icon;
-                                
+
                                 const colorClasses: Record<string, string> = {
                                     blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40',
                                     red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40',

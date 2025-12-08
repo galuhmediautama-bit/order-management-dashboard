@@ -1808,11 +1808,11 @@ const FollowUpIndicator: React.FC<{
                         title={`Follow Up ${followUpNumber} ${isCompleted ? '(Selesai)' : isNext ? '(Berikutnya)' : ''}`}
                     >
                         {isCompleted ? (
-                          <span className="inline-flex items-center justify-center">
-                            <CheckCircleFilledIcon className="w-5 h-5" />
-                          </span>
+                            <span className="inline-flex items-center justify-center">
+                                <CheckCircleFilledIcon className="w-5 h-5" />
+                            </span>
                         ) : (
-                          <span>{followUpNumber}</span>
+                            <span>{followUpNumber}</span>
                         )}
                     </button>
                 );
