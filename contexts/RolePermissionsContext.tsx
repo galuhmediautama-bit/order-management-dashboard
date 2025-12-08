@@ -77,26 +77,33 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
   }, [loadPermissions]);
 
   const canAccessMenu = useCallback((menuId: string, userRole: string): boolean => {
-    const permissions = rolePermissions[userRole as keyof RolePermissionMap];
+    // Normalize user role for consistency
+    const normalizedRole = userRole.trim();
+    
+    const permissions = rolePermissions[normalizedRole as keyof RolePermissionMap];
     if (!permissions) {
-      console.warn(`⚠️ No permissions found for role: "${userRole}"`, {
+      console.warn(`⚠️ No permissions found for role: "${normalizedRole}"`, {
         availableRoles: Object.keys(rolePermissions),
-        menuId
+        menuId,
+        rawRole: userRole
       });
       return false;
     }
     const hasAccess = permissions.menus.includes(menuId);
-    if (userRole === 'Customer service') {
-      console.log(`🔍 canAccessMenu("${menuId}", "${userRole}"):`, hasAccess, {
-        allowedMenus: permissions.menus
-      });
-    }
+    console.log(`🔍 canAccessMenu("${menuId}", "${normalizedRole}"):`, hasAccess, {
+      allowedMenus: permissions.menus,
+      totalMenus: permissions.menus.length
+    });
     return hasAccess;
   }, [rolePermissions]);
 
   const canUseFeature = useCallback((featureId: string, userRole: string): boolean => {
-    const permissions = rolePermissions[userRole as keyof RolePermissionMap];
+    // Normalize user role for consistency
+    const normalizedRole = userRole.trim();
+    
+    const permissions = rolePermissions[normalizedRole as keyof RolePermissionMap];
     if (!permissions) {
+      console.warn(`⚠️ No permissions found for role: "${normalizedRole}" when checking feature: "${featureId}"`);
       return false;
     }
     return permissions.features.includes(featureId);

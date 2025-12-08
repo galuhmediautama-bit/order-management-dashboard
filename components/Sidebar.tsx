@@ -181,7 +181,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         // Always show Dashboard
         if (item.name === 'Dasbor') return true;
 
-        if (!currentUserRole) return false;
+        if (!currentUserRole) {
+            console.log(`⏭️ Hiding "${item.name}" - no currentUserRole yet`);
+            return false;
+        }
         if (currentUserRole === 'Super Admin') return true;
 
         // Get RBAC menu ID for this item
@@ -195,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         // Check dynamic permissions via RBAC
         const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
 
-        console.log(`🔍 canSee "${item.name}":`, {
+        console.log(`🔍 canSee "${item.name}" for role "${currentUserRole}":`, hasAccess, {
             rbacMenuId,
             userRole: currentUserRole,
             hasAccess
