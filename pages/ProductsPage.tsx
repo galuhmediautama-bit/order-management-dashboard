@@ -146,7 +146,31 @@ const ProductsPage: React.FC = () => {
     };
 
     const getPrice = (product: Product) => {
-        // Ambil harga dari basePrice atau attributes.basePrice
+        // Cek apakah ada variants dengan harga
+        if (product.variants && product.variants.length > 0) {
+            const prices = product.variants
+                .map(v => v.price)
+                .filter(p => p !== undefined && p !== null) as number[];
+            
+            if (prices.length > 1) {
+                // Jika ada multiple variants, tampilkan rentang harga
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                
+                if (minPrice === maxPrice) {
+                    // Semua variant harga sama
+                    return `Rp ${minPrice.toLocaleString('id-ID')}`;
+                } else {
+                    // Tampilkan rentang harga terkecil - termahal
+                    return `Rp ${minPrice.toLocaleString('id-ID')} - Rp ${maxPrice.toLocaleString('id-ID')}`;
+                }
+            } else if (prices.length === 1) {
+                // Hanya 1 variant
+                return `Rp ${prices[0].toLocaleString('id-ID')}`;
+            }
+        }
+        
+        // Fallback ke basePrice jika tidak ada variants
         const price = product.basePrice || product.attributes?.basePrice;
         return price ? `Rp ${price.toLocaleString('id-ID')}` : '-';
     };
