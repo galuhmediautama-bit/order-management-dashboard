@@ -34,6 +34,7 @@ export const ALL_MENUS = [
 
 export const ALL_FEATURES = [
   { id: 'export_csv', name: 'Export CSV', category: 'feature', description: 'Can export data to CSV' },
+  { id: 'edit_product', name: 'Edit Product', category: 'feature', description: 'Can create and edit products' },
   { id: 'edit_form', name: 'Edit Form', category: 'feature', description: 'Can create and edit forms' },
   { id: 'delete_order', name: 'Delete Order', category: 'feature', description: 'Can delete orders' },
   { id: 'change_order_status', name: 'Change Order Status', category: 'feature', description: 'Can update order status' },
@@ -65,7 +66,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
       'settings', 'website_settings', 'user_management', 'brands', 'cs_management', 'tracking', 'announcements'
     ],
     features: [
-      'export_csv', 'edit_form', 'delete_order', 'change_order_status', 'view_earnings',
+      'export_csv', 'edit_product', 'edit_form', 'delete_order', 'change_order_status', 'view_earnings',
       'manage_users', 'view_reports', 'edit_settings', 'sound_notifications', 'manual_order_creation',
       'view_sales_stats', 'view_charts', 'view_top_products', 'view_top_advertisers', 'view_top_cs', 'view_recent_orders'
     ],
@@ -84,7 +85,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
   },
   'Advertiser': {
     menus: ['dashboard', 'products', 'form_list', 'reports', 'ad_reports', 'earnings'],
-    features: ['export_csv', 'edit_form', 'view_earnings', 'sound_notifications', 'view_sales_stats', 'view_charts', 'view_top_products'],
+    features: ['export_csv', 'edit_product', 'edit_form', 'view_earnings', 'sound_notifications', 'view_sales_stats', 'view_charts', 'view_top_products'],
   },
   'Partner': {
     menus: ['dashboard', 'reports', 'ad_reports'],
