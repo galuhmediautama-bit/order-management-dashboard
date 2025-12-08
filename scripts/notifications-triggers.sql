@@ -34,13 +34,13 @@ BEGIN
       cs_user_id,
       'ORDER_NEW',
       'Pesanan Baru dari ' || NEW.customer,
-      'Pesanan dari ' || NEW.customer || ' (' || NEW.customerPhone || ') - ' || COALESCE(NEW.productName, 'Produk') || ' - Rp ' || COALESCE(NEW.totalPrice::text, '0'),
+      'Pesanan dari ' || NEW.customer || ' (' || NEW."customerPhone" || ') - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
       jsonb_build_object(
         'orderId', NEW.id,
         'customerName', NEW.customer,
-        'customerPhone', NEW.customerPhone,
-        'totalPrice', NEW.totalPrice,
-        'productName', NEW.productName
+        'customerPhone', NEW."customerPhone",
+        'totalPrice', NEW."totalPrice",
+        'productName', NEW."productName"
       )
     );
   END IF;
@@ -52,12 +52,12 @@ BEGIN
       unnest(advertiser_ids),
       'ORDER_NEW',
       'Pesanan dari Brand Anda - ' || NEW.customer,
-      'Pesanan baru untuk brand Anda: ' || NEW.customer || ' - ' || COALESCE(NEW.productName, 'Produk') || ' - Rp ' || COALESCE(NEW.totalPrice::text, '0'),
+      'Pesanan baru untuk brand Anda: ' || NEW.customer || ' - ' || COALESCE(NEW."productName", 'Produk') || ' - Rp ' || COALESCE(NEW."totalPrice"::text, '0'),
       jsonb_build_object(
         'orderId', NEW.id,
         'customerName', NEW.customer,
-        'customerPhone', NEW.customerPhone,
-        'totalPrice', NEW.totalPrice,
+        'customerPhone', NEW."customerPhone",
+        'totalPrice', NEW."totalPrice",
         'brandId', NEW."brandId"
       );
   END IF;
@@ -97,14 +97,14 @@ BEGIN
     SELECT
       unnest(admin_users),
       'CART_ABANDON',
-      'Keranjang Ditinggalkan - ' || NEW.customerName,
-      NEW.customerName || ' (' || NEW.customerPhone || ') meninggalkan keranjang di form: ' || NEW.formTitle,
+      'Keranjang Ditinggalkan - ' || NEW."customerName",
+      NEW."customerName" || ' (' || NEW."customerPhone" || ') meninggalkan keranjang di form: ' || NEW."formTitle",
       jsonb_build_object(
         'cartId', NEW.id,
-        'customerName', NEW.customerName,
-        'customerPhone', NEW.customerPhone,
-        'formTitle', NEW.formTitle,
-        'selectedVariant', NEW.selectedVariant
+        'customerName', NEW."customerName",
+        'customerPhone', NEW."customerPhone",
+        'formTitle', NEW."formTitle",
+        'selectedVariant', NEW."selectedVariant"
       );
   END IF;
 
