@@ -654,7 +654,7 @@ const UserModal: React.FC<{
         brands: brands,
         userAssignedBrands: user?.assignedBrandIds
     });
-    
+
     const [formData, setFormData] = useState<User>(
         user || { id: '', name: '', email: '', phone: '', address: '', role: 'Customer service', status: 'Aktif', lastLogin: '', assignedBrandIds: [] }
     );
