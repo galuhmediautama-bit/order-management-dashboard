@@ -275,13 +275,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                 { name: 'Manajemen CS', icon: CustomerServiceIcon },
                 { name: 'CuanRank', icon: TrophyIcon },
                 { name: 'Pelacakan', icon: TrackingIcon },
-            ]
-        },
-        {
-            name: 'Monitoring',
-            icon: DashboardIcon,
-            subItems: [
-                { name: 'Performance Dashboard', icon: DashboardIcon }
+                { name: 'Performance Dashboard', icon: DashboardIcon },
             ]
         },
     ]; const filteredNavItems = allNavItems.filter(item => canSee(item)).map(item => {
