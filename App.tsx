@@ -251,12 +251,18 @@ const AppContent: React.FC = () => {
     if (hash.includes('%2F')) {
       // Detect double-encoded hash (e.g., #%2Ff%2Fparfum-khalifah-oud)
       console.log('[AppContent] Detected double-encoded hash, normalizing:', hash);
-      const decodedHash = decodeURIComponent(hash);
-      console.log('[AppContent] Decoded hash:', decodedHash);
-      if (decodedHash.startsWith('#/')) {
-        window.location.hash = decodedHash.substring(1); // Remove leading #
+      try {
+        const decodedHash = decodeURIComponent(hash);
+        console.log('[AppContent] Decoded hash:', decodedHash);
+        if (decodedHash.startsWith('#/')) {
+          const normalizedHash = decodedHash.substring(1); // Remove leading #
+          // Use replaceState to avoid reload, let React Router handle routing
+          window.history.replaceState(null, '', '#' + normalizedHash);
+        }
+      } catch (error) {
+        console.error('[AppContent] Error decoding hash:', error);
       }
-      return; // Exit early to let browser process normalized hash
+      return; // Exit early to let React Router process the corrected hash
     }
 
     // Handle form URLs only (let Supabase handle auth callbacks automatically)
