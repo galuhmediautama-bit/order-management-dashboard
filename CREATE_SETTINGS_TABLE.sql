@@ -52,8 +52,8 @@ VALUES (
             "features": ["export_csv", "edit_form", "delete_order", "change_order_status", "view_earnings", "manage_users", "manage_roles", "view_reports", "edit_settings", "sound_notifications", "manual_order_creation", "view_sales_stats", "view_charts", "view_top_products", "view_top_advertisers", "view_top_cs", "view_recent_orders"]
         },
         "Admin": {
-            "menus": ["dashboard", "products", "product_list", "form_list", "orders", "order_list", "abandoned_carts", "customers", "reports", "ad_reports", "cs_reports", "earnings", "settings", "website_settings", "user_management", "brands", "cs_management", "tracking", "announcements"],
-            "features": ["export_csv", "edit_form", "delete_order", "change_order_status", "view_earnings", "manage_users", "view_reports", "edit_settings", "sound_notifications", "manual_order_creation", "view_sales_stats", "view_charts", "view_top_products", "view_top_advertisers", "view_top_cs", "view_recent_orders"]
+            "menus": ["dashboard", "products", "product_list", "form_list", "orders", "order_list", "abandoned_carts", "customers", "reports", "ad_reports", "cs_reports", "earnings", "settings", "website_settings", "user_management", "role_management", "brands", "cs_management", "tracking", "announcements"],
+            "features": ["export_csv", "edit_form", "delete_order", "change_order_status", "view_earnings", "manage_users", "manage_roles", "view_reports", "edit_settings", "sound_notifications", "manual_order_creation", "view_sales_stats", "view_charts", "view_top_products", "view_top_advertisers", "view_top_cs", "view_recent_orders"]
         },
         "Advertiser": {
             "menus": ["dashboard", "products", "product_list", "form_list", "reports", "ad_reports", "earnings"],
