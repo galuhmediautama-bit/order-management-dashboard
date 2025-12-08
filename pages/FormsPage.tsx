@@ -658,11 +658,11 @@ const FormsPage: React.FC = () => {
                                                 {openActionMenuId === form.id && (
                                                     <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl z-50 border border-slate-200 dark:border-slate-700 py-2">
                                                         <button
-                                                            onClick={() => { handleViewForm(form); setOpenActionMenuId(null); }}
+                                                            onClick={() => { setTrackingLinksForm(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
-                                                            <EyeIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                                            Lihat Formulir
+                                                            <LinkIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                            Lihat Link
                                                         </button>
                                                         <button
                                                             onClick={() => handleEditForm(form)}
@@ -686,11 +686,23 @@ const FormsPage: React.FC = () => {
                                                             Template Pesan
                                                         </button>
                                                         <button
-                                                            onClick={() => { setTrackingLinksForm(form); setOpenActionMenuId(null); }}
+                                                            onClick={() => { 
+                                                                const link = `${window.location.origin}/#/f/${form.slug || form.id}`;
+                                                                navigator.clipboard.writeText(link);
+                                                                showToast('Link berhasil disalin!', 'success');
+                                                                setOpenActionMenuId(null);
+                                                            }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <LinkIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                                            Salin Tautan
+                                                            Salin
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { handleViewForm(form); setOpenActionMenuId(null); }}
+                                                            className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+                                                        >
+                                                            <EyeIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                                            Lihat
                                                         </button>
                                                         <div className="border-t border-slate-200 dark:border-slate-700 my-2"></div>
                                                         <button
