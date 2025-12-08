@@ -246,6 +246,19 @@ const AppContent: React.FC = () => {
       showDevModeBanner();
     }
 
+    // Fix double-encoded or malformed hash URLs
+    const hash = window.location.hash;
+    if (hash.includes('%2F')) {
+      // Detect double-encoded hash (e.g., #%2Ff%2Fparfum-khalifah-oud)
+      console.log('[AppContent] Detected double-encoded hash, normalizing:', hash);
+      const decodedHash = decodeURIComponent(hash);
+      console.log('[AppContent] Decoded hash:', decodedHash);
+      if (decodedHash.startsWith('#/')) {
+        window.location.hash = decodedHash.substring(1); // Remove leading #
+      }
+      return; // Exit early to let browser process normalized hash
+    }
+
     // Handle form URLs only (let Supabase handle auth callbacks automatically)
     const params = new URLSearchParams(window.location.search);
     const formId = params.get('form_id');
