@@ -178,9 +178,19 @@ const ProductsPage: React.FC = () => {
     };
 
     const canEditProduct = (product: Product) => {
-        // Check if user has edit_product permission
+        // Get user permissions, with fallback to DEFAULT_ROLE_PERMISSIONS if context not ready
         const userPermissions = rolePermissions?.userPermissions;
-        if (!userPermissions?.features?.includes('edit_product')) {
+        const userRole = currentUser?.role;
+        
+        // If no permissions data, check against DEFAULT_ROLE_PERMISSIONS as fallback
+        if (!userPermissions?.features) {
+            // Fallback: Check if role has edit_product in default permissions
+            const { DEFAULT_ROLE_PERMISSIONS } = require('../utils/rolePermissions');
+            const rolePerms = DEFAULT_ROLE_PERMISSIONS[userRole];
+            if (!rolePerms?.features?.includes('edit_product')) {
+                return false;
+            }
+        } else if (!userPermissions.features.includes('edit_product')) {
             return false;
         }
 
