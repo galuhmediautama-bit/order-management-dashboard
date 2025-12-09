@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import XIcon from './icons/XIcon';
 import UploadIcon from './icons/UploadIcon';
 import CheckCircleFilledIcon from './icons/CheckCircleFilledIcon';
@@ -50,6 +51,22 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
     const handleClose = () => {
         resetState();
         onClose();
+    };
+
+    const parseExcel = (buffer: ArrayBuffer): Record<string, string>[] => {
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: '' });
+        
+        // Convert all values to strings
+        return jsonData.map(row => {
+            const stringRow: Record<string, string> = {};
+            Object.keys(row).forEach(key => {
+                stringRow[key] = String(row[key] ?? '');
+            });
+            return stringRow;
+        });
     };
 
     const parseCSV = (text: string): Record<string, string>[] => {
@@ -144,11 +161,21 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
         setIsProcessing(true);
 
         try {
-            const text = await selectedFile.text();
-            const rows = parseCSV(text);
+            const fileName = selectedFile.name.toLowerCase();
+            const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+            
+            let rows: Record<string, string>[];
+            
+            if (isExcel) {
+                const buffer = await selectedFile.arrayBuffer();
+                rows = parseExcel(buffer);
+            } else {
+                const text = await selectedFile.text();
+                rows = parseCSV(text);
+            }
             
             if (rows.length === 0) {
-                alert('File CSV kosong atau format tidak valid');
+                alert('File kosong atau format tidak valid');
                 setIsProcessing(false);
                 return;
             }
@@ -158,7 +185,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
             setStep('preview');
         } catch (error) {
             console.error('Error parsing file:', error);
-            alert('Gagal membaca file. Pastikan format CSV valid.');
+            alert('Gagal membaca file. Pastikan format file valid (CSV, XLSX, atau XLS).');
         } finally {
             setIsProcessing(false);
         }
@@ -167,7 +194,11 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         const droppedFile = e.dataTransfer.files[0];
-        if (droppedFile && droppedFile.type === 'text/csv') {
+        const fileName = droppedFile?.name.toLowerCase() || '';
+        const validExtensions = ['.csv', '.xlsx', '.xls'];
+        const isValidFile = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (droppedFile && isValidFile) {
             const input = fileInputRef.current;
             if (input) {
                 const dataTransfer = new DataTransfer();
@@ -176,7 +207,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
                 input.dispatchEvent(new Event('change', { bubbles: true }));
             }
         } else {
-            alert('Hanya file CSV yang didukung');
+            alert('Hanya file CSV, XLSX, atau XLS yang didukung');
         }
     }, []);
 
@@ -277,14 +308,18 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
             '',                   // assignedCsId
         ];
 
-        const csvContent = [headers.join(','), sampleRow.join(',')].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'template_import_pesanan.csv';
-        a.click();
-        URL.revokeObjectURL(url);
+        // Create Excel file
+        const worksheetData = [headers, sampleRow];
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+        
+        // Set column widths for better readability
+        worksheet['!cols'] = headers.map(() => ({ wch: 18 }));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+        
+        // Generate and download
+        XLSX.writeFile(workbook, 'template_import_pesanan.xlsx');
     };
 
     const validCount = importedRows.filter(r => r.isValid).length;
@@ -300,7 +335,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
                     <div>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Import Pesanan</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {step === 'upload' && 'Upload file CSV untuk import pesanan'}
+                            {step === 'upload' && 'Upload file Excel atau CSV untuk import pesanan'}
                             {step === 'preview' && 'Preview dan koreksi data sebelum menyimpan'}
                             {step === 'result' && 'Hasil import pesanan'}
                         </p>
@@ -330,15 +365,15 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
                                     <>
                                         <UploadIcon className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                                         <p className="text-slate-700 dark:text-slate-300 font-medium">
-                                            Drag & drop file CSV di sini
+                                            Drag & drop file Excel atau CSV di sini
                                         </p>
-                                        <p className="text-sm text-slate-500 mt-1">atau klik untuk memilih file</p>
+                                        <p className="text-sm text-slate-500 mt-1">atau klik untuk memilih file (.xlsx, .xls, .csv)</p>
                                     </>
                                 )}
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept=".csv"
+                                    accept=".xlsx,.xls,.csv"
                                     onChange={handleFileChange}
                                     className="hidden"
                                 />
@@ -346,7 +381,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
 
                             <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
                                 <div>
-                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Template CSV</p>
+                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Template Excel</p>
                                     <p className="text-xs text-slate-500">Download template untuk format yang benar</p>
                                 </div>
                                 <button
