@@ -37,7 +37,7 @@ const VALID_GENDERS = ['Semua', 'Pria', 'Wanita'];
 const REQUIRED_COLUMNS = [
     'platform',
     'campaignId',
-    'campaignName', 
+    'campaignName',
     'adDate',
     'amountSpent',
     'impressions',
@@ -109,7 +109,7 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: '' });
-        
+
         return jsonData.map(row => {
             const stringRow: Record<string, string> = {};
             Object.keys(row).forEach(key => {
@@ -250,9 +250,9 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
         try {
             const fileName = selectedFile.name.toLowerCase();
             const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-            
+
             let rows: Record<string, string>[];
-            
+
             if (isExcel) {
                 const buffer = await selectedFile.arrayBuffer();
                 rows = parseExcel(buffer);
@@ -260,7 +260,7 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
                 const text = await selectedFile.text();
                 rows = parseCSV(text);
             }
-            
+
             if (rows.length === 0) {
                 alert('File kosong atau format tidak valid');
                 setIsProcessing(false);
@@ -284,7 +284,7 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
         const fileName = droppedFile?.name.toLowerCase() || '';
         const validExtensions = ['.csv', '.xlsx', '.xls'];
         const isValidFile = validExtensions.some(ext => fileName.endsWith(ext));
-        
+
         if (droppedFile && isValidFile) {
             const input = fileInputRef.current;
             if (input) {
@@ -307,7 +307,7 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
             const updated = [...prev];
             const row = { ...updated[rowIndex] };
             row.originalData = { ...row.originalData, [field]: value };
-            
+
             const revalidated = validateRow(row.originalData, row.rowNumber);
             updated[rowIndex] = revalidated;
             return updated;
@@ -371,7 +371,7 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
                 };
 
                 const { error } = await supabase.from('ad_reports').insert(reportData);
-                
+
                 if (error) {
                     console.error('Error inserting ad report:', error);
                     failedCount++;
@@ -433,12 +433,12 @@ const ImportAdReportsModal: React.FC<ImportAdReportsModalProps> = ({
 
         const worksheetData = [headers, sampleRow];
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-        
+
         worksheet['!cols'] = headers.map(() => ({ wch: 18 }));
-        
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-        
+
         XLSX.writeFile(workbook, 'template_import_laporan_iklan.xlsx');
     };
 

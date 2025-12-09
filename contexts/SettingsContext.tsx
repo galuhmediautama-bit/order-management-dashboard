@@ -52,7 +52,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
                 if (websiteData) {
                     setWebsiteSettings(websiteData as WebsiteSettings);
-                    
+
                     // Apply dynamic meta tags
                     if (websiteData.siteName) {
                         document.title = websiteData.siteName;
@@ -63,7 +63,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                         if (ogTitle) ogTitle.setAttribute('content', websiteData.siteName);
                         if (twitterTitle) twitterTitle.setAttribute('content', websiteData.siteName);
                     }
-                    
+
                     if (websiteData.siteDescription) {
                         const metaDesc = document.querySelector('meta[name="description"]');
                         const ogDesc = document.querySelector('meta[property="og:description"]');
@@ -72,7 +72,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                         if (ogDesc) ogDesc.setAttribute('content', websiteData.siteDescription);
                         if (twitterDesc) twitterDesc.setAttribute('content', websiteData.siteDescription);
                     }
-                    
+
                     // Apply dynamic favicon
                     if (websiteData.favicon) {
                         let faviconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement;

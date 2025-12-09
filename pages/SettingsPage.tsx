@@ -2101,28 +2101,28 @@ const WebsiteSettings: React.FC = () => {
         try {
             let logoUrl = settings.logo;
             let faviconUrl = settings.favicon;
-            
+
             if (logoFile) {
                 logoUrl = await uploadFileAndGetURL(logoFile);
             }
-            
+
             if (faviconFile) {
                 faviconUrl = await uploadFileAndGetURL(faviconFile);
             }
 
-            const newSettings = { 
+            const newSettings = {
                 id: 'website',
                 siteName: settings.siteName,
                 siteDescription: settings.siteDescription,
                 supportEmail: settings.supportEmail,
-                logo: logoUrl, 
-                favicon: faviconUrl 
+                logo: logoUrl,
+                favicon: faviconUrl
             };
-            
+
             console.log('💾 Saving website settings:', newSettings);
-            
+
             const { error } = await supabase.from('settings').upsert(newSettings);
-            
+
             if (error) {
                 console.error('❌ Supabase error:', error);
                 // Check if it's a column missing error
@@ -2133,14 +2133,14 @@ const WebsiteSettings: React.FC = () => {
                 }
                 return;
             }
-            
+
             console.log('✅ Settings saved successfully');
-            
+
             // Update local state
             setSettings(prev => ({ ...prev, logo: logoUrl, favicon: faviconUrl }));
             setLogoFile(null);
             setFaviconFile(null);
-            
+
             // Apply changes immediately
             if (newSettings.siteName) {
                 document.title = newSettings.siteName;
@@ -2149,7 +2149,7 @@ const WebsiteSettings: React.FC = () => {
                 const faviconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
                 if (faviconLink) faviconLink.href = faviconUrl;
             }
-            
+
             showToast('Pengaturan website berhasil disimpan!', 'success');
         } catch (error: any) {
             console.error('Error saving settings:', error);

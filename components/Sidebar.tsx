@@ -304,9 +304,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                 <div className="h-16 flex items-center px-5 border-b border-slate-800/80 bg-gradient-to-br from-slate-900 via-slate-950 to-black rounded-br-2xl shadow-inner shrink-0">
                     <Link to="/" className="flex items-center space-x-3 group w-full">
                         {websiteSettings?.logo ? (
-                            <img 
-                                src={websiteSettings.logo} 
-                                alt={websiteName || websiteSettings?.siteName || 'Logo'} 
+                            <img
+                                src={websiteSettings.logo}
+                                alt={websiteName || websiteSettings?.siteName || 'Logo'}
                                 className="w-9 h-9 rounded-xl object-cover shadow-md group-hover:shadow-lg transition-shadow"
                             />
                         ) : (
