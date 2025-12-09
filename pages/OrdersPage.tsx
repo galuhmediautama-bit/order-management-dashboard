@@ -2339,35 +2339,44 @@ const ManualOrderModal: React.FC<{
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl p-6 my-8">
-                <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">{editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}</h3>
+        <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>
+            <div className="min-h-full flex items-start justify-center p-4 py-8">
+                <div 
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl relative"
+                    onClick={e => e.stopPropagation()}
+                >
+                    {/* Header - Sticky */}
+                    <div className="sticky top-0 bg-white dark:bg-slate-800 px-6 py-4 border-b dark:border-slate-700 rounded-t-xl z-10">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">{editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}</h3>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Kolom Kiri */}
-                    <div className="space-y-4">
-                        {/* Product/Form Field - Only show when creating new order */}
-                        {!editOrder && (
-                            <div>
-                                <label className="block text-xs text-slate-500 mb-1">Produk (Formulir)</label>
-                                <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" value={selectedFormId} onChange={e => setSelectedFormId(e.target.value)}>
-                                    {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
-                                </select>
-                            </div>
-                        )}
+                    {/* Content - Scrollable */}
+                    <div className="p-6 max-h-[70vh] overflow-y-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Kolom Kiri */}
+                            <div className="space-y-4">
+                                {/* Product/Form Field - Only show when creating new order */}
+                                {!editOrder && (
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Produk (Formulir)</label>
+                                        <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" value={selectedFormId} onChange={e => setSelectedFormId(e.target.value)}>
+                                            {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                                        </select>
+                                    </div>
+                                )}
 
-                        {/* CS Assignment Field - Only for Admin */}
-                        {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-                            <div>
-                                <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
-                                <select
-                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                    value={selectedCsId}
-                                    onChange={e => setSelectedCsId(e.target.value)}
-                                >
-                                    <option value="">Pilih CS...</option>
-                                    {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
-                                </select>
+                                {/* CS Assignment Field - Only for Admin */}
+                                {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
+                                        <select
+                                            className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                            value={selectedCsId}
+                                            onChange={e => setSelectedCsId(e.target.value)}
+                                        >
+                                            <option value="">Pilih CS...</option>
+                                            {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
+                                        </select>
                             </div>
                         )}
 
@@ -2589,11 +2598,14 @@ const ManualOrderModal: React.FC<{
                             />
                         </div>
                     </div>
-                </div>
+                        </div>
+                    </div>
 
-                <div className="mt-6 flex justify-end gap-2">
-                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg">Batal</button>
-                    <button onClick={handleSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Simpan</button>
+                    {/* Footer - Sticky */}
+                    <div className="sticky bottom-0 bg-white dark:bg-slate-800 px-6 py-4 border-t dark:border-slate-700 rounded-b-xl flex justify-end gap-2">
+                        <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">Batal</button>
+                        <button onClick={handleSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Simpan</button>
+                    </div>
                 </div>
             </div>
         </div>
