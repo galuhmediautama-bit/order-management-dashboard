@@ -580,15 +580,43 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             return;
         }
 
+        // Hitung totalPrice dari variant yang dipilih
+        const variantKey = Object.values(selectedOptions).join(' / ') || 'Produk Tunggal';
+        
+        // Gunakan form?.variantCombinations langsung karena resolvedVariantCombinations belum di-init
+        const baseCombinations = form?.variantCombinations || [];
+        let selectedCombination = baseCombinations.find(vc => {
+            const attrKey = Object.values(vc.attributes || {}).join(' / ') || 'Produk Tunggal';
+            return attrKey === variantKey;
+        });
+        
+        // Jika tidak ditemukan dengan key exact, coba cari dengan nama gabungan (HITAM - A4 format)
+        if (!selectedCombination && baseCombinations.length > 0) {
+            const combinedKey = Object.values(selectedOptions).join(' - ');
+            selectedCombination = baseCombinations.find(vc => {
+                const firstAttrKey = Object.keys(vc.attributes || {})[0];
+                const combinedValue = firstAttrKey ? vc.attributes[firstAttrKey] : '';
+                return combinedValue === combinedKey;
+            });
+        }
+        
+        // Fallback ke combination pertama jika masih tidak ditemukan
+        if (!selectedCombination && baseCombinations.length > 0) {
+            selectedCombination = baseCombinations[0];
+        }
+        
+        const variantPrice = selectedCombination?.sellingPrice || 0;
+
         const cartData = {
             formId: form.id,
             formTitle: form.title,
             brandId: form.brandId || '',
             customerName: customerData.name,
             customerPhone: customerData.whatsapp,
-            selectedVariant: Object.values(selectedOptions).join(' / ') || 'Produk Tunggal',
+            selectedVariant: variantKey,
             timestamp: new Date().toISOString(),
             status: 'New' as const,
+            totalPrice: variantPrice,
         };
 
         try {
