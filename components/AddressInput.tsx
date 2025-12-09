@@ -46,10 +46,12 @@ interface AddressInputProps {
   showCity?: boolean;
   showDistrict?: boolean;
   showVillage?: boolean;
+  showDetailAddress?: boolean;
   requiredProvince?: boolean;
   requiredCity?: boolean;
   requiredDistrict?: boolean;
   requiredVillage?: boolean;
+  requiredDetailAddress?: boolean;
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({
@@ -60,10 +62,12 @@ const AddressInput: React.FC<AddressInputProps> = ({
   showCity = true,
   showDistrict = true,
   showVillage = true,
+  showDetailAddress = true,
   requiredProvince = false,
   requiredCity = false,
   requiredDistrict = false,
-  requiredVillage = false
+  requiredVillage = false,
+  requiredDetailAddress = false
 }) => {
   const [selectedProvince, setSelectedProvince] = useState(value.province || '');
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
@@ -484,6 +488,24 @@ const AddressInput: React.FC<AddressInputProps> = ({
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Alamat Lengkap */}
+      {showDetailAddress && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Alamat Lengkap {requiredDetailAddress && <span className="text-red-500">*</span>}
+          </label>
+          <textarea
+            value={detailAddress}
+            onChange={(e) => setDetailAddress(e.target.value)}
+            disabled={disabled}
+            placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
+            rows={3}
+            required={requiredDetailAddress}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none"
+          />
         </div>
       )}
 

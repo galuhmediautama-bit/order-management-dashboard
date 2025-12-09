@@ -791,7 +791,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             ...prev,
             province: addressData.province,
             city: addressData.city,
-            district: addressData.district
+            district: addressData.district,
+            address: addressData.detailAddress || prev.address
         }));
     }, [addressData]);
 
@@ -1672,7 +1673,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                             {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                                         </div>
                                     )}
-                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible) && (
+                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.address?.visible) && (
                                         <div>
                                             <AddressInput
                                                 value={addressData}
@@ -1680,20 +1681,15 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 showProvince={form.customerFields.province?.visible || false}
                                                 showCity={form.customerFields.city?.visible || false}
                                                 showDistrict={form.customerFields.district?.visible || false}
+                                                showDetailAddress={form.customerFields.address?.visible || false}
                                                 requiredProvince={form.customerFields.province?.required || false}
                                                 requiredCity={form.customerFields.city?.required || false}
                                                 requiredDistrict={form.customerFields.district?.required || false}
+                                                requiredDetailAddress={form.customerFields.address?.required || false}
                                             />
-                                            {(fieldErrors.province || fieldErrors.city || fieldErrors.district) && (
-                                                <p className="text-xs text-red-500 mt-1">{[fieldErrors.province, fieldErrors.city, fieldErrors.district].filter(Boolean).join(' • ')}</p>
+                                            {(fieldErrors.province || fieldErrors.city || fieldErrors.district || fieldErrors.address) && (
+                                                <p className="text-xs text-red-500 mt-1">{[fieldErrors.province, fieldErrors.city, fieldErrors.district, fieldErrors.address].filter(Boolean).join(' • ')}</p>
                                             )}
-                                        </div>
-                                    )}
-                                    {form.customerFields.address.visible && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
-                                            <textarea name="address" value={customerData.address} onChange={handleCustomerDataChange} placeholder="Jl. Sudirman No. 123, RT 01/RW 05, Kecamatan, Kota" rows={3} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.address.required} />
-                                            {fieldErrors.address && <p className="text-xs text-red-500 mt-1">{fieldErrors.address}</p>}
                                         </div>
                                     )}
                                 </div>
