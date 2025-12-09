@@ -2110,8 +2110,36 @@ const WebsiteSettings: React.FC = () => {
                 faviconUrl = await uploadFileAndGetURL(faviconFile);
             }
 
-            const newSettings = { ...settings, logo: logoUrl, favicon: faviconUrl };
-            await supabase.from('settings').upsert({ id: 'website', ...newSettings });
+            const newSettings = { 
+                id: 'website',
+                siteName: settings.siteName,
+                siteDescription: settings.siteDescription,
+                supportEmail: settings.supportEmail,
+                logo: logoUrl, 
+                favicon: faviconUrl 
+            };
+            
+            console.log('💾 Saving website settings:', newSettings);
+            
+            const { error } = await supabase.from('settings').upsert(newSettings);
+            
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                // Check if it's a column missing error
+                if (error.message?.includes('column') || error.code === '42703') {
+                    showToast('Kolom database belum lengkap. Jalankan ADD_FAVICON_COLUMN.sql di Supabase SQL Editor.', 'error');
+                } else {
+                    showToast(`Gagal menyimpan: ${error.message}`, 'error');
+                }
+                return;
+            }
+            
+            console.log('✅ Settings saved successfully');
+            
+            // Update local state
+            setSettings(prev => ({ ...prev, logo: logoUrl, favicon: faviconUrl }));
+            setLogoFile(null);
+            setFaviconFile(null);
             
             // Apply changes immediately
             if (newSettings.siteName) {
@@ -2123,9 +2151,9 @@ const WebsiteSettings: React.FC = () => {
             }
             
             showToast('Pengaturan website berhasil disimpan!', 'success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving settings:', error);
-            showToast('Gagal menyimpan pengaturan.', 'error');
+            showToast(`Gagal menyimpan pengaturan: ${error?.message || 'Unknown error'}`, 'error');
         } finally {
             setSaving(false);
         }

@@ -1,67 +1,28 @@
 -- ============================================
--- ADD FAVICON COLUMN TO SETTINGS TABLE
--- Run this script in Supabase SQL Editor
+-- FIX WEBSITE SETTINGS COLUMNS
+-- COPY DAN PASTE SELURUH SCRIPT INI KE SUPABASE SQL EDITOR
+-- LALU KLIK "RUN" 
 -- ============================================
 
--- Add favicon column to settings table if it doesn't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'settings' 
-        AND column_name = 'favicon'
-    ) THEN
-        ALTER TABLE public.settings ADD COLUMN favicon TEXT;
-        RAISE NOTICE 'Column favicon added successfully';
-    ELSE
-        RAISE NOTICE 'Column favicon already exists';
-    END IF;
-END $$;
+-- Step 1: Tambahkan semua kolom yang dibutuhkan untuk website settings
+ALTER TABLE public.settings 
+ADD COLUMN IF NOT EXISTS "siteName" TEXT,
+ADD COLUMN IF NOT EXISTS "siteDescription" TEXT,
+ADD COLUMN IF NOT EXISTS logo TEXT,
+ADD COLUMN IF NOT EXISTS favicon TEXT,
+ADD COLUMN IF NOT EXISTS "supportEmail" TEXT;
 
--- Also ensure other website settings columns exist
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'settings' 
-        AND column_name = 'siteName'
-    ) THEN
-        ALTER TABLE public.settings ADD COLUMN "siteName" TEXT;
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'settings' 
-        AND column_name = 'siteDescription'
-    ) THEN
-        ALTER TABLE public.settings ADD COLUMN "siteDescription" TEXT;
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'settings' 
-        AND column_name = 'logo'
-    ) THEN
-        ALTER TABLE public.settings ADD COLUMN logo TEXT;
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'settings' 
-        AND column_name = 'supportEmail'
-    ) THEN
-        ALTER TABLE public.settings ADD COLUMN "supportEmail" TEXT;
-    END IF;
-END $$;
+-- Step 2: Buat row 'website' jika belum ada
+INSERT INTO public.settings (id)
+VALUES ('website')
+ON CONFLICT (id) DO NOTHING;
 
--- Verify the columns exist
+-- Step 3: Verifikasi kolom sudah ada
 SELECT column_name, data_type 
 FROM information_schema.columns 
 WHERE table_schema = 'public' 
 AND table_name = 'settings'
 ORDER BY ordinal_position;
+
+-- Jika berhasil, akan muncul list kolom termasuk:
+-- siteName, siteDescription, logo, favicon, supportEmail
