@@ -160,7 +160,7 @@ export async function getCachedProductsByBrand(brandId: string) {
 export async function getCachedCsAgents() {
     return cacheQuery(
         CACHE_KEYS.CS_AGENTS,
-        () => supabase.from('cs_agents').select('id, name, "phoneNumber"'),
+        () => supabase.from('cs_agents').select('id, name, phone'),
         5 * 60 * 1000
     );
 }

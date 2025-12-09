@@ -796,6 +796,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             if (foundForm) {
                 const normalizedForm = normalizeForm(foundForm);
                 console.log('Normalized form customerFields:', normalizedForm.customerFields);
+                console.log('[FormViewer] Loaded variantCombinations:', normalizedForm.variantCombinations);
 
                 // Remove productImages array untuk menghindari galeri foto
                 const cleanForm = { ...normalizedForm, productImages: [] };
@@ -825,7 +826,59 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     useEffect(() => {
         const originalTitle = document.title;
         if (form) {
+            // Set page title
             document.title = form.title || 'Formulir Pemesanan';
+            
+            // Set meta description
+            const metaDescription = document.querySelector('meta[name="description"]');
+            const descriptionContent = form.description 
+                ? form.description.replace(/<[^>]*>/g, '').substring(0, 160) // Strip HTML dan batasi 160 karakter
+                : `Pesan ${form.title} sekarang dengan harga terbaik!`;
+            
+            if (metaDescription) {
+                metaDescription.setAttribute('content', descriptionContent);
+            } else {
+                const newMeta = document.createElement('meta');
+                newMeta.name = 'description';
+                newMeta.content = descriptionContent;
+                document.head.appendChild(newMeta);
+            }
+            
+            // Set Open Graph meta tags (untuk Facebook, WhatsApp, dll)
+            const setOrCreateMeta = (property: string, content: string) => {
+                let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+                if (!meta) {
+                    meta = document.createElement('meta');
+                    meta.setAttribute('property', property);
+                    document.head.appendChild(meta);
+                }
+                meta.setAttribute('content', content);
+            };
+            
+            setOrCreateMeta('og:title', form.title || 'Formulir Pemesanan');
+            setOrCreateMeta('og:description', descriptionContent);
+            setOrCreateMeta('og:type', 'website');
+            if (form.mainImage) {
+                setOrCreateMeta('og:image', form.mainImage);
+            }
+            
+            // Set Twitter Card meta tags
+            const setOrCreateMetaName = (name: string, content: string) => {
+                let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+                if (!meta) {
+                    meta = document.createElement('meta');
+                    meta.setAttribute('name', name);
+                    document.head.appendChild(meta);
+                }
+                meta.setAttribute('content', content);
+            };
+            
+            setOrCreateMetaName('twitter:card', 'summary_large_image');
+            setOrCreateMetaName('twitter:title', form.title || 'Formulir Pemesanan');
+            setOrCreateMetaName('twitter:description', descriptionContent);
+            if (form.mainImage) {
+                setOrCreateMetaName('twitter:image', form.mainImage);
+            }
         }
         return () => {
             document.title = originalTitle;
@@ -879,6 +932,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }, [currentCombination, variantStock]);
 
     const subtotal = currentCombination?.sellingPrice ?? 0;
+
+    // Debug: Log harga yang digunakan
+    useEffect(() => {
+        if (currentCombination) {
+            console.log('[FormViewer] Current variant price:', {
+                attributes: currentCombination.attributes,
+                sellingPrice: currentCombination.sellingPrice,
+                strikethroughPrice: currentCombination.strikethroughPrice,
+            });
+        }
+    }, [currentCombination]);
 
     const shippingCost = useMemo(() => {
         if (!form || !selectedShippingKey) return 0;
@@ -1235,9 +1299,39 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             const cartId = sessionStorage.getItem(`abandonedCart_${form.id}`);
             if (cartId) {
                 try {
+                    // 1. Hapus record abandoned cart
                     await supabase.from('abandoned_carts').delete().eq('id', cartId);
+                    
+                    // 2. Hapus notifikasi abandoned cart yang terkait
+                    // Notifikasi abandoned cart dibuat dengan ID format: cart-{cartId}
+                    await supabase.from('notifications').delete().eq('id', `cart-${cartId}`);
+                    console.log('[FormViewer] Deleted abandoned cart and notification:', cartId);
                 } catch (err) {
-                    console.warn("Failed to delete abandoned cart record:", err);
+                    console.warn("Failed to delete abandoned cart record/notification:", err);
+                }
+            }
+            
+            // Juga hapus notifikasi abandoned cart berdasarkan nomor telepon customer
+            // (untuk kasus jika customer menggunakan form berbeda tapi nomor sama)
+            if (customerData.whatsapp) {
+                try {
+                    // Cari abandoned carts dengan nomor telepon yang sama
+                    const { data: relatedCarts } = await supabase
+                        .from('abandoned_carts')
+                        .select('id')
+                        .eq('customerPhone', customerData.whatsapp);
+                    
+                    if (relatedCarts && relatedCarts.length > 0) {
+                        const cartIds = relatedCarts.map(c => c.id);
+                        const notificationIds = cartIds.map(id => `cart-${id}`);
+                        
+                        // Hapus abandoned carts dan notifikasinya
+                        await supabase.from('abandoned_carts').delete().in('id', cartIds);
+                        await supabase.from('notifications').delete().in('id', notificationIds);
+                        console.log('[FormViewer] Deleted related abandoned carts for phone:', customerData.whatsapp);
+                    }
+                } catch (err) {
+                    console.warn("Failed to delete related abandoned carts:", err);
                 }
             }
 

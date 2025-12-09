@@ -446,8 +446,8 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                     <div
                         onClick={() => handleGalleryImageClick(form.mainImage)}
                         className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === form.mainImage
-                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
-                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                            ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
+                            : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
                             }`}
                     >
                         <img src={form.mainImage} alt="Main" className="w-full h-full object-cover rounded-lg" />
@@ -457,8 +457,8 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             key={idx}
                             onClick={() => handleGalleryImageClick(img)}
                             className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === img
-                                    ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
-                                    : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
+                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
                                 }`}
                         >
                             <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
@@ -499,8 +499,8 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                         <label
                                             key={val}
                                             className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${selectedOptions[option.name] === val
-                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
-                                                    : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
+                                                : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
@@ -862,6 +862,7 @@ const FormEditorPage: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadingProductDetails, setLoadingProductDetails] = useState(false);
+    const [syncingPrices, setSyncingPrices] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
@@ -1089,6 +1090,55 @@ const FormEditorPage: React.FC = () => {
 
         loadProductsByBrand();
     }, [form?.brandId]);
+
+    // Fungsi untuk sinkronisasi harga dari produk ke form
+    const syncPricesFromProduct = useCallback(async () => {
+        if (!form?.productId || syncingPrices) return;
+        
+        setSyncingPrices(true);
+        try {
+            const product = await productService.getProduct(form.productId);
+            
+            if (!product || !product.variants || product.variants.length === 0) {
+                showToast('Tidak ada data harga dari produk', 'info');
+                return;
+            }
+
+            // Map harga dari produk ke variantCombinations
+            const updatedCombinations = form.variantCombinations.map(combo => {
+                // Cari variant produk yang cocok
+                const matchingVariant = product.variants.find(v => {
+                    const variantName = v.name || '';
+                    // Bandingkan dengan nama varian di attributes
+                    const comboName = Object.values(combo.attributes).join(' - ');
+                    return variantName === comboName || 
+                           variantName === combo.attributes['Varian'] ||
+                           Object.values(combo.attributes).some(val => variantName.includes(val));
+                });
+
+                if (matchingVariant) {
+                    return {
+                        ...combo,
+                        sellingPrice: matchingVariant.price || combo.sellingPrice,
+                        strikethroughPrice: matchingVariant.comparePrice || combo.strikethroughPrice,
+                        costPrice: matchingVariant.costPrice || combo.costPrice,
+                        csCommission: matchingVariant.csCommission ?? combo.csCommission,
+                        advCommission: matchingVariant.advCommission ?? combo.advCommission,
+                        weight: matchingVariant.weight || combo.weight,
+                    };
+                }
+                return combo;
+            });
+
+            setForm(prev => prev ? { ...prev, variantCombinations: updatedCombinations, productVariants: product.variants } : prev);
+            showToast(`Harga berhasil disinkronkan dari produk`, 'success');
+        } catch (error) {
+            console.error('Error syncing prices:', error);
+            showToast('Gagal sinkronisasi harga', 'error');
+        } finally {
+            setSyncingPrices(false);
+        }
+    }, [form?.productId, form?.variantCombinations, syncingPrices, showToast]);
 
     // Auto-load product data untuk form edit yang sudah punya productId
     useEffect(() => {
@@ -1880,10 +1930,10 @@ const FormEditorPage: React.FC = () => {
                             onChange={(e) => handleFieldChange('assignedAdvertiserId', e.target.value)}
                             disabled={!!formId && !!form.assignedAdvertiserId}
                             className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId
-                                    ? 'border-red-500'
-                                    : !!formId && !!form.assignedAdvertiserId
-                                        ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800'
-                                        : 'dark:border-slate-600'
+                                ? 'border-red-500'
+                                : !!formId && !!form.assignedAdvertiserId
+                                    ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800'
+                                    : 'dark:border-slate-600'
                                 }`}
                         >
                             <option value="">-- Pilih Advertiser --</option>
@@ -1992,24 +2042,57 @@ const FormEditorPage: React.FC = () => {
                                             // 2. Load variants dan konversi ke format form
                                             if (product.variants && product.variants.length > 0) {
                                                 console.log('📊 Variants dari produk:', product.variants);
+                                                console.log('📊 VariantOptions dari produk:', product.variantOptions);
 
                                                 // Simpan productVariants untuk referensi
                                                 setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
 
-                                                // Konversi variants ke productOptions dan variantCombinations
-                                                // Asumsi: product.variants = [{ name: 'Varian A', price: 100000, ... }]
-                                                const variantNames = product.variants.map(v => v.name || 'Varian');
+                                                // Check apakah produk punya variantOptions (multi-atribut)
+                                                const hasVariantOptions = product.variantOptions && 
+                                                    Array.isArray(product.variantOptions) && 
+                                                    product.variantOptions.length > 0;
 
-                                                const newProductOptions: ProductOption[] = [{
-                                                    id: Date.now(),
-                                                    name: 'Varian',
-                                                    values: variantNames,
-                                                    displayStyle: 'radio'
-                                                }];
+                                                // Bangun productOptions dari variantOptions bila ada, fallback ke satu atribut "Varian"
+                                                const newProductOptions: ProductOption[] = hasVariantOptions
+                                                    ? product.variantOptions!.map((opt, idx) => ({
+                                                        id: idx + 1,
+                                                        name: opt.name || `Opsi ${idx + 1}`,
+                                                        values: opt.values || [],
+                                                        displayStyle: 'radio' as const
+                                                    }))
+                                                    : [{
+                                                        id: Date.now(),
+                                                        name: 'Varian',
+                                                        values: product.variants.map(v => v.name || 'Varian'),
+                                                        displayStyle: 'radio' as const
+                                                    }];
+
+                                                // Helper: map nama varian (e.g., "HITAM - A4") ke attributes per option
+                                                const mapAttributes = (variantName: string) => {
+                                                    const attributes: Record<string, string> = {};
+
+                                                    if (hasVariantOptions) {
+                                                        const parts = (variantName || '')
+                                                            .split('-')
+                                                            .map(p => p.trim())
+                                                            .filter(Boolean);
+
+                                                        product.variantOptions!.forEach((opt, idx) => {
+                                                            const key = opt.name || `Opsi ${idx + 1}`;
+                                                            const value = parts[idx] || opt.values?.[0] || '';
+                                                            attributes[key] = value;
+                                                        });
+                                                    } else {
+                                                        attributes['Varian'] = variantName || 'Varian';
+                                                    }
+
+                                                    return attributes;
+                                                };
 
                                                 const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
-                                                    attributes: { 'Varian': variant.name || `Varian ${idx + 1}` },
+                                                    attributes: mapAttributes(variant.name || `Varian ${idx + 1}`),
                                                     sellingPrice: variant.price || 0,
+                                                    strikethroughPrice: variant.comparePrice || 0,
                                                     costPrice: variant.costPrice || 0,
                                                     csCommission: variant.csCommission || 0,
                                                     advCommission: variant.advCommission || 0,
@@ -2106,6 +2189,28 @@ const FormEditorPage: React.FC = () => {
                                         </p>
                                     )}
                                 </div>
+                                
+                                {/* Tombol Sinkronisasi Harga */}
+                                <button
+                                    type="button"
+                                    onClick={syncPricesFromProduct}
+                                    disabled={syncingPrices}
+                                    className="mt-3 w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {syncingPrices ? (
+                                        <>
+                                            <SpinnerIcon className="w-4 h-4 animate-spin" />
+                                            Menyinkronkan...
+                                        </>
+                                    ) : (
+                                        <>
+                                            🔄 Sinkronkan Harga dari Produk
+                                        </>
+                                    )}
+                                </button>
+                                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1.5 text-center">
+                                    Klik untuk memperbarui harga formulir sesuai dengan harga terbaru di Produk Induk
+                                </p>
                             </div>
                         )}
                     </div>
@@ -2659,8 +2764,8 @@ const FormEditorPage: React.FC = () => {
                                         type="button"
                                         onClick={() => handleFieldChange('assignedPlatform', platform.value)}
                                         className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${isSelected
-                                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
-                                                : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
+                                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
+                                            : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
                                             }`}
                                     >
                                         <IconComponent className={`w-5 h-5 ${isSelected ? 'text-indigo-600' : 'text-slate-600 dark:text-slate-400'
@@ -2860,8 +2965,8 @@ const FormEditorPage: React.FC = () => {
                                                 key={pos}
                                                 onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'position', pos)}
                                                 className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.position === pos
-                                                        ? 'bg-indigo-600 text-white border-indigo-600'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
                                                     }`}
                                             >
                                                 {pos === 'bottom-left' && '↙ Bawah Kiri'}
@@ -2880,8 +2985,8 @@ const FormEditorPage: React.FC = () => {
                                                 key={anim}
                                                 onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'animation', anim)}
                                                 className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.animation === anim
-                                                        ? 'bg-indigo-600 text-white border-indigo-600'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
                                                     }`}
                                             >
                                                 {anim === 'slide-up' && '↑ Geser'}
@@ -3044,8 +3149,8 @@ const FormEditorPage: React.FC = () => {
                                                 key={anim.value}
                                                 onClick={() => handleSubNestedFieldChange('ctaSettings', null, 'animationType', anim.value as any)}
                                                 className={`p-2 text-xs font-medium rounded border transition ${form.ctaSettings?.animationType === anim.value
-                                                        ? 'bg-indigo-600 text-white border-indigo-600'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
                                                     }`}
                                             >
                                                 <div>{anim.label}</div>
@@ -3067,12 +3172,12 @@ const FormEditorPage: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex space-x-2">
                                 <button onClick={() => setActivePreviewTab('form')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${activePreviewTab === 'form'
-                                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
                                     }`}>Formulir</button>
                                 <button onClick={() => setActivePreviewTab('thankyou')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${activePreviewTab === 'thankyou'
-                                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
                                     }`}>Terima Kasih</button>
                             </div>
                             <div className="flex items-center gap-2">

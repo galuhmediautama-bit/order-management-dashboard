@@ -4,12 +4,12 @@ import type { Form, ProductOption, VariantCombination, ShippingSettings, Payment
 const OWNER_EMAIL = 'galuhmediautama@gmail.com';
 
 export const capitalizeWords = (str: string | undefined | null): string => {
-  if (!str) return '';
-  return str
-    .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 };
 
 export const getNormalizedRole = (role: string | undefined, email?: string | null): UserRole => {
@@ -26,7 +26,7 @@ export const getNormalizedRole = (role: string | undefined, email?: string | nul
     }
 
     const lower = role.toLowerCase().trim();
-    
+
     // 2. Standard Role Normalization
     if (lower === 'owner' || lower === 'super admin' || lower === 'superadmin') return 'Super Admin';
     if (lower === 'admin' || lower === 'administrator') return 'Admin';
@@ -85,7 +85,7 @@ export const filterUsersByBrandIntersection = (
     return targetUsers.filter(target => {
         // Always see yourself
         if (target.id === currentUser.id) return true;
-        
+
         // Check intersection
         const targetBrands = target.assignedBrandIds || [];
         return targetBrands.some(b => myBrands.includes(b));
@@ -111,7 +111,7 @@ export const createDefaultTrackingSettings = (): Form['trackingSettings'] => {
 };
 
 export const normalizeForm = (formToEdit: Form): Form => {
-    
+
     const defaultShippingSettings: ShippingSettings = {
         regular: { visible: true, cost: 10000 },
         free: { visible: false, cost: 0 },
