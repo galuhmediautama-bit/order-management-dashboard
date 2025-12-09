@@ -1256,6 +1256,9 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
             const normalizedEmail = (customerData.email || '').trim();
 
+            // Build variant string from selected options
+            const variantString = Object.values(selectedOptions).filter(Boolean).join(' / ');
+
             const newOrderData: any = {
                 customer: capitalizeWords(customerData.name),
                 customerPhone: normalizedWhatsapp || customerData.whatsapp,
@@ -1267,7 +1270,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 district: addressData.district || null,
                 village: addressData.village || null,
                 postalCode: addressData.postalCode || null,
-                productName: `${form.title} ${Object.values(selectedOptions).join(' / ')}`.trim(),
+                productName: form.title,
+                variant: variantString || null,
                 productPrice: subtotal,
                 shippingMethod: shippingMethodLabel,
                 shippingCost: shippingCost || 0,
