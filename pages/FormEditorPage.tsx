@@ -1444,6 +1444,28 @@ const FormEditorPage: React.FC = () => {
             return;
         }
 
+        // Validate tracking settings - minimal 1 pixel harus dipilih untuk halaman formulir
+        if (form.trackingSettings?.formPage) {
+            const formPageHasPixel = Object.values(form.trackingSettings.formPage).some(
+                (setting: FormPixelSetting) => setting.pixelIds && setting.pixelIds.length > 0
+            );
+            if (!formPageHasPixel) {
+                showToast("Minimal 1 pixel harus dipilih untuk Halaman Formulir.", 'error');
+                return;
+            }
+        }
+
+        // Validate tracking settings - minimal 1 pixel harus dipilih untuk halaman terima kasih
+        if (form.trackingSettings?.thankYouPage) {
+            const thankYouPageHasPixel = Object.values(form.trackingSettings.thankYouPage).some(
+                (setting: FormPixelSetting) => setting.pixelIds && setting.pixelIds.length > 0
+            );
+            if (!thankYouPageHasPixel) {
+                showToast("Minimal 1 pixel harus dipilih untuk Halaman Terima Kasih.", 'error');
+                return;
+            }
+        }
+
         setIsSaving(true);
         try {
             // Check form state before save
@@ -2660,7 +2682,10 @@ const FormEditorPage: React.FC = () => {
                 <EditorCard icon={TrackingIcon} title="Pelacakan & Pixel">
                     <div className="space-y-6">
                         <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 border-b pb-1">Halaman Formulir</h4>
+                            <div className="flex items-center justify-between mb-3 border-b pb-1">
+                                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Halaman Formulir</h4>
+                                <span className="text-xs text-red-500 font-medium">Min. 1 Pixel</span>
+                            </div>
                             <div className="space-y-4">
                                 {Object.keys(PLATFORM_CONFIG).map(key => {
                                     const platformKey = key as keyof FormPageTrackingSettings;
@@ -2701,7 +2726,10 @@ const FormEditorPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 border-b pb-1">Halaman Terima Kasih</h4>
+                            <div className="flex items-center justify-between mb-3 border-b pb-1">
+                                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Halaman Terima Kasih</h4>
+                                <span className="text-xs text-red-500 font-medium">Min. 1 Pixel</span>
+                            </div>
                             <div className="space-y-4">
                                 {Object.keys(PLATFORM_CONFIG).map(key => {
                                     const platformKey = key as keyof FormPageTrackingSettings;
