@@ -24,8 +24,9 @@ interface ApiVillage {
   nama: string;
 }
 
-// Postal code API
-const POSTAL_API = 'https://kodepos.vercel.app/search';
+// Postal code API - using sooluh/kodepos (more complete)
+const POSTAL_API_PRIMARY = 'https://kodepos.vercel.app/search';
+const POSTAL_API_FALLBACK = 'https://kodepos.onrender.com/search';
 
 export interface AddressData {
   province: string;
@@ -232,38 +233,106 @@ const AddressInput: React.FC<AddressInputProps> = ({
     setVillages([]);
   };
 
-  // Fetch postal code based on village and district
+  // Fetch postal code based on village and district using multiple APIs
   const fetchPostalCode = async (villageName: string, districtName: string, cityName: string) => {
     if (!villageName || !districtName) return;
     
     setLoadingPostalCode(true);
     try {
-      // Try searching with village name
-      const searchQuery = `${villageName} ${districtName}`.replace(/\s+/g, '%20');
-      const res = await fetch(`${POSTAL_API}/?q=${searchQuery}`);
+      // Clean up names for search
+      const cleanVillage = villageName.replace(/^(desa|kelurahan)\s+/i, '').trim();
+      const cleanDistrict = districtName.replace(/^(kecamatan)\s+/i, '').trim();
       
-      if (res.ok) {
-        const data = await res.json();
-        if (data.data && data.data.length > 0) {
-          // Find best match
-          const match = data.data.find((item: any) => 
-            item.urban?.toLowerCase().includes(villageName.toLowerCase()) ||
-            item.subdistrict?.toLowerCase().includes(districtName.toLowerCase())
-          ) || data.data[0];
-          
-          if (match?.postalcode) {
-            setPostalCode(match.postalcode.toString());
-            return;
+      // Try primary API (sooluh/kodepos) - more complete data
+      const searchQuery = encodeURIComponent(`${cleanVillage} ${cleanDistrict}`);
+      
+      let found = false;
+      
+      // Try primary API
+      try {
+        const res = await fetch(`${POSTAL_API_PRIMARY}/?q=${searchQuery}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.statusCode === 200 && data.data && data.data.length > 0) {
+            // Find best match - match village and district
+            const exactMatch = data.data.find((item: any) => 
+              item.village?.toLowerCase() === cleanVillage.toLowerCase() &&
+              item.district?.toLowerCase() === cleanDistrict.toLowerCase()
+            );
+            
+            const partialMatch = data.data.find((item: any) => 
+              item.village?.toLowerCase().includes(cleanVillage.toLowerCase()) ||
+              cleanVillage.toLowerCase().includes(item.village?.toLowerCase() || '')
+            );
+            
+            const match = exactMatch || partialMatch || data.data[0];
+            
+            if (match?.code) {
+              setPostalCode(match.code.toString());
+              found = true;
+            }
           }
+        }
+      } catch (primaryErr) {
+        console.log('Primary API failed, trying fallback...');
+      }
+      
+      // Try fallback API if primary failed
+      if (!found) {
+        try {
+          const fallbackRes = await fetch(`${POSTAL_API_FALLBACK}/?q=${searchQuery}`);
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            if (fallbackData.statusCode === 200 && fallbackData.data && fallbackData.data.length > 0) {
+              const match = fallbackData.data[0];
+              if (match?.code) {
+                setPostalCode(match.code.toString());
+                found = true;
+              }
+            }
+          }
+        } catch (fallbackErr) {
+          console.log('Fallback API also failed');
         }
       }
       
-      // Fallback: try with just district name
-      const fallbackRes = await fetch(`${POSTAL_API}/?q=${districtName.replace(/\s+/g, '%20')}`);
-      if (fallbackRes.ok) {
-        const fallbackData = await fallbackRes.json();
-        if (fallbackData.data && fallbackData.data.length > 0) {
-          setPostalCode(fallbackData.data[0].postalcode?.toString() || '');
+      // Try with just village name if still not found
+      if (!found) {
+        try {
+          const simpleQuery = encodeURIComponent(cleanVillage);
+          const simpleRes = await fetch(`${POSTAL_API_PRIMARY}/?q=${simpleQuery}`);
+          if (simpleRes.ok) {
+            const simpleData = await simpleRes.json();
+            if (simpleData.statusCode === 200 && simpleData.data && simpleData.data.length > 0) {
+              // Try to match by district name
+              const matchByDistrict = simpleData.data.find((item: any) =>
+                item.district?.toLowerCase().includes(cleanDistrict.toLowerCase())
+              );
+              const match = matchByDistrict || simpleData.data[0];
+              if (match?.code) {
+                setPostalCode(match.code.toString());
+                found = true;
+              }
+            }
+          }
+        } catch (simpleErr) {
+          console.log('Simple search also failed');
+        }
+      }
+      
+      // Try with district + city if still not found
+      if (!found && cityName) {
+        try {
+          const cityQuery = encodeURIComponent(`${cleanDistrict} ${cityName}`);
+          const cityRes = await fetch(`${POSTAL_API_PRIMARY}/?q=${cityQuery}`);
+          if (cityRes.ok) {
+            const cityData = await cityRes.json();
+            if (cityData.statusCode === 200 && cityData.data && cityData.data.length > 0) {
+              setPostalCode(cityData.data[0].code?.toString() || '');
+            }
+          }
+        } catch (cityErr) {
+          console.log('City search also failed');
         }
       }
     } catch (err) {
