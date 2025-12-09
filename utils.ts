@@ -160,9 +160,9 @@ export const normalizeForm = (formToEdit: Form): Form => {
             showOrderSummary: true,
             whatsappConfirmation: {
                 active: true,
-                destination: 'custom',
+                destination: 'assigned_cs',
                 number: '',
-                messageTemplate: 'Halo, saya ingin konfirmasi pesanan saya dengan ID [ORDER_ID].\n\nNama: [CUSTOMER_NAME]\nTotal: [TOTAL_PRICE]'
+                messageTemplate: 'Hallo, saya ingin melakukan konfirmasi terkait pesanan yang telah saya buat. Berikut detail lengkapnya 👇\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama Pemesan: [CUSTOMER_NAME]\n💰 Total Pembayaran: [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nMohon dibantu untuk pengecekan dan proses pemesanan saya. Apabila diperlukan informasi tambahan, saya siap untuk memberikan data yang dibutuhkan.\n\nTerima kasih atas bantuannya 🙏'
             }
         },
         trackingSettings: formToEdit.trackingSettings || createDefaultTrackingSettings(),
@@ -204,7 +204,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
 
     if (migratedForm.thankYouPage) {
         if (!migratedForm.thankYouPage.whatsappConfirmation.destination) {
-            migratedForm.thankYouPage.whatsappConfirmation.destination = 'custom';
+            migratedForm.thankYouPage.whatsappConfirmation.destination = 'assigned_cs';
         }
         if (!migratedForm.thankYouPage.submissionAction) {
             migratedForm.thankYouPage.submissionAction = 'show_thank_you_page';

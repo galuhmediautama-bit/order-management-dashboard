@@ -219,7 +219,7 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
             .replace('[PRODUCT_NAME]', productDisplay)
             .replace('[ORDER_ID]', order.id.substring(0, 8))
             .replace('[CUSTOMER_NAME]', capitalizeWords(order.customer))
-            .replace('[TOTAL_PRICE]', `Rp ${order.totalPrice?.toLocaleString('id-ID')}`)
+            .replace('[TOTAL_PRICE]', `Rp ${order.totalPrice?.toLocaleString('id-ID') || '0'}`)
             .replace('[PAYMENT_METHOD]', order.paymentMethod || 'Tidak ditentukan');
 
         let destinationNumber = '';
@@ -230,6 +230,7 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
         }
 
         if (destinationNumber) {
+            // encodeURIComponent ensures emojis and special characters are properly encoded
             whatsappLink = `https://wa.me/${destinationNumber}?text=${encodeURIComponent(message)}`;
         }
     }
