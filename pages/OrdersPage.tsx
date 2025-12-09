@@ -2203,17 +2203,24 @@ const ManualOrderModal: React.FC<{
     const [customerData, setCustomerData] = useState({
         name: editOrder?.customer || '',
         phone: editOrder?.customerPhone || '',
+        email: editOrder?.customerEmail || '',
         address: editOrder?.shippingAddress || ''
     });
     const [addressData, setAddressData] = useState<AddressData>({
-        province: '',
-        city: '',
-        district: '',
-        postalCode: '',
-        detailAddress: '',
+        province: editOrder?.province || '',
+        city: editOrder?.city || '',
+        district: editOrder?.district || '',
+        village: editOrder?.village || '',
+        postalCode: editOrder?.postalCode || '',
+        detailAddress: editOrder?.shippingAddress || '',
         fullAddress: editOrder?.shippingAddress || ''
     });
     const [orderTotal, setOrderTotal] = useState<number>(editOrder?.totalPrice || 0);
+    const [productPrice, setProductPrice] = useState<number>(editOrder?.productPrice || 0);
+    const [shippingCost, setShippingCost] = useState<number>(editOrder?.shippingCost || 0);
+    const [codFee, setCodFee] = useState<number>(editOrder?.codFee || 0);
+    const [shippingMethod, setShippingMethod] = useState<string>(editOrder?.shippingMethod || 'Regular');
+    const [paymentMethod, setPaymentMethod] = useState<string>(editOrder?.paymentMethod || 'Bayar di Tempat (COD)');
     const [selectedCsId, setSelectedCsId] = useState<string>(editOrder?.assignedCsId || '');
     const [notes, setNotes] = useState<string>(editOrder?.notes || '');
     const [variant, setVariant] = useState<string>(editOrder?.variant || '');
@@ -2226,18 +2233,25 @@ const ManualOrderModal: React.FC<{
             setCustomerData({
                 name: editOrder.customer || '',
                 phone: editOrder.customerPhone || '',
+                email: editOrder.customerEmail || '',
                 address: editOrder.shippingAddress || ''
             });
-            // Set address in detailAddress field so it shows up in AddressInput
+            // Set address data from separate fields
             setAddressData({
-                province: '',
-                city: '',
-                district: '',
-                postalCode: '',
-                detailAddress: editOrder.shippingAddress || '', // Put full address in detail field
+                province: editOrder.province || '',
+                city: editOrder.city || '',
+                district: editOrder.district || '',
+                village: editOrder.village || '',
+                postalCode: editOrder.postalCode || '',
+                detailAddress: editOrder.shippingAddress || '',
                 fullAddress: editOrder.shippingAddress || ''
             });
             setOrderTotal(editOrder.totalPrice || 0);
+            setProductPrice(editOrder.productPrice || 0);
+            setShippingCost(editOrder.shippingCost || 0);
+            setCodFee(editOrder.codFee || 0);
+            setShippingMethod(editOrder.shippingMethod || 'Regular');
+            setPaymentMethod(editOrder.paymentMethod || 'Bayar di Tempat (COD)');
             setSelectedCsId(editOrder.assignedCsId || '');
             setNotes(editOrder.notes || '');
             setVariant(editOrder.variant || '');
@@ -2245,16 +2259,22 @@ const ManualOrderModal: React.FC<{
         } else {
             // Reset when creating new order
             setSelectedFormId(forms[0]?.id || '');
-            setCustomerData({ name: '', phone: '', address: '' });
+            setCustomerData({ name: '', phone: '', email: '', address: '' });
             setAddressData({
                 province: '',
                 city: '',
                 district: '',
+                village: '',
                 postalCode: '',
                 detailAddress: '',
                 fullAddress: ''
             });
             setOrderTotal(0);
+            setProductPrice(0);
+            setShippingCost(0);
+            setCodFee(0);
+            setShippingMethod('Regular');
+            setPaymentMethod('Bayar di Tempat (COD)');
             setSelectedCsId('');
             setNotes('');
             setVariant('');
@@ -2273,9 +2293,14 @@ const ManualOrderModal: React.FC<{
     useEffect(() => {
         setCustomerData(prev => ({
             ...prev,
-            address: addressData.fullAddress
+            address: addressData.fullAddress || addressData.detailAddress
         }));
     }, [addressData]);
+
+    // Auto-calculate total
+    useEffect(() => {
+        setOrderTotal(productPrice + shippingCost + codFee);
+    }, [productPrice, shippingCost, codFee]);
 
     const handleSubmit = () => {
         const form = forms.find(f => f.id === selectedFormId);
@@ -2284,19 +2309,29 @@ const ManualOrderModal: React.FC<{
         onSave({
             customer: customerData.name,
             customerPhone: customerData.phone,
-            customerEmail: '',
-            shippingAddress: customerData.address,
+            customerEmail: customerData.email || '',
+            shippingAddress: addressData.detailAddress || customerData.address,
+            // Separate address fields
+            province: addressData.province || undefined,
+            city: addressData.city || undefined,
+            district: addressData.district || undefined,
+            village: addressData.village || undefined,
+            postalCode: addressData.postalCode || undefined,
             productName: form.title,
-            productPrice: orderTotal,
-            totalPrice: orderTotal, // Simplified for manual entry
-            status: 'Pending',
-            urgency: 'Low',
-            followUps: 0,
-            date: new Date().toISOString(),
+            productPrice: productPrice,
+            shippingMethod: shippingMethod,
+            shippingCost: shippingCost,
+            codFee: codFee,
+            paymentMethod: paymentMethod,
+            totalPrice: orderTotal,
+            status: editOrder?.status || 'Pending',
+            urgency: editOrder?.urgency || 'Low',
+            followUps: editOrder?.followUps || 0,
+            date: editOrder?.date || new Date().toISOString(),
             formId: form.id,
             formTitle: form.title,
             brandId: form.brandId || '',
-            assignedCsId: selectedCsId || undefined, // Assign CS
+            assignedCsId: selectedCsId || undefined,
             notes: notes || undefined,
             variant: variant || undefined,
             quantity: quantity || 1
@@ -2384,7 +2419,7 @@ const ManualOrderModal: React.FC<{
                                                 setVariant(variantName);
                                                 // Auto-update price when variant changes
                                                 if (selectedVariant?.sellingPrice) {
-                                                    setOrderTotal(selectedVariant.sellingPrice * quantity);
+                                                    setProductPrice(selectedVariant.sellingPrice * quantity);
                                                 }
                                             }}
                                         >
@@ -2447,24 +2482,88 @@ const ManualOrderModal: React.FC<{
                                         return variant === variantLabel || variant === `${idx}::${variantLabel}`;
                                     });
                                     if (selectedVariant?.sellingPrice) {
-                                        setOrderTotal(selectedVariant.sellingPrice * newQty);
+                                        setProductPrice(selectedVariant.sellingPrice * newQty);
                                     }
                                 }}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Harga</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Produk</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
                                 <input
                                     type="number"
                                     className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
                                     placeholder="0"
-                                    value={orderTotal}
-                                    onChange={e => setOrderTotal(parseFloat(e.target.value) || 0)}
+                                    value={productPrice}
+                                    onChange={e => setProductPrice(parseFloat(e.target.value) || 0)}
                                 />
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Metode Pengiriman</label>
+                                <select
+                                    className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                    value={shippingMethod}
+                                    onChange={e => setShippingMethod(e.target.value)}
+                                >
+                                    <option value="Regular">Regular</option>
+                                    <option value="Gratis Ongkir">Gratis Ongkir</option>
+                                    <option value="Flat Ongkir Pulau Jawa">Flat Ongkir Pulau Jawa</option>
+                                    <option value="Flat Ongkir Pulau Bali">Flat Ongkir Pulau Bali</option>
+                                    <option value="Flat Ongkir Pulau Sumatra">Flat Ongkir Pulau Sumatra</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Biaya Ongkir</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
+                                    <input
+                                        type="number"
+                                        className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                        placeholder="0"
+                                        value={shippingCost}
+                                        onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Metode Pembayaran</label>
+                                <select
+                                    className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                    value={paymentMethod}
+                                    onChange={e => setPaymentMethod(e.target.value)}
+                                >
+                                    <option value="Bayar di Tempat (COD)">Bayar di Tempat (COD)</option>
+                                    <option value="QRIS">QRIS</option>
+                                    <option value="Transfer Bank">Transfer Bank</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Biaya COD</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
+                                    <input
+                                        type="number"
+                                        className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
+                                        placeholder="0"
+                                        value={codFee}
+                                        onChange={e => setCodFee(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded-lg">
+                            <label className="block text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Total Harga</label>
+                            <p className="text-2xl font-bold text-indigo-600">Rp {orderTotal.toLocaleString('id-ID')}</p>
+                            <p className="text-xs text-indigo-500 mt-1">Harga Produk + Ongkir + COD</p>
                         </div>
 
                         <div>
