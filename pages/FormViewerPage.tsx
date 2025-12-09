@@ -1270,6 +1270,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 productName: `${form.title} ${Object.values(selectedOptions).join(' / ')}`.trim(),
                 productPrice: subtotal,
                 shippingMethod: shippingMethodLabel,
+                shippingCost: shippingCost || 0,
+                codFee: codFee || 0,
                 paymentMethod: selectedPaymentKey ? PAYMENT_CONFIG[selectedPaymentKey].label : 'N/A',
                 totalPrice: total,
                 status: 'Pending',
