@@ -51,6 +51,12 @@ export interface Order {
   customerPhone: string;
   customerEmail: string;
   shippingAddress: string;
+  // Separate address fields for filtering/reporting
+  province?: string; // Provinsi
+  city?: string; // Kota/Kabupaten
+  district?: string; // Kecamatan
+  village?: string; // Kelurahan/Desa
+  postalCode?: string; // Kode Pos
   status: OrderStatus;
   urgency: OrderUrgency;
   followUps: number;

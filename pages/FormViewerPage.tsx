@@ -1261,6 +1261,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 customerPhone: normalizedWhatsapp || customerData.whatsapp,
                 customerEmail: normalizedEmail,
                 shippingAddress: normalizedAddress || '',
+                // Separate address fields for filtering/reporting
+                province: addressData.province || null,
+                city: addressData.city || null,
+                district: addressData.district || null,
+                village: addressData.village || null,
+                postalCode: addressData.postalCode || null,
                 productName: `${form.title} ${Object.values(selectedOptions).join(' / ')}`.trim(),
                 productPrice: subtotal,
                 shippingMethod: shippingMethodLabel,
