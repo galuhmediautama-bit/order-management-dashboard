@@ -2044,9 +2044,14 @@ const OrderDetailModal: React.FC<{
                         <h3 className="font-bold text-lg mb-3">Informasi Pesanan</h3>
                         <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg">
                             <div><p className="text-slate-500 text-sm">ID</p><p className="font-mono font-bold">{order.id}</p></div>
-                            <div><p className="text-slate-500 text-sm">Tanggal</p><p className="font-medium">{order.date}</p></div>
+                            <div><p className="text-slate-500 text-sm">Tanggal</p><p className="font-medium">{order.date ? new Date(order.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</p></div>
                             <div><p className="text-slate-500 text-sm">Status</p><div className="mt-1"><StatusBadge status={order.status} /></div></div>
-                            <div><p className="text-slate-500 text-sm">Metode Bayar</p><p className="font-medium">{order.paymentMethod || '-'}</p></div>
+                            <div>
+                                <p className="text-slate-500 text-sm">Metode Bayar</p>
+                                <p className="font-medium text-slate-900 dark:text-white">
+                                    {order.paymentMethod || 'COD (Bayar di Tempat)'}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -2054,11 +2059,32 @@ const OrderDetailModal: React.FC<{
                     <div className="border-t dark:border-slate-700 pt-6">
                         <h3 className="font-bold text-lg mb-3">Data Pelanggan</h3>
                         <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
-                            <div><p className="text-slate-500 text-sm">Nama</p><p>{order.customer}</p></div>
-                            <div><p className="text-slate-500 text-sm">WhatsApp</p><p>{order.customerPhone}</p></div>
-                            {order.customerEmail && <div><p className="text-slate-500 text-sm">Email</p><p>{order.customerEmail}</p></div>}
-                            <div><p className="text-slate-500 text-sm">Alamat</p><p>{order.shippingAddress}</p></div>
-                            {order.shippingMethod && <div><p className="text-slate-500 text-sm">Metode</p><p>{order.shippingMethod}</p></div>}
+                            <div><p className="text-slate-500 text-sm">Nama</p><p className="font-medium text-slate-900 dark:text-white">{order.customer || '-'}</p></div>
+                            <div><p className="text-slate-500 text-sm">WhatsApp</p><p className="font-medium text-slate-900 dark:text-white">{order.customerPhone || '-'}</p></div>
+                            <div><p className="text-slate-500 text-sm">Email</p><p className="font-medium text-slate-900 dark:text-white">{order.customerEmail || '-'}</p></div>
+                            
+                            {/* Address Details */}
+                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                                <p className="text-slate-500 text-sm font-medium mb-2">Alamat Lengkap</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div><p className="text-slate-400 text-xs">Provinsi</p><p className="text-slate-900 dark:text-white">{order.province || '-'}</p></div>
+                                    <div><p className="text-slate-400 text-xs">Kota/Kabupaten</p><p className="text-slate-900 dark:text-white">{order.city || '-'}</p></div>
+                                    <div><p className="text-slate-400 text-xs">Kecamatan</p><p className="text-slate-900 dark:text-white">{order.district || '-'}</p></div>
+                                    <div><p className="text-slate-400 text-xs">Kelurahan/Desa</p><p className="text-slate-900 dark:text-white">{order.village || '-'}</p></div>
+                                    <div><p className="text-slate-400 text-xs">Kode Pos</p><p className="text-slate-900 dark:text-white">{order.postalCode || '-'}</p></div>
+                                </div>
+                                <div className="mt-3">
+                                    <p className="text-slate-400 text-xs">Detail Alamat</p>
+                                    <p className="text-slate-900 dark:text-white">{order.shippingAddress || '-'}</p>
+                                </div>
+                            </div>
+                            
+                            {order.shippingMethod && (
+                                <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                                    <p className="text-slate-500 text-sm">Metode Pengiriman</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{order.shippingMethod}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
