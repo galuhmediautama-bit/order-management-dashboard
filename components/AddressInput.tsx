@@ -88,6 +88,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [loadingVillages, setLoadingVillages] = useState(false);
   const [loadingPostalCode, setLoadingPostalCode] = useState(false);
 
+  // Helper to sort data A-Z by nama
+  const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
+    return [...data].sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+  };
+
   // Fetch provinces on mount
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -95,7 +100,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       try {
         const res = await fetch(`${API_BASE}/provinsi.json`);
         const data: ApiProvince[] = await res.json();
-        setProvinces(data);
+        setProvinces(sortByName(data));
       } catch (err) {
         console.error('Error fetching provinces:', err);
       } finally {
@@ -116,7 +121,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       try {
         const res = await fetch(`${API_BASE}/kabupaten/${selectedProvinceId}.json`);
         const data: ApiCity[] = await res.json();
-        setCities(data);
+        setCities(sortByName(data));
       } catch (err) {
         console.error('Error fetching cities:', err);
         setCities([]);
@@ -138,7 +143,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       try {
         const res = await fetch(`${API_BASE}/kecamatan/${selectedCityId}.json`);
         const data: ApiDistrict[] = await res.json();
-        setDistricts(data);
+        setDistricts(sortByName(data));
       } catch (err) {
         console.error('Error fetching districts:', err);
         setDistricts([]);
@@ -160,7 +165,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       try {
         const res = await fetch(`${API_BASE}/kelurahan/${selectedDistrictId}.json`);
         const data: ApiVillage[] = await res.json();
-        setVillages(data);
+        setVillages(sortByName(data));
       } catch (err) {
         console.error('Error fetching villages:', err);
         setVillages([]);
@@ -481,6 +486,21 @@ const AddressInput: React.FC<AddressInputProps> = ({
           </select>
         </div>
       )}
+
+      {/* Alamat Lengkap */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Alamat Lengkap
+        </label>
+        <textarea
+          value={detailAddress}
+          onChange={(e) => setDetailAddress(e.target.value)}
+          disabled={disabled}
+          placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none"
+        />
+      </div>
 
       {/* Kode Pos */}
       <div>
