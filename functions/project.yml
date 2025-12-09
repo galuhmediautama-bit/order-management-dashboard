@@ -1,0 +1,19 @@
+targetNamespace: ''
+parameters: {}
+packages:
+  - name: meta-tags
+    environment: {}
+    parameters: {}
+    annotations: {}
+    actions:
+      - name: form-meta
+        binary: false
+        main: ''
+        runtime: 'nodejs:18'
+        web: true
+        parameters: {}
+        environment:
+          SUPABASE_URL: 'https://ggxyaautsdukyapstlgr.supabase.co'
+          SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdneHlhYXV0c2R1a3lhcHN0bGdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1ODQxNDksImV4cCI6MjA4MDE2MDE0OX0.oVMzNX8x6VEoRtYrSYszZXy_08-QdxAs22xC6NdIR-4'
+          APP_URL: 'https://form.cuanmax.digital'
+        limits: {}

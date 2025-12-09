@@ -375,11 +375,23 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             }
 
             try {
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from('products')
                     .select('attributes')
                     .eq('id', form.productId)
-                    .single();
+                    .maybeSingle();
+
+                if (error) {
+                    console.warn('Error fetching product:', error.message);
+                    setProductOptionsOverride([]);
+                    return;
+                }
+
+                if (!data) {
+                    console.warn('Product not found:', form.productId);
+                    setProductOptionsOverride([]);
+                    return;
+                }
 
                 const variantOptions = (data?.attributes?.variantOptions || []) as Array<{ name: string; values: string[] }>;
                 if (Array.isArray(variantOptions) && variantOptions.length > 0) {
