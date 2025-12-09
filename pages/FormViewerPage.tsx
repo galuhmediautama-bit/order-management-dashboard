@@ -633,14 +633,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }, [customerData, selectedOptions, form]);
 
     useEffect(() => {
-        if (timeLeft <= 0) return;
+        if (!form?.countdownSettings?.active) return;
 
         const timer = setInterval(() => {
-            setTimeLeft(prevTime => (prevTime > 0 ? prevTime - 1 : 0));
+            setTimeLeft(prevTime => {
+                if (prevTime <= 0) return 0;
+                return prevTime - 1;
+            });
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft]);
+    }, [form?.countdownSettings?.active]);
 
     // Resolve variant combinations once (handles product-level variantOptions splitting)
     const resolvedVariantCombinations = useMemo(() => {
