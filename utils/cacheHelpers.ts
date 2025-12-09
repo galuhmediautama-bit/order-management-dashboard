@@ -134,7 +134,7 @@ export async function getCachedBrands() {
 export async function getCachedProducts() {
     return cacheQuery(
         CACHE_KEYS.PRODUCTS,
-        () => supabase.from('products').select('id, name, brandId'),
+        () => supabase.from('products').select('id, name, brand_id'),
         5 * 60 * 1000
     );
 }
@@ -148,8 +148,8 @@ export async function getCachedProductsByBrand(brandId: string) {
         () =>
             supabase
                 .from('products')
-                .select('id, name, brandId')
-                .eq('brandId', brandId),
+                .select('id, name, brand_id')
+                .eq('brand_id', brandId),
         5 * 60 * 1000
     );
 }
@@ -160,7 +160,7 @@ export async function getCachedProductsByBrand(brandId: string) {
 export async function getCachedCsAgents() {
     return cacheQuery(
         CACHE_KEYS.CS_AGENTS,
-        () => supabase.from('cs_agents').select('id, name, phoneNumber'),
+        () => supabase.from('cs_agents').select('id, name, "phoneNumber"'),
         5 * 60 * 1000
     );
 }
