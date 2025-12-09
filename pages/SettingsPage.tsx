@@ -2052,11 +2052,14 @@ const WebsiteSettings: React.FC = () => {
         siteName: 'Order Management',
         siteDescription: 'Platform manajemen pesanan terpadu.',
         supportEmail: 'support@example.com',
-        logo: ''
+        logo: '',
+        favicon: ''
     });
     const [saving, setSaving] = useState(false);
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState('');
+    const [faviconFile, setFaviconFile] = useState<File | null>(null);
+    const [faviconPreview, setFaviconPreview] = useState('');
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -2067,9 +2070,11 @@ const WebsiteSettings: React.FC = () => {
                     siteName: data.siteName || '',
                     siteDescription: data.siteDescription || '',
                     supportEmail: data.supportEmail || '',
-                    logo: data.logo || ''
+                    logo: data.logo || '',
+                    favicon: data.favicon || ''
                 });
                 if (data.logo) setLogoPreview(data.logo);
+                if (data.favicon) setFaviconPreview(data.favicon);
             }
         };
         loadSettings();
@@ -2083,16 +2088,40 @@ const WebsiteSettings: React.FC = () => {
         }
     };
 
+    const handleFaviconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setFaviconFile(file);
+            setFaviconPreview(URL.createObjectURL(file));
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
             let logoUrl = settings.logo;
+            let faviconUrl = settings.favicon;
+            
             if (logoFile) {
                 logoUrl = await uploadFileAndGetURL(logoFile);
             }
+            
+            if (faviconFile) {
+                faviconUrl = await uploadFileAndGetURL(faviconFile);
+            }
 
-            const newSettings = { ...settings, logo: logoUrl };
+            const newSettings = { ...settings, logo: logoUrl, favicon: faviconUrl };
             await supabase.from('settings').upsert({ id: 'website', ...newSettings });
+            
+            // Apply changes immediately
+            if (newSettings.siteName) {
+                document.title = newSettings.siteName;
+            }
+            if (faviconUrl) {
+                const faviconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+                if (faviconLink) faviconLink.href = faviconUrl;
+            }
+            
             showToast('Pengaturan website berhasil disimpan!', 'success');
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -2147,6 +2176,32 @@ const WebsiteSettings: React.FC = () => {
                                         <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                                     </label>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Format: JPG, PNG, SVG (Max 2MB)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Favicon Section */}
+                        <div className="pb-8 border-b border-slate-200 dark:border-slate-700">
+                            <label className="block text-sm font-semibold mb-4 text-slate-700 dark:text-slate-300">Favicon (Ikon Tab Browser)</label>
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-xl flex items-center justify-center overflow-hidden border-2 border-slate-300 dark:border-slate-600 shadow-lg">
+                                    {faviconPreview ? (
+                                        <img src={faviconPreview} alt="Favicon" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 font-semibold text-slate-700 dark:text-slate-200 transition-all hover:scale-105 shadow-sm hover:shadow-md">
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>Pilih Favicon</span>
+                                        <input type="file" className="hidden" accept="image/png,image/x-icon,image/ico,.ico" onChange={handleFaviconChange} />
+                                    </label>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Format: PNG, ICO (Ukuran: 32x32 atau 64x64 px)</p>
                                 </div>
                             </div>
                         </div>
@@ -2213,9 +2268,10 @@ const WebsiteSettings: React.FC = () => {
                                 <div>
                                     <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">💡 Tips Optimasi</p>
                                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                                        <li>• Gunakan nama situs yang ringkas dan mudah diingat</li>
-                                        <li>• Deskripsi meta sebaiknya 150-160 karakter untuk hasil optimal di search engine</li>
-                                        <li>• Logo beresolusi tinggi akan tampil lebih profesional (minimal 512x512px)</li>
+                                        <li>• <strong>Nama Situs</strong> akan menjadi meta title (tampil di tab browser & hasil Google)</li>
+                                        <li>• <strong>Deskripsi Meta</strong> sebaiknya 150-160 karakter untuk hasil optimal di search engine</li>
+                                        <li>• <strong>Logo</strong> beresolusi tinggi minimal 512x512px akan tampil lebih profesional</li>
+                                        <li>• <strong>Favicon</strong> sebaiknya 32x32 atau 64x64 pixel dalam format PNG/ICO</li>
                                     </ul>
                                 </div>
                             </div>

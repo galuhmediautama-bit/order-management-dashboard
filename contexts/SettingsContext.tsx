@@ -16,7 +16,10 @@ export interface GlobalPixelSettings {
 
 interface WebsiteSettings {
     siteName?: string;
+    siteDescription?: string;
     logo?: string;
+    favicon?: string;
+    supportEmail?: string;
 }
 
 interface ISettingsContext {
@@ -49,6 +52,35 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
                 if (websiteData) {
                     setWebsiteSettings(websiteData as WebsiteSettings);
+                    
+                    // Apply dynamic meta tags
+                    if (websiteData.siteName) {
+                        document.title = websiteData.siteName;
+                        const metaTitle = document.querySelector('meta[name="title"]');
+                        const ogTitle = document.querySelector('meta[property="og:title"]');
+                        const twitterTitle = document.querySelector('meta[property="twitter:title"]');
+                        if (metaTitle) metaTitle.setAttribute('content', websiteData.siteName);
+                        if (ogTitle) ogTitle.setAttribute('content', websiteData.siteName);
+                        if (twitterTitle) twitterTitle.setAttribute('content', websiteData.siteName);
+                    }
+                    
+                    if (websiteData.siteDescription) {
+                        const metaDesc = document.querySelector('meta[name="description"]');
+                        const ogDesc = document.querySelector('meta[property="og:description"]');
+                        const twitterDesc = document.querySelector('meta[property="twitter:description"]');
+                        if (metaDesc) metaDesc.setAttribute('content', websiteData.siteDescription);
+                        if (ogDesc) ogDesc.setAttribute('content', websiteData.siteDescription);
+                        if (twitterDesc) twitterDesc.setAttribute('content', websiteData.siteDescription);
+                    }
+                    
+                    // Apply dynamic favicon
+                    if (websiteData.favicon) {
+                        let faviconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+                        if (faviconLink) {
+                            faviconLink.href = websiteData.favicon;
+                            faviconLink.type = 'image/png';
+                        }
+                    }
                 }
 
                 if (trackingData) {
