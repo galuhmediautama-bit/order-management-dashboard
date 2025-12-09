@@ -2106,19 +2106,44 @@ const OrderDetailModal: React.FC<{
                     <div className="border-t dark:border-slate-700 pt-6">
                         <h3 className="font-bold text-lg mb-3">Produk</h3>
                         <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
-                            {order.variant && <div><p className="text-slate-500 text-sm">Varian</p><p>{order.variant}</p></div>}
-                            {order.quantity && <div><p className="text-slate-500 text-sm">Jumlah</p><p>{order.quantity}</p></div>}
-                            {order.notes && <div><p className="text-slate-500 text-sm">Catatan</p><p>{order.notes}</p></div>}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><p className="text-slate-500 text-sm">Harga Produk</p><p className="font-semibold">Rp {order.productPrice?.toLocaleString('id-ID')}</p></div>
-                                {order.shippingCost !== undefined && (
-                                    <div><p className="text-slate-500 text-sm">Biaya Ongkir</p><p className="font-semibold text-blue-600">Rp {order.shippingCost?.toLocaleString('id-ID')}</p></div>
-                                )}
-                                {order.codFee !== undefined && order.codFee > 0 && (
-                                    <div><p className="text-slate-500 text-sm">Biaya COD</p><p className="font-semibold text-orange-600">Rp {order.codFee?.toLocaleString('id-ID')}</p></div>
-                                )}
+                            <div><p className="text-slate-500 text-sm">Nama Produk</p><p className="font-medium text-slate-900 dark:text-white">{order.productName || '-'}</p></div>
+                            {order.variant && <div><p className="text-slate-500 text-sm">Varian</p><p className="text-slate-900 dark:text-white">{order.variant}</p></div>}
+                            <div><p className="text-slate-500 text-sm">Jumlah</p><p className="text-slate-900 dark:text-white">{order.quantity || 1}</p></div>
+                            {order.notes && <div><p className="text-slate-500 text-sm">Catatan</p><p className="text-slate-900 dark:text-white">{order.notes}</p></div>}
+                        </div>
+                    </div>
+
+                    {/* Pricing & Shipping */}
+                    <div className="border-t dark:border-slate-700 pt-6">
+                        <h3 className="font-bold text-lg mb-3">Rincian Pembayaran</h3>
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
+                            <div className="flex justify-between items-center">
+                                <p className="text-slate-500 text-sm">Harga Produk</p>
+                                <p className="font-medium text-slate-900 dark:text-white">Rp {(order.productPrice || 0).toLocaleString('id-ID')}</p>
                             </div>
-                            <div className="pt-3 border-t"><p className="text-slate-500 text-sm">Total</p><p className="text-2xl font-bold text-indigo-600">Rp {order.totalPrice?.toLocaleString('id-ID')}</p></div>
+                            
+                            {/* Shipping */}
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-slate-500 text-sm">Pengiriman</p>
+                                    <p className="text-xs text-slate-400">{order.shippingMethod || 'Regular'}</p>
+                                </div>
+                                <p className="font-medium text-slate-900 dark:text-white">Rp {(order.shippingCost || 0).toLocaleString('id-ID')}</p>
+                            </div>
+                            
+                            {/* COD Fee */}
+                            {order.codFee !== undefined && order.codFee > 0 && (
+                                <div className="flex justify-between items-center">
+                                    <p className="text-slate-500 text-sm">Biaya Penanganan COD</p>
+                                    <p className="font-medium text-orange-600">Rp {order.codFee.toLocaleString('id-ID')}</p>
+                                </div>
+                            )}
+                            
+                            {/* Total */}
+                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                                <p className="font-bold text-slate-900 dark:text-white">Total</p>
+                                <p className="text-2xl font-bold text-indigo-600">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</p>
+                            </div>
                         </div>
                     </div>
 
