@@ -15,7 +15,7 @@ interface ProvinceInputProps {
 
 const ProvinceInput: React.FC<ProvinceInputProps> = ({ value, onChange, required = false, disabled = false }) => {
   const [selectedProvince, setSelectedProvince] = useState(value || '');
-  
+
   // Use static provinces data
   const provinces: Province[] = INDONESIA_PROVINCES;
 

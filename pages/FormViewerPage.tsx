@@ -594,14 +594,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         // Hitung totalPrice dari variant yang dipilih
         const variantKey = Object.values(selectedOptions).join(' / ') || 'Produk Tunggal';
-        
+
         // Gunakan form?.variantCombinations langsung karena resolvedVariantCombinations belum di-init
         const baseCombinations = form?.variantCombinations || [];
         let selectedCombination = baseCombinations.find(vc => {
             const attrKey = Object.values(vc.attributes || {}).join(' / ') || 'Produk Tunggal';
             return attrKey === variantKey;
         });
-        
+
         // Jika tidak ditemukan dengan key exact, coba cari dengan nama gabungan (HITAM - A4 format)
         if (!selectedCombination && baseCombinations.length > 0) {
             const combinedKey = Object.values(selectedOptions).join(' - ');
@@ -611,12 +611,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 return combinedValue === combinedKey;
             });
         }
-        
+
         // Fallback ke combination pertama jika masih tidak ditemukan
         if (!selectedCombination && baseCombinations.length > 0) {
             selectedCombination = baseCombinations[0];
         }
-        
+
         const variantPrice = selectedCombination?.sellingPrice || 0;
 
         const cartData = {
@@ -868,13 +868,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         if (form) {
             // Set page title
             document.title = form.title || 'Formulir Pemesanan';
-            
+
             // Set meta description
             const metaDescription = document.querySelector('meta[name="description"]');
-            const descriptionContent = form.description 
+            const descriptionContent = form.description
                 ? form.description.replace(/<[^>]*>/g, '').substring(0, 160) // Strip HTML dan batasi 160 karakter
                 : `Pesan ${form.title} sekarang dengan harga terbaik!`;
-            
+
             if (metaDescription) {
                 metaDescription.setAttribute('content', descriptionContent);
             } else {
@@ -883,7 +883,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 newMeta.content = descriptionContent;
                 document.head.appendChild(newMeta);
             }
-            
+
             // Set Open Graph meta tags (untuk Facebook, WhatsApp, dll)
             const setOrCreateMeta = (property: string, content: string) => {
                 let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
@@ -894,14 +894,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 }
                 meta.setAttribute('content', content);
             };
-            
+
             setOrCreateMeta('og:title', form.title || 'Formulir Pemesanan');
             setOrCreateMeta('og:description', descriptionContent);
             setOrCreateMeta('og:type', 'website');
             if (form.mainImage) {
                 setOrCreateMeta('og:image', form.mainImage);
             }
-            
+
             // Set Twitter Card meta tags
             const setOrCreateMetaName = (name: string, content: string) => {
                 let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
@@ -912,7 +912,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 }
                 meta.setAttribute('content', content);
             };
-            
+
             setOrCreateMetaName('twitter:card', 'summary_large_image');
             setOrCreateMetaName('twitter:title', form.title || 'Formulir Pemesanan');
             setOrCreateMetaName('twitter:description', descriptionContent);
@@ -1341,7 +1341,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 try {
                     // 1. Hapus record abandoned cart
                     await supabase.from('abandoned_carts').delete().eq('id', cartId);
-                    
+
                     // 2. Hapus notifikasi abandoned cart yang terkait
                     // Notifikasi abandoned cart dibuat dengan ID format: cart-{cartId}
                     await supabase.from('notifications').delete().eq('id', `cart-${cartId}`);
@@ -1350,7 +1350,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     console.warn("Failed to delete abandoned cart record/notification:", err);
                 }
             }
-            
+
             // Juga hapus notifikasi abandoned cart berdasarkan nomor telepon customer
             // (untuk kasus jika customer menggunakan form berbeda tapi nomor sama)
             if (customerData.whatsapp) {
@@ -1360,11 +1360,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                         .from('abandoned_carts')
                         .select('id')
                         .eq('customerPhone', customerData.whatsapp);
-                    
+
                     if (relatedCarts && relatedCarts.length > 0) {
                         const cartIds = relatedCarts.map(c => c.id);
                         const notificationIds = cartIds.map(id => `cart-${id}`);
-                        
+
                         // Hapus abandoned carts dan notifikasinya
                         await supabase.from('abandoned_carts').delete().in('id', cartIds);
                         await supabase.from('notifications').delete().in('id', notificationIds);

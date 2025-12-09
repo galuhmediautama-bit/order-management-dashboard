@@ -1094,11 +1094,11 @@ const FormEditorPage: React.FC = () => {
     // Fungsi untuk sinkronisasi harga dari produk ke form
     const syncPricesFromProduct = useCallback(async () => {
         if (!form?.productId || syncingPrices) return;
-        
+
         setSyncingPrices(true);
         try {
             const product = await productService.getProduct(form.productId);
-            
+
             if (!product || !product.variants || product.variants.length === 0) {
                 showToast('Tidak ada data harga dari produk', 'info');
                 return;
@@ -1111,9 +1111,9 @@ const FormEditorPage: React.FC = () => {
                     const variantName = v.name || '';
                     // Bandingkan dengan nama varian di attributes
                     const comboName = Object.values(combo.attributes).join(' - ');
-                    return variantName === comboName || 
-                           variantName === combo.attributes['Varian'] ||
-                           Object.values(combo.attributes).some(val => variantName.includes(val));
+                    return variantName === comboName ||
+                        variantName === combo.attributes['Varian'] ||
+                        Object.values(combo.attributes).some(val => variantName.includes(val));
                 });
 
                 if (matchingVariant) {
@@ -2048,8 +2048,8 @@ const FormEditorPage: React.FC = () => {
                                                 setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
 
                                                 // Check apakah produk punya variantOptions (multi-atribut)
-                                                const hasVariantOptions = product.variantOptions && 
-                                                    Array.isArray(product.variantOptions) && 
+                                                const hasVariantOptions = product.variantOptions &&
+                                                    Array.isArray(product.variantOptions) &&
                                                     product.variantOptions.length > 0;
 
                                                 // Bangun productOptions dari variantOptions bila ada, fallback ke satu atribut "Varian"
@@ -2189,7 +2189,7 @@ const FormEditorPage: React.FC = () => {
                                         </p>
                                     )}
                                 </div>
-                                
+
                                 {/* Tombol Sinkronisasi Harga */}
                                 <button
                                     type="button"

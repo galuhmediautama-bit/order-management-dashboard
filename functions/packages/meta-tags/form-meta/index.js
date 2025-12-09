@@ -16,69 +16,69 @@ const APP_URL = process.env.APP_URL || 'https://form.cuanmax.digital';
 
 // Simple fetch wrapper for Supabase REST API
 async function supabaseQuery(table, filters = '') {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?${filters}`;
-  const response = await fetch(url, {
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Supabase error: ${response.status} - ${error}`);
-  }
-  
-  return response.json();
+    const url = `${SUPABASE_URL}/rest/v1/${table}?${filters}`;
+    const response = await fetch(url, {
+        headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Supabase error: ${response.status} - ${error}`);
+    }
+
+    return response.json();
 }
 
 // User agents dari social media crawlers
 const CRAWLER_USER_AGENTS = [
-  'facebookexternalhit',
-  'Facebot',
-  'Twitterbot',
-  'LinkedInBot',
-  'WhatsApp',
-  'TelegramBot',
-  'Slackbot',
-  'Discordbot',
-  'Pinterest',
-  'Googlebot',
-  'bingbot',
+    'facebookexternalhit',
+    'Facebot',
+    'Twitterbot',
+    'LinkedInBot',
+    'WhatsApp',
+    'TelegramBot',
+    'Slackbot',
+    'Discordbot',
+    'Pinterest',
+    'Googlebot',
+    'bingbot',
 ];
 
 function isCrawler(userAgent) {
-  if (!userAgent) return false;
-  return CRAWLER_USER_AGENTS.some(bot => 
-    userAgent.toLowerCase().includes(bot.toLowerCase())
-  );
+    if (!userAgent) return false;
+    return CRAWLER_USER_AGENTS.some(bot =>
+        userAgent.toLowerCase().includes(bot.toLowerCase())
+    );
 }
 
 function stripHtml(html) {
-  if (!html) return '';
-  return html.replace(/<[^>]*>/g, '').trim();
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '').trim();
 }
 
 function escapeHtml(text) {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function generateMetaHtml(form, fullUrl) {
-  const title = escapeHtml(form.title || 'Formulir Pemesanan');
-  const description = escapeHtml(
-    stripHtml(form.description || '').substring(0, 160) || 
-    `Pesan ${form.title} sekarang dengan harga terbaik!`
-  );
-  const image = form.mainImage || `${APP_URL}/og-image.png`;
-  
-  return `<!DOCTYPE html>
+    const title = escapeHtml(form.title || 'Formulir Pemesanan');
+    const description = escapeHtml(
+        stripHtml(form.description || '').substring(0, 160) ||
+        `Pesan ${form.title} sekarang dengan harga terbaik!`
+    );
+    const image = form.mainImage || `${APP_URL}/og-image.png`;
+
+    return `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -125,129 +125,129 @@ function generateMetaHtml(form, fullUrl) {
 }
 
 async function main(args) {
-  const userAgent = args.__ow_headers?.['user-agent'] || '';
-  // Support both __ow_path (dari proxy) dan path query parameter
-  const path = args.__ow_path || args.path || '';
-  const queryString = args.__ow_query || '';
-  
-  // DEBUG MODE: Jika ada query debug=1, return debug info
-  if (args.debug === '1' || args.debug === 'true') {
+    const userAgent = args.__ow_headers?.['user-agent'] || '';
+    // Support both __ow_path (dari proxy) dan path query parameter
+    const path = args.__ow_path || args.path || '';
+    const queryString = args.__ow_query || '';
+
+    // DEBUG MODE: Jika ada query debug=1, return debug info
+    if (args.debug === '1' || args.debug === 'true') {
+        try {
+            // Test query semua forms menggunakan REST API
+            const allForms = await supabaseQuery('forms', 'select=id,title,slug&limit=5');
+
+            return {
+                statusCode: 200,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    receivedArgs: { path, userAgent: userAgent.substring(0, 50), queryString },
+                    supabaseUrl: SUPABASE_URL,
+                    formsQuery: { data: allForms, error: null },
+                }, null, 2),
+            };
+        } catch (error) {
+            return {
+                statusCode: 200,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    receivedArgs: { path, userAgent: userAgent.substring(0, 50), queryString },
+                    supabaseUrl: SUPABASE_URL,
+                    formsQuery: { data: null, error: error.message },
+                }, null, 2),
+            };
+        }
+    }
+
+    console.log('Received args:', JSON.stringify({ path, userAgent, queryString, allArgs: Object.keys(args) }));
+
+    // Extract form identifier dari path (format: /f/form-slug atau /f/uuid)
+    let formIdentifier = null;
+    const formMatch = path.match(/\/f\/([^/?]+)/);
+    if (formMatch) {
+        formIdentifier = formMatch[1];
+    } else if (path && !path.startsWith('/')) {
+        // Jika path tidak dimulai dengan /, mungkin langsung slug
+        formIdentifier = path.replace(/^f\//, '');
+    }
+
+    // Jika bukan request ke form, redirect ke app
+    if (!formIdentifier) {
+        return {
+            statusCode: 302,
+            headers: { Location: APP_URL },
+        };
+    }
+
+    // Jika bukan crawler, redirect ke SPA
+    if (!isCrawler(userAgent)) {
+        const redirectUrl = `${APP_URL}/#/f/${formIdentifier}${queryString ? '?' + queryString : ''}`;
+        return {
+            statusCode: 302,
+            headers: { Location: redirectUrl },
+        };
+    }
+
+    // Crawler detected - fetch form data dan return meta tags
     try {
-      // Test query semua forms menggunakan REST API
-      const allForms = await supabaseQuery('forms', 'select=id,title,slug&limit=5');
-      
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          receivedArgs: { path, userAgent: userAgent.substring(0, 50), queryString },
-          supabaseUrl: SUPABASE_URL,
-          formsQuery: { data: allForms, error: null },
-        }, null, 2),
-      };
+        // Normalize identifier - lowercase
+        const normalizedIdentifier = formIdentifier.toLowerCase();
+
+        // Check if it's a UUID
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formIdentifier);
+
+        // Build query params untuk REST API
+        // Gunakan or filter: slug.eq, slug.ilike, atau id.eq (jika UUID)
+        let queryParams = 'select=id,title,description,mainImage,slug';
+        if (isUuid) {
+            queryParams += `&or=(slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier},id.eq.${formIdentifier})`;
+        } else {
+            queryParams += `&or=(slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier})`;
+        }
+        queryParams += '&limit=1';
+
+        console.log('Searching form with query:', queryParams);
+
+        const forms = await supabaseQuery('forms', queryParams);
+        const form = forms && forms.length > 0 ? forms[0] : null;
+
+        console.log('Form found:', form ? form.title : 'null');
+
+        if (!form) {
+            // Form not found - return default meta
+            return {
+                statusCode: 200,
+                headers: { 'Content-Type': 'text/html; charset=utf-8' },
+                body: generateMetaHtml(
+                    { title: 'Formulir Tidak Ditemukan', description: 'Formulir yang Anda cari tidak tersedia.' },
+                    `${APP_URL}/#/f/${formIdentifier}`
+                ),
+            };
+        }
+
+        const fullUrl = `${APP_URL}/#/f/${form.slug || form.id}${queryString ? '?' + queryString : ''}`;
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'text/html; charset=utf-8',
+                'Cache-Control': 'public, max-age=3600', // Cache 1 hour
+            },
+            body: generateMetaHtml(form, fullUrl),
+        };
+
     } catch (error) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          receivedArgs: { path, userAgent: userAgent.substring(0, 50), queryString },
-          supabaseUrl: SUPABASE_URL,
-          formsQuery: { data: null, error: error.message },
-        }, null, 2),
-      };
+        console.error('Error fetching form:', error);
+
+        // Return default meta on error
+        return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
+            body: generateMetaHtml(
+                { title: 'OrderDash - Formulir Pemesanan', description: 'Platform pemesanan online terpercaya.' },
+                `${APP_URL}/#/f/${formIdentifier}`
+            ),
+        };
     }
-  }
-  
-  console.log('Received args:', JSON.stringify({ path, userAgent, queryString, allArgs: Object.keys(args) }));
-  
-  // Extract form identifier dari path (format: /f/form-slug atau /f/uuid)
-  let formIdentifier = null;
-  const formMatch = path.match(/\/f\/([^/?]+)/);
-  if (formMatch) {
-    formIdentifier = formMatch[1];
-  } else if (path && !path.startsWith('/')) {
-    // Jika path tidak dimulai dengan /, mungkin langsung slug
-    formIdentifier = path.replace(/^f\//, '');
-  }
-  
-  // Jika bukan request ke form, redirect ke app
-  if (!formIdentifier) {
-    return {
-      statusCode: 302,
-      headers: { Location: APP_URL },
-    };
-  }
-  
-  // Jika bukan crawler, redirect ke SPA
-  if (!isCrawler(userAgent)) {
-    const redirectUrl = `${APP_URL}/#/f/${formIdentifier}${queryString ? '?' + queryString : ''}`;
-    return {
-      statusCode: 302,
-      headers: { Location: redirectUrl },
-    };
-  }
-  
-  // Crawler detected - fetch form data dan return meta tags
-  try {
-    // Normalize identifier - lowercase
-    const normalizedIdentifier = formIdentifier.toLowerCase();
-    
-    // Check if it's a UUID
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formIdentifier);
-    
-    // Build query params untuk REST API
-    // Gunakan or filter: slug.eq, slug.ilike, atau id.eq (jika UUID)
-    let queryParams = 'select=id,title,description,mainImage,slug';
-    if (isUuid) {
-      queryParams += `&or=(slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier},id.eq.${formIdentifier})`;
-    } else {
-      queryParams += `&or=(slug.eq.${normalizedIdentifier},slug.ilike.${normalizedIdentifier})`;
-    }
-    queryParams += '&limit=1';
-    
-    console.log('Searching form with query:', queryParams);
-    
-    const forms = await supabaseQuery('forms', queryParams);
-    const form = forms && forms.length > 0 ? forms[0] : null;
-    
-    console.log('Form found:', form ? form.title : 'null');
-    
-    if (!form) {
-      // Form not found - return default meta
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        body: generateMetaHtml(
-          { title: 'Formulir Tidak Ditemukan', description: 'Formulir yang Anda cari tidak tersedia.' },
-          `${APP_URL}/#/f/${formIdentifier}`
-        ),
-      };
-    }
-    
-    const fullUrl = `${APP_URL}/#/f/${form.slug || form.id}${queryString ? '?' + queryString : ''}`;
-    
-    return {
-      statusCode: 200,
-      headers: { 
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache 1 hour
-      },
-      body: generateMetaHtml(form, fullUrl),
-    };
-    
-  } catch (error) {
-    console.error('Error fetching form:', error);
-    
-    // Return default meta on error
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      body: generateMetaHtml(
-        { title: 'OrderDash - Formulir Pemesanan', description: 'Platform pemesanan online terpercaya.' },
-        `${APP_URL}/#/f/${formIdentifier}`
-      ),
-    };
-  }
 }
 
 exports.main = main;

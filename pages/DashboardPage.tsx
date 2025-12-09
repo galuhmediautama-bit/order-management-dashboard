@@ -36,8 +36,8 @@ const StatCard: React.FC<{
           <p className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mt-0.5">{value}</p>
           {change && (
             <p className={`text-xs mt-0.5 flex items-center gap-1 ${changeType === 'increase' ? 'text-green-600 dark:text-green-400' :
-                changeType === 'decrease' ? 'text-red-600 dark:text-red-400' :
-                  'text-slate-500 dark:text-slate-400'
+              changeType === 'decrease' ? 'text-red-600 dark:text-red-400' :
+                'text-slate-500 dark:text-slate-400'
               }`}>
               {changeType === 'increase' && '↑'}
               {changeType === 'decrease' && '↓'}
@@ -113,7 +113,7 @@ const DashboardPage: React.FC = () => {
           const { data: activeForms } = await supabase
             .from('forms')
             .select('id');
-          
+
           const activeFormIds = new Set((activeForms || []).map(f => f.id));
 
           // Mapper Supabase data to Order Type
@@ -520,8 +520,8 @@ const DashboardPage: React.FC = () => {
                 <button
                   onClick={() => setViewType('bar')}
                   className={`px-3 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 rounded-lg text-xs sm:text-xs md:text-sm font-medium transition ${viewType === 'bar'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   Bar
@@ -529,8 +529,8 @@ const DashboardPage: React.FC = () => {
                 <button
                   onClick={() => setViewType('line')}
                   className={`px-3 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 rounded-lg text-xs sm:text-xs md:text-sm font-medium transition ${viewType === 'line'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                     }`}
                 >
                   Line

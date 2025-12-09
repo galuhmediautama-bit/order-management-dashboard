@@ -55,7 +55,7 @@ const AbandonedCartsPage: React.FC = () => {
     });
     const [selectedCarts, setSelectedCarts] = useState<Set<string>>(new Set());
     const [isExporting, setIsExporting] = useState(false);
-    
+
     // State untuk modal proses ke pesanan
     const [processModalOpen, setProcessModalOpen] = useState(false);
     const [cartToProcess, setCartToProcess] = useState<AbandonedCart | null>(null);
@@ -458,19 +458,19 @@ const AbandonedCartsPage: React.FC = () => {
     // Statistics
     const stats = useMemo(() => {
         const brandFiltered = filterDataByBrand<AbandonedCart>(carts, currentUser);
-        
+
         // Potensi Revenue: hanya hitung yang punya nama DAN whatsapp (bisa di-follow up)
-        const validForRevenue = brandFiltered.filter(c => 
-            c.customerName && 
+        const validForRevenue = brandFiltered.filter(c =>
+            c.customerName &&
             c.customerName.trim() !== '' &&
-            c.customerPhone && 
+            c.customerPhone &&
             c.customerPhone.trim() !== '' &&
             (c.status === 'New' || c.status === 'Contacted')
         );
-        const invalidCarts = brandFiltered.filter(c => 
+        const invalidCarts = brandFiltered.filter(c =>
             !c.customerPhone || c.customerPhone.trim() === ''
         ).length;
-        
+
         return {
             total: brandFiltered.length,
             new: brandFiltered.filter(c => c.status === 'New').length,
@@ -512,12 +512,12 @@ const AbandonedCartsPage: React.FC = () => {
     // Handler untuk proses abandoned cart ke pesanan
     const handleProcessToOrder = async () => {
         if (!cartToProcess || !isFormValid) return;
-        
+
         setIsProcessing(true);
         try {
             // Generate order ID
             const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-            
+
             // Buat order baru
             const newOrder = {
                 id: orderId,
@@ -546,7 +546,7 @@ const AbandonedCartsPage: React.FC = () => {
 
             // Insert ke tabel orders
             const { error: orderError } = await supabase.from('orders').insert(newOrder);
-            
+
             if (orderError) {
                 console.error('Error creating order:', orderError);
                 showToast('Gagal membuat pesanan: ' + orderError.message, 'error');
@@ -555,13 +555,13 @@ const AbandonedCartsPage: React.FC = () => {
 
             // Hapus abandoned cart
             await supabase.from('abandoned_carts').delete().eq('id', cartToProcess.id);
-            
+
             // Hapus notifikasi abandoned cart terkait
             await supabase.from('notifications').delete().eq('id', `cart-${cartToProcess.id}`);
 
             // Update state lokal
             setCarts(prev => prev.filter(c => c.id !== cartToProcess.id));
-            
+
             showToast(`✅ Pesanan ${orderId} berhasil dibuat!`, 'success');
             setProcessModalOpen(false);
             setCartToProcess(null);
@@ -927,9 +927,8 @@ const AbandonedCartsPage: React.FC = () => {
                                         type="text"
                                         value={processFormData.customerName}
                                         onChange={(e) => setProcessFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                                        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${
-                                            !processFormData.customerName.trim() ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
-                                        } focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${!processFormData.customerName.trim() ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
+                                            } focus:ring-2 focus:ring-indigo-500 outline-none`}
                                         placeholder="Masukkan nama"
                                     />
                                     {!processFormData.customerName.trim() && (
@@ -945,9 +944,8 @@ const AbandonedCartsPage: React.FC = () => {
                                         type="text"
                                         value={processFormData.customerPhone}
                                         onChange={(e) => setProcessFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                                        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${
-                                            !processFormData.customerPhone.trim() ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
-                                        } focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${!processFormData.customerPhone.trim() ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
+                                            } focus:ring-2 focus:ring-indigo-500 outline-none`}
                                         placeholder="08xxxxxxxxxx"
                                     />
                                     {!processFormData.customerPhone.trim() && (
@@ -976,9 +974,8 @@ const AbandonedCartsPage: React.FC = () => {
                                         value={processFormData.shippingAddress}
                                         onChange={(e) => setProcessFormData(prev => ({ ...prev, shippingAddress: e.target.value }))}
                                         rows={2}
-                                        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${
-                                            !processFormData.shippingAddress.trim() ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
-                                        } focus:ring-2 focus:ring-indigo-500 outline-none resize-none`}
+                                        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${!processFormData.shippingAddress.trim() ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-600'
+                                            } focus:ring-2 focus:ring-indigo-500 outline-none resize-none`}
                                         placeholder="Jalan, RT/RW, Kelurahan"
                                     />
                                     {!processFormData.shippingAddress.trim() && (
