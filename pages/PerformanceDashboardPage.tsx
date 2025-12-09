@@ -60,7 +60,7 @@ const PerformanceDashboardPage: React.FC = () => {
     const [summary, setSummary] = useState<MetricsSummary>(() => performanceMonitor.getSummary());
     const [recentMetrics, setRecentMetrics] = useState<PerformanceMetrics[]>(() => performanceMonitor.getMetrics(20));
     const [loading, setLoading] = useState(false);
-    
+
     // Server metrics state
     const [serverMetrics, setServerMetrics] = useState<ServerMetrics | null>(null);
     const [serverLoading, setServerLoading] = useState(false);
@@ -89,18 +89,18 @@ const PerformanceDashboardPage: React.FC = () => {
     // Fetch server metrics from DO
     const fetchServerMetrics = async (dropletId?: string) => {
         if (!dropletId && !selectedDroplet) return;
-        
+
         setServerLoading(true);
         setServerError(null);
-        
+
         try {
             const { data, error } = await supabase.functions.invoke('swift-processor', {
                 body: { droplet_id: dropletId || selectedDroplet }
             });
-            
+
             if (error) throw error;
             if (!data?.success) throw new Error(data?.error || 'Unknown error');
-            
+
             setServerMetrics(data.metrics);
         } catch (err: any) {
             setServerError(err.message || 'Gagal mengambil metrik server');
@@ -187,13 +187,13 @@ const PerformanceDashboardPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                         </svg>
                         Server DigitalOcean
                     </h2>
                     <div className="flex items-center gap-3">
                         {droplets.length > 1 && (
-                            <select 
+                            <select
                                 value={selectedDroplet}
                                 onChange={(e) => setSelectedDroplet(e.target.value)}
                                 className="text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-slate-700 dark:text-slate-200"

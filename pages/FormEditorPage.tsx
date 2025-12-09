@@ -58,7 +58,7 @@ const PAYMENT_CONFIG: Record<keyof PaymentSettings, { label: string; icon: React
     bankTransfer: { label: 'Transfer Bank', icon: BankTransferIcon },
 };
 
-const PLATFORM_CONFIG: Record<keyof FormPageTrackingSettings, { name: string; icon: React.FC<{className?: string}> }> = {
+const PLATFORM_CONFIG: Record<keyof FormPageTrackingSettings, { name: string; icon: React.FC<{ className?: string }> }> = {
     meta: { name: 'Meta Pixel', icon: MetaIcon },
     google: { name: 'Google Analytics', icon: GoogleIcon },
     tiktok: { name: 'TikTok Pixel', icon: TikTokIcon },
@@ -225,7 +225,7 @@ const SocialProofPopupPreview: React.FC<{
         'top-left': 'top-4 left-4',
         'top-right': 'top-4 right-4',
     };
-    
+
     const animationClasses: Record<NonNullable<Form['socialProofSettings']>['animation'], string> = {
         'slide-up': `transition-all duration-500 will-change-transform will-change-opacity ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`,
         'slide-down': `transition-all duration-500 will-change-transform will-change-opacity ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0'}`,
@@ -234,7 +234,7 @@ const SocialProofPopupPreview: React.FC<{
 
     return (
         <div className={`absolute ${positionClasses[settings.position]} z-20 ${animationClasses[settings.animation]}`}>
-             <div className="bg-slate-800/90 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg max-w-xs text-sm">
+            <div className="bg-slate-800/90 backdrop-blur-sm text-white p-3 rounded-lg shadow-lg max-w-xs text-sm">
                 <p><span className="font-bold">{currentProof.name}</span> dari <span className="font-semibold">{currentProof.city}</span></p>
                 <p className="text-slate-300">baru saja membeli <strong>{productName}</strong></p>
             </div>
@@ -250,7 +250,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
         setSelectedOptions(prev => {
             const next = { ...prev };
             let hasChanges = false;
-            
+
             // 1. Remove selections for options that no longer exist
             const currentOptionNames = form.productOptions.map(o => o.name);
             Object.keys(next).forEach(key => {
@@ -282,7 +282,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
 
     const [selectedShippingKey, setSelectedShippingKey] = useState<keyof ShippingSettings | undefined>();
     const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
-    
+
     const [timeLeft, setTimeLeft] = useState(0);
     const [currentGalleryImage, setCurrentGalleryImage] = useState<string>(form.mainImage);
     const [variantStock, setVariantStock] = useState<Record<string, number>>({});
@@ -309,14 +309,14 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
 
     useEffect(() => {
         if (!form.countdownSettings?.active) return;
-        
+
         const timer = setInterval(() => {
             setTimeLeft(prevTime => {
                 if (prevTime <= 0) return 0;
                 return prevTime - 1;
             });
         }, 1000);
-        
+
         return () => clearInterval(timer);
     }, [form.countdownSettings?.active]);
 
@@ -331,7 +331,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                 }
                 return Math.abs(hash) % 5;
             };
-    
+
             const initialStocks: Record<string, number> = {};
             const baseStock = form.stockCountdownSettings.initialStock;
             form.productOptions.forEach(option => {
@@ -340,7 +340,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                 });
             });
             setVariantStock(initialStocks);
-    
+
             const interval = setInterval(() => {
                 setVariantStock(prevStocks => {
                     const newStocks = { ...prevStocks };
@@ -352,7 +352,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                     return newStocks;
                 });
             }, (form.stockCountdownSettings.intervalSeconds || 5) * 1000);
-    
+
             return () => clearInterval(interval);
         }
     }, [form.stockCountdownSettings, form.productOptions]);
@@ -378,7 +378,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
         const sortedVisibleMethods = (Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>)
             .filter(key => form.paymentSettings[key].visible)
             .sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99));
-        
+
         if (!selectedPaymentKey || !sortedVisibleMethods.includes(selectedPaymentKey)) {
             setSelectedPaymentKey(sortedVisibleMethods[0]);
         }
@@ -398,7 +398,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
         if (!selectedShippingKey || !form.shippingSettings[selectedShippingKey]) return 0;
         const setting = form.shippingSettings[selectedShippingKey];
         if (!setting || !setting.visible) return 0;
-    
+
         if (selectedShippingKey.startsWith('flat_')) {
             const costPerKg = setting.cost || 0;
             const weightInGrams = currentCombination?.weight || 0;
@@ -421,7 +421,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
     }, [selectedPaymentKey, form.paymentSettings.cod, subtotal, shippingCost]);
 
     const total = subtotal + shippingCost + codFee;
-    
+
     const descriptionClasses = `text-gray-600 dark:text-gray-300 mb-4 text-sm whitespace-pre-wrap text-${form.descriptionAlign}`;
 
     // Update current gallery image when mainImage changes
@@ -440,35 +440,33 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                 {currentGalleryImage && <img src={currentGalleryImage} alt={form.title} className="w-full aspect-square object-cover rounded-lg transition-opacity duration-300" />}
                 {!currentGalleryImage && <div className="w-full aspect-square bg-slate-200 dark:bg-slate-700 flex items-center justify-center rounded-lg text-slate-500">Gambar Utama</div>}
             </div>
-            
+
             {form.productImages && form.productImages.length > 0 && (
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                    <div 
+                    <div
                         onClick={() => handleGalleryImageClick(form.mainImage)}
-                        className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${
-                            currentGalleryImage === form.mainImage 
-                            ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' 
-                            : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
-                        }`}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === form.mainImage
+                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
+                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                            }`}
                     >
                         <img src={form.mainImage} alt="Main" className="w-full h-full object-cover rounded-lg" />
                     </div>
                     {form.productImages.map((img, idx) => (
-                        <div 
+                        <div
                             key={idx}
                             onClick={() => handleGalleryImageClick(img)}
-                            className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${
-                                currentGalleryImage === img 
-                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' 
-                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
-                            }`}
+                            className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === img
+                                    ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
+                                    : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                                }`}
                         >
                             <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
                         </div>
                     ))}
                 </div>
             )}
-            
+
             {(form.showTitle ?? true) && <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{form.title || 'Judul Produk'}</h1>}
             {(form.showDescription ?? true) && <p className={descriptionClasses}>{form.description || 'Deskripsi produk akan muncul di sini.'}</p>}
 
@@ -486,9 +484,9 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             <div className="flex justify-between items-baseline mb-2">
                                 <label className="font-semibold block text-sm text-slate-900 dark:text-slate-100">{option.name}:</label>
                             </div>
-                             {displayStyle === 'dropdown' && (
+                            {displayStyle === 'dropdown' && (
                                 <select
-                                    onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))}
+                                    onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
                                     value={selectedOptions[option.name] || ''}
                                     className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
                                 >
@@ -498,18 +496,16 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             {displayStyle === 'radio' && (
                                 <div className="space-y-2">
                                     {option.values.map(val => (
-                                        <label 
-                                            key={val} 
-                                            className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
-                                                selectedOptions[option.name] === val 
-                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]' 
+                                        <label
+                                            key={val}
+                                            className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${selectedOptions[option.name] === val
+                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
                                                     : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                                    selectedOptions[option.name] === val ? 'border-white' : 'border-gray-400'
-                                                }`}>
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedOptions[option.name] === val ? 'border-white' : 'border-gray-400'
+                                                    }`}>
                                                     {selectedOptions[option.name] === val && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                                                 </div>
                                                 <input
@@ -517,15 +513,14 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                                     name={option.name}
                                                     value={val}
                                                     checked={selectedOptions[option.name] === val}
-                                                    onChange={(e) => setSelectedOptions(prev => ({...prev, [option.name]: e.target.value}))}
+                                                    onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
                                                     className="hidden"
                                                 />
                                                 <span className="font-medium">{val}</span>
                                             </div>
                                             {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
-                                                <span className={`text-sm font-medium animate-pulse ${
-                                                    selectedOptions[option.name] === val ? 'text-red-200' : 'text-red-600 dark:text-red-400'
-                                                }`}>
+                                                <span className={`text-sm font-medium animate-pulse ${selectedOptions[option.name] === val ? 'text-red-200' : 'text-red-600 dark:text-red-400'
+                                                    }`}>
                                                     Stok: {variantStock[val]} pcs
                                                 </span>
                                             )}
@@ -539,7 +534,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                         <button
                                             key={val}
                                             type="button"
-                                            onClick={() => setSelectedOptions(prev => ({...prev, [option.name]: val}))}
+                                            onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))}
                                             className={`w-full flex justify-between items-center px-3 py-1.5 border rounded-lg text-sm transition-colors ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}
                                         >
                                             <span>{val}</span>
@@ -556,7 +551,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                     );
                 })}
             </div>}
-            
+
             <div className="mb-4">
                 <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
                 <form className="space-y-3">
@@ -566,19 +561,19 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             <input type="text" placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                     )}
-                     {form.customerFields.whatsapp.visible && (
+                    {form.customerFields.whatsapp.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
                             <input type="tel" placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                     )}
-                     {form.customerFields.email.visible && (
+                    {form.customerFields.email.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email {form.customerFields.email.required && <span className="text-red-500">*</span>}</label>
                             <input type="email" placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                     )}
-                     {form.customerFields.province?.visible && (
+                    {form.customerFields.province?.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Provinsi {form.customerFields.province.required && <span className="text-red-500">*</span>}</label>
                             <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
@@ -586,7 +581,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             </select>
                         </div>
                     )}
-                     {form.customerFields.city?.visible && (
+                    {form.customerFields.city?.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Kota/Kabupaten {form.customerFields.city.required && <span className="text-red-500">*</span>}</label>
                             <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
@@ -594,7 +589,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             </select>
                         </div>
                     )}
-                     {form.customerFields.district?.visible && (
+                    {form.customerFields.district?.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Kecamatan {form.customerFields.district.required && <span className="text-red-500">*</span>}</label>
                             <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
@@ -602,7 +597,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             </select>
                         </div>
                     )}
-                     {form.customerFields.address.visible && (
+                    {form.customerFields.address.visible && (
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
                             <textarea rows={3} placeholder="Sertakan nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota/kabupaten, dan kode pos" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
@@ -617,9 +612,9 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                     {(Object.keys(form.shippingSettings) as Array<keyof ShippingSettings>).map(key => {
                         const setting = form.shippingSettings[key];
                         if (!setting?.visible) return null;
-                        
+
                         const isFlatRate = key.startsWith('flat_');
-                        const costLabel = setting.cost > 0 
+                        const costLabel = setting.cost > 0
                             ? `${setting.cost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}${isFlatRate ? ' / kg' : ''}`
                             : 'Gratis';
 
@@ -653,49 +648,49 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                         .filter(key => form.paymentSettings[key].visible)
                         .sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99))
                         .map(key => {
-                        const setting = form.paymentSettings[key];
-                        const config = PAYMENT_CONFIG[key];
-                        const Icon = config.icon;
-                        if (!setting.visible) return null;
-                        
-                        return (
-                            <div key={key}>
-                                <label htmlFor={`payment-preview-${key}`} className={`p-3 border rounded-lg flex items-center gap-3 cursor-pointer ${selectedPaymentKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
-                                    <input
-                                        type="radio"
-                                        id={`payment-preview-${key}`}
-                                        name="paymentMethod"
-                                        value={key}
-                                        checked={selectedPaymentKey === key}
-                                        onChange={() => setSelectedPaymentKey(key)}
-                                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-                                    />
-                                    <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
-                                    <span className="font-medium">{config.label}</span>
-                                </label>
-                                {key === 'bankTransfer' && selectedPaymentKey === 'bankTransfer' && (
-                                    <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2">
-                                        <p className="font-semibold">Silakan transfer ke salah satu rekening berikut:</p>
-                                        {(setting as BankTransferSetting).accounts && (setting as BankTransferSetting).accounts.length > 0 ? (
-                                            (setting as BankTransferSetting).accounts.map(acc => (
-                                                <div key={acc.id}>
-                                                    <p><strong>{acc.bankName}:</strong> {acc.accountNumber} (a/n {acc.accountHolder})</p>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p>Detail rekening belum diatur.</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                            const setting = form.paymentSettings[key];
+                            const config = PAYMENT_CONFIG[key];
+                            const Icon = config.icon;
+                            if (!setting.visible) return null;
+
+                            return (
+                                <div key={key}>
+                                    <label htmlFor={`payment-preview-${key}`} className={`p-3 border rounded-lg flex items-center gap-3 cursor-pointer ${selectedPaymentKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                                        <input
+                                            type="radio"
+                                            id={`payment-preview-${key}`}
+                                            name="paymentMethod"
+                                            value={key}
+                                            checked={selectedPaymentKey === key}
+                                            onChange={() => setSelectedPaymentKey(key)}
+                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                                        />
+                                        <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+                                        <span className="font-medium">{config.label}</span>
+                                    </label>
+                                    {key === 'bankTransfer' && selectedPaymentKey === 'bankTransfer' && (
+                                        <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2">
+                                            <p className="font-semibold">Silakan transfer ke salah satu rekening berikut:</p>
+                                            {(setting as BankTransferSetting).accounts && (setting as BankTransferSetting).accounts.length > 0 ? (
+                                                (setting as BankTransferSetting).accounts.map(acc => (
+                                                    <div key={acc.id}>
+                                                        <p><strong>{acc.bankName}:</strong> {acc.accountNumber} (a/n {acc.accountHolder})</p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p>Detail rekening belum diatur.</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                 </div>
             </div>}
 
             <div className="border-t dark:border-gray-700 pt-4 mt-4 space-y-2">
                 <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
-                
+
                 <div className="flex justify-between items-baseline text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                     <div className="flex items-baseline gap-2">
@@ -716,7 +711,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                 <div className="flex justify-between font-bold text-lg text-slate-900 dark:text-slate-100"><span >Total</span><span>{total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
             </div>
 
-             <button
+            <button
                 disabled={!currentCombination}
                 className="w-full mt-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed flex flex-col items-center justify-center p-2 min-h-[4rem] transition-all shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/40"
             >
@@ -724,7 +719,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                     <>
                         <span className="text-lg leading-tight">{form.ctaSettings?.mainText || 'Kirim Pesanan'}</span>
                         {form.ctaSettings && (
-                             <span className="text-xs font-normal opacity-80 leading-tight">
+                            <span className="text-xs font-normal opacity-80 leading-tight">
                                 {form.ctaSettings.urgencyText.replace('{count}', String(checkoutCount))}
                             </span>
                         )}
@@ -815,11 +810,11 @@ const ThankYouPagePreview: React.FC<{ thankYouPage: ThankYouPageSettings; formTi
 
     if (thankYouPage.submissionAction === 'redirect_to_url') {
         return (
-             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border dark:border-gray-700 text-center">
-                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Aksi Setelah Submit: Redirect</h3>
-                 <p className="mt-2 text-sm text-slate-500">Pelanggan akan dialihkan ke URL berikut:</p>
-                 <p className="mt-2 text-xs font-mono bg-slate-100 dark:bg-slate-700 p-2 rounded break-all">{thankYouPage.redirectUrl || "URL belum diatur."}</p>
-             </div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border dark:border-gray-700 text-center">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Aksi Setelah Submit: Redirect</h3>
+                <p className="mt-2 text-sm text-slate-500">Pelanggan akan dialihkan ke URL berikut:</p>
+                <p className="mt-2 text-xs font-mono bg-slate-100 dark:bg-slate-700 p-2 rounded break-all">{thankYouPage.redirectUrl || "URL belum diatur."}</p>
+            </div>
         );
     }
 
@@ -862,7 +857,7 @@ const FormEditorPage: React.FC = () => {
     const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings>({ meta: [], google: [], tiktok: [], snack: [] });
     const [products, setProducts] = useState<Product[]>([]);
     const [advertisers, setAdvertisers] = useState<User[]>([]); // Advertisers list
-    
+
     const [form, setForm] = useState<Form | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -875,14 +870,14 @@ const FormEditorPage: React.FC = () => {
     const [productImagesUploading, setProductImagesUploading] = useState(false);
     const [qrisImageFile, setQrisImageFile] = useState<File | null>(null);
     const [qrisImagePreview, setQrisImagePreview] = useState('');
-    
+
     const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
     const [slugChecking, setSlugChecking] = useState(false);
     const [currentUserRole, setCurrentUserRole] = useState<string>('');
     const [activePreviewTab, setActivePreviewTab] = useState<'form' | 'thankyou'>('form');
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-     useEffect(() => {
+    useEffect(() => {
         const fetchData = async () => {
             const fetchWithTimeout = (promise: Promise<any>, timeout = 30000) => {
                 return Promise.race([
@@ -901,7 +896,7 @@ const FormEditorPage: React.FC = () => {
                             supabase.from("forms").select('*').eq('id', formId).single(),
                             20000
                         );
-                        
+
                         if (docSnap) {
                             console.log('Loaded form from DB:', {
                                 id: docSnap.id,
@@ -933,13 +928,13 @@ const FormEditorPage: React.FC = () => {
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
                         variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
-                        paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] },},
+                        paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] }, },
                         countdownSettings: { active: true, duration: 300 },
                         stockCountdownSettings: { active: true, initialStock: 160, intervalSeconds: 5 },
                         socialProofSettings: { active: true, position: 'top-left', animation: 'slide-up', initialDelaySeconds: 2, displayDurationSeconds: 5, intervalSeconds: 8, customerNames: 'Rina Setyawati\nAndi Prasetyo\nSiti Marlina\nBudi Hartanto\nDella Anggraini\nFajar Nugraha\nNovi Rahmawati\nArdiansyah Putra\nLela Mardiani\nRivaldi Saputra\nMelani Oktaviani\nKevin Aditya\nAyu Pramesti\nRendy Kurniawan\nSiska Amelia\nRama Wijaya\nClara Widyaningrum\nGilang Ramdhan\nIrma Kusumawati\nAldi Pranata', customerCities: 'Jakarta\nBandung\nSubaraya\nYogyakarta\nSemarang\nBekasi\nDepok\nTangerang\nMedan\nPalembang\nMakassar\nDenpasar\nMalang\nPontianak\nPekanbaru\nBatam\nSolo\nCirebon\nManado\nBanjarmasin' },
                         ctaSettings: { active: true, mainText: 'Pesan Sekarang', urgencyText: '{count} sudah beli hari ini', buttonColor: '#6366f1', initialCount: 265, increaseIntervalSeconds: 1, incrementPerSecond: 2, animationEnabled: true, animationType: 'pulse' },
                         submissionCount: 0, createdAt: new Date().toISOString().split('T')[0], showTitle: true, showDescription: true,
-                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah melakukan pemesanan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama: [CUSTOMER_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman begitu tersedia.\n\nTerima kasih! 🙏' }},
+                        thankYouPage: { submissionAction: 'show_thank_you_page', redirectUrl: '', title: 'Terima Kasih!', message: 'Pesanan Anda telah kami terima dan akan segera diproses. Berikut adalah rincian pesanan Anda:', showOrderSummary: true, whatsappConfirmation: { active: true, destination: 'assigned_cs', number: '', messageTemplate: 'Halo 👋\n\nTerima kasih telah melakukan pemesanan. Berikut detail pesanan Anda:\n\n📦 Produk: [PRODUCT_NAME]\n🧾 ID Pesanan: [ORDER_ID]\n👤 Nama: [CUSTOMER_NAME]\n💰 Total: Rp [TOTAL_PRICE]\n💳 Metode Pembayaran: [PAYMENT_METHOD]\n\nPesanan Anda sedang kami proses. Kami akan segera mengirimkan konfirmasi pengiriman begitu tersedia.\n\nTerima kasih! 🙏' } },
                         trackingSettings: createDefaultTrackingSettings(), customMessageTemplates: { active: false, templates: {} }
                     });
                     setForm(newForm);
@@ -953,7 +948,7 @@ const FormEditorPage: React.FC = () => {
                     if (userDoc) {
                         setCurrentUser(userDoc as User);
                         setCurrentUserRole((userDoc as User).role);
-                        
+
                         // Jika form baru dan user adalah advertiser, auto-select mereka
                         if (!formId && (userDoc as User).role === 'Advertiser') {
                             setForm(prev => prev ? { ...prev, assignedAdvertiserId: user.id } : prev);
@@ -1016,31 +1011,31 @@ const FormEditorPage: React.FC = () => {
                     console.warn("CS Agents fetch timeout/error:", csErr);
                     setCsAgents([]);
                 }
-                
+
                 // STEP 6: JANGAN LOAD PRODUCTS DI SINI! Load hanya saat brand dipilih untuk performa lebih cepat
                 // Products akan di-fetch secara on-demand saat user memilih brand
                 console.log('ℹ️ Products will be loaded on-demand when brand is selected');
-                
+
                 // STEP 7: Fetch tracking pixels (di background)
                 try {
                     const { data: pixelsDoc } = await fetchWithTimeout(
                         supabase.from('settings').select('*').eq('id', 'trackingPixels').single(),
                         15000
                     );
-                    
+
                     if (pixelsDoc) {
                         const data = pixelsDoc;
                         const pixels: GlobalPixelSettings = { meta: [], google: [], tiktok: [], snack: [] };
-                        
+
                         const pixelKeys: (keyof GlobalPixelSettings)[] = ['meta', 'google', 'tiktok', 'snack'];
-                        
+
                         pixelKeys.forEach(key => {
                             const platformData = data[key];
                             if (platformData && typeof platformData === 'object' && platformData?.active && Array.isArray(platformData?.pixels)) {
-                                 pixels[key] = platformData.pixels.map((p: any) => ({ id: p.id, name: p.name }));
+                                pixels[key] = platformData.pixels.map((p: any) => ({ id: p.id, name: p.name }));
                             }
                         });
-                        
+
                         setGlobalPixels(pixels);
                     }
                 } catch (pixelErr) {
@@ -1068,7 +1063,7 @@ const FormEditorPage: React.FC = () => {
         }
     }, [mainImagePreview, qrisImagePreview]);
 
-    
+
     // Load products ONLY when brand is selected (on-demand loading)
     useEffect(() => {
         if (!form?.brandId) {
@@ -1094,39 +1089,39 @@ const FormEditorPage: React.FC = () => {
 
         loadProductsByBrand();
     }, [form?.brandId]);
-    
+
     // Auto-load product data untuk form edit yang sudah punya productId
     useEffect(() => {
         // Skip jika bukan form edit atau tidak punya productId
         if (!formId || !form?.productId) return;
-        
+
         // Skip jika sudah punya varian DAN gambar sudah sesuai
         // (ini artinya sudah di-load sebelumnya dalam session ini)
-        const alreadyLoaded = form.variantCombinations && 
-                              form.variantCombinations.length > 0 && 
-                              form.mainImage; // Ada varian DAN ada gambar
-        
+        const alreadyLoaded = form.variantCombinations &&
+            form.variantCombinations.length > 0 &&
+            form.mainImage; // Ada varian DAN ada gambar
+
         if (alreadyLoaded) {
             console.log('ℹ️ Form sudah memiliki varian dan gambar, skip auto-load');
             return;
         }
-        
+
         // Auto-load data produk untuk form edit lama
         const autoLoadProductData = async () => {
             try {
                 console.log('🔄 Auto-loading product data untuk form edit:', form.productId);
                 const product = await productService.getProduct(form.productId);
-                
+
                 if (product) {
                     console.log('📦 Product data loaded:', product);
-                    
+
                     // SELALU update gambar dari produk (force update untuk form lama)
                     if (product.imageUrl) {
                         setForm(prev => prev ? { ...prev, mainImage: product.imageUrl } : prev);
                         setMainImagePreview(product.imageUrl);
                         console.log('🖼️ Gambar updated dari produk:', product.imageUrl);
                     }
-                    
+
                     // Load dan konversi varian + variantOptions (produk adalah sumber kebenaran)
                     if (product.variants && product.variants.length > 0) {
                         console.log('📊 Converting variants untuk form edit (mengikuti variantOptions produk)');
@@ -1140,13 +1135,13 @@ const FormEditorPage: React.FC = () => {
                                 name: opt.name || `Opsi ${idx + 1}`,
                                 values: opt.values || [],
                                 displayStyle: 'radio',
-                              }))
+                            }))
                             : [{
                                 id: 1,
                                 name: 'Varian',
                                 values: product.variants.map(v => v.name || 'Varian'),
                                 displayStyle: 'radio'
-                              }];
+                            }];
 
                         // Helper: map nama varian (e.g., "Amber - Umar") ke attributes per option
                         const mapAttributes = (variantName: string) => {
@@ -1197,17 +1192,17 @@ const FormEditorPage: React.FC = () => {
                 console.error('❌ Error auto-loading product data:', error);
             }
         };
-        
+
         autoLoadProductData();
     }, [formId, form?.productId]); // Trigger saat form.productId tersedia
-    
+
     useEffect(() => {
         if (!form) return;
         if (form.productOptions.length === 0) {
             const baseVariant = form.variantCombinations[0] || { attributes: {}, sellingPrice: 0 };
             const singleVariantArray = [{ ...baseVariant, attributes: {} }];
             if (JSON.stringify(form.variantCombinations) !== JSON.stringify(singleVariantArray)) {
-                 setForm(prev => prev ? { ...prev, variantCombinations: singleVariantArray } : null);
+                setForm(prev => prev ? { ...prev, variantCombinations: singleVariantArray } : null);
             }
             return;
         }
@@ -1222,7 +1217,7 @@ const FormEditorPage: React.FC = () => {
         const optionValues = form.productOptions.map(opt => opt.values);
         if (optionValues.some(v => v.length === 0)) {
             if (form.variantCombinations.length > 0) {
-                 setForm(prev => prev ? { ...prev, variantCombinations: [] } : null);
+                setForm(prev => prev ? { ...prev, variantCombinations: [] } : null);
             }
             return;
         }
@@ -1238,19 +1233,19 @@ const FormEditorPage: React.FC = () => {
             });
             const key = sortAndStringify(attributes);
             const existing = existingCombinationsMap.get(key);
-            return { 
-                attributes, 
-                sellingPrice: existing?.sellingPrice ?? 0, 
-                strikethroughPrice: existing?.strikethroughPrice, 
-                weight: existing?.weight, 
-                costPrice: existing?.costPrice, 
+            return {
+                attributes,
+                sellingPrice: existing?.sellingPrice ?? 0,
+                strikethroughPrice: existing?.strikethroughPrice,
+                weight: existing?.weight,
+                costPrice: existing?.costPrice,
                 commissionPrice: existing?.commissionPrice,
                 csCommission: existing?.csCommission,
                 advCommission: existing?.advCommission,
             };
         });
         if (JSON.stringify(form.variantCombinations) !== JSON.stringify(newCombinations)) {
-            setForm(prev => prev ? ({...prev, variantCombinations: newCombinations}) : null);
+            setForm(prev => prev ? ({ ...prev, variantCombinations: newCombinations }) : null);
         }
     }, [form?.productOptions]);
 
@@ -1347,7 +1342,7 @@ const FormEditorPage: React.FC = () => {
     const handleDrop = async (e: React.DragEvent, type: 'main' | 'product') => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const allFiles = Array.from(e.dataTransfer.files) as File[];
         const files = allFiles.filter(file => file.type.startsWith('image/'));
         if (files.length === 0) return;
@@ -1466,7 +1461,7 @@ const FormEditorPage: React.FC = () => {
                 setIsSaving(false);
                 return;
             }
-            
+
             // Check formToSave after clone
             console.log('formToSave after JSON clone:', {
                 variantCombinations: formToSave.variantCombinations,
@@ -1486,7 +1481,7 @@ const FormEditorPage: React.FC = () => {
                     console.warn("QRIS image upload failed", qrisError);
                 }
             }
-            
+
             delete formToSave.variants;
             delete formToSave.paymentMethods;
             delete formToSave.shippingMethods;
@@ -1496,16 +1491,16 @@ const FormEditorPage: React.FC = () => {
             if (!formToSave.id) {
                 delete formToSave.id;
             }
-            
+
             if (formToSave.brandId === "") {
                 formToSave.brandId = null;
             }
-            
+
             // Include productId if selected
             if (form?.productId) {
                 formToSave.product_id = form.productId;
             }
-            
+
             // Debug: Log data yang akan disimpan
             console.log('Saving form data:', {
                 id: formToSave.id,
@@ -1522,7 +1517,7 @@ const FormEditorPage: React.FC = () => {
                 productImages: formToSave.productImages,
                 mainImage: formToSave.mainImage
             });
-            
+
             let error;
             if (form.id) {
                 const result = await supabase.from("forms").update(formToSave).eq('id', form.id);
@@ -1531,12 +1526,12 @@ const FormEditorPage: React.FC = () => {
                 const result = await supabase.from("forms").insert(formToSave);
                 error = result.error;
             }
-            
+
             if (error) {
                 console.error("Supabase DB Error Details:", JSON.stringify(error, null, 2));
                 throw error;
             }
-            
+
             // Create analytics record if product is linked
             if (form?.productId && form?.id) {
                 try {
@@ -1553,12 +1548,12 @@ const FormEditorPage: React.FC = () => {
                     // Don't fail form save if analytics creation fails
                 }
             }
-            
+
             showToast("Formulir berhasil disimpan!", 'success');
             navigate('/formulir');
         } catch (error: any) {
             console.error("Error saving form:", error);
-            
+
             let errMsg = "Terjadi kesalahan yang tidak diketahui.";
             if (error) {
                 if (error.message) errMsg = error.message;
@@ -1567,7 +1562,7 @@ const FormEditorPage: React.FC = () => {
                 else if (typeof error === 'object') errMsg = JSON.stringify(error);
                 else errMsg = String(error);
             }
-            
+
             showToast(`Gagal menyimpan formulir: ${errMsg}`, 'error');
         } finally {
             setIsSaving(false);
@@ -1593,11 +1588,11 @@ const FormEditorPage: React.FC = () => {
             setShowDeleteConfirmation(false);
         }
     };
-    
+
     // ... (rest of helper functions: handleClose, handleAddOption, handleOptionChange, handleRemoveOption, handleCombinationChange, handleFieldChange, handleSubFieldChange, handleSubNestedFieldChange, handleBankTransferAccountChange, addBankAccount, removeBankAccount, handleTrackingChange remain identical)
-    
+
     const handleClose = () => navigate('/formulir');
-    
+
     const handleFieldChange = <T extends keyof Form>(field: T, value: Form[T]) => {
         // Auto-generate slug dari judul jika field yang berubah adalah title
         if (field === 'title') {
@@ -1617,7 +1612,7 @@ const FormEditorPage: React.FC = () => {
             setForm(prev => prev ? ({ ...prev, [field]: value }) : null);
         }
     };
-    
+
     const handleSubFieldChange = (mainField: keyof Form, subField: any, value: any) => {
         setForm(prev => {
             if (!prev) return null;
@@ -1635,7 +1630,7 @@ const FormEditorPage: React.FC = () => {
         setForm(prev => {
             if (!prev) return null;
             const mainFieldValue = (prev as any)[mainField] || {};
-            
+
             // Special handling for province/city/district package
             if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
@@ -1664,7 +1659,7 @@ const FormEditorPage: React.FC = () => {
                     };
                 }
             }
-            
+
             // Auto-off required when any field's visible is unchecked
             if (mainField === 'customerFields' && prop === 'visible' && !val) {
                 return {
@@ -1675,7 +1670,7 @@ const FormEditorPage: React.FC = () => {
                     }
                 };
             }
-            
+
             if (mainField === 'thankYouPage' && subField === 'showOrderSummary') {
                 return {
                     ...prev,
@@ -1685,7 +1680,7 @@ const FormEditorPage: React.FC = () => {
                     }
                 }
             }
-            
+
             // If subField is null, update mainField directly
             if (subField === null) {
                 return {
@@ -1696,7 +1691,7 @@ const FormEditorPage: React.FC = () => {
                     }
                 };
             }
-            
+
             const subFieldValue = mainFieldValue[subField] || {};
             return {
                 ...prev,
@@ -1777,7 +1772,7 @@ const FormEditorPage: React.FC = () => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
             <div className="lg:col-span-6 space-y-6">
-                 <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-indigo-100 dark:border-slate-700 shadow-sm">
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-indigo-100 dark:border-slate-700 shadow-sm">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -1808,7 +1803,7 @@ const FormEditorPage: React.FC = () => {
                                                 const baseUrl = window.location.origin;
                                                 const formIdentifier = form.slug || form.id;
                                                 const trackingLink = `${baseUrl}?f=${formIdentifier}&utm_source=${platform.source}&utm_medium=social&utm_campaign=${form.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
-                                                
+
                                                 const colorClasses: Record<string, string> = {
                                                     blue: 'hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400',
                                                     red: 'hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400',
@@ -1839,7 +1834,7 @@ const FormEditorPage: React.FC = () => {
                                 </div>
                             )}
                             {formId && (
-                                 <button onClick={handleDelete} disabled={isSaving} className="px-4 py-2.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 font-semibold text-sm flex items-center gap-2 transition-all hover:scale-105 shadow-sm">
+                                <button onClick={handleDelete} disabled={isSaving} className="px-4 py-2.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 font-semibold text-sm flex items-center gap-2 transition-all hover:scale-105 shadow-sm">
                                     <TrashIcon className="w-4 h-4" /> Hapus
                                 </button>
                             )}
@@ -1862,22 +1857,21 @@ const FormEditorPage: React.FC = () => {
                             value={form.assignedAdvertiserId || ''}
                             onChange={(e) => handleFieldChange('assignedAdvertiserId', e.target.value)}
                             disabled={!!formId && !!form.assignedAdvertiserId}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${
-                                !form.assignedAdvertiserId 
-                                    ? 'border-red-500' 
-                                    : !!formId && !!form.assignedAdvertiserId 
-                                        ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800' 
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId
+                                    ? 'border-red-500'
+                                    : !!formId && !!form.assignedAdvertiserId
+                                        ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800'
                                         : 'dark:border-slate-600'
-                            }`}
+                                }`}
                         >
                             <option value="">-- Pilih Advertiser --</option>
                             {advertisers
                                 .filter(advertiser => advertiser.name && advertiser.name.trim() && !advertiser.name.includes('Pilih'))
                                 .map(advertiser => (
-                                <option key={advertiser.id} value={advertiser.id}>
-                                    {advertiser.name} {currentUser?.id === advertiser.id ? '(Anda)' : ''}
-                                </option>
-                            ))}
+                                    <option key={advertiser.id} value={advertiser.id}>
+                                        {advertiser.name} {currentUser?.id === advertiser.id ? '(Anda)' : ''}
+                                    </option>
+                                ))}
                         </select>
                         {!form.assignedAdvertiserId && <p className="text-xs text-red-500 mt-1">Advertiser harus dipilih</p>}
                         {!!formId && !!form.assignedAdvertiserId ? (
@@ -1916,9 +1910,9 @@ const FormEditorPage: React.FC = () => {
                         <textarea value={form.description} onChange={e => handleFieldChange('description', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"></textarea>
                         <div className="flex items-center gap-2 mt-2">
                             <span className="text-sm">Perataan:</span>
-                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'left')} className={`p-1 rounded ${form.descriptionAlign === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignLeftIcon className="w-5 h-5"/></button>
-                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'center')} className={`p-1 rounded ${form.descriptionAlign === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignCenterIcon className="w-5 h-5"/></button>
-                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'right')} className={`p-1 rounded ${form.descriptionAlign === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignRightIcon className="w-5 h-5"/></button>
+                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'left')} className={`p-1 rounded ${form.descriptionAlign === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignLeftIcon className="w-5 h-5" /></button>
+                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'center')} className={`p-1 rounded ${form.descriptionAlign === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignCenterIcon className="w-5 h-5" /></button>
+                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'right')} className={`p-1 rounded ${form.descriptionAlign === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignRightIcon className="w-5 h-5" /></button>
                         </div>
                     </div>
 
@@ -1958,39 +1952,39 @@ const FormEditorPage: React.FC = () => {
                             onChange={async (e) => {
                                 const productId = e.target.value;
                                 handleFieldChange('productId', productId);
-                                
+
                                 // Auto-load variants dan gambar dari produk yang dipilih
                                 if (productId) {
                                     try {
                                         const product = await productService.getProduct(productId);
                                         if (product) {
                                             console.log('📦 Produk dimuat:', product);
-                                            
+
                                             // 1. SELALU update gambar dari produk (tidak peduli form baru/edit)
                                             if (product.imageUrl) {
                                                 handleFieldChange('mainImage', product.imageUrl);
                                                 setMainImagePreview(product.imageUrl);
                                                 console.log('🖼️ Gambar produk dimuat:', product.imageUrl);
                                             }
-                                            
+
                                             // 2. Load variants dan konversi ke format form
                                             if (product.variants && product.variants.length > 0) {
                                                 console.log('📊 Variants dari produk:', product.variants);
-                                                
+
                                                 // Simpan productVariants untuk referensi
                                                 setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
-                                                
+
                                                 // Konversi variants ke productOptions dan variantCombinations
                                                 // Asumsi: product.variants = [{ name: 'Varian A', price: 100000, ... }]
                                                 const variantNames = product.variants.map(v => v.name || 'Varian');
-                                                
+
                                                 const newProductOptions: ProductOption[] = [{
                                                     id: Date.now(),
                                                     name: 'Varian',
                                                     values: variantNames,
                                                     displayStyle: 'radio'
                                                 }];
-                                                
+
                                                 const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
                                                     attributes: { 'Varian': variant.name || `Varian ${idx + 1}` },
                                                     sellingPrice: variant.price || 0,
@@ -2001,10 +1995,10 @@ const FormEditorPage: React.FC = () => {
                                                     weight: variant.weight || 0,
                                                     initialStock: variant.initialStock || 0
                                                 }));
-                                                
+
                                                 console.log('✅ ProductOptions:', newProductOptions);
                                                 console.log('✅ VariantCombinations:', newVariantCombinations);
-                                                
+
                                                 // Update form dengan varian yang sudah dikonversi
                                                 setForm(prev => prev ? {
                                                     ...prev,
@@ -2012,12 +2006,12 @@ const FormEditorPage: React.FC = () => {
                                                     variantCombinations: newVariantCombinations,
                                                     productVariants: product.variants
                                                 } : prev);
-                                                
+
                                                 showToast(`${product.variants.length} varian dimuat dari produk`, 'success');
                                             } else {
                                                 // Tidak ada varian - reset
-                                                setForm(prev => prev ? { 
-                                                    ...prev, 
+                                                setForm(prev => prev ? {
+                                                    ...prev,
                                                     productVariants: [],
                                                     productOptions: [],
                                                     variantCombinations: []
@@ -2031,8 +2025,8 @@ const FormEditorPage: React.FC = () => {
                                     }
                                 } else {
                                     // Product ID kosong - reset semua
-                                    setForm(prev => prev ? { 
-                                        ...prev, 
+                                    setForm(prev => prev ? {
+                                        ...prev,
                                         productVariants: [],
                                         productOptions: [],
                                         variantCombinations: [],
@@ -2042,9 +2036,8 @@ const FormEditorPage: React.FC = () => {
                                 }
                             }}
                             disabled={!form.brandId || loadingProductDetails}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${
-                                !form.productId ? 'border-red-500' : 'dark:border-slate-600'
-                            } ${loadingProductDetails ? 'opacity-50 cursor-wait' : ''}`}
+                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.productId ? 'border-red-500' : 'dark:border-slate-600'
+                                } ${loadingProductDetails ? 'opacity-50 cursor-wait' : ''}`}
                         >
                             <option value="">{loadingProductDetails ? '⏳ Memuat produk...' : '-- Pilih Produk --'}</option>
                             {products
@@ -2072,7 +2065,7 @@ const FormEditorPage: React.FC = () => {
                             <p className="text-xs text-slate-500 mt-1">✓ Tidak ada produk untuk merek ini</p>
                         )}
                         <p className="text-xs text-slate-500 mt-1">Pilih produk dari menu Produk Induk. Formulir akan otomatis menggunakan varian dari produk yang dipilih.</p>
-                        
+
                         {/* Display loaded variants info */}
                         {form.productId && form.productVariants && form.productVariants.length > 0 && (
                             <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
@@ -2097,7 +2090,7 @@ const FormEditorPage: React.FC = () => {
 
                     <div>
                         <label className="block text-sm font-medium mb-1">URL Slug</label>
-                         <div className="relative">
+                        <div className="relative">
                             <input
                                 type="text"
                                 value={form.slug}
@@ -2107,8 +2100,8 @@ const FormEditorPage: React.FC = () => {
                             />
                             <div className="absolute inset-y-0 right-2 flex items-center text-xs">
                                 {slugChecking ? <SpinnerIcon className="w-4 h-4 animate-spin" /> :
-                                 slugAvailable === true ? <span className="text-green-500 flex items-center gap-1"><CheckIcon className="w-4 h-4" /> Tersedia</span> :
-                                 slugAvailable === false ? <span className="text-red-500 flex items-center gap-1"><XIcon className="w-4 h-4" /> Diambil</span> : null}
+                                    slugAvailable === true ? <span className="text-green-500 flex items-center gap-1"><CheckIcon className="w-4 h-4" /> Tersedia</span> :
+                                        slugAvailable === false ? <span className="text-red-500 flex items-center gap-1"><XIcon className="w-4 h-4" /> Diambil</span> : null}
                             </div>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">URL: https://form.cuanmax.digital/#/f/<strong>{form.slug || 'id-formulir'}</strong></p>
@@ -2118,7 +2111,7 @@ const FormEditorPage: React.FC = () => {
                 {/* Atur Opsi Varian */}
                 <EditorCard icon={CubeIcon} title="Atur Opsi Varian">
                     <p className="text-xs text-slate-500 mb-3">Kelola atribut produk (Warna, Ukuran, dll) dan nilai-nilainya</p>
-                    
+
                     {form.productOptions && form.productOptions.length > 0 ? (
                         <div className="space-y-4">
                             {form.productOptions.map((option, optIndex) => (
@@ -2135,7 +2128,7 @@ const FormEditorPage: React.FC = () => {
                                                     const updated = [...prev.productOptions];
                                                     const oldName = updated[optIndex].name;
                                                     updated[optIndex] = { ...updated[optIndex], name: newName };
-                                                    
+
                                                     // Update atribut di semua combinations
                                                     const updatedCombos = prev.variantCombinations.map(combo => {
                                                         const attrs = { ...combo.attributes };
@@ -2145,7 +2138,7 @@ const FormEditorPage: React.FC = () => {
                                                         }
                                                         return { ...combo, attributes: attrs };
                                                     });
-                                                    
+
                                                     return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
                                                 });
                                             }}
@@ -2168,7 +2161,7 @@ const FormEditorPage: React.FC = () => {
                                             <TrashIcon className="w-5 h-5" />
                                         </button>
                                     </div>
-                                    
+
                                     {/* Nilai-nilai */}
                                     <div className="space-y-2">
                                         {option.values.map((value, valIndex) => (
@@ -2183,7 +2176,7 @@ const FormEditorPage: React.FC = () => {
                                                             const updated = [...prev.productOptions];
                                                             const oldValue = updated[optIndex].values[valIndex];
                                                             updated[optIndex].values[valIndex] = newValue;
-                                                            
+
                                                             // Update combinations yang menggunakan value ini
                                                             const updatedCombos = prev.variantCombinations.map(combo => {
                                                                 if (combo.attributes[option.name] === oldValue) {
@@ -2194,7 +2187,7 @@ const FormEditorPage: React.FC = () => {
                                                                 }
                                                                 return combo;
                                                             });
-                                                            
+
                                                             return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
                                                         });
                                                     }}
@@ -2217,7 +2210,7 @@ const FormEditorPage: React.FC = () => {
                                                 </button>
                                             </div>
                                         ))}
-                                        
+
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -2235,7 +2228,7 @@ const FormEditorPage: React.FC = () => {
                                     </div>
                                 </div>
                             ))}
-                            
+
                             <button
                                 type="button"
                                 onClick={() => {
@@ -2254,7 +2247,7 @@ const FormEditorPage: React.FC = () => {
                             >
                                 + Tambah Opsi
                             </button>
-                            
+
                             {/* Generate Combinations Button */}
                             {form.productOptions.length > 0 && (
                                 <button
@@ -2262,11 +2255,11 @@ const FormEditorPage: React.FC = () => {
                                     onClick={() => {
                                         setForm(prev => {
                                             if (!prev || !prev.productOptions || prev.productOptions.length === 0) return prev;
-                                            
+
                                             // Generate all combinations dari productOptions
                                             const optionValues = prev.productOptions.map(opt => opt.values);
                                             const combinations: VariantCombination[] = [];
-                                            
+
                                             function generateCombos(index: number, current: Record<string, string>) {
                                                 if (index === prev.productOptions.length) {
                                                     combinations.push({
@@ -2280,15 +2273,15 @@ const FormEditorPage: React.FC = () => {
                                                     });
                                                     return;
                                                 }
-                                                
+
                                                 const opt = prev.productOptions[index];
                                                 for (const value of opt.values) {
                                                     generateCombos(index + 1, { ...current, [opt.name]: value });
                                                 }
                                             }
-                                            
+
                                             generateCombos(0, {});
-                                            
+
                                             showToast(`${combinations.length} kombinasi varian dibuat`, 'success');
                                             return { ...prev, variantCombinations: combinations };
                                         });
@@ -2329,9 +2322,9 @@ const FormEditorPage: React.FC = () => {
                     {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
                         // Skip city and district as they're controlled by province
                         if (key === 'city' || key === 'district') return null;
-                        
+
                         const isProvince = key === 'province';
-                        
+
                         return (
                             <div key={key}>
                                 <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
@@ -2339,18 +2332,18 @@ const FormEditorPage: React.FC = () => {
                                     <div className="flex items-center gap-4">
                                         <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
                                         <label className="flex items-center gap-1 text-xs">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 checked={(form.customerFields as any)[key].required && (form.customerFields as any)[key].visible}
-                                                onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)} 
+                                                onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)}
                                                 disabled={!(form.customerFields as any)[key].visible}
                                                 className="rounded disabled:opacity-50"
-                                            /> 
+                                            />
                                             Wajib
                                         </label>
                                     </div>
                                 </div>
-                                
+
                                 {/* Show City and District as children of Province */}
                                 {isProvince && form.customerFields.province.visible && (
                                     <div className="ml-6 mt-1 space-y-1">
@@ -2407,12 +2400,12 @@ const FormEditorPage: React.FC = () => {
                         <p className="text-xs text-slate-500">Minimal 1 metode pembayaran harus ditampilkan</p>
                         <span className="text-xs text-red-500 font-medium">Wajib</span>
                     </div>
-                     {(Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>).sort((a,b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99)).map(key => {
+                    {(Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>).sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99)).map(key => {
                         const setting = form.paymentSettings[key];
                         const config = PAYMENT_CONFIG[key];
                         if (!config) return null;
                         const Icon = config.icon;
-                        
+
                         return (
                             <div key={key} className="p-3 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50">
                                 <div className="flex items-center justify-between mb-2">
@@ -2434,7 +2427,7 @@ const FormEditorPage: React.FC = () => {
                                                 <div className="text-xs text-slate-500">Biaya ini akan ditambahkan ke total tagihan.</div>
                                             </>
                                         )}
-                                         {key === 'bankTransfer' && (
+                                        {key === 'bankTransfer' && (
                                             <div>
                                                 {(setting as BankTransferSetting).accounts.map((acc, index) => (
                                                     <div key={acc.id} className="flex items-center gap-2 mb-2">
@@ -2447,7 +2440,7 @@ const FormEditorPage: React.FC = () => {
                                                 <button type="button" onClick={addBankAccount} className="text-xs font-medium text-indigo-600 hover:text-indigo-500">+ Tambah Rekening</button>
                                             </div>
                                         )}
-                                         {key === 'qris' && (
+                                        {key === 'qris' && (
                                             <div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="relative w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
@@ -2487,13 +2480,13 @@ const FormEditorPage: React.FC = () => {
                                 <label className="text-sm font-medium">Tampilkan Ringkasan Pesanan</label>
                                 <ToggleSwitch checked={form.thankYouPage.showOrderSummary} onChange={v => handleSubNestedFieldChange('thankYouPage', null, 'showOrderSummary', v)} />
                             </div>
-                            
+
                             <div className="border-t pt-4 mt-2">
                                 <div className="flex items-center justify-between mb-3">
                                     <label className="text-sm font-medium flex items-center gap-2"><WhatsAppIcon className="w-4 h-4 text-green-500" /> Konfirmasi ke WhatsApp</label>
                                     <ToggleSwitch checked={form.thankYouPage.whatsappConfirmation.active} onChange={v => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'active', v)} />
                                 </div>
-                                
+
                                 {form.thankYouPage.whatsappConfirmation.active && (
                                     <div className="space-y-3 pl-4 border-l-2 border-slate-200 dark:border-slate-700">
                                         <div>
@@ -2549,8 +2542,8 @@ const FormEditorPage: React.FC = () => {
                         {form.thankYouPage.csAssignment?.mode === 'single' ? (
                             <div>
                                 <label className="block text-sm font-medium mb-1">Pilih CS</label>
-                                <select 
-                                    value={form.thankYouPage.csAssignment?.singleAgentId || ''} 
+                                <select
+                                    value={form.thankYouPage.csAssignment?.singleAgentId || ''}
                                     onChange={e => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'singleAgentId', e.target.value)}
                                     className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"
                                 >
@@ -2568,30 +2561,30 @@ const FormEditorPage: React.FC = () => {
                                     return (
                                         <div key={index} className="flex items-center gap-2">
                                             <div className="flex-grow p-2 bg-slate-100 dark:bg-slate-700 rounded text-sm">{agent?.name || 'Unknown Agent'}</div>
-                                            <input 
-                                                type="number" 
-                                                value={setting.percentage} 
+                                            <input
+                                                type="number"
+                                                value={setting.percentage}
                                                 onChange={e => {
                                                     const newArr = [...(form.thankYouPage.csAssignment?.roundRobinAgents || [])];
                                                     newArr[index] = { ...newArr[index], percentage: parseInt(e.target.value) || 0 };
                                                     handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
                                                 }}
-                                                className="w-16 p-2 border rounded text-center dark:bg-slate-700" 
+                                                className="w-16 p-2 border rounded text-center dark:bg-slate-700"
                                             />
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={() => {
                                                     const newArr = (form.thankYouPage.csAssignment?.roundRobinAgents || []).filter((_, i) => i !== index);
                                                     handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
                                                 }}
                                                 className="text-red-500 hover:bg-red-50 p-2 rounded"
                                             >
-                                                <TrashIcon className="w-4 h-4"/>
+                                                <TrashIcon className="w-4 h-4" />
                                             </button>
                                         </div>
                                     )
                                 })}
-                                
+
                                 <div className="flex gap-2 mt-2">
                                     <select id="new-cs-select" className="flex-grow p-2 border rounded-lg bg-white dark:bg-slate-700 text-sm">
                                         <option value="">Tambah Agen...</option>
@@ -2599,8 +2592,8 @@ const FormEditorPage: React.FC = () => {
                                             <option key={agent.id} value={agent.id}>{agent.name}</option>
                                         ))}
                                     </select>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => {
                                             const select = document.getElementById('new-cs-select') as HTMLSelectElement;
                                             const agentId = select.value;
@@ -2637,24 +2630,21 @@ const FormEditorPage: React.FC = () => {
                             ).map((platform) => {
                                 const IconComponent = platform.icon;
                                 const isSelected = form.assignedPlatform === platform.value;
-                                
+
                                 return (
                                     <button
                                         key={platform.value || 'all'}
                                         type="button"
                                         onClick={() => handleFieldChange('assignedPlatform', platform.value)}
-                                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                                            isSelected
+                                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${isSelected
                                                 ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
                                                 : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
-                                        }`}
+                                            }`}
                                     >
-                                        <IconComponent className={`w-5 h-5 ${
-                                            isSelected ? 'text-indigo-600' : 'text-slate-600 dark:text-slate-400'
-                                        }`} />
-                                        <span className={`text-xs font-medium text-center ${
-                                            isSelected ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-300'
-                                        }`}>
+                                        <IconComponent className={`w-5 h-5 ${isSelected ? 'text-indigo-600' : 'text-slate-600 dark:text-slate-400'
+                                            }`} />
+                                        <span className={`text-xs font-medium text-center ${isSelected ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-300'
+                                            }`}>
                                             {platform.name}
                                         </span>
                                     </button>
@@ -2676,13 +2666,13 @@ const FormEditorPage: React.FC = () => {
                                     const platformKey = key as keyof FormPageTrackingSettings;
                                     const config = PLATFORM_CONFIG[platformKey];
                                     const setting = form.trackingSettings?.formPage[platformKey];
-                                    
+
                                     const globalOptions = globalPixels[platformKey as keyof GlobalPixelSettings] || [];
 
                                     return (
                                         <div key={`form-${key}`} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
                                             <div className="flex items-center gap-2 mb-2 font-medium">
-                                                <config.icon className="w-4 h-4"/> {config.name}
+                                                <config.icon className="w-4 h-4" /> {config.name}
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div>
@@ -2695,8 +2685,8 @@ const FormEditorPage: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs text-slate-500 mb-1">Event</label>
-                                                    <select 
-                                                        value={setting?.eventName || 'ViewContent'} 
+                                                    <select
+                                                        value={setting?.eventName || 'ViewContent'}
                                                         onChange={(e) => handleTrackingChange('formPage', platformKey, 'eventName', e.target.value)}
                                                         className="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700"
                                                     >
@@ -2722,7 +2712,7 @@ const FormEditorPage: React.FC = () => {
                                     return (
                                         <div key={`thankyou-${key}`} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
                                             <div className="flex items-center gap-2 mb-2 font-medium">
-                                                <config.icon className="w-4 h-4"/> {config.name}
+                                                <config.icon className="w-4 h-4" /> {config.name}
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div>
@@ -2735,8 +2725,8 @@ const FormEditorPage: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs text-slate-500 mb-1">Event</label>
-                                                    <select 
-                                                        value={setting?.eventName || 'Purchase'} 
+                                                    <select
+                                                        value={setting?.eventName || 'Purchase'}
                                                         onChange={(e) => handleTrackingChange('thankYouPage', platformKey, 'eventName', e.target.value)}
                                                         className="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700"
                                                     >
@@ -2788,11 +2778,11 @@ const FormEditorPage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3">
                             {form.countdownSettings?.active && (
-                                <input 
-                                    type="number" 
-                                    value={form.countdownSettings.duration} 
+                                <input
+                                    type="number"
+                                    value={form.countdownSettings.duration}
                                     onChange={e => handleSubNestedFieldChange('countdownSettings', null, 'duration', parseInt(e.target.value))}
-                                    className="w-16 p-1 text-sm border rounded text-center" 
+                                    className="w-16 p-1 text-sm border rounded text-center"
                                 />
                             )}
                             <ToggleSwitch checked={form.countdownSettings?.active || false} onChange={v => handleSubNestedFieldChange('countdownSettings', null, 'active', v)} />
@@ -2809,11 +2799,11 @@ const FormEditorPage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3">
                             {form.stockCountdownSettings?.active && (
-                                <input 
-                                    type="number" 
-                                    value={form.stockCountdownSettings.initialStock} 
+                                <input
+                                    type="number"
+                                    value={form.stockCountdownSettings.initialStock}
                                     onChange={e => handleSubNestedFieldChange('stockCountdownSettings', null, 'initialStock', parseInt(e.target.value))}
-                                    className="w-16 p-1 text-sm border rounded text-center" 
+                                    className="w-16 p-1 text-sm border rounded text-center"
                                     title="Stok Awal"
                                 />
                             )}
@@ -2841,11 +2831,10 @@ const FormEditorPage: React.FC = () => {
                                             <button
                                                 key={pos}
                                                 onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'position', pos)}
-                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${
-                                                    form.socialProofSettings?.position === pos
+                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.position === pos
                                                         ? 'bg-indigo-600 text-white border-indigo-600'
                                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
-                                                }`}
+                                                    }`}
                                             >
                                                 {pos === 'bottom-left' && '↙ Bawah Kiri'}
                                                 {pos === 'bottom-right' && '↘ Bawah Kanan'}
@@ -2862,11 +2851,10 @@ const FormEditorPage: React.FC = () => {
                                             <button
                                                 key={anim}
                                                 onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'animation', anim)}
-                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${
-                                                    form.socialProofSettings?.animation === anim
+                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.animation === anim
                                                         ? 'bg-indigo-600 text-white border-indigo-600'
                                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
-                                                }`}
+                                                    }`}
                                             >
                                                 {anim === 'slide-up' && '↑ Geser'}
                                                 {anim === 'slide-down' && '↓ Turun'}
@@ -2878,8 +2866,8 @@ const FormEditorPage: React.FC = () => {
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
                                         <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Mulai Setelah (detik)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={form.socialProofSettings.initialDelaySeconds || 5}
                                             onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'initialDelaySeconds', parseInt(e.target.value))}
                                             className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
@@ -2888,8 +2876,8 @@ const FormEditorPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Durasi Tampil (detik)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={form.socialProofSettings.displayDurationSeconds || 5}
                                             onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'displayDurationSeconds', parseInt(e.target.value))}
                                             className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
@@ -2898,8 +2886,8 @@ const FormEditorPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Interval Tampil (detik)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={form.socialProofSettings.intervalSeconds || 10}
                                             onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'intervalSeconds', parseInt(e.target.value))}
                                             className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
@@ -2907,15 +2895,15 @@ const FormEditorPage: React.FC = () => {
                                         />
                                     </div>
                                 </div>
-                                <textarea 
-                                    placeholder="Daftar Nama (pisahkan dengan baris baru)" 
+                                <textarea
+                                    placeholder="Daftar Nama (pisahkan dengan baris baru)"
                                     value={form.socialProofSettings.customerNames}
                                     onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'customerNames', e.target.value)}
                                     className="w-full p-2 text-xs border rounded"
                                     rows={3}
                                 />
-                                <textarea 
-                                    placeholder="Daftar Kota (pisahkan dengan baris baru)" 
+                                <textarea
+                                    placeholder="Daftar Kota (pisahkan dengan baris baru)"
                                     value={form.socialProofSettings.customerCities}
                                     onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'customerCities', e.target.value)}
                                     className="w-full p-2 text-xs border rounded"
@@ -2933,20 +2921,20 @@ const FormEditorPage: React.FC = () => {
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-xs font-medium mb-1">Teks Tombol</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="e.g. Pesan Sekarang" 
-                                    value={form.ctaSettings?.mainText || ''} 
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Pesan Sekarang"
+                                    value={form.ctaSettings?.mainText || ''}
                                     onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'mainText', e.target.value)}
                                     className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                 />
                             </div>
                             <div>
                                 <label className="block text-xs font-medium mb-1">Teks Urgensi</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="e.g. {count} sudah beli hari ini (gunakan {count} untuk angka)" 
-                                    value={form.ctaSettings?.urgencyText || ''} 
+                                <input
+                                    type="text"
+                                    placeholder="e.g. {count} sudah beli hari ini (gunakan {count} untuk angka)"
+                                    value={form.ctaSettings?.urgencyText || ''}
                                     onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'urgencyText', e.target.value)}
                                     className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                 />
@@ -2954,9 +2942,9 @@ const FormEditorPage: React.FC = () => {
                             <div className="grid grid-cols-4 gap-2">
                                 <div>
                                     <label className="block text-xs font-medium mb-1">Angka Awal</label>
-                                    <input 
-                                        type="number" 
-                                        placeholder="265" 
+                                    <input
+                                        type="number"
+                                        placeholder="265"
                                         value={form.ctaSettings?.initialCount || 265}
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'initialCount', parseInt(e.target.value))}
                                         className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
@@ -2965,9 +2953,9 @@ const FormEditorPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium mb-1">Interval (detik)</label>
-                                    <input 
-                                        type="number" 
-                                        placeholder="1" 
+                                    <input
+                                        type="number"
+                                        placeholder="1"
                                         value={form.ctaSettings?.increaseIntervalSeconds || 1}
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'increaseIntervalSeconds', parseInt(e.target.value))}
                                         className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
@@ -2976,9 +2964,9 @@ const FormEditorPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium mb-1">Tambah Per Interval</label>
-                                    <input 
-                                        type="number" 
-                                        placeholder="2" 
+                                    <input
+                                        type="number"
+                                        placeholder="2"
                                         value={form.ctaSettings?.incrementPerSecond || 2}
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'incrementPerSecond', parseInt(e.target.value))}
                                         className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
@@ -2987,9 +2975,9 @@ const FormEditorPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium mb-1">Warna Tombol</label>
-                                    <input 
-                                        type="color" 
-                                        value={form.ctaSettings?.buttonColor || '#6366f1'} 
+                                    <input
+                                        type="color"
+                                        value={form.ctaSettings?.buttonColor || '#6366f1'}
                                         onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
                                         className="w-full p-2 text-sm border rounded cursor-pointer"
                                     />
@@ -2997,19 +2985,19 @@ const FormEditorPage: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-xs font-medium mb-1">Kode Hex Warna</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="#6366f1" 
-                                    value={form.ctaSettings?.buttonColor || '#6366f1'} 
+                                <input
+                                    type="text"
+                                    placeholder="#6366f1"
+                                    value={form.ctaSettings?.buttonColor || '#6366f1'}
                                     onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
                                     className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600 font-mono"
                                 />
                             </div>
                             <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/30 rounded">
                                 <label className="text-sm font-medium">Animasi Tombol</label>
-                                <ToggleSwitch 
-                                    checked={form.ctaSettings?.animationEnabled || false} 
-                                    onChange={v => handleSubNestedFieldChange('ctaSettings', null, 'animationEnabled', v)} 
+                                <ToggleSwitch
+                                    checked={form.ctaSettings?.animationEnabled || false}
+                                    onChange={v => handleSubNestedFieldChange('ctaSettings', null, 'animationEnabled', v)}
                                 />
                             </div>
                             {form.ctaSettings?.animationEnabled && (
@@ -3027,11 +3015,10 @@ const FormEditorPage: React.FC = () => {
                                             <button
                                                 key={anim.value}
                                                 onClick={() => handleSubNestedFieldChange('ctaSettings', null, 'animationType', anim.value as any)}
-                                                className={`p-2 text-xs font-medium rounded border transition ${
-                                                    form.ctaSettings?.animationType === anim.value
+                                                className={`p-2 text-xs font-medium rounded border transition ${form.ctaSettings?.animationType === anim.value
                                                         ? 'bg-indigo-600 text-white border-indigo-600'
                                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div>{anim.label}</div>
                                                 <div className="text-xs opacity-70">{anim.desc}</div>
@@ -3051,16 +3038,14 @@ const FormEditorPage: React.FC = () => {
                     <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30">
                         <div className="flex items-center justify-between">
                             <div className="flex space-x-2">
-                                <button onClick={() => setActivePreviewTab('form')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
-                                    activePreviewTab === 'form' 
-                                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
-                                }`}>Formulir</button>
-                                <button onClick={() => setActivePreviewTab('thankyou')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
-                                    activePreviewTab === 'thankyou' 
-                                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
-                                }`}>Terima Kasih</button>
+                                <button onClick={() => setActivePreviewTab('form')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${activePreviewTab === 'form'
+                                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                                    }`}>Formulir</button>
+                                <button onClick={() => setActivePreviewTab('thankyou')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${activePreviewTab === 'thankyou'
+                                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                                    }`}>Terima Kasih</button>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -3084,7 +3069,7 @@ const FormEditorPage: React.FC = () => {
             </div>
 
             {showDeleteConfirmation && form && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     isOpen={true}
                     title="Hapus Formulir"
                     message={`Apakah Anda yakin ingin menghapus formulir "${form.title}"? Tindakan ini tidak dapat dibatalkan.`}

@@ -457,7 +457,9 @@ export interface AdCampaignReport {
   id: string;
   // General Info
   platform: AdPlatform;
+  campaignId?: string;
   campaignName: string;
+  adDate?: string;
   objective: CampaignObjective;
   startDate: string;
   endDate: string;
@@ -465,6 +467,8 @@ export interface AdCampaignReport {
   status: CampaignStatus;
   responsibleUserId?: string;
   responsibleUserName?: string;
+  brandId?: string;
+  brandName?: string;
   // Audience
   location: string;
   ageRange: string;
@@ -475,6 +479,10 @@ export interface AdCampaignReport {
   headline: string;
   adCopy: string;
   cta: string;
+  landingPageUrl?: string;
+  productId?: string;
+  productName?: string;
+  productPrice?: number;
   // Performance
   amountSpent: number;
   impressions: number;
@@ -482,6 +490,10 @@ export interface AdCampaignReport {
   clicks: number;
   conversions: number;
   roas: number; // Return on Ad Spend
+  cpl?: number; // Cost Per Lead
+  cpc?: number; // Cost Per Click
+  ctr?: number; // Click Through Rate
+  cpm?: number; // Cost Per Mille
 }
 
 // Types for CS Performance Leaderboard

@@ -16,6 +16,8 @@ import DollarSignIcon from '../components/icons/DollarSignIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import TrashIcon from '../components/icons/TrashIcon';
 import PencilIcon from '../components/icons/PencilIcon';
+import UploadIcon from '../components/icons/UploadIcon';
+import ImportAdReportsModal from '../components/ImportAdReportsModal';
 
 
 const AdReportModal: React.FC<{ 
@@ -329,6 +331,7 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('Semua');
   const [selectedStatus, setSelectedStatus] = useState<string>('Semua');
   const [selectedAdvertiser, setSelectedAdvertiser] = useState<string>('Semua');
@@ -536,6 +539,14 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
   return (
     <div className="space-y-6">
       {isModalOpen && <AdReportModal onClose={() => setModalOpen(false)} onSave={handleSaveReport} users={users} brands={brands} currentUser={user} />}
+      <ImportAdReportsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={fetchReports}
+        users={users}
+        brands={brands}
+        currentUser={user}
+      />
       
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -545,6 +556,13 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
         </div>
         <div className="flex flex-wrap items-center gap-3">
              <DateRangePicker value={dateRange} onChange={setDateRange} />
+             <button 
+               onClick={() => setImportModalOpen(true)} 
+               className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 font-bold shadow-lg shadow-purple-500/30 transition-all hover:scale-105 whitespace-nowrap flex items-center gap-2"
+             >
+               <UploadIcon className="w-4 h-4" />
+               Import
+             </button>
              <button 
                onClick={() => setModalOpen(true)} 
                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-600 font-bold shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 whitespace-nowrap"

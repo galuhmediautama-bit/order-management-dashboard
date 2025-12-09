@@ -58,7 +58,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: '' });
-        
+
         // Convert all values to strings
         return jsonData.map(row => {
             const stringRow: Record<string, string> = {};
@@ -90,13 +90,13 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
 
     const validateRow = (row: Record<string, string>, rowNumber: number): ImportedRow => {
         const errors: string[] = [];
-        
+
         // Check required fields
         if (!row.customer?.trim()) errors.push('Nama pelanggan wajib diisi');
         if (!row.customerPhone?.trim()) errors.push('No. HP wajib diisi');
         if (!row.productName?.trim()) errors.push('Nama produk wajib diisi');
         if (!row.productPrice?.trim()) errors.push('Harga produk wajib diisi');
-        
+
         // Validate price
         const price = parseFloat(row.productPrice || '0');
         if (isNaN(price) || price < 0) errors.push('Harga produk tidak valid');
@@ -163,9 +163,9 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
         try {
             const fileName = selectedFile.name.toLowerCase();
             const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-            
+
             let rows: Record<string, string>[];
-            
+
             if (isExcel) {
                 const buffer = await selectedFile.arrayBuffer();
                 rows = parseExcel(buffer);
@@ -173,7 +173,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
                 const text = await selectedFile.text();
                 rows = parseCSV(text);
             }
-            
+
             if (rows.length === 0) {
                 alert('File kosong atau format tidak valid');
                 setIsProcessing(false);
@@ -197,7 +197,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
         const fileName = droppedFile?.name.toLowerCase() || '';
         const validExtensions = ['.csv', '.xlsx', '.xls'];
         const isValidFile = validExtensions.some(ext => fileName.endsWith(ext));
-        
+
         if (droppedFile && isValidFile) {
             const input = fileInputRef.current;
             if (input) {
@@ -220,7 +220,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
             const updated = [...prev];
             const row = { ...updated[rowIndex] };
             row.originalData = { ...row.originalData, [field]: value };
-            
+
             // Re-validate
             const revalidated = validateRow(row.originalData, row.rowNumber);
             updated[rowIndex] = revalidated;
@@ -267,7 +267,7 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
                 };
 
                 const { error } = await supabase.from('orders').insert(orderData);
-                
+
                 if (error) {
                     console.error('Error inserting order:', error);
                     failedCount++;
@@ -311,13 +311,13 @@ const ImportOrdersModal: React.FC<ImportOrdersModalProps> = ({ isOpen, onClose, 
         // Create Excel file
         const worksheetData = [headers, sampleRow];
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-        
+
         // Set column widths for better readability
         worksheet['!cols'] = headers.map(() => ({ wch: 18 }));
-        
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-        
+
         // Generate and download
         XLSX.writeFile(workbook, 'template_import_pesanan.xlsx');
     };

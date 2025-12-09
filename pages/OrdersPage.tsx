@@ -1167,8 +1167,8 @@ const OrdersPage: React.FC = () => {
                         </button>
                         {/* Import Orders Button */}
                         {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
-                            <button 
-                                onClick={() => setIsImportModalOpen(true)} 
+                            <button
+                                onClick={() => setIsImportModalOpen(true)}
                                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all h-10"
                                 title="Import Pesanan dari CSV"
                             >
