@@ -1687,10 +1687,12 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 showProvince={form.customerFields.province?.visible || false}
                                                 showCity={form.customerFields.city?.visible || false}
                                                 showDistrict={form.customerFields.district?.visible || false}
+                                                showVillage={form.customerFields.village?.visible || false}
                                                 showDetailAddress={form.customerFields.address?.visible || false}
                                                 requiredProvince={form.customerFields.province?.required || false}
                                                 requiredCity={form.customerFields.city?.required || false}
                                                 requiredDistrict={form.customerFields.district?.required || false}
+                                                requiredVillage={form.customerFields.village?.required || false}
                                                 requiredDetailAddress={form.customerFields.address?.required || false}
                                             />
                                             {(fieldErrors.province || fieldErrors.city || fieldErrors.district || fieldErrors.address) && (

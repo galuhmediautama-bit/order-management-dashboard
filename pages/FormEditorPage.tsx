@@ -927,7 +927,7 @@ const FormEditorPage: React.FC = () => {
                     // Buat form baru - langsung set dan tampilkan
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, address: { visible: true, required: true } },
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] }, },
                         countdownSettings: { active: true, duration: 300 },
@@ -1703,10 +1703,10 @@ const FormEditorPage: React.FC = () => {
             if (!prev) return null;
             const mainFieldValue = (prev as any)[mainField] || {};
 
-            // Special handling for province/city/district package
+            // Special handling for province/city/district/village package
             if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
-                    // When province visibility changes, city and district follow
+                    // When province visibility changes, city, district, and village follow
                     // If unchecking visible, also uncheck required
                     const newRequired = val ? prev.customerFields.province.required : false;
                     return {
@@ -1715,18 +1715,20 @@ const FormEditorPage: React.FC = () => {
                             ...prev.customerFields,
                             province: { ...prev.customerFields.province, visible: val, required: newRequired },
                             city: { ...prev.customerFields.city, visible: val, required: val ? prev.customerFields.city.required : false },
-                            district: { ...prev.customerFields.district, visible: val, required: val ? prev.customerFields.district.required : false }
+                            district: { ...prev.customerFields.district, visible: val, required: val ? prev.customerFields.district.required : false },
+                            village: { ...(prev.customerFields.village || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.village?.required || false) : false }
                         }
                     };
                 } else if (prop === 'required') {
-                    // When province required changes, city and district follow
+                    // When province required changes, city, district, and village follow
                     return {
                         ...prev,
                         customerFields: {
                             ...prev.customerFields,
                             province: { ...prev.customerFields.province, required: val },
                             city: { ...prev.customerFields.city, required: val },
-                            district: { ...prev.customerFields.district, required: val }
+                            district: { ...prev.customerFields.district, required: val },
+                            village: { ...(prev.customerFields.village || { visible: false, required: false }), required: val }
                         }
                     };
                 }
@@ -2447,8 +2449,8 @@ const FormEditorPage: React.FC = () => {
                 <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
                     <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
                     {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
-                        // Skip city and district as they're controlled by province
-                        if (key === 'city' || key === 'district') return null;
+                        // Skip city, district, and village as they're controlled by province
+                        if (key === 'city' || key === 'district' || key === 'village') return null;
 
                         const isProvince = key === 'province';
 
@@ -2471,7 +2473,7 @@ const FormEditorPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Show City and District as children of Province */}
+                                {/* Show City, District, and Village as children of Province */}
                                 {isProvince && form.customerFields.province.visible && (
                                     <div className="ml-6 mt-1 space-y-1">
                                         <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
@@ -2486,6 +2488,13 @@ const FormEditorPage: React.FC = () => {
                                             <div className="flex items-center gap-4">
                                                 <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
                                                 <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.required} disabled className="rounded opacity-50" /> Wajib</label>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">↳ Village (Kelurahan/Desa)</span>
+                                            <div className="flex items-center gap-4">
+                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.village?.visible || false} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.village?.required || false} disabled className="rounded opacity-50" /> Wajib</label>
                                             </div>
                                         </div>
                                     </div>

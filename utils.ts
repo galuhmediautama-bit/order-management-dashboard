@@ -144,6 +144,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
             province: formToEdit.customerFields?.province || { visible: true, required: true },
             city: formToEdit.customerFields?.city || { visible: true, required: true },
             district: formToEdit.customerFields?.district || { visible: true, required: true },
+            village: formToEdit.customerFields?.village || { visible: true, required: true },
             address: formToEdit.customerFields?.address || { visible: true, required: true },
         },
         shippingSettings: formToEdit.shippingSettings || defaultShippingSettings,

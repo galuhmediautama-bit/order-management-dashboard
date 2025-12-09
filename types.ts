@@ -377,6 +377,7 @@ export interface Form {
     province: CustomerFieldSetting;
     city: CustomerFieldSetting;
     district: CustomerFieldSetting;
+    village: CustomerFieldSetting;
     address: CustomerFieldSetting;
   };
   shippingSettings: ShippingSettings;
