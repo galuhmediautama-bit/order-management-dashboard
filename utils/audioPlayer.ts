@@ -1,81 +1,159 @@
 import type { NotificationType } from '../types';
 
-// Sound files mapping
-const SOUND_MAP: Record<NotificationType, string> = {
-  ORDER_NEW: '/sounds/cash.mp3',
-  CART_ABANDON: '/sounds/alert.mp3',
-  SYSTEM_ALERT: '/sounds/system.mp3',
+// Audio Context singleton
+let audioContext: AudioContext | null = null;
+
+/**
+ * Get or create AudioContext
+ */
+function getAudioContext(): AudioContext {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  // Resume context if suspended (browser autoplay policy)
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+  return audioContext;
+}
+
+/**
+ * Sound configurations - louder and clearer sounds
+ */
+interface SoundConfig {
+  frequencies: number[];
+  durations: number[];
+  type: OscillatorType;
+  gainStart: number;
+  gainEnd: number;
+  repeat?: number;
+  delayBetween?: number;
+}
+
+const SOUND_CONFIGS: Record<NotificationType, SoundConfig> = {
+  // New Order - Loud cash register "cha-ching" sound (3 tones)
+  ORDER_NEW: {
+    frequencies: [1200, 1500, 1800], // Higher frequencies = more audible
+    durations: [0.12, 0.12, 0.25],
+    type: 'square', // Square wave is louder/sharper
+    gainStart: 0.6,
+    gainEnd: 0.1,
+    repeat: 2,
+    delayBetween: 400,
+  },
+  // Cart Abandon - Urgent alert sound (ascending tones)
+  CART_ABANDON: {
+    frequencies: [600, 900, 1200, 900, 600],
+    durations: [0.1, 0.1, 0.15, 0.1, 0.2],
+    type: 'sawtooth', // Sawtooth is harsh/attention-grabbing
+    gainStart: 0.5,
+    gainEnd: 0.1,
+    repeat: 2,
+    delayBetween: 300,
+  },
+  // System Alert - Warning beep
+  SYSTEM_ALERT: {
+    frequencies: [800, 800, 800],
+    durations: [0.15, 0.1, 0.25],
+    type: 'square',
+    gainStart: 0.5,
+    gainEnd: 0.1,
+    repeat: 3,
+    delayBetween: 200,
+  },
 };
 
-// Cache audio instances untuk performa
-const audioCache = new Map<string, HTMLAudioElement>();
+/**
+ * Play a sequence of tones
+ */
+async function playToneSequence(config: SoundConfig, volume: number = 1): Promise<void> {
+  const ctx = getAudioContext();
+  let startTime = ctx.currentTime;
+
+  for (let i = 0; i < config.frequencies.length; i++) {
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = config.type;
+    oscillator.frequency.setValueAtTime(config.frequencies[i], startTime);
+
+    // Volume envelope for cleaner sound
+    const effectiveGainStart = config.gainStart * volume;
+    const effectiveGainEnd = config.gainEnd * volume;
+    
+    gainNode.gain.setValueAtTime(effectiveGainStart, startTime);
+    gainNode.gain.exponentialRampToValueAtTime(
+      Math.max(effectiveGainEnd, 0.001), 
+      startTime + config.durations[i]
+    );
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start(startTime);
+    oscillator.stop(startTime + config.durations[i]);
+
+    startTime += config.durations[i];
+  }
+}
 
 /**
  * Play sound berdasarkan notification type
  * @param type - Notification type (ORDER_NEW, CART_ABANDON, SYSTEM_ALERT)
- * @param volume - Volume 0-1 (default: 0.5)
+ * @param volume - Volume 0-1 (default: 0.8 for louder sound)
  */
-export async function playSound(type: NotificationType, volume: number = 0.5): Promise<void> {
+export async function playSound(type: NotificationType, volume: number = 0.8): Promise<void> {
   try {
-    const soundPath = SOUND_MAP[type];
-    if (!soundPath) {
+    const config = SOUND_CONFIGS[type];
+    if (!config) {
       console.warn(`No sound configured for notification type: ${type}`);
       return;
     }
 
-    let audio = audioCache.get(soundPath);
+    const repeatCount = config.repeat || 1;
+    const delayMs = config.delayBetween || 300;
 
-    // Create audio element if not cached
-    if (!audio) {
-      audio = new Audio(soundPath);
-      audio.volume = Math.max(0, Math.min(1, volume)); // Clamp 0-1
-      audioCache.set(soundPath, audio);
-    } else {
-      // Reset audio untuk bisa play berkali-kali
-      audio.currentTime = 0;
-      audio.volume = Math.max(0, Math.min(1, volume));
-    }
-
-    // Play dengan error handling
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      await playPromise;
+    for (let r = 0; r < repeatCount; r++) {
+      await playToneSequence(config, volume);
+      if (r < repeatCount - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
     }
   } catch (error) {
     console.error(`Error playing sound for type ${type}:`, error);
-    // Fail silently - jangan throw error untuk UX yang lebih baik
   }
 }
 
 /**
- * Stop audio yang sedang diplay
- * @param type - Notification type
+ * Play a simple beep - useful for testing
  */
-export function stopSound(type: NotificationType): void {
+export function playBeep(frequency: number = 1000, duration: number = 0.2, volume: number = 0.5): void {
   try {
-    const soundPath = SOUND_MAP[type];
-    const audio = audioCache.get(soundPath);
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
+    const ctx = getAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+
+    gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + duration);
   } catch (error) {
-    console.error(`Error stopping sound for type ${type}:`, error);
+    console.error('Error playing beep:', error);
   }
 }
 
 /**
- * Stop semua audio
+ * Stop semua audio - Note: Web Audio API sounds auto-stop
  */
 export function stopAllSounds(): void {
-  try {
-    audioCache.forEach((audio) => {
-      audio.pause();
-      audio.currentTime = 0;
-    });
-  } catch (error) {
-    console.error('Error stopping all sounds:', error);
-  }
+  // Web Audio oscillators auto-stop, nothing to do here
 }
 
 /**
@@ -83,76 +161,59 @@ export function stopAllSounds(): void {
  */
 export function isSoundSupported(): boolean {
   try {
-    const audio = new Audio();
-    return !!audio.canPlayType;
+    return !!(window.AudioContext || (window as any).webkitAudioContext);
   } catch {
     return false;
   }
 }
 
 /**
- * Preload semua sound files
- * Jalankan ini saat app initialize untuk faster playback
+ * Preload sounds - initialize AudioContext on user interaction
+ * Call this on first user click to enable sounds
  */
 export async function preloadSounds(): Promise<void> {
   try {
-    const soundPaths = Object.values(SOUND_MAP);
-    const promises = soundPaths.map(
-      (path) =>
-        new Promise<void>((resolve) => {
-          try {
-            const audio = new Audio(path);
-            audio.addEventListener('canplaythrough', () => {
-              audioCache.set(path, audio);
-              resolve();
-            });
-            audio.addEventListener('error', () => {
-              console.warn(`Failed to preload sound: ${path}`);
-              resolve(); // Resolve anyway untuk tidak block
-            });
-            audio.load();
-          } catch (error) {
-            console.warn(`Error preloading sound ${path}:`, error);
-            resolve();
-          }
-        })
-    );
-
-    await Promise.all(promises);
+    getAudioContext();
+    // Play a silent tone to "warm up" the audio context
+    const ctx = getAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    gainNode.gain.setValueAtTime(0, ctx.currentTime); // Silent
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.001);
   } catch (error) {
     console.error('Error preloading sounds:', error);
   }
 }
 
 /**
- * Utility untuk play sound dengan custom path
- * Useful untuk sound yang tidak dalam default map
+ * Test all notification sounds
  */
-export async function playSoundPath(path: string, volume: number = 0.5): Promise<void> {
-  try {
-    let audio = audioCache.get(path);
-
-    if (!audio) {
-      audio = new Audio(path);
-      audioCache.set(path, audio);
-    } else {
-      audio.currentTime = 0;
-    }
-
-    audio.volume = Math.max(0, Math.min(1, volume));
-    await audio.play();
-  } catch (error) {
-    console.error(`Error playing sound: ${path}`, error);
-  }
+export async function testAllSounds(): Promise<void> {
+  console.log('Testing ORDER_NEW sound...');
+  await playSound('ORDER_NEW');
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  console.log('Testing CART_ABANDON sound...');
+  await playSound('CART_ABANDON');
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  console.log('Testing SYSTEM_ALERT sound...');
+  await playSound('SYSTEM_ALERT');
 }
 
-/**
- * Clear audio cache (untuk memory cleanup)
- */
+// Legacy functions for compatibility
+export function stopSound(_type: NotificationType): void {
+  // Web Audio oscillators auto-stop
+}
+
+export async function playSoundPath(_path: string, _volume: number = 0.5): Promise<void> {
+  // Not needed with Web Audio API, play default beep instead
+  playBeep();
+}
+
 export function clearAudioCache(): void {
-  audioCache.forEach((audio) => {
-    audio.pause();
-    audio.src = '';
-  });
-  audioCache.clear();
+  // No cache with Web Audio API
 }
