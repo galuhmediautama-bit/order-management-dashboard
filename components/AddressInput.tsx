@@ -24,6 +24,9 @@ interface ApiVillage {
   nama: string;
 }
 
+// Postal code API
+const POSTAL_API = 'https://kodepos.vercel.app/search';
+
 export interface AddressData {
   province: string;
   city: string;
@@ -82,6 +85,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingVillages, setLoadingVillages] = useState(false);
+  const [loadingPostalCode, setLoadingPostalCode] = useState(false);
 
   // Fetch provinces on mount
   useEffect(() => {
@@ -222,16 +226,64 @@ const AddressInput: React.FC<AddressInputProps> = ({
     const dist = districts.find(d => d.id === distId);
     setSelectedDistrictId(distId);
     setSelectedDistrict(dist ? formatName(dist.nama) : '');
-    // Reset village
+    // Reset village and postal code
     setSelectedVillage('');
+    setPostalCode('');
     setVillages([]);
+  };
+
+  // Fetch postal code based on village and district
+  const fetchPostalCode = async (villageName: string, districtName: string, cityName: string) => {
+    if (!villageName || !districtName) return;
+    
+    setLoadingPostalCode(true);
+    try {
+      // Try searching with village name
+      const searchQuery = `${villageName} ${districtName}`.replace(/\s+/g, '%20');
+      const res = await fetch(`${POSTAL_API}/?q=${searchQuery}`);
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.data && data.data.length > 0) {
+          // Find best match
+          const match = data.data.find((item: any) => 
+            item.urban?.toLowerCase().includes(villageName.toLowerCase()) ||
+            item.subdistrict?.toLowerCase().includes(districtName.toLowerCase())
+          ) || data.data[0];
+          
+          if (match?.postalcode) {
+            setPostalCode(match.postalcode.toString());
+            return;
+          }
+        }
+      }
+      
+      // Fallback: try with just district name
+      const fallbackRes = await fetch(`${POSTAL_API}/?q=${districtName.replace(/\s+/g, '%20')}`);
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.data && fallbackData.data.length > 0) {
+          setPostalCode(fallbackData.data[0].postalcode?.toString() || '');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching postal code:', err);
+    } finally {
+      setLoadingPostalCode(false);
+    }
   };
 
   // Handle village change
   const handleVillageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const villId = e.target.value;
     const vill = villages.find(v => v.id === villId);
-    setSelectedVillage(vill ? formatName(vill.nama) : '');
+    const villageName = vill ? formatName(vill.nama) : '';
+    setSelectedVillage(villageName);
+    
+    // Auto-fetch postal code
+    if (villageName && selectedDistrict) {
+      fetchPostalCode(villageName, selectedDistrict, selectedCity);
+    }
   };
 
   // Handle postal code change
@@ -364,17 +416,30 @@ const AddressInput: React.FC<AddressInputProps> = ({
       {/* Kode Pos */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Kode Pos
+          Kode Pos {loadingPostalCode && <span className="text-indigo-500 text-xs ml-1">(Mencari...)</span>}
         </label>
-        <input
-          type="text"
-          value={postalCode}
-          onChange={handlePostalCodeChange}
-          disabled={disabled}
-          placeholder="Masukkan kode pos"
-          maxLength={5}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={postalCode}
+            onChange={handlePostalCodeChange}
+            disabled={disabled || loadingPostalCode}
+            placeholder={loadingPostalCode ? "Mencari kode pos..." : "Masukkan kode pos"}
+            maxLength={5}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+          />
+          {loadingPostalCode && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <svg className="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          )}
+        </div>
+        {selectedVillage && !postalCode && !loadingPostalCode && (
+          <p className="text-xs text-gray-500 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
+        )}
       </div>
     </div>
   );

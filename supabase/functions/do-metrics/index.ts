@@ -155,13 +155,23 @@ serve(async (req) => {
 
         // Parse CPU metrics - DO returns multiple results (idle, user, system, etc.)
         const parseCpuMetric = async (res: Response) => {
-            if (!res.ok) return null
+            if (!res.ok) {
+                console.log('CPU response not ok:', res.status)
+                return null
+            }
             const data = await res.json()
+            console.log('CPU raw data:', JSON.stringify(data).slice(0, 500))
+
             const results = data.data?.result || []
 
-            // Find idle CPU mode and calculate usage as 100 - idle
+            if (results.length === 0) {
+                console.log('No CPU results - monitoring agent may not be installed')
+                return null
+            }
+
+            // Sum all non-idle CPU modes (user, system, nice, iowait, irq, softirq, steal)
+            let usedCpu = 0
             let idleValue = 0
-            let totalValue = 0
 
             for (const result of results) {
                 const mode = result.metric?.mode
@@ -169,19 +179,29 @@ serve(async (req) => {
                 const latest = values[values.length - 1]
                 const value = latest ? parseFloat(latest[1]) : 0
 
+                console.log(`CPU mode ${mode}: ${value}`)
+
                 if (mode === 'idle') {
                     idleValue = value
+                } else if (mode === 'user' || mode === 'system' || mode === 'nice' ||
+                    mode === 'iowait' || mode === 'irq' || mode === 'softirq' || mode === 'steal') {
+                    usedCpu += value
                 }
-                totalValue += value
             }
 
-            // If we have idle value, calculate usage
-            // CPU values are in percentage points already
+            // Method 1: Calculate from 100 - idle
             if (idleValue > 0) {
-                return Math.max(0, Math.min(100, 100 - idleValue))
+                const cpuFromIdle = Math.max(0, Math.min(100, 100 - idleValue))
+                console.log(`CPU calculated (100 - idle): ${cpuFromIdle}`)
+                return cpuFromIdle
             }
 
-            // Fallback: return 0 if no valid data
+            // Method 2: Sum of used modes
+            if (usedCpu > 0) {
+                console.log(`CPU calculated (sum): ${usedCpu}`)
+                return Math.min(100, usedCpu)
+            }
+
             return 0
         }
 
