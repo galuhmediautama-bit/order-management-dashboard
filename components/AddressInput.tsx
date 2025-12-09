@@ -1,23 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { INDONESIA_PROVINCES, INDONESIA_CITIES, INDONESIA_DISTRICTS } from '../data/indonesiaRegions';
+import React, { useState, useEffect } from 'react';
 
-// Types
-interface Province {
-  province_id: string;
-  province: string;
+// API Base URL for Indonesia regions data
+const API_BASE = 'https://ibnux.github.io/data-indonesia';
+
+// Types from API
+interface ApiProvince {
+  id: string;
+  nama: string;
 }
 
-interface City {
-  city_id: string;
-  province_id: string;
-  city_name: string;
-  type: string;
+interface ApiCity {
+  id: string;
+  nama: string;
 }
 
-interface District {
-  district_id: string;
-  city_id: string;
-  district_name: string;
+interface ApiDistrict {
+  id: string;
+  nama: string;
 }
 
 export interface AddressData {
@@ -60,24 +59,76 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [detailAddress, setDetailAddress] = useState(value.detailAddress || '');
   const [postalCode, setPostalCode] = useState(value.postalCode || '');
 
-  // Use static data
-  const provinces: Province[] = INDONESIA_PROVINCES;
+  // Data states
+  const [provinces, setProvinces] = useState<ApiProvince[]>([]);
+  const [cities, setCities] = useState<ApiCity[]>([]);
+  const [districts, setDistricts] = useState<ApiDistrict[]>([]);
 
-  // Filter cities by selected province
-  const filteredCities = useMemo(() => {
-    if (!selectedProvinceId) return [];
-    return INDONESIA_CITIES.filter(c => c.province_id === selectedProvinceId);
+  // Loading states
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+
+  // Fetch provinces on mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      setLoadingProvinces(true);
+      try {
+        const res = await fetch(`${API_BASE}/provinsi.json`);
+        const data: ApiProvince[] = await res.json();
+        setProvinces(data);
+      } catch (err) {
+        console.error('Error fetching provinces:', err);
+      } finally {
+        setLoadingProvinces(false);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Fetch cities when province changes
+  useEffect(() => {
+    if (!selectedProvinceId) {
+      setCities([]);
+      return;
+    }
+    const fetchCities = async () => {
+      setLoadingCities(true);
+      try {
+        const res = await fetch(`${API_BASE}/kabupaten/${selectedProvinceId}.json`);
+        const data: ApiCity[] = await res.json();
+        setCities(data);
+      } catch (err) {
+        console.error('Error fetching cities:', err);
+        setCities([]);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+    fetchCities();
   }, [selectedProvinceId]);
 
-  // Filter districts by selected city
-  const filteredDistricts = useMemo(() => {
-    if (!selectedCityId) return [];
-    return INDONESIA_DISTRICTS.filter(d => d.city_id === selectedCityId);
+  // Fetch districts when city changes
+  useEffect(() => {
+    if (!selectedCityId) {
+      setDistricts([]);
+      return;
+    }
+    const fetchDistricts = async () => {
+      setLoadingDistricts(true);
+      try {
+        const res = await fetch(`${API_BASE}/kecamatan/${selectedCityId}.json`);
+        const data: ApiDistrict[] = await res.json();
+        setDistricts(data);
+      } catch (err) {
+        console.error('Error fetching districts:', err);
+        setDistricts([]);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
+    fetchDistricts();
   }, [selectedCityId]);
-
-  // Check if current province has cities in database
-  const hasCitiesData = filteredCities.length > 0;
-  const hasDistrictsData = filteredDistricts.length > 0;
 
   // Sync internal state when value prop changes (for edit mode)
   useEffect(() => {
@@ -86,51 +137,47 @@ const AddressInput: React.FC<AddressInputProps> = ({
     setSelectedDistrict(value.district || '');
     setDetailAddress(value.detailAddress || '');
     setPostalCode(value.postalCode || '');
-    
-    // Find province ID
-    const prov = INDONESIA_PROVINCES.find(p => p.province === value.province);
-    if (prov) {
-      setSelectedProvinceId(prov.province_id);
-      // Find city ID
-      const city = INDONESIA_CITIES.find(c => 
-        c.province_id === prov.province_id && 
-        `${c.type} ${c.city_name}` === value.city
-      );
-      if (city) {
-        setSelectedCityId(city.city_id);
-      }
-    }
   }, [value]);
+
+  // Helper to format name (Title Case)
+  const formatName = (name: string) => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   // Handle province change
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const provinceName = e.target.value;
-    const prov = provinces.find(p => p.province === provinceName);
-    setSelectedProvince(provinceName);
-    setSelectedProvinceId(prov?.province_id || '');
-    // Reset city and district when province changes
+    const provId = e.target.value;
+    const prov = provinces.find(p => p.id === provId);
+    setSelectedProvinceId(provId);
+    setSelectedProvince(prov ? formatName(prov.nama) : '');
+    // Reset city and district
     setSelectedCity('');
     setSelectedCityId('');
     setSelectedDistrict('');
+    setCities([]);
+    setDistricts([]);
   };
 
   // Handle city change
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    const cityValue = e.target.value;
-    setSelectedCity(cityValue);
-    
-    // Find city ID if it's a select
-    if (hasCitiesData) {
-      const city = filteredCities.find(c => `${c.type} ${c.city_name}` === cityValue);
-      setSelectedCityId(city?.city_id || '');
-    }
-    // Reset district when city changes
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cityId = e.target.value;
+    const city = cities.find(c => c.id === cityId);
+    setSelectedCityId(cityId);
+    setSelectedCity(city ? formatName(city.nama) : '');
+    // Reset district
     setSelectedDistrict('');
+    setDistricts([]);
   };
 
   // Handle district change
-  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setSelectedDistrict(e.target.value);
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const distId = e.target.value;
+    const dist = districts.find(d => d.id === distId);
+    setSelectedDistrict(dist ? formatName(dist.nama) : '');
   };
 
   // Handle postal code change
@@ -167,89 +214,69 @@ const AddressInput: React.FC<AddressInputProps> = ({
             Provinsi {requiredProvince && <span className="text-red-500">*</span>}
           </label>
           <select
-            value={selectedProvince}
+            value={selectedProvinceId}
             onChange={handleProvinceChange}
-            disabled={disabled}
+            disabled={disabled || loadingProvinces}
             required={requiredProvince}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
-            <option value="">Pilih Provinsi</option>
+            <option value="">{loadingProvinces ? 'Memuat...' : 'Pilih Provinsi'}</option>
             {provinces.map((province) => (
-              <option key={province.province_id} value={province.province}>
-                {province.province}
+              <option key={province.id} value={province.id}>
+                {formatName(province.nama)}
               </option>
             ))}
           </select>
         </div>
       )}
 
-      {/* Kota/Kabupaten - Dropdown if data available, else text input */}
+      {/* Kota/Kabupaten */}
       {showCity && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Kota/Kabupaten {requiredCity && <span className="text-red-500">*</span>}
           </label>
-          {hasCitiesData ? (
-            <select
-              value={selectedCity}
-              onChange={handleCityChange}
-              disabled={disabled || !selectedProvince}
-              required={requiredCity}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">{selectedProvince ? 'Pilih Kota/Kabupaten' : 'Pilih provinsi dulu'}</option>
-              {filteredCities.map((city) => (
-                <option key={city.city_id} value={`${city.type} ${city.city_name}`}>
-                  {city.type} {city.city_name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={selectedCity}
-              onChange={handleCityChange}
-              disabled={disabled}
-              required={requiredCity}
-              placeholder="Masukkan nama kota/kabupaten"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-            />
-          )}
+          <select
+            value={selectedCityId}
+            onChange={handleCityChange}
+            disabled={disabled || !selectedProvinceId || loadingCities}
+            required={requiredCity}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="">
+              {loadingCities ? 'Memuat...' : selectedProvinceId ? 'Pilih Kota/Kabupaten' : 'Pilih provinsi dulu'}
+            </option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {formatName(city.nama)}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
-      {/* Kecamatan - Dropdown if data available, else text input */}
+      {/* Kecamatan */}
       {showDistrict && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Kecamatan {requiredDistrict && <span className="text-red-500">*</span>}
           </label>
-          {hasDistrictsData ? (
-            <select
-              value={selectedDistrict}
-              onChange={handleDistrictChange}
-              disabled={disabled || !selectedCity}
-              required={requiredDistrict}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">{selectedCity ? 'Pilih Kecamatan' : 'Pilih kota dulu'}</option>
-              {filteredDistricts.map((district) => (
-                <option key={district.district_id} value={district.district_name}>
-                  {district.district_name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={selectedDistrict}
-              onChange={handleDistrictChange}
-              disabled={disabled}
-              required={requiredDistrict}
-              placeholder="Masukkan nama kecamatan"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-            />
-          )}
+          <select
+            value={districts.find(d => formatName(d.nama) === selectedDistrict)?.id || ''}
+            onChange={handleDistrictChange}
+            disabled={disabled || !selectedCityId || loadingDistricts}
+            required={requiredDistrict}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="">
+              {loadingDistricts ? 'Memuat...' : selectedCityId ? 'Pilih Kecamatan' : 'Pilih kota dulu'}
+            </option>
+            {districts.map((district) => (
+              <option key={district.id} value={district.id}>
+                {formatName(district.nama)}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
