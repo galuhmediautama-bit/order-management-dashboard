@@ -97,10 +97,11 @@ const DashboardPage: React.FC = () => {
           }
         }
 
-        // Fetch Orders
+        // Fetch Orders - exclude soft deleted orders
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
           .select('*')
+          .is('deletedAt', null)
           .order('date', { ascending: false });
 
         if (ordersError) {
@@ -108,11 +109,26 @@ const DashboardPage: React.FC = () => {
           // Don't throw - continue with empty data
           setAllOrders([]);
         } else {
+          // Fetch active form IDs to filter out orders from deleted forms
+          const { data: activeForms } = await supabase
+            .from('forms')
+            .select('id');
+          
+          const activeFormIds = new Set((activeForms || []).map(f => f.id));
+
           // Mapper Supabase data to Order Type
-          const allOrdersList = (ordersData || []).map(data => {
-            // Supabase returns date as string usually, ensure it matches
-            return data as Order;
-          });
+          // Filter out orders from deleted forms (if order has formId, form must exist)
+          const allOrdersList = (ordersData || [])
+            .filter(data => {
+              // If order has no formId, include it (manual order)
+              if (!data.formId) return true;
+              // If order has formId, only include if form still exists
+              return activeFormIds.has(data.formId);
+            })
+            .map(data => {
+              // Supabase returns date as string usually, ensure it matches
+              return data as Order;
+            });
           setAllOrders(allOrdersList);
         }
 
