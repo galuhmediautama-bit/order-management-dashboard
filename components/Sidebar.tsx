@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { Page, NavItem, UserRole } from '../types';
 import OrdersIcon from './icons/OrdersIcon';
@@ -30,6 +30,7 @@ import { supabase } from '../firebase';
 import { getNormalizedRole } from '../utils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
+import { SettingsContext } from '../contexts/SettingsContext';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -97,6 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
     const { t } = useLanguage();
     const { canAccessMenu } = useRolePermissions();
+    const { websiteSettings } = useContext(SettingsContext);
     const location = useLocation();
     const currentPagePath = location.pathname;
 
@@ -301,11 +303,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
                 <div className="h-16 flex items-center px-5 border-b border-slate-800/80 bg-gradient-to-br from-slate-900 via-slate-950 to-black rounded-br-2xl shadow-inner shrink-0">
                     <Link to="/" className="flex items-center space-x-3 group w-full">
-                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        </div>
+                        {websiteSettings?.logo ? (
+                            <img 
+                                src={websiteSettings.logo} 
+                                alt={websiteName || websiteSettings?.siteName || 'Logo'} 
+                                className="w-9 h-9 rounded-xl object-cover shadow-md group-hover:shadow-lg transition-shadow"
+                            />
+                        ) : (
+                            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                        )}
                         <div className="flex flex-col text-left">
-                            <span className="text-sm font-semibold text-white leading-tight truncate">{websiteName || 'CuanMax Digital'}</span>
+                            <span className="text-sm font-semibold text-white leading-tight truncate">{websiteName || websiteSettings?.siteName || 'CuanMax Digital'}</span>
                             <span className="text-xs text-slate-400">Dashboard</span>
                         </div>
                     </Link>

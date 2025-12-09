@@ -16,6 +16,7 @@ export interface GlobalPixelSettings {
 
 interface WebsiteSettings {
     siteName?: string;
+    logo?: string;
 }
 
 interface ISettingsContext {
