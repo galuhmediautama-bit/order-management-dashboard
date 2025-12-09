@@ -71,7 +71,7 @@ const PerformanceDashboardPage: React.FC = () => {
     // Fetch available droplets
     const fetchDroplets = async () => {
         try {
-            const { data, error } = await supabase.functions.invoke('swift-processor', {
+            const { data, error } = await supabase.functions.invoke('do-metrics', {
                 body: { action: 'list-droplets' }
             });
             if (error) throw error;
@@ -94,7 +94,7 @@ const PerformanceDashboardPage: React.FC = () => {
         setServerError(null);
 
         try {
-            const { data, error } = await supabase.functions.invoke('swift-processor', {
+            const { data, error } = await supabase.functions.invoke('do-metrics', {
                 body: { droplet_id: dropletId || selectedDroplet }
             });
 
