@@ -26,6 +26,7 @@ import DownloadIcon from '../components/icons/DownloadIcon';
 import BanknotesIcon from '../components/icons/BanknotesIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import ArrowRightIcon from '../components/icons/ArrowRightIcon';
+import UploadIcon from '../components/icons/UploadIcon';
 import { supabase } from '../firebase';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
 import { withRetry } from '../utils/errorHandling';
@@ -36,6 +37,7 @@ import AddressInput, { type AddressData } from '../components/AddressInput';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import FilterIcon from '../components/icons/FilterIcon';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ImportOrdersModal from '../components/ImportOrdersModal';
 import { useToast } from '../contexts/ToastContext';
 import { useNotificationCount } from '../contexts/NotificationCountContext';
 import { useRolePermissions } from '../contexts/RolePermissionsContext';
@@ -114,6 +116,7 @@ const OrdersPage: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Action Modal States
     const [orderToProcess, setOrderToProcess] = useState<Order | null>(null);
@@ -1162,6 +1165,17 @@ const OrdersPage: React.FC = () => {
                         >
                             <span className="text-lg">{orderSoundEnabled ? '🔔' : '🔕'}</span>
                         </button>
+                        {/* Import Orders Button */}
+                        {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
+                            <button 
+                                onClick={() => setIsImportModalOpen(true)} 
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all h-10"
+                                title="Import Pesanan dari CSV"
+                            >
+                                <UploadIcon className="w-4 h-4" />
+                                <span>Import</span>
+                            </button>
+                        )}
                         {currentUser && canUseFeature('manual_order_creation', getNormalizedRole(currentUser.role)) && (
                             <button onClick={() => setIsManualOrderModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all h-10">
                                 <PlusIcon className="w-4 h-4" />
@@ -1921,6 +1935,18 @@ const OrdersPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Import Orders Modal */}
+            <ImportOrdersModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportSuccess={() => {
+                    invalidateCache(CACHE_KEYS.ORDERS);
+                    fetchOrders();
+                }}
+                forms={forms}
+                csAgents={csAgents}
+            />
 
         </div>
     );
