@@ -19,10 +19,16 @@ interface ApiDistrict {
   nama: string;
 }
 
+interface ApiVillage {
+  id: string;
+  nama: string;
+}
+
 export interface AddressData {
   province: string;
   city: string;
   district: string;
+  village: string;
   detailAddress: string;
   postalCode: string;
   fullAddress: string;
@@ -35,9 +41,11 @@ interface AddressInputProps {
   showProvince?: boolean;
   showCity?: boolean;
   showDistrict?: boolean;
+  showVillage?: boolean;
   requiredProvince?: boolean;
   requiredCity?: boolean;
   requiredDistrict?: boolean;
+  requiredVillage?: boolean;
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({
@@ -47,15 +55,19 @@ const AddressInput: React.FC<AddressInputProps> = ({
   showProvince = true,
   showCity = true,
   showDistrict = true,
+  showVillage = true,
   requiredProvince = false,
   requiredCity = false,
-  requiredDistrict = false
+  requiredDistrict = false,
+  requiredVillage = false
 }) => {
   const [selectedProvince, setSelectedProvince] = useState(value.province || '');
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
   const [selectedCity, setSelectedCity] = useState(value.city || '');
   const [selectedCityId, setSelectedCityId] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState(value.district || '');
+  const [selectedDistrictId, setSelectedDistrictId] = useState('');
+  const [selectedVillage, setSelectedVillage] = useState(value.village || '');
   const [detailAddress, setDetailAddress] = useState(value.detailAddress || '');
   const [postalCode, setPostalCode] = useState(value.postalCode || '');
 
@@ -63,11 +75,13 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [provinces, setProvinces] = useState<ApiProvince[]>([]);
   const [cities, setCities] = useState<ApiCity[]>([]);
   const [districts, setDistricts] = useState<ApiDistrict[]>([]);
+  const [villages, setVillages] = useState<ApiVillage[]>([]);
 
   // Loading states
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingVillages, setLoadingVillages] = useState(false);
 
   // Fetch provinces on mount
   useEffect(() => {
@@ -130,11 +144,34 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchDistricts();
   }, [selectedCityId]);
 
+  // Fetch villages when district changes
+  useEffect(() => {
+    if (!selectedDistrictId) {
+      setVillages([]);
+      return;
+    }
+    const fetchVillages = async () => {
+      setLoadingVillages(true);
+      try {
+        const res = await fetch(`${API_BASE}/kelurahan/${selectedDistrictId}.json`);
+        const data: ApiVillage[] = await res.json();
+        setVillages(data);
+      } catch (err) {
+        console.error('Error fetching villages:', err);
+        setVillages([]);
+      } finally {
+        setLoadingVillages(false);
+      }
+    };
+    fetchVillages();
+  }, [selectedDistrictId]);
+
   // Sync internal state when value prop changes (for edit mode)
   useEffect(() => {
     setSelectedProvince(value.province || '');
     setSelectedCity(value.city || '');
     setSelectedDistrict(value.district || '');
+    setSelectedVillage(value.village || '');
     setDetailAddress(value.detailAddress || '');
     setPostalCode(value.postalCode || '');
   }, [value]);
@@ -154,12 +191,15 @@ const AddressInput: React.FC<AddressInputProps> = ({
     const prov = provinces.find(p => p.id === provId);
     setSelectedProvinceId(provId);
     setSelectedProvince(prov ? formatName(prov.nama) : '');
-    // Reset city and district
+    // Reset downstream
     setSelectedCity('');
     setSelectedCityId('');
     setSelectedDistrict('');
+    setSelectedDistrictId('');
+    setSelectedVillage('');
     setCities([]);
     setDistricts([]);
+    setVillages([]);
   };
 
   // Handle city change
@@ -168,16 +208,30 @@ const AddressInput: React.FC<AddressInputProps> = ({
     const city = cities.find(c => c.id === cityId);
     setSelectedCityId(cityId);
     setSelectedCity(city ? formatName(city.nama) : '');
-    // Reset district
+    // Reset downstream
     setSelectedDistrict('');
+    setSelectedDistrictId('');
+    setSelectedVillage('');
     setDistricts([]);
+    setVillages([]);
   };
 
   // Handle district change
   const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const distId = e.target.value;
     const dist = districts.find(d => d.id === distId);
+    setSelectedDistrictId(distId);
     setSelectedDistrict(dist ? formatName(dist.nama) : '');
+    // Reset village
+    setSelectedVillage('');
+    setVillages([]);
+  };
+
+  // Handle village change
+  const handleVillageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const villId = e.target.value;
+    const vill = villages.find(v => v.id === villId);
+    setSelectedVillage(vill ? formatName(vill.nama) : '');
   };
 
   // Handle postal code change
@@ -189,6 +243,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
   useEffect(() => {
     const fullAddress = [
       detailAddress,
+      selectedVillage,
       selectedDistrict,
       selectedCity,
       selectedProvince,
@@ -199,11 +254,12 @@ const AddressInput: React.FC<AddressInputProps> = ({
       province: selectedProvince,
       city: selectedCity,
       district: selectedDistrict,
+      village: selectedVillage,
       detailAddress,
       postalCode,
       fullAddress
     });
-  }, [selectedProvince, selectedCity, selectedDistrict, detailAddress, postalCode]);
+  }, [selectedProvince, selectedCity, selectedDistrict, selectedVillage, detailAddress, postalCode]);
 
   return (
     <div className="space-y-4">
@@ -262,7 +318,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
             Kecamatan {requiredDistrict && <span className="text-red-500">*</span>}
           </label>
           <select
-            value={districts.find(d => formatName(d.nama) === selectedDistrict)?.id || ''}
+            value={selectedDistrictId}
             onChange={handleDistrictChange}
             disabled={disabled || !selectedCityId || loadingDistricts}
             required={requiredDistrict}
@@ -274,6 +330,31 @@ const AddressInput: React.FC<AddressInputProps> = ({
             {districts.map((district) => (
               <option key={district.id} value={district.id}>
                 {formatName(district.nama)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Kelurahan/Desa */}
+      {showVillage && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Kelurahan/Desa {requiredVillage && <span className="text-red-500">*</span>}
+          </label>
+          <select
+            value={villages.find(v => formatName(v.nama) === selectedVillage)?.id || ''}
+            onChange={handleVillageChange}
+            disabled={disabled || !selectedDistrictId || loadingVillages}
+            required={requiredVillage}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="">
+              {loadingVillages ? 'Memuat...' : selectedDistrictId ? 'Pilih Kelurahan/Desa' : 'Pilih kecamatan dulu'}
+            </option>
+            {villages.map((village) => (
+              <option key={village.id} value={village.id}>
+                {formatName(village.nama)}
               </option>
             ))}
           </select>
