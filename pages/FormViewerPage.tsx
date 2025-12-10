@@ -1859,9 +1859,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 requiredVillage={form.customerFields.village?.required || false}
                                                 requiredPostalCode={form.customerFields.postalCode?.required || false}
                                                 requiredDetailAddress={form.customerFields.address?.required || false}
+                                                addressError={fieldErrors.address}
                                             />
-                                            {(fieldErrors.province || fieldErrors.city || fieldErrors.district || fieldErrors.address) && (
-                                                <p className="text-xs text-red-500 mt-1">{[fieldErrors.province, fieldErrors.city, fieldErrors.district, fieldErrors.address].filter(Boolean).join(' • ')}</p>
+                                            {(fieldErrors.province || fieldErrors.city || fieldErrors.district) && (
+                                                <p className="text-xs text-red-500 mt-1">{[fieldErrors.province, fieldErrors.city, fieldErrors.district].filter(Boolean).join(' • ')}</p>
                                             )}
                                         </div>
                                     )}

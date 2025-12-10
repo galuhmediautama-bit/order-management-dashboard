@@ -55,6 +55,7 @@ interface AddressInputProps {
   requiredPostalCode?: boolean;
   requiredDetailAddress?: boolean;
   required?: boolean; // Legacy prop for backward compatibility
+  addressError?: string; // Error message for address field
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({
@@ -73,7 +74,8 @@ const AddressInput: React.FC<AddressInputProps> = ({
   requiredVillage = false,
   requiredPostalCode = false,
   requiredDetailAddress = false,
-  required = false // Legacy - if true, makes detailAddress required
+  required = false, // Legacy - if true, makes detailAddress required
+  addressError // Error message for address field
 }) => {
   const [selectedProvince, setSelectedProvince] = useState(value.province || '');
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
@@ -602,8 +604,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
             placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
             rows={3}
             required={requiredDetailAddress || required}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${addressError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
           />
+          {addressError && (
+            <p className="text-xs text-red-500 mt-1">{addressError}</p>
+          )}
         </div>
       )}
 
