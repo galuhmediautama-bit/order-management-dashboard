@@ -2580,6 +2580,31 @@ const ManualOrderModal: React.FC<{
     const selectedForm = forms.find(f => f.id === selectedFormId);
     const variants = selectedForm?.variantCombinations || [];
 
+    // Ensure variant value matches available labels when editing
+    useEffect(() => {
+        if (!editOrder || !variants.length || !editOrder.variant) return;
+
+        const labels = variants.map(v => Object.entries(v.attributes || {})
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(', ')
+        );
+
+        const exactMatch = labels.find(l => l === editOrder.variant);
+        const looseMatch = labels.find(l =>
+            l.toLowerCase() === editOrder.variant.toLowerCase() ||
+            l.toLowerCase().includes(editOrder.variant.toLowerCase()) ||
+            editOrder.variant.toLowerCase().includes(l.toLowerCase())
+        );
+
+        if (!labels.includes(variant)) {
+            if (exactMatch) {
+                setVariant(exactMatch);
+            } else if (looseMatch) {
+                setVariant(looseMatch);
+            }
+        }
+    }, [variants, editOrder, variant]);
+
     return (
         <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>
             <div className="min-h-full flex items-center justify-center p-4 py-8">

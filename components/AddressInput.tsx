@@ -105,6 +105,15 @@ const AddressInput: React.FC<AddressInputProps> = ({
       .join(' ');
   };
 
+  // Normalize names to improve matching against API values (handles Kota/Kab./Kec. prefixes)
+  const normalizeName = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[.]/g, '')
+      .replace(/^(kota administrasi|kota adm|kota|kabupaten|kab|kec|kecamatan|kelurahan|desa)\s+/, '')
+      .trim();
+  };
+
   // Fetch provinces on mount
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -225,10 +234,10 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
     // Find and set province
     if (value.province && provinces.length > 0) {
-      const normalized = value.province.toLowerCase().trim();
+      const normalized = normalizeName(value.province);
       const matchedProvince = provinces.find(p =>
-        p.nama.toLowerCase().trim() === normalized ||
-        formatName(p.nama).toLowerCase() === normalized
+        normalizeName(p.nama) === normalized ||
+        formatName(p.nama).toLowerCase() === value.province.toLowerCase().trim()
       );
       if (matchedProvince && matchedProvince.id !== selectedProvinceId) {
         setSelectedProvinceId(matchedProvince.id);
@@ -238,10 +247,10 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
     // Find and set city
     if (value.city && cities.length > 0 && selectedProvinceId) {
-      const normalized = value.city.toLowerCase().trim();
+      const normalized = normalizeName(value.city);
       const matchedCity = cities.find(c =>
-        c.nama.toLowerCase().trim() === normalized ||
-        formatName(c.nama).toLowerCase() === normalized
+        normalizeName(c.nama) === normalized ||
+        formatName(c.nama).toLowerCase() === value.city.toLowerCase().trim()
       );
       if (matchedCity && matchedCity.id !== selectedCityId) {
         setSelectedCityId(matchedCity.id);
@@ -251,10 +260,10 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
     // Find and set district
     if (value.district && districts.length > 0 && selectedCityId) {
-      const normalized = value.district.toLowerCase().trim();
+      const normalized = normalizeName(value.district);
       const matchedDistrict = districts.find(d =>
-        d.nama.toLowerCase().trim() === normalized ||
-        formatName(d.nama).toLowerCase() === normalized
+        normalizeName(d.nama) === normalized ||
+        formatName(d.nama).toLowerCase() === value.district.toLowerCase().trim()
       );
       if (matchedDistrict && matchedDistrict.id !== selectedDistrictId) {
         setSelectedDistrictId(matchedDistrict.id);
@@ -264,10 +273,10 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
     // Find and set village
     if (value.village && villages.length > 0) {
-      const normalized = value.village.toLowerCase().trim();
+      const normalized = normalizeName(value.village);
       const matchedVillage = villages.find(v =>
-        v.nama.toLowerCase().trim() === normalized ||
-        formatName(v.nama).toLowerCase() === normalized
+        normalizeName(v.nama) === normalized ||
+        formatName(v.nama).toLowerCase() === value.village.toLowerCase().trim()
       );
       if (matchedVillage && matchedVillage.id !== selectedVillageId) {
         setSelectedVillageId(matchedVillage.id);
