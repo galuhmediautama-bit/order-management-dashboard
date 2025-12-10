@@ -2648,51 +2648,36 @@ const ManualOrderModal: React.FC<{
                                         <span className="w-6 h-6 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs">🎨</span>
                                         Pilih Variant {loadingForms && <span className="text-slate-400 text-xs">(Loading...)</span>}
                                     </h4>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih salah satu opsi di bawah</p>
                                 </div>
-                                <div className="space-y-2">
+                                <select
+                                    className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    value={variant}
+                                    onChange={e => {
+                                        const selectedLabel = e.target.value;
+                                        setVariant(selectedLabel);
+                                        const selectedVariant = variants.find(v => {
+                                            const variantLabel = Object.entries(v.attributes || {})
+                                                .map(([key, val]) => `${key}: ${val}`)
+                                                .join(', ');
+                                            return variantLabel === selectedLabel;
+                                        });
+                                        if (selectedVariant?.sellingPrice) {
+                                            setProductPrice(selectedVariant.sellingPrice * quantity);
+                                        }
+                                    }}
+                                >
+                                    <option value="">Pilih Variant...</option>
                                     {variants.map((v, idx) => {
                                         const variantLabel = Object.entries(v.attributes || {})
                                             .map(([key, val]) => `${key}: ${val}`)
                                             .join(', ');
-                                        const isSelected = variant === variantLabel;
-
                                         return (
-                                            <label
-                                                key={idx}
-                                                className={`flex items-center justify-between gap-2 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${isSelected
-                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
-                                                    : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-white' : 'border-slate-400'}`}>
-                                                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-                                                    </div>
-                                                    <input
-                                                        type="radio"
-                                                        name="variantSelect"
-                                                        value={variantLabel}
-                                                        checked={isSelected}
-                                                        onChange={() => {
-                                                            setVariant(variantLabel);
-                                                            if (v.sellingPrice) {
-                                                                setProductPrice(v.sellingPrice * quantity);
-                                                            }
-                                                        }}
-                                                        className="hidden"
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-sm">{variantLabel}</span>
-                                                        <span className={`text-xs ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                                                            Rp {(v.sellingPrice || 0).toLocaleString('id-ID')}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </label>
+                                            <option key={idx} value={variantLabel}>
+                                                {variantLabel} - Rp {(v.sellingPrice || 0).toLocaleString('id-ID')}
+                                            </option>
                                         );
                                     })}
-                                </div>
+                                </select>
                             </div>
                         )}
 
@@ -2751,43 +2736,32 @@ const ManualOrderModal: React.FC<{
                                     Metode Pengiriman
                                 </h4>
                             </div>
-                            <div className="space-y-2">
-                                {[
-                                    { value: 'Regular', label: 'Regular' },
-                                    { value: 'Gratis Ongkir', label: 'Gratis Ongkir' },
-                                    { value: 'Flat Ongkir Pulau Jawa', label: 'Flat Jawa' },
-                                    { value: 'Flat Ongkir Pulau Bali', label: 'Flat Bali' },
-                                    { value: 'Flat Ongkir Pulau Sumatra', label: 'Flat Sumatra' },
-                                ].map(opt => (
-                                    <label
-                                        key={opt.value}
-                                        className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${shippingMethod === opt.value
-                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50'
-                                            : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                            }`}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Metode</label>
+                                    <select
+                                        className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        value={shippingMethod}
+                                        onChange={e => setShippingMethod(e.target.value)}
                                     >
+                                        <option value="Regular">🚚 Regular</option>
+                                        <option value="Gratis Ongkir">🎁 Gratis Ongkir</option>
+                                        <option value="Flat Ongkir Pulau Jawa">📦 Flat Jawa</option>
+                                        <option value="Flat Ongkir Pulau Bali">📦 Flat Bali</option>
+                                        <option value="Flat Ongkir Pulau Sumatra">📦 Flat Sumatra</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Biaya Ongkir</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
                                         <input
-                                            type="radio"
-                                            name="shippingMethod"
-                                            value={opt.value}
-                                            checked={shippingMethod === opt.value}
-                                            onChange={e => setShippingMethod(e.target.value)}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600"
+                                            type="number"
+                                            className="w-full p-3 pl-10 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                            value={shippingCost}
+                                            onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
                                         />
-                                        <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
-                                    </label>
-                                ))}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Biaya Ongkir</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
-                                    <input
-                                        type="number"
-                                        className="w-full p-3 pl-10 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                                        value={shippingCost}
-                                        onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
-                                    />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2800,32 +2774,15 @@ const ManualOrderModal: React.FC<{
                                     Metode Pembayaran
                                 </h4>
                             </div>
-                            <div className="space-y-2">
-                                {[
-                                    { value: 'Bayar di Tempat (COD)', label: 'COD', icon: '📦' },
-                                    { value: 'QRIS', label: 'QRIS', icon: '📱' },
-                                    { value: 'Transfer Bank', label: 'Transfer Bank', icon: '🏦' },
-                                ].map(opt => (
-                                    <label
-                                        key={opt.value}
-                                        className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${paymentMethod === opt.value
-                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50'
-                                            : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                            }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="paymentMethod"
-                                            value={opt.value}
-                                            checked={paymentMethod === opt.value}
-                                            onChange={e => setPaymentMethod(e.target.value)}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600"
-                                        />
-                                        <span className="text-lg">{opt.icon}</span>
-                                        <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
-                                    </label>
-                                ))}
-                            </div>
+                            <select
+                                className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                value={paymentMethod}
+                                onChange={e => setPaymentMethod(e.target.value)}
+                            >
+                                <option value="Bayar di Tempat (COD)">📦 COD (Bayar di Tempat)</option>
+                                <option value="QRIS">📱 QRIS</option>
+                                <option value="Transfer Bank">🏦 Transfer Bank</option>
+                            </select>
                         </div>
 
                         {/* Section: CS Assignment - Only for Admin */}
