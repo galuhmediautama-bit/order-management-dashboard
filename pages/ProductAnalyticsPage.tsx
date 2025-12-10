@@ -1,11 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
-import { ProductPerformanceAggregate, AdvertiserProductPerformance } from '../types';
-import { productService } from '../services/productService';
 import { supabase } from '../firebase';
 import TrendingUpIcon from '../components/icons/TrendingUpIcon';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+interface ProductPerformance {
+    productId: string;
+    productName: string;
+    brandId: string;
+    totalForms: number;
+    totalViews: number;
+    totalOrders: number;
+    totalRevenue: number;
+    conversionRatePercent: number;
+}
+
+interface AdvertiserPerformance {
+    advertiserId: string;
+    advertiserName: string;
+    totalForms: number;
+    totalViews: number;
+    totalOrders: number;
+    totalRevenue: number;
+    conversionRatePercent: number;
+}
 
 const ProductAnalyticsPage: React.FC = () => {
     const { t } = useLanguage();
@@ -14,11 +33,11 @@ const ProductAnalyticsPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [view, setView] = useState<'aggregate' | 'advertiser'>('aggregate');
     
-    // Aggregate view
-    const [productsPerformance, setProductsPerformance] = useState<ProductPerformanceAggregate[]>([]);
+    // Aggregate view - Product performance
+    const [productsPerformance, setProductsPerformance] = useState<ProductPerformance[]>([]);
     
-    // Advertiser view
-    const [advertiserPerformance, setAdvertiserPerformance] = useState<AdvertiserProductPerformance[]>([]);
+    // Advertiser view - Advertiser performance
+    const [advertiserPerformance, setAdvertiserPerformance] = useState<AdvertiserPerformance[]>([]);
 
     const COLORS = ['#4f46e5', '#7c3aed', '#ec4899', '#f59e0b', '#10b981'];
 
@@ -57,8 +76,122 @@ const ProductAnalyticsPage: React.FC = () => {
         if (!currentUser?.id) return;
         setIsLoading(true);
         try {
-            const data = await productService.getBrandProductsPerformance(currentUser.id);
-            setProductsPerformance(data);
+            // Get user's assigned brands (for Advertiser role) or all brands (for Admin)
+            let brandIds: string[] = [];
+            const role = currentUser.role?.toLowerCase();
+            
+            if (role === 'super admin' || role === 'admin') {
+                // Admin sees all brands
+                const { data: brands } = await supabase.from('brands').select('id');
+                brandIds = (brands || []).map(b => b.id);
+            } else if (currentUser.assignedBrandIds?.length > 0) {
+                brandIds = currentUser.assignedBrandIds;
+            }
+
+            if (brandIds.length === 0) {
+                setProductsPerformance([]);
+                setIsLoading(false);
+                return;
+            }
+
+            // Get forms for these brands
+            const { data: forms } = await supabase
+                .from('forms')
+                .select('id, title, brandId, viewCount, clickCount, productId')
+                .in('brandId', brandIds);
+
+            // Get orders for these brands
+            const { data: orders } = await supabase
+                .from('orders')
+                .select('id, formId, brandId, totalPrice, productName, status')
+                .in('brandId', brandIds)
+                .in('status', ['Pending', 'Processing', 'Shipped', 'Delivered']);
+
+            // Get products for these brands
+            const { data: products } = await supabase
+                .from('products')
+                .select('id, name, brand_id')
+                .in('brand_id', brandIds)
+                .eq('status', 'active');
+
+            // Aggregate by product
+            const productMap = new Map<string, ProductPerformance>();
+
+            // Initialize with products
+            (products || []).forEach(product => {
+                productMap.set(product.id, {
+                    productId: product.id,
+                    productName: product.name,
+                    brandId: product.brand_id,
+                    totalForms: 0,
+                    totalViews: 0,
+                    totalOrders: 0,
+                    totalRevenue: 0,
+                    conversionRatePercent: 0
+                });
+            });
+
+            // Also create entries for forms without product_id (using productName from orders)
+            const formProductMap = new Map<string, string>(); // formId -> productName
+            
+            // Count forms per product
+            (forms || []).forEach(form => {
+                if (form.productId && productMap.has(form.productId)) {
+                    const perf = productMap.get(form.productId)!;
+                    perf.totalForms++;
+                    perf.totalViews += form.viewCount || 0;
+                }
+            });
+
+            // Count orders per product
+            (orders || []).forEach(order => {
+                // Try to match by productId from form first
+                const form = (forms || []).find(f => f.id === order.formId);
+                if (form?.productId && productMap.has(form.productId)) {
+                    const perf = productMap.get(form.productId)!;
+                    perf.totalOrders++;
+                    perf.totalRevenue += order.totalPrice || 0;
+                } else if (order.productName) {
+                    // Fallback: aggregate by productName
+                    const existingByName = Array.from(productMap.values()).find(p => p.productName === order.productName);
+                    if (existingByName) {
+                        existingByName.totalOrders++;
+                        existingByName.totalRevenue += order.totalPrice || 0;
+                    } else {
+                        // Create new entry by productName
+                        const key = `name-${order.productName}`;
+                        if (!productMap.has(key)) {
+                            productMap.set(key, {
+                                productId: key,
+                                productName: order.productName,
+                                brandId: order.brandId || '',
+                                totalForms: 0,
+                                totalViews: 0,
+                                totalOrders: 0,
+                                totalRevenue: 0,
+                                conversionRatePercent: 0
+                            });
+                        }
+                        const perf = productMap.get(key)!;
+                        perf.totalOrders++;
+                        perf.totalRevenue += order.totalPrice || 0;
+                    }
+                }
+            });
+
+            // Calculate conversion rate
+            productMap.forEach(perf => {
+                if (perf.totalViews > 0) {
+                    perf.conversionRatePercent = (perf.totalOrders / perf.totalViews) * 100;
+                }
+            });
+
+            // Convert to array and sort by revenue
+            const result = Array.from(productMap.values())
+                .filter(p => p.totalOrders > 0 || p.totalViews > 0 || p.totalForms > 0)
+                .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+            setProductsPerformance(result);
         } catch (error) {
             console.error('Error fetching performance:', error);
             showToast('Gagal mengambil data performa', 'error');
@@ -71,8 +204,102 @@ const ProductAnalyticsPage: React.FC = () => {
         if (!currentUser?.id) return;
         setIsLoading(true);
         try {
-            const data = await productService.getAdvertiserPerformancePerProduct(currentUser.id);
-            setAdvertiserPerformance(data);
+            // Get user's assigned brands
+            let brandIds: string[] = [];
+            const role = currentUser.role?.toLowerCase();
+            
+            if (role === 'super admin' || role === 'admin') {
+                const { data: brands } = await supabase.from('brands').select('id');
+                brandIds = (brands || []).map(b => b.id);
+            } else if (currentUser.assignedBrandIds?.length > 0) {
+                brandIds = currentUser.assignedBrandIds;
+            }
+
+            if (brandIds.length === 0) {
+                setAdvertiserPerformance([]);
+                setIsLoading(false);
+                return;
+            }
+
+            // Get all advertisers who have forms for these brands
+            const { data: users } = await supabase
+                .from('users')
+                .select('id, name, email, role')
+                .eq('role', 'Advertiser')
+                .eq('status', 'Aktif');
+
+            // Get forms created by advertisers for these brands
+            const { data: forms } = await supabase
+                .from('forms')
+                .select('id, title, brandId, viewCount, clickCount, createdBy')
+                .in('brandId', brandIds);
+
+            // Get orders for these brands
+            const { data: orders } = await supabase
+                .from('orders')
+                .select('id, formId, brandId, totalPrice, assignedAdvertiserId, status')
+                .in('brandId', brandIds)
+                .in('status', ['Pending', 'Processing', 'Shipped', 'Delivered']);
+
+            // Aggregate by advertiser
+            const advertiserMap = new Map<string, AdvertiserPerformance>();
+
+            // Count forms per advertiser (by createdBy field)
+            (forms || []).forEach(form => {
+                if (form.createdBy) {
+                    if (!advertiserMap.has(form.createdBy)) {
+                        const user = (users || []).find(u => u.id === form.createdBy);
+                        advertiserMap.set(form.createdBy, {
+                            advertiserId: form.createdBy,
+                            advertiserName: user?.name || user?.email || 'Unknown',
+                            totalForms: 0,
+                            totalViews: 0,
+                            totalOrders: 0,
+                            totalRevenue: 0,
+                            conversionRatePercent: 0
+                        });
+                    }
+                    const perf = advertiserMap.get(form.createdBy)!;
+                    perf.totalForms++;
+                    perf.totalViews += form.viewCount || 0;
+                }
+            });
+
+            // Count orders per advertiser (by assignedAdvertiserId)
+            (orders || []).forEach(order => {
+                const advertiserId = order.assignedAdvertiserId;
+                if (advertiserId) {
+                    if (!advertiserMap.has(advertiserId)) {
+                        const user = (users || []).find(u => u.id === advertiserId);
+                        advertiserMap.set(advertiserId, {
+                            advertiserId: advertiserId,
+                            advertiserName: user?.name || user?.email || 'Unknown',
+                            totalForms: 0,
+                            totalViews: 0,
+                            totalOrders: 0,
+                            totalRevenue: 0,
+                            conversionRatePercent: 0
+                        });
+                    }
+                    const perf = advertiserMap.get(advertiserId)!;
+                    perf.totalOrders++;
+                    perf.totalRevenue += order.totalPrice || 0;
+                }
+            });
+
+            // Calculate conversion rate
+            advertiserMap.forEach(perf => {
+                if (perf.totalViews > 0) {
+                    perf.conversionRatePercent = (perf.totalOrders / perf.totalViews) * 100;
+                }
+            });
+
+            // Convert to array and sort by revenue
+            const result = Array.from(advertiserMap.values())
+                .filter(p => p.totalOrders > 0 || p.totalViews > 0 || p.totalForms > 0)
+                .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+            setAdvertiserPerformance(result);
         } catch (error) {
             console.error('Error fetching advertiser performance:', error);
             showToast('Gagal mengambil data performa', 'error');
@@ -81,14 +308,28 @@ const ProductAnalyticsPage: React.FC = () => {
         }
     };
 
-    // Calculate total metrics
+    // Calculate total metrics for products
     const totalMetrics = productsPerformance.reduce((acc, p) => ({
         views: acc.views + (p.totalViews || 0),
-        clicks: acc.clicks + (p.totalClicks || 0),
         orders: acc.orders + (p.totalOrders || 0),
         revenue: acc.revenue + (p.totalRevenue || 0),
-        avgConversion: (acc.avgConversion + (p.conversionRatePercent || 0)) / 2,
-    }), { views: 0, clicks: 0, orders: 0, revenue: 0, avgConversion: 0 });
+        avgConversion: productsPerformance.length > 0 
+            ? (acc.avgConversion * (productsPerformance.indexOf(p)) + (p.conversionRatePercent || 0)) / (productsPerformance.indexOf(p) + 1)
+            : 0,
+    }), { views: 0, orders: 0, revenue: 0, avgConversion: 0 });
+
+    // Recalculate average conversion properly
+    const avgConversion = productsPerformance.length > 0 
+        ? productsPerformance.reduce((sum, p) => sum + (p.conversionRatePercent || 0), 0) / productsPerformance.length
+        : 0;
+
+    // Calculate total metrics for advertisers
+    const totalAdvertiserMetrics = advertiserPerformance.reduce((acc, p) => ({
+        views: acc.views + (p.totalViews || 0),
+        orders: acc.orders + (p.totalOrders || 0),
+        revenue: acc.revenue + (p.totalRevenue || 0),
+        forms: acc.forms + (p.totalForms || 0),
+    }), { views: 0, orders: 0, revenue: 0, forms: 0 });
 
     if (isLoading) {
         return <div className="text-center py-12 text-slate-500">Loading...</div>;
@@ -159,7 +400,7 @@ const ProductAnalyticsPage: React.FC = () => {
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
                             <p className="text-slate-600 dark:text-slate-400 text-sm">Rata-rata Konversi</p>
                             <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
-                                {totalMetrics.avgConversion.toFixed(2)}%
+                                {avgConversion.toFixed(2)}%
                             </p>
                         </div>
                     </div>
@@ -263,12 +504,41 @@ const ProductAnalyticsPage: React.FC = () => {
             {/* ADVERTISER VIEW */}
             {view === 'advertiser' && (
                 <div className="space-y-6">
+                    {/* KPI Cards for Advertiser */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">Total Forms</p>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+                                {totalAdvertiserMetrics.forms.toLocaleString('id-ID')}
+                            </p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">Total Views</p>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+                                {totalAdvertiserMetrics.views.toLocaleString('id-ID')}
+                            </p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">Total Pesanan</p>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+                                {totalAdvertiserMetrics.orders.toLocaleString('id-ID')}
+                            </p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">Total Pendapatan</p>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+                                Rp {(totalAdvertiserMetrics.revenue / 1000000).toFixed(1)}M
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Advertiser Table */}
                     <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 dark:bg-slate-700">
                                 <tr>
                                     <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
-                                        Produk
+                                        Advertiser
                                     </th>
                                     <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
                                         Forms
@@ -283,39 +553,49 @@ const ProductAnalyticsPage: React.FC = () => {
                                         Pendapatan
                                     </th>
                                     <th className="px-6 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
-                                        Status
+                                        Konversi
                                     </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
-                                {advertiserPerformance.map((perf) => (
-                                    <tr key={`${perf.productId}-${perf.periodStart}`} className="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                        <td className="px-6 py-4 text-slate-900 dark:text-slate-100 font-medium">
-                                            {perf.productName}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                                            {perf.formsCount}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                                            {perf.viewsCount.toLocaleString('id-ID')}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                                            {perf.ordersCount.toLocaleString('id-ID')}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-900 dark:text-slate-100 font-semibold">
-                                            Rp {perf.totalRevenue.toLocaleString('id-ID')}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                perf.isProfitable
-                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                                            }`}>
-                                                {perf.isProfitable ? 'Profitable' : 'Loss'}
-                                            </span>
+                                {advertiserPerformance.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                                            Belum ada data performa advertiser
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    advertiserPerformance.map((perf) => (
+                                        <tr key={perf.advertiserId} className="hover:bg-slate-50 dark:hover:bg-slate-700">
+                                            <td className="px-6 py-4 text-slate-900 dark:text-slate-100 font-medium">
+                                                {perf.advertiserName}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                                                {perf.totalForms}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                                                {perf.totalViews.toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                                                {perf.totalOrders.toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-900 dark:text-slate-100 font-semibold">
+                                                Rp {perf.totalRevenue.toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                    perf.conversionRatePercent >= 5
+                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                                                        : perf.conversionRatePercent >= 2
+                                                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                                                }`}>
+                                                    {perf.conversionRatePercent.toFixed(2)}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
