@@ -473,7 +473,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         city: '',
         district: '',
         village: '',
-        postalCode: '',
         detailAddress: '',
         fullAddress: ''
     });

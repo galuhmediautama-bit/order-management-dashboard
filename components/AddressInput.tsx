@@ -460,13 +460,15 @@ const AddressInput: React.FC<AddressInputProps> = ({
           </label>
           <textarea
             value={detailAddress}
-            onChange={(e) => setDetailAddress(e.target.value)}
+            onChange={(e) => setDetailAddress(e.target.value.slice(0, 500))}
             disabled={disabled}
             placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
             rows={3}
+            maxLength={500}
             required={requiredDetailAddress || required}
             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${addressError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
           />
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{detailAddress.length}/500</div>
           {addressError && (
             <p className="text-xs text-red-500 mt-1">{addressError}</p>
           )}
