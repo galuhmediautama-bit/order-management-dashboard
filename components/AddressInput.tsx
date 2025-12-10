@@ -103,9 +103,8 @@ const AddressInput: React.FC<AddressInputProps> = ({
   // Ref to track if we're updating from internal changes (to prevent loops)
   const isInternalUpdate = useRef(false);
   
-  // Track if this is the initial mount
-  const isInitialMount = useRef(true);
-  const lastSyncedValue = useRef<string>('');
+  // Add separate ref to track village ID
+  const selectedVillageId = useRef('');
 
   // Helper to sort data A-Z by nama
   const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
@@ -127,10 +126,13 @@ const AddressInput: React.FC<AddressInputProps> = ({
       setLoadingProvinces(true);
       try {
         const res = await fetch(`${API_BASE}/provinsi.json`);
+        if (!res.ok) throw new Error('Failed to fetch provinces');
         const data: ApiProvince[] = await res.json();
-        setProvinces(sortByName(data));
+        const sorted = sortByName(data);
+        setProvinces(sorted);
       } catch (err) {
         console.error('Error fetching provinces:', err);
+        setProvinces([]);
       } finally {
         setLoadingProvinces(false);
       }
@@ -303,7 +305,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
   // Sync village when villages are loaded and we have a village name
   useEffect(() => {
-    if (value.village && villages.length > 0) {
+    if (value.village && villages.length > 0 && !selectedVillageId.current) {
       const normalizedValueVillage = value.village.toLowerCase().trim();
       const matchedVillage = villages.find(v =>
         v.nama.toLowerCase().trim() === normalizedValueVillage ||
@@ -311,6 +313,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       );
       if (matchedVillage) {
         isInternalUpdate.current = true;
+        selectedVillageId.current = matchedVillage.id;
         setSelectedVillage(formatName(matchedVillage.nama));
       } else {
         isInternalUpdate.current = true;
@@ -318,6 +321,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       }
     } else if (!value.village && selectedVillage) {
       isInternalUpdate.current = true;
+      selectedVillageId.current = '';
       setSelectedVillage('');
     }
   }, [value.village, villages.length, selectedVillage]);
@@ -479,6 +483,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
     const villId = e.target.value;
     const vill = villages.find(v => v.id === villId);
     const villageName = vill ? formatName(vill.nama) : '';
+    selectedVillageId.current = villId;
     setSelectedVillage(villageName);
 
     // Auto-fetch postal code
@@ -605,7 +610,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
             Kelurahan/Desa {requiredVillage && <span className="text-red-500">*</span>}
           </label>
           <select
-            value={villages.find(v => formatName(v.nama) === selectedVillage)?.id || ''}
+            value={selectedVillageId.current}
             onChange={handleVillageChange}
             disabled={disabled || !selectedDistrictId || loadingVillages}
             required={requiredVillage}
