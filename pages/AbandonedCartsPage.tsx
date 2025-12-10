@@ -56,6 +56,10 @@ const AbandonedCartsPage: React.FC = () => {
     const [selectedCarts, setSelectedCarts] = useState<Set<string>>(new Set());
     const [isExporting, setIsExporting] = useState(false);
 
+    // State untuk NEW carts pending refresh (banner instead of auto-refresh)
+    const [pendingNewCarts, setPendingNewCarts] = useState<AbandonedCart[]>([]);
+    const [showNewCartsBanner, setShowNewCartsBanner] = useState(false);
+
     // State untuk modal proses ke pesanan
     const [processModalOpen, setProcessModalOpen] = useState(false);
     const [cartToProcess, setCartToProcess] = useState<AbandonedCart | null>(null);
@@ -125,6 +129,20 @@ const AbandonedCartsPage: React.FC = () => {
         fetchData();
     }, []);
 
+    // --- Handler untuk refresh keranjang baru ---
+    const handleRefreshNewCarts = useCallback(() => {
+        if (pendingNewCarts.length > 0) {
+            setCarts(prev => {
+                const existingIds = new Set(prev.map(c => c.id));
+                const uniqueNewCarts = pendingNewCarts.filter(c => !existingIds.has(c.id));
+                return [...uniqueNewCarts, ...prev];
+            });
+            setPendingNewCarts([]);
+            setShowNewCartsBanner(false);
+            showToast(`${pendingNewCarts.length} keranjang baru ditambahkan!`, 'success');
+        }
+    }, [pendingNewCarts, showToast]);
+
     // --- Play notification sound (Beep-beep for abandoned carts) ---
     const playNotificationSound = useCallback(() => {
         if (!cartSoundEnabled) return;
@@ -188,17 +206,23 @@ const AbandonedCartsPage: React.FC = () => {
                             console.log('[Real-time] New abandoned cart:', payload.new);
 
                             const newCart = payload.new as AbandonedCart;
-                            setCarts(prev => [newCart, ...prev]);
+
+                            // ✅ JANGAN auto-refresh! Simpan ke pending dan tampilkan banner
+                            setPendingNewCarts(prev => {
+                                if (prev.some(c => c.id === newCart.id)) return prev;
+                                return [newCart, ...prev];
+                            });
+                            setShowNewCartsBanner(true);
 
                             // Show notification
-                            showToast(`🛒 Keranjang baru: ${newCart.customerName || 'Pelanggan'}`, 'info');
+                            showToast(`🛒 Keranjang baru: ${newCart.customerName || 'Pelanggan'}. Klik refresh untuk melihat.`, 'info');
                             playNotificationSound();
 
                             // Insert to notifications table
                             try {
                                 await supabase.from('notifications').insert({
                                     id: `cart-${newCart.id}`,
-                                    type: 'abandoned_cart',
+                                    type: 'cart_abandon',
                                     message: `🛒 Keranjang ditinggalkan oleh ${newCart.customerName || 'Pelanggan'} - Rp${(newCart.totalAmount || 0).toLocaleString('id-ID')}`,
                                     read: false,
                                     timestamp: new Date().toISOString(),
@@ -716,6 +740,43 @@ const AbandonedCartsPage: React.FC = () => {
                             <TrashIcon className="w-4 h-4" />
                             Hapus Terpilih
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ New Carts Banner - Tombol Refresh untuk keranjang baru */}
+            {showNewCartsBanner && pendingNewCarts.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl shadow-xl p-4 animate-pulse">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-full">
+                                <ShoppingCartIcon className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="font-bold text-lg">{pendingNewCarts.length} Keranjang Baru!</span>
+                                <p className="text-sm text-white/80">Klik tombol refresh untuk menampilkan data baru</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowNewCartsBanner(false);
+                                    setPendingNewCarts([]);
+                                }}
+                                className="px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                onClick={handleRefreshNewCarts}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white text-amber-600 font-bold rounded-xl hover:bg-amber-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Refresh Sekarang
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

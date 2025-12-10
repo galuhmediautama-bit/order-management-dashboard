@@ -110,6 +110,91 @@ interface NotificationProviderProps {
   children: React.ReactNode;
 }
 
+// Play notification sound using Web Audio API
+const playNotificationSound = (type: string = 'new_order') => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    if (type === 'new_order' || type === 'ORDER_NEW') {
+      // Coin drop sound - bright and resonant (for new orders)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.frequency.value = 1800;
+      osc1.type = 'sine';
+      gain1.gain.setValueAtTime(0.4, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.08);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.frequency.value = 1400;
+      osc2.type = 'sine';
+      gain2.gain.setValueAtTime(0.3, now + 0.1);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.1);
+      osc2.stop(now + 0.18);
+
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.frequency.value = 1200;
+      osc3.type = 'sine';
+      gain3.gain.setValueAtTime(0.2, now + 0.2);
+      gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      osc3.start(now + 0.2);
+      osc3.stop(now + 0.35);
+    } else if (type === 'cart_abandon' || type === 'CART_ABANDON') {
+      // Alert sound - lower frequency warning tone (for abandoned carts)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 600;
+      osc.type = 'triangle';
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+
+      // Second beep
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.frequency.value = 500;
+      osc2.type = 'triangle';
+      gain2.gain.setValueAtTime(0.25, now + 0.35);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.35);
+      osc2.stop(now + 0.6);
+    } else {
+      // Generic notification beep
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 1000;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
+  } catch (err) {
+    console.warn('[NotificationContext] Audio failed:', err);
+  }
+};
+
 /**
  * NotificationProvider component
  * Wrap your app dengan ini untuk mengakses notification context
@@ -118,6 +203,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('notification_sound_enabled');
+    return stored ? stored === 'true' : true;
+  });
 
   const channelsRef = useRef<{
     insert: RealtimeChannel | null;
@@ -180,9 +270,17 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     // Subscribe to new notifications
     const insertChannel = subscribeToNotifications(user.id, (newNotification) => {
+      console.log('[NotificationContext] New notification received:', newNotification);
       const filtered = filterNotificationsByRole([newNotification], userRole || '');
       if (filtered.length > 0) {
         dispatch({ type: 'ADD_NOTIFICATION', payload: newNotification });
+
+        // ✅ Play notification sound based on type
+        if (soundEnabled) {
+          const notifType = newNotification.type || 'new_order';
+          playNotificationSound(notifType);
+          console.log('[NotificationContext] Playing sound for:', notifType);
+        }
       }
     });
 
@@ -198,7 +296,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       insertChannel?.unsubscribe();
       updateChannel?.unsubscribe();
     };
-  }, [user?.id, userRole]);
+  }, [user?.id, userRole, soundEnabled]);
 
   // Initial load
   useEffect(() => {

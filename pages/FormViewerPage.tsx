@@ -174,6 +174,7 @@ const SocialProofPopup: React.FC<{
 const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order }) => {
     const { thankYouPage } = form;
     const [csPhoneNumber, setCsPhoneNumber] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const originalTitle = document.title;
@@ -209,6 +210,12 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
         return cleaned;
     };
 
+    const copyOrderId = () => {
+        navigator.clipboard.writeText(order.id.substring(0, 8));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     let whatsappLink = '#';
     if (thankYouPage.whatsappConfirmation.active) {
         const productDisplay = order.variant
@@ -230,73 +237,190 @@ const ThankYouDisplay: React.FC<{ form: Form; order: Order; }> = ({ form, order 
         }
 
         if (destinationNumber) {
-            // encodeURIComponent ensures emojis and special characters are properly encoded
             whatsappLink = `https://wa.me/${destinationNumber}?text=${encodeURIComponent(message)}`;
         }
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md text-center">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+            {/* Decorative elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-20 left-10 w-64 h-64 bg-emerald-200/30 dark:bg-emerald-900/20 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 right-10 w-80 h-80 bg-teal-200/30 dark:bg-teal-900/20 rounded-full blur-3xl"></div>
+            </div>
+
+            <div className="w-full max-w-md mx-auto relative">
+                {/* Success Card */}
                 <FadeInBlock delay={0}>
-                    <CheckCircleFilledIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{thankYouPage.title}</h1>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-wrap">{thankYouPage.message}</p>
-                </FadeInBlock>
-
-                {thankYouPage.showOrderSummary && (
-                    <FadeInBlock delay={300}>
-                        <div className="border-t border-b dark:border-gray-700 py-4 my-6 text-left">
-                            <h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">ID Pesanan:</span><span className="font-medium text-slate-700 dark:text-slate-300" title={order.id}>#{order.id.substring(0, 6)}...</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Produk:</span><span className="font-medium text-slate-700 dark:text-slate-300">{order.productName}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Total Pembayaran:</span><span className="font-bold text-lg text-slate-800 dark:text-slate-200">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</span></div>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl shadow-emerald-500/10 dark:shadow-black/30 overflow-hidden">
+                        {/* Success Header */}
+                        <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-8 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTZWMGg2djMwem0tNiAwSDI0VjBoNnYzMHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
+                            <div className="relative">
+                                {/* Animated checkmark */}
+                                <div className="w-20 h-20 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center backdrop-blur-sm animate-[bounceIn_0.6s_ease-out]">
+                                    <CheckCircleFilledIcon className="w-12 h-12 text-white drop-shadow-lg" />
+                                </div>
+                                <h1 className="text-2xl font-bold text-white mb-1 drop-shadow">{thankYouPage.title}</h1>
+                                <p className="text-emerald-100 text-sm">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                             </div>
                         </div>
-                    </FadeInBlock>
-                )}
 
-                {/* Tampilkan metode pembayaran QRIS jika dipilih */}
-                {order.paymentMethod === 'QRIS' && form.paymentSettings.qris.qrImageUrl && (
-                    <FadeInBlock delay={450}>
-                        <div className="my-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                            <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3">📱 Pembayaran QRIS</h3>
-                            <div className="flex justify-center mb-3">
-                                <img src={form.paymentSettings.qris.qrImageUrl} alt="QRIS" className="w-48 h-48 object-contain" />
-                            </div>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 text-center">Scan QR code dengan aplikasi perbankan Anda untuk menyelesaikan pembayaran</p>
-                        </div>
-                    </FadeInBlock>
-                )}
+                        {/* Content */}
+                        <div className="p-6">
+                            {/* Message */}
+                            <FadeInBlock delay={200}>
+                                <p className="text-slate-600 dark:text-slate-300 text-center mb-6 whitespace-pre-wrap leading-relaxed">{thankYouPage.message}</p>
+                            </FadeInBlock>
 
-                {/* Tampilkan metode pembayaran Transfer Bank jika dipilih */}
-                {order.paymentMethod === 'Transfer Bank' && form.paymentSettings.bankTransfer.accounts && form.paymentSettings.bankTransfer.accounts.length > 0 && (
-                    <FadeInBlock delay={450}>
-                        <div className="my-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3">🏦 Detail Transfer Bank</h3>
-                            <div className="space-y-3 text-sm">
-                                {form.paymentSettings.bankTransfer.accounts.map((account, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-lg">
-                                        <p className="text-slate-700 dark:text-slate-300"><span className="font-medium">Bank:</span> {account.bankName}</p>
-                                        <p className="text-slate-700 dark:text-slate-300"><span className="font-medium">Nomor Rekening:</span> {account.accountNumber}</p>
-                                        <p className="text-slate-700 dark:text-slate-300"><span className="font-medium">Atas Nama:</span> {account.accountHolder}</p>
-                                        <p className="text-slate-700 dark:text-slate-300 mt-2"><span className="font-medium">Jumlah:</span> Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</p>
+                            {/* Order Summary */}
+                            {thankYouPage.showOrderSummary && (
+                                <FadeInBlock delay={300}>
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 mb-5">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                                <span className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xs">📋</span>
+                                                Ringkasan Pesanan
+                                            </h3>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {/* Order ID with copy */}
+                                            <div className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-600">
+                                                <span className="text-sm text-slate-500 dark:text-slate-400">ID Pesanan</span>
+                                                <button
+                                                    onClick={copyOrderId}
+                                                    className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors"
+                                                >
+                                                    <span className="font-mono text-sm font-medium text-slate-700 dark:text-slate-300">#{order.id.substring(0, 8)}</span>
+                                                    <span className="text-xs">{copied ? '✓' : '📋'}</span>
+                                                </button>
+                                            </div>
+
+                                            {/* Product */}
+                                            <div className="flex items-start justify-between py-2 border-b border-slate-200 dark:border-slate-600">
+                                                <span className="text-sm text-slate-500 dark:text-slate-400">Produk</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300 text-right max-w-[60%]">
+                                                    {order.productName}
+                                                    {order.variant && <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{order.variant}</span>}
+                                                </span>
+                                            </div>
+
+                                            {/* Quantity if more than 1 */}
+                                            {order.quantity && order.quantity > 1 && (
+                                                <div className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-600">
+                                                    <span className="text-sm text-slate-500 dark:text-slate-400">Jumlah</span>
+                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{order.quantity} item</span>
+                                                </div>
+                                            )}
+
+                                            {/* Payment Method */}
+                                            <div className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-600">
+                                                <span className="text-sm text-slate-500 dark:text-slate-400">Pembayaran</span>
+                                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
+                                                    {order.paymentMethod || 'COD'}
+                                                </span>
+                                            </div>
+
+                                            {/* Total */}
+                                            <div className="flex items-center justify-between pt-2">
+                                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Pembayaran</span>
+                                                <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                                    Rp {(order.totalPrice || 0).toLocaleString('id-ID')}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    </FadeInBlock>
-                )}
+                                </FadeInBlock>
+                            )}
 
-                {thankYouPage.whatsappConfirmation.active && (
-                    <FadeInBlock delay={600}>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="w-full mt-4 bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
-                            <WhatsAppIcon className="w-5 h-5" />
-                            Konfirmasi via WhatsApp
-                        </a>
-                    </FadeInBlock>
-                )}
+                            {/* QRIS Payment */}
+                            {order.paymentMethod === 'QRIS' && form.paymentSettings.qris.qrImageUrl && (
+                                <FadeInBlock delay={400}>
+                                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-5 mb-5 border border-indigo-100 dark:border-indigo-800">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <span className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">📱</span>
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Pembayaran QRIS</h3>
+                                        </div>
+                                        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl flex justify-center shadow-inner">
+                                            <img src={form.paymentSettings.qris.qrImageUrl} alt="QRIS" className="w-48 h-48 object-contain" />
+                                        </div>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-3">
+                                            Scan QR code di atas dengan aplikasi e-wallet atau mobile banking Anda
+                                        </p>
+                                    </div>
+                                </FadeInBlock>
+                            )}
+
+                            {/* Bank Transfer Payment */}
+                            {order.paymentMethod === 'Transfer Bank' && form.paymentSettings.bankTransfer.accounts && form.paymentSettings.bankTransfer.accounts.length > 0 && (
+                                <FadeInBlock delay={400}>
+                                    <div className="bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-900/20 dark:to-sky-900/20 rounded-2xl p-5 mb-5 border border-blue-100 dark:border-blue-800">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">🏦</span>
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Transfer Bank</h3>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {form.paymentSettings.bankTransfer.accounts.map((account, idx) => (
+                                                <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm">
+                                                            {account.bankName.substring(0, 3).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-slate-800 dark:text-slate-200">{account.bankName}</p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">a/n {account.accountHolder}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 flex items-center justify-between">
+                                                        <span className="font-mono text-lg font-semibold text-slate-800 dark:text-slate-200">{account.accountNumber}</span>
+                                                        <button
+                                                            onClick={() => navigator.clipboard.writeText(account.accountNumber)}
+                                                            className="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                                        >
+                                                            Salin
+                                                        </button>
+                                                    </div>
+                                                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                                        <span className="text-sm text-slate-500 dark:text-slate-400">Jumlah transfer:</span>
+                                                        <span className="font-bold text-blue-600 dark:text-blue-400">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </FadeInBlock>
+                            )}
+
+                            {/* WhatsApp Button */}
+                            {thankYouPage.whatsappConfirmation.active && (
+                                <FadeInBlock delay={500}>
+                                    <a
+                                        href={whatsappLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        <WhatsAppIcon className="w-6 h-6" />
+                                        <span>Konfirmasi via WhatsApp</span>
+                                    </a>
+                                    <p className="text-xs text-center text-slate-400 dark:text-slate-500 mt-3">
+                                        Klik tombol di atas untuk konfirmasi pesanan Anda
+                                    </p>
+                                </FadeInBlock>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <FadeInBlock delay={600}>
+                            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700">
+                                <p className="text-xs text-center text-slate-500 dark:text-slate-400">
+                                    Terima kasih telah berbelanja! 🙏
+                                </p>
+                            </div>
+                        </FadeInBlock>
+                    </div>
+                </FadeInBlock>
             </div>
         </div>
     );
@@ -319,7 +443,16 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     // Platform Tracking State
     const [activePlatform, setActivePlatform] = useState<'meta' | 'tiktok' | 'google' | 'snack' | null>(null);
 
-    // Pixel State
+    // Pixel State - PISAH untuk FormPage dan ThankYouPage
+    const [formPagePixels, setFormPagePixels] = useState<{ ids: string[]; eventName: string }>({
+        ids: [],
+        eventName: 'ViewContent'
+    });
+    const [thankYouPagePixels, setThankYouPagePixels] = useState<{ ids: string[]; eventName: string }>({
+        ids: [],
+        eventName: 'Purchase'
+    });
+    // Legacy - untuk backward compatibility
     const [activePixelIds, setActivePixelIds] = useState<string[]>([]);
     const [eventNames, setEventNames] = useState<{ formPage: string; thankYouPage: string }>({
         formPage: 'ViewContent',
@@ -499,78 +632,97 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }, [form, derivedOptions, productOptionsOverride]);
 
     // --- TRACKING CALCULATOR ---
+    // Hitung pixel untuk FORM PAGE (sekali saat form load)
     useEffect(() => {
         if (!form) {
             console.log('[FormViewer] Form not loaded yet');
             return;
         }
 
-        const isThankYouPage = submission.success && !!submission.order;
-        const pageType = isThankYouPage ? 'thankYouPage' : 'formPage';
-
-        console.log('[FormViewer] Calculating pixels for page:', pageType);
+        console.log('[FormViewer] Calculating pixels for FORM PAGE');
         console.log('[FormViewer] Form tracking settings:', form.trackingSettings);
 
-        const trackingSettings = form.trackingSettings?.[pageType];
+        const trackingSettings = form.trackingSettings?.formPage;
 
-        // Build pixel data for each platform
-        const newPixelsByPlatform: Record<string, { ids: string[]; eventName: string }> = {
-            meta: { ids: [], eventName: 'ViewContent' },
-            google: { ids: [], eventName: 'view_item' },
-            tiktok: { ids: [], eventName: 'ViewContent' },
-            snack: { ids: [], eventName: 'ViewContent' },
-        };
+        // Build pixel data for form page
+        let formPageMeta = { ids: [] as string[], eventName: 'ViewContent' };
 
-        // Extract from form tracking settings
-        if (trackingSettings) {
-            Object.entries(trackingSettings).forEach(([platform, settings]) => {
-                // Smart filtering: only load pixel if platform matches OR no specific platform assigned
-                const shouldLoadPlatform = !activePlatform || activePlatform === platform;
-
-                if (shouldLoadPlatform && settings?.pixelIds && settings.pixelIds.length > 0) {
-                    newPixelsByPlatform[platform] = {
-                        ids: settings.pixelIds,
-                        eventName: settings.eventName || newPixelsByPlatform[platform].eventName
-                    };
-                    console.log(`[FormViewer] ${platform} - IDs: ${settings.pixelIds.join(', ')}, Event: ${settings.eventName}`);
-                } else if (activePlatform && activePlatform !== platform) {
-                    console.log(`[FormViewer] Skipping ${platform} pixel (active platform: ${activePlatform})`);
-                }
-            });
+        // Extract from form tracking settings for formPage
+        if (trackingSettings?.meta?.pixelIds && trackingSettings.meta.pixelIds.length > 0) {
+            const shouldLoadPlatform = !activePlatform || activePlatform === 'meta';
+            if (shouldLoadPlatform) {
+                formPageMeta = {
+                    ids: trackingSettings.meta.pixelIds,
+                    eventName: trackingSettings.meta.eventName || 'ViewContent'
+                };
+                console.log(`[FormViewer] FormPage Meta - IDs: ${formPageMeta.ids.join(', ')}, Event: ${formPageMeta.eventName}`);
+            }
         }
 
-        // Fallback to global if no form-specific settings
-        const hasCoverageFromForm = Object.values(newPixelsByPlatform).some(p => p.ids.length > 0);
-        if (!hasCoverageFromForm && !settingsLoading && globalTrackingSettings) {
-            console.log('[FormViewer] Falling back to global tracking settings');
-            Object.entries(globalTrackingSettings).forEach(([platform, settings]) => {
-                if (settings?.active && settings.pixels) {
-                    newPixelsByPlatform[platform].ids = settings.pixels.map(p => p.id);
-                    console.log(`[FormViewer] ${platform} (global) - IDs: ${newPixelsByPlatform[platform].ids.join(', ')}`);
-                }
-            });
+        // Fallback to global if no form-specific settings for formPage
+        if (formPageMeta.ids.length === 0 && !settingsLoading && globalTrackingSettings?.meta?.active && globalTrackingSettings.meta.pixels) {
+            console.log('[FormViewer] FormPage - Falling back to global tracking settings');
+            formPageMeta.ids = globalTrackingSettings.meta.pixels.map(p => p.id);
+            console.log(`[FormViewer] FormPage Meta (global) - IDs: ${formPageMeta.ids.join(', ')}`);
         }
 
-        setPixelsByPlatform(newPixelsByPlatform);
-
-        // For backward compatibility - Meta pixel IDs
-        const metaIds = newPixelsByPlatform.meta.ids;
-        console.log(`[FormViewer] Final Meta IDs: ${metaIds.length > 0 ? metaIds.join(', ') : 'NONE'}`);
-        setActivePixelIds(metaIds);
-
-        // Update event names - use Meta platform event as primary
-        let metaEventName = newPixelsByPlatform.meta.eventName;
-        // Guard: jangan pernah fire InitiateCheckout di Thank You page; pakai AddToCart
-        if (isThankYouPage && metaEventName === 'InitiateCheckout') {
-            metaEventName = 'AddToCart';
-        }
-        console.log(`[FormViewer] Setting ${pageType} event to: ${metaEventName}`);
+        setFormPagePixels(formPageMeta);
+        // Legacy compatibility
+        setActivePixelIds(formPageMeta.ids);
         setEventNames(prev => ({
             ...prev,
-            [pageType]: metaEventName
+            formPage: formPageMeta.eventName
         }));
 
-    }, [form, globalTrackingSettings, submission, settingsLoading, activePlatform]);
+        console.log(`[FormViewer] FormPage Final Meta IDs: ${formPageMeta.ids.length > 0 ? formPageMeta.ids.join(', ') : 'NONE'}, Event: ${formPageMeta.eventName}`);
+
+    }, [form, globalTrackingSettings, settingsLoading, activePlatform]);
+
+    // Hitung pixel untuk THANK YOU PAGE (sekali saat form load, tidak tergantung submission)
+    useEffect(() => {
+        if (!form) {
+            return;
+        }
+
+        console.log('[FormViewer] Calculating pixels for THANK YOU PAGE');
+
+        const trackingSettings = form.trackingSettings?.thankYouPage;
+
+        // Build pixel data for thank you page
+        let thankYouMeta = { ids: [] as string[], eventName: 'Purchase' };
+
+        // Extract from form tracking settings for thankYouPage
+        if (trackingSettings?.meta?.pixelIds && trackingSettings.meta.pixelIds.length > 0) {
+            const shouldLoadPlatform = !activePlatform || activePlatform === 'meta';
+            if (shouldLoadPlatform) {
+                thankYouMeta = {
+                    ids: trackingSettings.meta.pixelIds,
+                    eventName: trackingSettings.meta.eventName || 'Purchase'
+                };
+                // Guard: jangan pernah fire InitiateCheckout di Thank You page
+                if (thankYouMeta.eventName === 'InitiateCheckout') {
+                    thankYouMeta.eventName = 'AddToCart';
+                }
+                console.log(`[FormViewer] ThankYouPage Meta - IDs: ${thankYouMeta.ids.join(', ')}, Event: ${thankYouMeta.eventName}`);
+            }
+        }
+
+        // Fallback to global if no form-specific settings for thankYouPage
+        if (thankYouMeta.ids.length === 0 && !settingsLoading && globalTrackingSettings?.meta?.active && globalTrackingSettings.meta.pixels) {
+            console.log('[FormViewer] ThankYouPage - Falling back to global tracking settings');
+            thankYouMeta.ids = globalTrackingSettings.meta.pixels.map(p => p.id);
+            console.log(`[FormViewer] ThankYouPage Meta (global) - IDs: ${thankYouMeta.ids.join(', ')}`);
+        }
+
+        setThankYouPagePixels(thankYouMeta);
+        setEventNames(prev => ({
+            ...prev,
+            thankYouPage: thankYouMeta.eventName
+        }));
+
+        console.log(`[FormViewer] ThankYouPage Final Meta IDs: ${thankYouMeta.ids.length > 0 ? thankYouMeta.ids.join(', ') : 'NONE'}, Event: ${thankYouMeta.eventName}`);
+
+    }, [form, globalTrackingSettings, settingsLoading, activePlatform]);
 
 
     // --- Rest of your component logic ---
@@ -1443,11 +1595,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }
 
     if (submission.success && submission.order) {
-        // ✅ THANK YOU PAGE - HANYA fire event, JANGAN initialize pixel lagi
+        // ✅ THANK YOU PAGE - Gunakan pixel khusus untuk thank you page
+        console.log('[FormViewer] Rendering ThankYouPage with pixels:', thankYouPagePixels);
         return (
             <>
                 <ThankYouPixelEvent
-                    eventName={eventNames.thankYouPage}
+                    pixelIds={thankYouPagePixels.ids}
+                    eventName={thankYouPagePixels.eventName}
                     order={submission.order}
                     contentName={form.title}
                 />
@@ -1497,8 +1651,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             <style>{animationStyles}</style>
             <FormPagePixelScript
                 key="formPage-pixel"
-                pixelIds={activePixelIds}
-                eventName={eventNames.formPage}
+                pixelIds={formPagePixels.ids}
+                eventName={formPagePixels.eventName}
                 contentName={form.title}
             />
             <CustomScriptInjector scriptContent={form.customScripts?.formPage || ''} />

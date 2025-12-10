@@ -81,16 +81,35 @@ interface GlobalPixelSettings {
     snack: GlobalPixel[];
 }
 
-const EditorCard: React.FC<{ icon: React.ComponentType<{ className?: string }>; title: string; children: React.ReactNode; }> = ({ icon: Icon, title, children }) => {
+const EditorCard: React.FC<{
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+    badge?: string;
+    badgeColor?: 'green' | 'red' | 'amber' | 'indigo';
+}> = ({ icon: Icon, title, children, badge, badgeColor = 'indigo' }) => {
+    const badgeColors = {
+        green: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+        red: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+        amber: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+        indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400'
+    };
+
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="p-5 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-900/30 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                    <Icon className="w-5 h-5 text-white" />
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
+                <h3 className="font-semibold text-slate-800 dark:text-white">{title}</h3>
+                {badge && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badgeColors[badgeColor]}`}>
+                        {badge}
+                    </span>
+                )}
             </div>
-            <div className="p-6 space-y-5">
+            <div className="p-4 space-y-4">
                 {children}
             </div>
         </div>
@@ -460,17 +479,17 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
     // Get variant details function for radio/dropdown display
     const getVariantDetails = (option: ProductOption, attributeValue: string) => {
         if (!form.variantCombinations || form.variantCombinations.length === 0) return null;
-        
+
         // Build current selection with this value
         const testSelection = { ...selectedOptions, [option.name]: attributeValue };
-        
+
         // Find matching combination
         const match = form.variantCombinations.find(combo => {
             return Object.entries(testSelection).every(([key, val]) =>
                 combo.attributes[key] === val
             );
         });
-        
+
         return match;
     };
 
@@ -541,7 +560,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                             <div className="mb-4 space-y-6">
                                 {form.productOptions.map((option, index) => {
                                     const displayStyle = option.displayStyle || 'radio';
-                                    
+
                                     return (
                                         <div key={option.id} className="space-y-3">
                                             {/* Header Variasi */}
@@ -946,6 +965,60 @@ const FormEditorPage: React.FC = () => {
     const [currentUserRole, setCurrentUserRole] = useState<string>('');
     const [activePreviewTab, setActivePreviewTab] = useState<'form' | 'thankyou'>('form');
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+    const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+    // Validation function for each step
+    const validateStep = (step: 1 | 2 | 3): { valid: boolean; errors: string[] } => {
+        const errors: string[] = [];
+
+        if (step === 1) {
+            // Step 1: Produk - Required fields
+            if (!form?.assignedAdvertiserId) errors.push('Advertiser wajib dipilih');
+            if (!form?.brandId) errors.push('Brand wajib dipilih');
+            if (!form?.title?.trim()) errors.push('Judul formulir wajib diisi');
+        }
+
+        if (step === 2) {
+            // Step 2: Pengaturan - Check shipping & payment
+            const hasShipping = form?.shippingSettings && Object.values(form.shippingSettings).some(s => s.visible);
+            const hasPayment = form?.paymentSettings && Object.values(form.paymentSettings).some(s => s.visible);
+
+            if (!hasShipping) errors.push('Minimal 1 metode pengiriman harus aktif');
+            if (!hasPayment) errors.push('Minimal 1 metode pembayaran harus aktif');
+
+            // Check CS Assignment
+            if (form?.thankYouPage?.csAssignment?.mode === 'single' && !form.thankYouPage.csAssignment.singleAgentId) {
+                errors.push('CS Agent wajib dipilih untuk mode Single');
+            }
+            if (form?.thankYouPage?.csAssignment?.mode === 'round_robin') {
+                const agents = form.thankYouPage.csAssignment.roundRobinAgents || [];
+                if (agents.length === 0) {
+                    errors.push('Minimal 1 CS Agent untuk mode Round Robin');
+                }
+            }
+        }
+
+        return { valid: errors.length === 0, errors };
+    };
+
+    // Helper to change wizard step with validation
+    const goToStep = (step: 1 | 2 | 3, skipValidation = false) => {
+        // Only validate when going forward
+        if (!skipValidation && step > wizardStep) {
+            const validation = validateStep(wizardStep);
+            if (!validation.valid) {
+                setValidationErrors(validation.errors);
+                // Auto-hide after 5 seconds
+                setTimeout(() => setValidationErrors([]), 5000);
+                return;
+            }
+        }
+        setValidationErrors([]);
+        setWizardStep(step);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -996,7 +1069,7 @@ const FormEditorPage: React.FC = () => {
                     // Buat form baru - langsung set dan tampilkan
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true } },
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, postalCode: { visible: false, required: false }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] }, },
                         countdownSettings: { active: true, duration: 300 },
@@ -1772,10 +1845,10 @@ const FormEditorPage: React.FC = () => {
             if (!prev) return null;
             const mainFieldValue = (prev as any)[mainField] || {};
 
-            // Special handling for province/city/district/village package
+            // Special handling for province/city/district/village/postalCode package
             if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
-                    // When province visibility changes, city, district, and village follow
+                    // When province visibility changes, city, district, village, and postalCode follow
                     // If unchecking visible, also uncheck required
                     const newRequired = val ? prev.customerFields.province.required : false;
                     return {
@@ -1785,11 +1858,12 @@ const FormEditorPage: React.FC = () => {
                             province: { ...prev.customerFields.province, visible: val, required: newRequired },
                             city: { ...prev.customerFields.city, visible: val, required: val ? prev.customerFields.city.required : false },
                             district: { ...prev.customerFields.district, visible: val, required: val ? prev.customerFields.district.required : false },
-                            village: { ...(prev.customerFields.village || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.village?.required || false) : false }
+                            village: { ...(prev.customerFields.village || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.village?.required || false) : false },
+                            postalCode: { ...(prev.customerFields.postalCode || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.postalCode?.required || false) : false }
                         }
                     };
                 } else if (prop === 'required') {
-                    // When province required changes, city, district, and village follow
+                    // When province required changes, city, district, village, and postalCode follow
                     return {
                         ...prev,
                         customerFields: {
@@ -1797,7 +1871,8 @@ const FormEditorPage: React.FC = () => {
                             province: { ...prev.customerFields.province, required: val },
                             city: { ...prev.customerFields.city, required: val },
                             district: { ...prev.customerFields.district, required: val },
-                            village: { ...(prev.customerFields.village || { visible: false, required: false }), required: val }
+                            village: { ...(prev.customerFields.village || { visible: false, required: false }), required: val },
+                            postalCode: { ...(prev.customerFields.postalCode || { visible: false, required: false }), required: val }
                         }
                     };
                 }
@@ -1914,1344 +1989,1446 @@ const FormEditorPage: React.FC = () => {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
-            <div className="lg:col-span-6 space-y-6">
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl border border-indigo-100 dark:border-slate-700 shadow-sm">
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                                <PencilIcon className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                    {formId ? 'Edit Formulir' : 'Buat Formulir Baru'}
-                                </h1>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Kelola dan kustomisasi formulir pesanan</p>
-                            </div>
+            <div className="lg:col-span-6 space-y-5">
+                {/* Compact Sticky Header - Only essential buttons */}
+                <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-md">
+                    <div className="flex items-center gap-3">
+                        {/* Icon & Title */}
+                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <PencilIcon className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex flex-wrap gap-2 items-center">
-                            {formId && form && (
-                                <div className="relative group">
-                                    <button className="px-4 py-2.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-200 dark:hover:bg-indigo-900/50 font-semibold text-sm flex items-center gap-2 transition-all hover:scale-105 shadow-sm">
-                                        <LinkIcon className="w-4 h-4" /> Aksi
-                                    </button>
-                                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                        <div className="space-y-2">
-                                            {[
-                                                { name: 'Meta', source: 'meta', color: 'blue' },
-                                                { name: 'Google', source: 'google', color: 'red' },
-                                                { name: 'TikTok', source: 'tiktok', color: 'slate' },
-                                                { name: 'Instagram', source: 'instagram', color: 'pink' },
-                                                { name: 'WhatsApp', source: 'whatsapp', color: 'green' },
-                                            ].map((platform) => {
-                                                const baseUrl = window.location.origin;
-                                                const formIdentifier = form.slug || form.id;
-                                                const trackingLink = `${baseUrl}?f=${formIdentifier}&utm_source=${platform.source}&utm_medium=social&utm_campaign=${form.title?.replace(/\s+/g, '_').toLowerCase() || 'campaign'}`;
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-base font-bold text-slate-800 dark:text-white truncate">
+                                {formId ? 'Edit Formulir' : 'Buat Formulir'}
+                            </h1>
+                        </div>
 
-                                                const colorClasses: Record<string, string> = {
-                                                    blue: 'hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-                                                    red: 'hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400',
-                                                    slate: 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400',
-                                                    pink: 'hover:bg-pink-50 dark:hover:bg-pink-900/30 text-pink-600 dark:text-pink-400',
-                                                    green: 'hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400'
-                                                };
-
-                                                return (
-                                                    <button
-                                                        key={platform.source}
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(trackingLink);
-                                                            showToast(`Link ${platform.name} disalin!`, 'success');
-                                                        }}
-                                                        className={`w-full text-left px-3 py-2 rounded text-xs font-medium border transition-all ${colorClasses[platform.color]} border-slate-200 dark:border-slate-600`}
-                                                        title={trackingLink}
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <span>🔗 {platform.name}</span>
-                                                            <span className="text-xs opacity-70">Copy</span>
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            {formId && (
+                                <a
+                                    href={`${window.location.origin}/#/f/${form.slug || form.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
+                                    title="Preview"
+                                >
+                                    <EyeIcon className="w-5 h-5" />
+                                </a>
                             )}
                             {formId && (
-                                <button onClick={handleDelete} disabled={isSaving} className="px-4 py-2.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 font-semibold text-sm flex items-center gap-2 transition-all hover:scale-105 shadow-sm">
-                                    <TrashIcon className="w-4 h-4" /> Hapus
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={isSaving}
+                                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
+                                    title="Hapus"
+                                >
+                                    <TrashIcon className="w-5 h-5" />
                                 </button>
                             )}
-                            <button onClick={handleClose} className="px-5 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 font-semibold text-sm transition-all shadow-sm">Batal</button>
-                            <button onClick={handleSave} disabled={isSaving || mainImageUploading} className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-600 font-bold text-sm disabled:opacity-60 flex items-center gap-2 transition-all hover:scale-105 shadow-lg shadow-indigo-500/30">
-                                {(isSaving || mainImageUploading) && <SpinnerIcon className="w-4 h-4 animate-spin" />}
-                                {isSaving ? 'Menyimpan...' : mainImageUploading ? 'Mengupload Gambar...' : 'Simpan Formulir'}
+                            <button
+                                onClick={() => setShowCancelConfirmation(true)}
+                                className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all"
+                            >
+                                Batal
                             </button>
+                            {/* Show Next button on step 1 & 2, Save button on step 3 */}
+                            {wizardStep < 3 ? (
+                                <button
+                                    onClick={() => goToStep((wizardStep + 1) as 2 | 3)}
+                                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-all"
+                                >
+                                    Selanjutnya <ChevronDownIcon className="w-4 h-4 -rotate-90" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving || mainImageUploading}
+                                    className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60 flex items-center gap-1.5 transition-all"
+                                >
+                                    {(isSaving || mainImageUploading) && <SpinnerIcon className="w-4 h-4 animate-spin" />}
+                                    {isSaving ? 'Simpan...' : '✓ Simpan'}
+                                </button>
+                            )}
                         </div>
                     </div>
+
+                    {/* Wizard Step Tabs */}
+                    <div className="flex gap-1 mt-3 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                        <button
+                            type="button"
+                            onClick={() => goToStep(1, true)}
+                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all ${wizardStep === 1 ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                        >
+                            1. Produk
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => goToStep(2, wizardStep > 2)}
+                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all ${wizardStep === 2 ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                        >
+                            2. Pengaturan
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => goToStep(3)}
+                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all ${wizardStep === 3 ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                        >
+                            3. Lanjutan
+                        </button>
+                    </div>
+
+                    {/* Validation Errors */}
+                    {validationErrors.length > 0 && (
+                        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                                <XIcon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-red-700 dark:text-red-400">Mohon lengkapi data berikut:</p>
+                                    <ul className="mt-1 text-sm text-red-600 dark:text-red-300 list-disc list-inside">
+                                        {validationErrors.map((err, idx) => (
+                                            <li key={idx}>{err}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <EditorCard icon={PencilAltIcon} title="Informasi Umum">
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium">Assign Advertiser</label>
-                            <span className="text-xs text-red-500 font-medium">Wajib</span>
-                        </div>
-                        <select
-                            value={form.assignedAdvertiserId || ''}
-                            onChange={(e) => handleFieldChange('assignedAdvertiserId', e.target.value)}
-                            disabled={!!formId && !!form.assignedAdvertiserId}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId
-                                ? 'border-red-500'
-                                : !!formId && !!form.assignedAdvertiserId
-                                    ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800'
-                                    : 'dark:border-slate-600'
-                                }`}
-                        >
-                            <option value="">-- Pilih Advertiser --</option>
-                            {advertisers
-                                .filter(advertiser => advertiser.name && advertiser.name.trim() && !advertiser.name.includes('Pilih'))
-                                .map(advertiser => (
-                                    <option key={advertiser.id} value={advertiser.id}>
-                                        {advertiser.name} {currentUser?.id === advertiser.id ? '(Anda)' : ''}
-                                    </option>
-                                ))}
-                        </select>
-                        {!form.assignedAdvertiserId && <p className="text-xs text-red-500 mt-1">Advertiser harus dipilih</p>}
-                        {!!formId && !!form.assignedAdvertiserId ? (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                </svg>
-                                Advertiser terkunci setelah disimpan dan tidak dapat diubah
-                            </p>
-                        ) : (
-                            <p className="text-xs text-slate-500 mt-1">Pilih advertiser yang akan mengelola formulir ini.</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium">Judul Formulir</label>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-red-500 font-medium">Wajib</span>
-                                <span className="text-xs text-slate-500">Tampilkan di formulir</span>
-                                <ToggleSwitch checked={form.showTitle} onChange={v => handleFieldChange('showTitle', v)} />
+                {/* STEP 1: Produk & Varian */}
+                {wizardStep === 1 && (
+                    <div className="space-y-4">
+                        <EditorCard icon={PencilAltIcon} title="Informasi Umum" badge={!form.title || !form.brandId || !form.assignedAdvertiserId ? 'Belum Lengkap' : undefined} badgeColor="red">
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium">Assign Advertiser</label>
+                                    <span className="text-xs text-red-500 font-medium">Wajib</span>
+                                </div>
+                                <select
+                                    value={form.assignedAdvertiserId || ''}
+                                    onChange={(e) => handleFieldChange('assignedAdvertiserId', e.target.value)}
+                                    disabled={!!formId && !!form.assignedAdvertiserId}
+                                    className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.assignedAdvertiserId
+                                        ? 'border-red-500'
+                                        : !!formId && !!form.assignedAdvertiserId
+                                            ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800'
+                                            : 'dark:border-slate-600'
+                                        }`}
+                                >
+                                    <option value="">-- Pilih Advertiser --</option>
+                                    {advertisers
+                                        .filter(advertiser => advertiser.name && advertiser.name.trim() && !advertiser.name.includes('Pilih'))
+                                        .map(advertiser => (
+                                            <option key={advertiser.id} value={advertiser.id}>
+                                                {advertiser.name} {currentUser?.id === advertiser.id ? '(Anda)' : ''}
+                                            </option>
+                                        ))}
+                                </select>
+                                {!form.assignedAdvertiserId && <p className="text-xs text-red-500 mt-1">Advertiser harus dipilih</p>}
+                                {!!formId && !!form.assignedAdvertiserId ? (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                        </svg>
+                                        Advertiser terkunci setelah disimpan dan tidak dapat diubah
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-slate-500 mt-1">Pilih advertiser yang akan mengelola formulir ini.</p>
+                                )}
                             </div>
-                        </div>
-                        <input type="text" value={form.title} onChange={e => handleFieldChange('title', e.target.value)} className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.title ? 'border-red-500' : 'dark:border-slate-600'}`} />
-                        {!form.title && <p className="text-xs text-red-500 mt-1">Judul formulir harus diisi</p>}
-                    </div>
 
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium">Deskripsi</label>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-slate-500">Tampilkan di formulir</span>
-                                <ToggleSwitch checked={form.showDescription} onChange={v => handleFieldChange('showDescription', v)} />
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium">Judul Formulir</label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-red-500 font-medium">Wajib</span>
+                                        <span className="text-xs text-slate-500">Tampilkan di formulir</span>
+                                        <ToggleSwitch checked={form.showTitle} onChange={v => handleFieldChange('showTitle', v)} />
+                                    </div>
+                                </div>
+                                <input type="text" value={form.title} onChange={e => handleFieldChange('title', e.target.value)} className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.title ? 'border-red-500' : 'dark:border-slate-600'}`} />
+                                {!form.title && <p className="text-xs text-red-500 mt-1">Judul formulir harus diisi</p>}
                             </div>
-                        </div>
-                        <textarea value={form.description} onChange={e => handleFieldChange('description', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"></textarea>
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="text-sm">Perataan:</span>
-                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'left')} className={`p-1 rounded ${form.descriptionAlign === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignLeftIcon className="w-5 h-5" /></button>
-                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'center')} className={`p-1 rounded ${form.descriptionAlign === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignCenterIcon className="w-5 h-5" /></button>
-                            <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'right')} className={`p-1 rounded ${form.descriptionAlign === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignRightIcon className="w-5 h-5" /></button>
-                        </div>
-                    </div>
 
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium">Merek</label>
-                            <span className="text-xs text-red-500 font-medium">Wajib</span>
-                        </div>
-                        <select
-                            value={form.brandId || ''}
-                            onChange={(e) => {
-                                const newBrandId = e.target.value;
-                                handleFieldChange('brandId', newBrandId);
-                                // Reset product karena brand berubah - products akan di-load saat useEffect trigger
-                                if (form.productId) {
-                                    handleFieldChange('productId', '');
-                                    setForm(prev => prev ? { ...prev, productVariants: [] } : prev);
-                                    showToast('Produk di-reset karena merek berubah. Tunggu produk dimuat...', 'info');
-                                }
-                            }}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.brandId ? 'border-red-500' : 'dark:border-slate-600'}`}
-                        >
-                            <option value="">-- Pilih Merek --</option>
-                            {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
-                        </select>
-                        {!form.brandId && <p className="text-xs text-red-500 mt-1">Merek harus dipilih</p>}
-                        <p className="text-xs text-slate-500 mt-1">Pilih merek terlebih dahulu sebelum memilih produk.</p>
-                    </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium">Deskripsi</label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-slate-500">Tampilkan di formulir</span>
+                                        <ToggleSwitch checked={form.showDescription} onChange={v => handleFieldChange('showDescription', v)} />
+                                    </div>
+                                </div>
+                                <textarea value={form.description} onChange={e => handleFieldChange('description', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"></textarea>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-sm">Perataan:</span>
+                                    <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'left')} className={`p-1 rounded ${form.descriptionAlign === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignLeftIcon className="w-5 h-5" /></button>
+                                    <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'center')} className={`p-1 rounded ${form.descriptionAlign === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignCenterIcon className="w-5 h-5" /></button>
+                                    <button type="button" onClick={() => handleFieldChange('descriptionAlign', 'right')} className={`p-1 rounded ${form.descriptionAlign === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}><AlignRightIcon className="w-5 h-5" /></button>
+                                </div>
+                            </div>
 
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium">Induk Produk</label>
-                            <span className="text-xs text-red-500 font-medium">Wajib</span>
-                        </div>
-                        <select
-                            value={form.productId || ''}
-                            onChange={async (e) => {
-                                const productId = e.target.value;
-                                handleFieldChange('productId', productId);
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium">Merek</label>
+                                    <span className="text-xs text-red-500 font-medium">Wajib</span>
+                                </div>
+                                <select
+                                    value={form.brandId || ''}
+                                    onChange={(e) => {
+                                        const newBrandId = e.target.value;
+                                        handleFieldChange('brandId', newBrandId);
+                                        // Reset product karena brand berubah - products akan di-load saat useEffect trigger
+                                        if (form.productId) {
+                                            handleFieldChange('productId', '');
+                                            setForm(prev => prev ? { ...prev, productVariants: [] } : prev);
+                                            showToast('Produk di-reset karena merek berubah. Tunggu produk dimuat...', 'info');
+                                        }
+                                    }}
+                                    className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.brandId ? 'border-red-500' : 'dark:border-slate-600'}`}
+                                >
+                                    <option value="">-- Pilih Merek --</option>
+                                    {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                                </select>
+                                {!form.brandId && <p className="text-xs text-red-500 mt-1">Merek harus dipilih</p>}
+                                <p className="text-xs text-slate-500 mt-1">Pilih merek terlebih dahulu sebelum memilih produk.</p>
+                            </div>
 
-                                // Auto-load variants dan gambar dari produk yang dipilih
-                                if (productId) {
-                                    try {
-                                        const product = await productService.getProduct(productId);
-                                        if (product) {
-                                            console.log('📦 Produk dimuat:', product);
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium">Induk Produk</label>
+                                    <span className="text-xs text-red-500 font-medium">Wajib</span>
+                                </div>
+                                <select
+                                    value={form.productId || ''}
+                                    onChange={async (e) => {
+                                        const productId = e.target.value;
+                                        handleFieldChange('productId', productId);
 
-                                            // 1. SELALU update gambar dari produk (tidak peduli form baru/edit)
-                                            if (product.imageUrl) {
-                                                handleFieldChange('mainImage', product.imageUrl);
-                                                setMainImagePreview(product.imageUrl);
-                                                console.log('🖼️ Gambar produk dimuat:', product.imageUrl);
-                                            }
+                                        // Auto-load variants dan gambar dari produk yang dipilih
+                                        if (productId) {
+                                            try {
+                                                const product = await productService.getProduct(productId);
+                                                if (product) {
+                                                    console.log('📦 Produk dimuat:', product);
 
-                                            // 2. Load variants dan konversi ke format form
-                                            if (product.variants && product.variants.length > 0) {
-                                                console.log('📊 Variants dari produk:', product.variants);
-                                                console.log('📊 VariantOptions dari produk:', product.variantOptions);
-
-                                                // Simpan productVariants untuk referensi
-                                                setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
-
-                                                // Check apakah produk punya variantOptions (multi-atribut)
-                                                const hasVariantOptions = product.variantOptions &&
-                                                    Array.isArray(product.variantOptions) &&
-                                                    product.variantOptions.length > 0;
-
-                                                // Bangun productOptions dari variantOptions bila ada, fallback ke satu atribut "Varian"
-                                                const newProductOptions: ProductOption[] = hasVariantOptions
-                                                    ? product.variantOptions!.map((opt, idx) => ({
-                                                        id: idx + 1,
-                                                        name: opt.name || `Opsi ${idx + 1}`,
-                                                        values: opt.values || [],
-                                                        displayStyle: 'radio' as const
-                                                    }))
-                                                    : [{
-                                                        id: Date.now(),
-                                                        name: 'Varian',
-                                                        values: product.variants.map(v => v.name || 'Varian'),
-                                                        displayStyle: 'radio' as const
-                                                    }];
-
-                                                // Helper: map nama varian (e.g., "HITAM - A4") ke attributes per option
-                                                const mapAttributes = (variantName: string) => {
-                                                    const attributes: Record<string, string> = {};
-
-                                                    if (hasVariantOptions) {
-                                                        const parts = (variantName || '')
-                                                            .split('-')
-                                                            .map(p => p.trim())
-                                                            .filter(Boolean);
-
-                                                        product.variantOptions!.forEach((opt, idx) => {
-                                                            const key = opt.name || `Opsi ${idx + 1}`;
-                                                            const value = parts[idx] || opt.values?.[0] || '';
-                                                            attributes[key] = value;
-                                                        });
-                                                    } else {
-                                                        attributes['Varian'] = variantName || 'Varian';
+                                                    // 1. SELALU update gambar dari produk (tidak peduli form baru/edit)
+                                                    if (product.imageUrl) {
+                                                        handleFieldChange('mainImage', product.imageUrl);
+                                                        setMainImagePreview(product.imageUrl);
+                                                        console.log('🖼️ Gambar produk dimuat:', product.imageUrl);
                                                     }
 
-                                                    return attributes;
-                                                };
+                                                    // 2. Load variants dan konversi ke format form
+                                                    if (product.variants && product.variants.length > 0) {
+                                                        console.log('📊 Variants dari produk:', product.variants);
+                                                        console.log('📊 VariantOptions dari produk:', product.variantOptions);
 
-                                                const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
-                                                    attributes: mapAttributes(variant.name || `Varian ${idx + 1}`),
-                                                    sellingPrice: variant.price || 0,
-                                                    strikethroughPrice: variant.comparePrice || 0,
-                                                    costPrice: variant.costPrice || 0,
-                                                    csCommission: variant.csCommission || 0,
-                                                    advCommission: variant.advCommission || 0,
-                                                    sku: variant.sku || '',
-                                                    weight: variant.weight || 0,
-                                                    initialStock: variant.initialStock || 0
-                                                }));
+                                                        // Simpan productVariants untuk referensi
+                                                        setForm(prev => prev ? { ...prev, productVariants: product.variants } : prev);
 
-                                                console.log('✅ ProductOptions:', newProductOptions);
-                                                console.log('✅ VariantCombinations:', newVariantCombinations);
+                                                        // Check apakah produk punya variantOptions (multi-atribut)
+                                                        const hasVariantOptions = product.variantOptions &&
+                                                            Array.isArray(product.variantOptions) &&
+                                                            product.variantOptions.length > 0;
 
-                                                // Update form dengan varian yang sudah dikonversi
-                                                setForm(prev => prev ? {
-                                                    ...prev,
-                                                    productOptions: newProductOptions,
-                                                    variantCombinations: newVariantCombinations,
-                                                    productVariants: product.variants
-                                                } : prev);
+                                                        // Bangun productOptions dari variantOptions bila ada, fallback ke satu atribut "Varian"
+                                                        const newProductOptions: ProductOption[] = hasVariantOptions
+                                                            ? product.variantOptions!.map((opt, idx) => ({
+                                                                id: idx + 1,
+                                                                name: opt.name || `Opsi ${idx + 1}`,
+                                                                values: opt.values || [],
+                                                                displayStyle: 'radio' as const
+                                                            }))
+                                                            : [{
+                                                                id: Date.now(),
+                                                                name: 'Varian',
+                                                                values: product.variants.map(v => v.name || 'Varian'),
+                                                                displayStyle: 'radio' as const
+                                                            }];
 
-                                                showToast(`${product.variants.length} varian dimuat dari produk`, 'success');
-                                            } else {
-                                                // Tidak ada varian - reset
-                                                setForm(prev => prev ? {
-                                                    ...prev,
-                                                    productVariants: [],
-                                                    productOptions: [],
-                                                    variantCombinations: []
-                                                } : prev);
-                                                showToast('Produk tidak memiliki varian', 'info');
+                                                        // Helper: map nama varian (e.g., "HITAM - A4") ke attributes per option
+                                                        const mapAttributes = (variantName: string) => {
+                                                            const attributes: Record<string, string> = {};
+
+                                                            if (hasVariantOptions) {
+                                                                const parts = (variantName || '')
+                                                                    .split('-')
+                                                                    .map(p => p.trim())
+                                                                    .filter(Boolean);
+
+                                                                product.variantOptions!.forEach((opt, idx) => {
+                                                                    const key = opt.name || `Opsi ${idx + 1}`;
+                                                                    const value = parts[idx] || opt.values?.[0] || '';
+                                                                    attributes[key] = value;
+                                                                });
+                                                            } else {
+                                                                attributes['Varian'] = variantName || 'Varian';
+                                                            }
+
+                                                            return attributes;
+                                                        };
+
+                                                        const newVariantCombinations: VariantCombination[] = product.variants.map((variant, idx) => ({
+                                                            attributes: mapAttributes(variant.name || `Varian ${idx + 1}`),
+                                                            sellingPrice: variant.price || 0,
+                                                            strikethroughPrice: variant.comparePrice || 0,
+                                                            costPrice: variant.costPrice || 0,
+                                                            csCommission: variant.csCommission || 0,
+                                                            advCommission: variant.advCommission || 0,
+                                                            sku: variant.sku || '',
+                                                            weight: variant.weight || 0,
+                                                            initialStock: variant.initialStock || 0
+                                                        }));
+
+                                                        console.log('✅ ProductOptions:', newProductOptions);
+                                                        console.log('✅ VariantCombinations:', newVariantCombinations);
+
+                                                        // Update form dengan varian yang sudah dikonversi
+                                                        setForm(prev => prev ? {
+                                                            ...prev,
+                                                            productOptions: newProductOptions,
+                                                            variantCombinations: newVariantCombinations,
+                                                            productVariants: product.variants
+                                                        } : prev);
+
+                                                        showToast(`${product.variants.length} varian dimuat dari produk`, 'success');
+                                                    } else {
+                                                        // Tidak ada varian - reset
+                                                        setForm(prev => prev ? {
+                                                            ...prev,
+                                                            productVariants: [],
+                                                            productOptions: [],
+                                                            variantCombinations: []
+                                                        } : prev);
+                                                        showToast('Produk tidak memiliki varian', 'info');
+                                                    }
+                                                }
+                                            } catch (error) {
+                                                console.error('Error loading product:', error);
+                                                showToast('Gagal memuat data produk', 'error');
                                             }
+                                        } else {
+                                            // Product ID kosong - reset semua
+                                            setForm(prev => prev ? {
+                                                ...prev,
+                                                productVariants: [],
+                                                productOptions: [],
+                                                variantCombinations: [],
+                                                mainImage: ''
+                                            } : prev);
+                                            setMainImagePreview('');
                                         }
-                                    } catch (error) {
-                                        console.error('Error loading product:', error);
-                                        showToast('Gagal memuat data produk', 'error');
-                                    }
-                                } else {
-                                    // Product ID kosong - reset semua
-                                    setForm(prev => prev ? {
-                                        ...prev,
-                                        productVariants: [],
-                                        productOptions: [],
-                                        variantCombinations: [],
-                                        mainImage: ''
-                                    } : prev);
-                                    setMainImagePreview('');
-                                }
-                            }}
-                            disabled={!form.brandId || loadingProductDetails}
-                            className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.productId ? 'border-red-500' : 'dark:border-slate-600'
-                                } ${loadingProductDetails ? 'opacity-50 cursor-wait' : ''}`}
-                        >
-                            <option value="">{loadingProductDetails ? '⏳ Memuat produk...' : '-- Pilih Produk --'}</option>
-                            {products
-                                .filter(product => !form.brandId || product.brandId === form.brandId)
-                                .map(product => {
-                                    let displayText = product.name;
-                                    if (product.sku) displayText += ` (${product.sku})`;
-                                    if (product.category) displayText += ` - ${product.category}`;
-                                    if (product.basePrice) displayText += ` • Rp ${product.basePrice.toLocaleString('id-ID')}`;
-                                    return (
-                                        <option key={product.id} value={product.id}>
-                                            {displayText}
-                                        </option>
-                                    );
-                                })
-                            }
-                        </select>
-                        {!form.productId && form.brandId && <p className="text-xs text-red-500 mt-1">Produk harus dipilih</p>}
-                        {!form.brandId && <p className="text-xs text-orange-500 mt-1">⚠️ Silakan pilih merek terlebih dahulu untuk melihat daftar produk</p>}
-                        {loadingProductDetails && <p className="text-xs text-blue-500 mt-1">⏳ Memuat data produk...</p>}
-                        {!loadingProductDetails && form.brandId && products.length > 0 && products.filter(p => p.brandId === form.brandId).length === 0 && (
-                            <p className="text-xs text-orange-500 mt-1">⚠️ Tidak ada produk untuk merek yang dipilih. Buat produk terlebih dahulu di menu Produk Induk.</p>
-                        )}
-                        {!loadingProductDetails && form.brandId && products.length === 0 && (
-                            <p className="text-xs text-slate-500 mt-1">✓ Tidak ada produk untuk merek ini</p>
-                        )}
-                        <p className="text-xs text-slate-500 mt-1">Pilih produk dari menu Produk Induk. Formulir akan otomatis menggunakan varian dari produk yang dipilih.</p>
-
-                        {/* Display loaded variants info */}
-                        {form.productId && form.productVariants && form.productVariants.length > 0 && (
-                            <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                                <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100 mb-2">
-                                    ✓ {form.productVariants.length} Varian Produk Dimuat:
-                                </p>
-                                <div className="space-y-1">
-                                    {form.productVariants.slice(0, 3).map((variant: any, index: number) => (
-                                        <p key={index} className="text-xs text-indigo-700 dark:text-indigo-300">
-                                            • {variant.name || `Varian ${index + 1}`} - Rp {(variant.price || 0).toLocaleString('id-ID')}
-                                        </p>
-                                    ))}
-                                    {form.productVariants.length > 3 && (
-                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 italic">
-                                            ... dan {form.productVariants.length - 3} varian lainnya
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Tombol Sinkronisasi Harga */}
-                                <button
-                                    type="button"
-                                    onClick={syncPricesFromProduct}
-                                    disabled={syncingPrices}
-                                    className="mt-3 w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                    }}
+                                    disabled={!form.brandId || loadingProductDetails}
+                                    className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 ${!form.productId ? 'border-red-500' : 'dark:border-slate-600'
+                                        } ${loadingProductDetails ? 'opacity-50 cursor-wait' : ''}`}
                                 >
-                                    {syncingPrices ? (
-                                        <>
-                                            <SpinnerIcon className="w-4 h-4 animate-spin" />
-                                            Menyinkronkan...
-                                        </>
-                                    ) : (
-                                        <>
-                                            🔄 Sinkronkan Harga dari Produk
-                                        </>
-                                    )}
-                                </button>
-                                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1.5 text-center">
-                                    Klik untuk memperbarui harga formulir sesuai dengan harga terbaru di Produk Induk
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                                    <option value="">{loadingProductDetails ? '⏳ Memuat produk...' : '-- Pilih Produk --'}</option>
+                                    {products
+                                        .filter(product => !form.brandId || product.brandId === form.brandId)
+                                        .map(product => {
+                                            let displayText = product.name;
+                                            if (product.sku) displayText += ` (${product.sku})`;
+                                            if (product.category) displayText += ` - ${product.category}`;
+                                            if (product.basePrice) displayText += ` • Rp ${product.basePrice.toLocaleString('id-ID')}`;
+                                            return (
+                                                <option key={product.id} value={product.id}>
+                                                    {displayText}
+                                                </option>
+                                            );
+                                        })
+                                    }
+                                </select>
+                                {!form.productId && form.brandId && <p className="text-xs text-red-500 mt-1">Produk harus dipilih</p>}
+                                {!form.brandId && <p className="text-xs text-orange-500 mt-1">⚠️ Silakan pilih merek terlebih dahulu untuk melihat daftar produk</p>}
+                                {loadingProductDetails && <p className="text-xs text-blue-500 mt-1">⏳ Memuat data produk...</p>}
+                                {!loadingProductDetails && form.brandId && products.length > 0 && products.filter(p => p.brandId === form.brandId).length === 0 && (
+                                    <p className="text-xs text-orange-500 mt-1">⚠️ Tidak ada produk untuk merek yang dipilih. Buat produk terlebih dahulu di menu Produk Induk.</p>
+                                )}
+                                {!loadingProductDetails && form.brandId && products.length === 0 && (
+                                    <p className="text-xs text-slate-500 mt-1">✓ Tidak ada produk untuk merek ini</p>
+                                )}
+                                <p className="text-xs text-slate-500 mt-1">Pilih produk dari menu Produk Induk. Formulir akan otomatis menggunakan varian dari produk yang dipilih.</p>
 
-                    <div>
-                        <label className="block text-sm font-medium mb-1">URL Slug</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={form.slug}
-                                onChange={handleSlugChange}
-                                className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 pr-24 ${slugAvailable === false ? 'border-red-500' : 'dark:border-slate-600'}`}
-                                placeholder="e.g., promo-spesial-lebaran"
-                            />
-                            <div className="absolute inset-y-0 right-2 flex items-center text-xs">
-                                {slugChecking ? <SpinnerIcon className="w-4 h-4 animate-spin" /> :
-                                    slugAvailable === true ? <span className="text-green-500 flex items-center gap-1"><CheckIcon className="w-4 h-4" /> Tersedia</span> :
-                                        slugAvailable === false ? <span className="text-red-500 flex items-center gap-1"><XIcon className="w-4 h-4" /> Diambil</span> : null}
-                            </div>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">URL: https://form.cuanmax.digital/#/f/<strong>{form.slug || 'id-formulir'}</strong></p>
-                    </div>
-                </EditorCard>
+                                {/* Display loaded variants info */}
+                                {form.productId && form.productVariants && form.productVariants.length > 0 && (
+                                    <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                        <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100 mb-2">
+                                            ✓ {form.productVariants.length} Varian Produk Dimuat:
+                                        </p>
+                                        <div className="space-y-1">
+                                            {form.productVariants.slice(0, 3).map((variant: any, index: number) => (
+                                                <p key={index} className="text-xs text-indigo-700 dark:text-indigo-300">
+                                                    • {variant.name || `Varian ${index + 1}`} - Rp {(variant.price || 0).toLocaleString('id-ID')}
+                                                </p>
+                                            ))}
+                                            {form.productVariants.length > 3 && (
+                                                <p className="text-xs text-indigo-600 dark:text-indigo-400 italic">
+                                                    ... dan {form.productVariants.length - 3} varian lainnya
+                                                </p>
+                                            )}
+                                        </div>
 
-                {/* Atur Opsi Varian */}
-                <EditorCard icon={CubeIcon} title="Atur Opsi Varian">
-                    <p className="text-xs text-slate-500 mb-3">Kelola atribut produk (Warna, Ukuran, dll) dan nilai-nilainya</p>
-
-                    {form.productOptions && form.productOptions.length > 0 ? (
-                        <div className="space-y-4">
-                            {form.productOptions.map((option, optIndex) => (
-                                <div key={option.id} className="p-4 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30">
-                                    {/* Header Opsi */}
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <input
-                                            type="text"
-                                            value={option.name}
-                                            onChange={(e) => {
-                                                const newName = e.target.value.toUpperCase();
-                                                setForm(prev => {
-                                                    if (!prev) return prev;
-                                                    const updated = [...prev.productOptions];
-                                                    const oldName = updated[optIndex].name;
-                                                    updated[optIndex] = { ...updated[optIndex], name: newName };
-
-                                                    // Update atribut di semua combinations
-                                                    const updatedCombos = prev.variantCombinations.map(combo => {
-                                                        const attrs = { ...combo.attributes };
-                                                        if (attrs[oldName] !== undefined) {
-                                                            attrs[newName] = attrs[oldName];
-                                                            delete attrs[oldName];
-                                                        }
-                                                        return { ...combo, attributes: attrs };
-                                                    });
-
-                                                    return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
-                                                });
-                                            }}
-                                            placeholder="Nama atribut (e.g., WARNA)"
-                                            className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 font-bold text-indigo-600"
-                                        />
+                                        {/* Tombol Sinkronisasi Harga */}
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                if (confirm(`Hapus atribut "${option.name}"?`)) {
-                                                    setForm(prev => {
-                                                        if (!prev) return prev;
-                                                        const filtered = prev.productOptions.filter((_, i) => i !== optIndex);
-                                                        return { ...prev, productOptions: filtered };
-                                                    });
-                                                }
-                                            }}
-                                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                            onClick={syncPricesFromProduct}
+                                            disabled={syncingPrices}
+                                            className="mt-3 w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                         >
-                                            <TrashIcon className="w-5 h-5" />
+                                            {syncingPrices ? (
+                                                <>
+                                                    <SpinnerIcon className="w-4 h-4 animate-spin" />
+                                                    Menyinkronkan...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    🔄 Sinkronkan Harga dari Produk
+                                                </>
+                                            )}
                                         </button>
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1.5 text-center">
+                                            Klik untuk memperbarui harga formulir sesuai dengan harga terbaru di Produk Induk
+                                        </p>
                                     </div>
+                                )}
+                            </div>
 
-                                    {/* Nilai-nilai */}
-                                    <div className="space-y-2">
-                                        {option.values.map((value, valIndex) => (
-                                            <div key={valIndex} className="flex items-center gap-2">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">URL Slug</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={form.slug}
+                                        onChange={handleSlugChange}
+                                        className={`w-full p-2 border rounded-lg bg-white dark:bg-slate-700 pr-24 ${slugAvailable === false ? 'border-red-500' : 'dark:border-slate-600'}`}
+                                        placeholder="e.g., promo-spesial-lebaran"
+                                    />
+                                    <div className="absolute inset-y-0 right-2 flex items-center text-xs">
+                                        {slugChecking ? <SpinnerIcon className="w-4 h-4 animate-spin" /> :
+                                            slugAvailable === true ? <span className="text-green-500 flex items-center gap-1"><CheckIcon className="w-4 h-4" /> Tersedia</span> :
+                                                slugAvailable === false ? <span className="text-red-500 flex items-center gap-1"><XIcon className="w-4 h-4" /> Diambil</span> : null}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">URL: https://form.cuanmax.digital/#/f/<strong>{form.slug || 'id-formulir'}</strong></p>
+                            </div>
+                        </EditorCard>
+
+                        {/* Atur Opsi Varian */}
+                        <EditorCard icon={CubeIcon} title="Atur Opsi Varian" badge={form.variantCombinations?.length ? `${form.variantCombinations.length} Varian` : undefined} badgeColor="indigo">
+                            <p className="text-xs text-slate-500 mb-3">Kelola atribut produk (Warna, Ukuran, dll) dan nilai-nilainya</p>
+
+                            {form.productOptions && form.productOptions.length > 0 ? (
+                                <div className="space-y-4">
+                                    {form.productOptions.map((option, optIndex) => (
+                                        <div key={option.id} className="p-4 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30">
+                                            {/* Header Opsi */}
+                                            <div className="flex items-center gap-3 mb-3">
                                                 <input
                                                     type="text"
-                                                    value={value}
+                                                    value={option.name}
                                                     onChange={(e) => {
-                                                        const newValue = e.target.value;
+                                                        const newName = e.target.value.toUpperCase();
                                                         setForm(prev => {
                                                             if (!prev) return prev;
                                                             const updated = [...prev.productOptions];
-                                                            const oldValue = updated[optIndex].values[valIndex];
-                                                            updated[optIndex].values[valIndex] = newValue;
+                                                            const oldName = updated[optIndex].name;
+                                                            updated[optIndex] = { ...updated[optIndex], name: newName };
 
-                                                            // Update combinations yang menggunakan value ini
+                                                            // Update atribut di semua combinations
                                                             const updatedCombos = prev.variantCombinations.map(combo => {
-                                                                if (combo.attributes[option.name] === oldValue) {
-                                                                    return {
-                                                                        ...combo,
-                                                                        attributes: { ...combo.attributes, [option.name]: newValue }
-                                                                    };
+                                                                const attrs = { ...combo.attributes };
+                                                                if (attrs[oldName] !== undefined) {
+                                                                    attrs[newName] = attrs[oldName];
+                                                                    delete attrs[oldName];
                                                                 }
-                                                                return combo;
+                                                                return { ...combo, attributes: attrs };
                                                             });
 
                                                             return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
                                                         });
                                                     }}
-                                                    placeholder={`Nilai ${valIndex + 1}`}
-                                                    className="flex-1 px-3 py-1.5 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                    placeholder="Nama atribut (e.g., WARNA)"
+                                                    className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 font-bold text-indigo-600"
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (confirm(`Hapus atribut "${option.name}"?`)) {
+                                                            setForm(prev => {
+                                                                if (!prev) return prev;
+                                                                const filtered = prev.productOptions.filter((_, i) => i !== optIndex);
+                                                                return { ...prev, productOptions: filtered };
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                                >
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
+
+                                            {/* Nilai-nilai */}
+                                            <div className="space-y-2">
+                                                {option.values.map((value, valIndex) => (
+                                                    <div key={valIndex} className="flex items-center gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={value}
+                                                            onChange={(e) => {
+                                                                const newValue = e.target.value;
+                                                                setForm(prev => {
+                                                                    if (!prev) return prev;
+                                                                    const updated = [...prev.productOptions];
+                                                                    const oldValue = updated[optIndex].values[valIndex];
+                                                                    updated[optIndex].values[valIndex] = newValue;
+
+                                                                    // Update combinations yang menggunakan value ini
+                                                                    const updatedCombos = prev.variantCombinations.map(combo => {
+                                                                        if (combo.attributes[option.name] === oldValue) {
+                                                                            return {
+                                                                                ...combo,
+                                                                                attributes: { ...combo.attributes, [option.name]: newValue }
+                                                                            };
+                                                                        }
+                                                                        return combo;
+                                                                    });
+
+                                                                    return { ...prev, productOptions: updated, variantCombinations: updatedCombos };
+                                                                });
+                                                            }}
+                                                            placeholder={`Nilai ${valIndex + 1}`}
+                                                            className="flex-1 px-3 py-1.5 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setForm(prev => {
+                                                                    if (!prev) return prev;
+                                                                    const updated = [...prev.productOptions];
+                                                                    updated[optIndex].values.splice(valIndex, 1);
+                                                                    return { ...prev, productOptions: updated };
+                                                                });
+                                                            }}
+                                                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                                        >
+                                                            <XIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         setForm(prev => {
                                                             if (!prev) return prev;
                                                             const updated = [...prev.productOptions];
-                                                            updated[optIndex].values.splice(valIndex, 1);
+                                                            updated[optIndex].values.push(`Nilai ${updated[optIndex].values.length + 1}`);
                                                             return { ...prev, productOptions: updated };
                                                         });
                                                     }}
-                                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                                    className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
                                                 >
-                                                    <XIcon className="w-4 h-4" />
+                                                    + Tambah Nilai
                                                 </button>
                                             </div>
-                                        ))}
+                                        </div>
+                                    ))}
 
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setForm(prev => {
+                                                if (!prev) return prev;
+                                                const newOption: ProductOption = {
+                                                    id: Date.now(),
+                                                    name: `OPSI ${prev.productOptions.length + 1}`,
+                                                    values: ['Nilai 1'],
+                                                    displayStyle: 'radio'
+                                                };
+                                                return { ...prev, productOptions: [...prev.productOptions, newOption] };
+                                            });
+                                        }}
+                                        className="w-full py-2.5 border-2 border-dashed border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 font-medium text-sm"
+                                    >
+                                        + Tambah Opsi
+                                    </button>
+
+                                    {/* Generate Combinations Button */}
+                                    {form.productOptions.length > 0 && (
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setForm(prev => {
-                                                    if (!prev) return prev;
-                                                    const updated = [...prev.productOptions];
-                                                    updated[optIndex].values.push(`Nilai ${updated[optIndex].values.length + 1}`);
-                                                    return { ...prev, productOptions: updated };
+                                                    if (!prev || !prev.productOptions || prev.productOptions.length === 0) return prev;
+
+                                                    // Generate all combinations dari productOptions
+                                                    const optionValues = prev.productOptions.map(opt => opt.values);
+                                                    const combinations: VariantCombination[] = [];
+
+                                                    function generateCombos(index: number, current: Record<string, string>) {
+                                                        if (index === prev.productOptions.length) {
+                                                            combinations.push({
+                                                                attributes: { ...current },
+                                                                sellingPrice: 0,
+                                                                costPrice: 0,
+                                                                csCommission: 0,
+                                                                advCommission: 0,
+                                                                weight: 0,
+                                                                initialStock: 10
+                                                            });
+                                                            return;
+                                                        }
+
+                                                        const opt = prev.productOptions[index];
+                                                        for (const value of opt.values) {
+                                                            generateCombos(index + 1, { ...current, [opt.name]: value });
+                                                        }
+                                                    }
+
+                                                    generateCombos(0, {});
+
+                                                    showToast(`${combinations.length} kombinasi varian dibuat`, 'success');
+                                                    return { ...prev, variantCombinations: combinations };
                                                 });
                                             }}
-                                            className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
+                                            className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm shadow-lg"
                                         >
-                                            + Tambah Nilai
+                                            🔄 Generate {form.productOptions.reduce((acc, opt) => acc * opt.values.length, 1)} Kombinasi Varian
                                         </button>
-                                    </div>
+                                    )}
                                 </div>
-                            ))}
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setForm(prev => {
-                                        if (!prev) return prev;
-                                        const newOption: ProductOption = {
-                                            id: Date.now(),
-                                            name: `OPSI ${prev.productOptions.length + 1}`,
-                                            values: ['Nilai 1'],
-                                            displayStyle: 'radio'
-                                        };
-                                        return { ...prev, productOptions: [...prev.productOptions, newOption] };
-                                    });
-                                }}
-                                className="w-full py-2.5 border-2 border-dashed border-indigo-300 dark:border-indigo-700 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 font-medium text-sm"
-                            >
-                                + Tambah Opsi
-                            </button>
-
-                            {/* Generate Combinations Button */}
-                            {form.productOptions.length > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setForm(prev => {
-                                            if (!prev || !prev.productOptions || prev.productOptions.length === 0) return prev;
-
-                                            // Generate all combinations dari productOptions
-                                            const optionValues = prev.productOptions.map(opt => opt.values);
-                                            const combinations: VariantCombination[] = [];
-
-                                            function generateCombos(index: number, current: Record<string, string>) {
-                                                if (index === prev.productOptions.length) {
-                                                    combinations.push({
-                                                        attributes: { ...current },
-                                                        sellingPrice: 0,
-                                                        costPrice: 0,
-                                                        csCommission: 0,
-                                                        advCommission: 0,
-                                                        weight: 0,
-                                                        initialStock: 10
-                                                    });
-                                                    return;
-                                                }
-
-                                                const opt = prev.productOptions[index];
-                                                for (const value of opt.values) {
-                                                    generateCombos(index + 1, { ...current, [opt.name]: value });
-                                                }
-                                            }
-
-                                            generateCombos(0, {});
-
-                                            showToast(`${combinations.length} kombinasi varian dibuat`, 'success');
-                                            return { ...prev, variantCombinations: combinations };
-                                        });
-                                    }}
-                                    className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm shadow-lg"
-                                >
-                                    🔄 Generate {form.productOptions.reduce((acc, opt) => acc * opt.values.length, 1)} Kombinasi Varian
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <p className="text-sm text-slate-500 mb-3">Belum ada opsi varian</p>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setForm(prev => {
-                                        if (!prev) return prev;
-                                        const newOption: ProductOption = {
-                                            id: Date.now(),
-                                            name: 'WARNA',
-                                            values: ['HITAM', 'MERAH', 'BIRU'],
-                                            displayStyle: 'radio'
-                                        };
-                                        return { ...prev, productOptions: [newOption] };
-                                    });
-                                }}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm"
-                            >
-                                Buat Opsi Pertama
-                            </button>
-                        </div>
-                    )}
-                </EditorCard>
-
-                <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
-                    <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
-                    {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
-                        // Skip city, district, and village as they're controlled by province
-                        if (key === 'city' || key === 'district' || key === 'village') return null;
-
-                        const isProvince = key === 'province';
-
-                        return (
-                            <div key={key}>
-                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                                    <span className="capitalize text-sm">{key}</span>
-                                    <div className="flex items-center gap-4">
-                                        <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
-                                        <label className="flex items-center gap-1 text-xs">
-                                            <input
-                                                type="checkbox"
-                                                checked={(form.customerFields as any)[key].required && (form.customerFields as any)[key].visible}
-                                                onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)}
-                                                disabled={!(form.customerFields as any)[key].visible}
-                                                className="rounded disabled:opacity-50"
-                                            />
-                                            Wajib
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* Show City, District, and Village as children of Province */}
-                                {isProvince && form.customerFields.province.visible && (
-                                    <div className="ml-6 mt-1 space-y-1">
-                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">↳ City (Kota/Kabupaten)</span>
-                                            <div className="flex items-center gap-4">
-                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.city.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
-                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.city.required} disabled className="rounded opacity-50" /> Wajib</label>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">↳ District (Kecamatan)</span>
-                                            <div className="flex items-center gap-4">
-                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
-                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.required} disabled className="rounded opacity-50" /> Wajib</label>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">↳ Village (Kelurahan/Desa)</span>
-                                            <div className="flex items-center gap-4">
-                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.village?.visible || false} disabled className="rounded opacity-50" /> Tampilkan</label>
-                                                <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.village?.required || false} disabled className="rounded opacity-50" /> Wajib</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </EditorCard>
-
-                <EditorCard icon={ShipIcon} title="Pengaturan Pengiriman">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs text-slate-500">Minimal 1 metode pengiriman harus ditampilkan</p>
-                        <span className="text-xs text-red-500 font-medium">Wajib</span>
-                    </div>
-                    {(Object.keys(SHIPPING_LABELS) as Array<keyof ShippingSettings>).map(key => (
-                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                            <label htmlFor={`shipping-toggle-${key}`} className="flex-grow flex items-center gap-2 cursor-pointer">
-                                <ToggleSwitch checked={form.shippingSettings[key].visible} onChange={v => handleSubNestedFieldChange('shippingSettings', key, 'visible', v)} />
-                                <span className="text-sm">{SHIPPING_LABELS[key]}</span>
-                            </label>
-                            {key !== 'free' && (
-                                <div className="flex items-center gap-2">
-                                    <label className="text-sm">Biaya per kg</label>
-                                    <input
-                                        type="number"
-                                        value={form.shippingSettings[key].cost}
-                                        onChange={e => handleSubNestedFieldChange('shippingSettings', key, 'cost', parseFloat(e.target.value))}
-                                        className="w-28 p-1.5 border rounded text-sm bg-white dark:bg-slate-700 dark:border-slate-600"
-                                        disabled={!form.shippingSettings[key].visible}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </EditorCard>
-
-                <EditorCard icon={CreditCardIcon} title="Pengaturan Pembayaran">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs text-slate-500">Minimal 1 metode pembayaran harus ditampilkan</p>
-                        <span className="text-xs text-red-500 font-medium">Wajib</span>
-                    </div>
-                    {(Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>).sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99)).map(key => {
-                        const setting = form.paymentSettings[key];
-                        const config = PAYMENT_CONFIG[key];
-                        if (!config) return null;
-                        const Icon = config.icon;
-
-                        return (
-                            <div key={key} className="p-3 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50">
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <ToggleSwitch checked={setting.visible} onChange={v => handleSubNestedFieldChange('paymentSettings', key, 'visible', v)} />
-                                        <Icon className="w-5 h-5" />
-                                        <span className="font-medium text-sm">{config.label}</span>
-                                    </label>
-                                </div>
-                                {setting.visible && (
-                                    <div className="pl-8 space-y-2">
-                                        {key === 'cod' && (
-                                            <>
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span>Biaya Penanganan:</span>
-                                                    <input type="number" value={(setting as CODSettings).handlingFeePercentage || 0} onChange={e => handleSubNestedFieldChange('paymentSettings', 'cod', 'handlingFeePercentage', parseFloat(e.target.value))} className="w-20 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600" />
-                                                    <span>%</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm mt-2">
-                                                    <span>Basis Hitung:</span>
-                                                    <select
-                                                        value={(setting as CODSettings).handlingFeeBase || 'product_and_shipping'}
-                                                        onChange={e => handleSubNestedFieldChange('paymentSettings', 'cod', 'handlingFeeBase', e.target.value)}
-                                                        className="p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    >
-                                                        <option value="product">Harga Produk saja</option>
-                                                        <option value="product_and_shipping">Harga Produk + Ongkir</option>
-                                                    </select>
-                                                </div>
-                                                <div className="text-xs text-slate-500 mt-1">Biaya ini akan ditambahkan ke total tagihan.</div>
-                                            </>
-                                        )}
-                                        {key === 'bankTransfer' && (
-                                            <div>
-                                                {(setting as BankTransferSetting).accounts.map((acc, index) => (
-                                                    <div key={acc.id} className="flex items-center gap-2 mb-2">
-                                                        <input type="text" placeholder="Nama Bank" value={acc.bankName} onChange={e => handleBankTransferAccountChange(index, 'bankName', e.target.value)} className="flex-1 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                        <input type="text" placeholder="Nomor Rekening" value={acc.accountNumber} onChange={e => handleBankTransferAccountChange(index, 'accountNumber', e.target.value)} className="flex-1 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                        <input type="text" placeholder="Atas Nama" value={acc.accountHolder} onChange={e => handleBankTransferAccountChange(index, 'accountHolder', e.target.value)} className="flex-1 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                        <button type="button" onClick={() => removeBankAccount(index)}><TrashIcon className="w-4 h-4 text-red-500" /></button>
-                                                    </div>
-                                                ))}
-                                                <button type="button" onClick={addBankAccount} className="text-xs font-medium text-indigo-600 hover:text-indigo-500">+ Tambah Rekening</button>
-                                            </div>
-                                        )}
-                                        {key === 'qris' && (
-                                            <div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="relative w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
-                                                        {qrisImagePreview ? <img src={qrisImagePreview} className="w-full h-full object-cover" /> : <span className="text-xs text-slate-500">No Image</span>}
-                                                    </div>
-                                                    <label className="cursor-pointer text-sm text-indigo-600 hover:underline">
-                                                        Unggah Kode QR
-                                                        <input type="file" className="hidden" accept="image/*" onChange={e => handleImageChange(e, 'qris')} />
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </EditorCard>
-
-                <EditorCard icon={CheckCircleFilledIcon} title="Halaman Terima Kasih">
-                    <div className="flex gap-4 mb-4">
-                        <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'submissionAction', null, 'show_thank_you_page')} className={`flex-1 py-2 px-4 rounded-lg border text-sm ${form.thankYouPage.submissionAction === 'show_thank_you_page' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Tampilkan Halaman Terima Kasih</button>
-                        <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'submissionAction', null, 'redirect_to_url')} className={`flex-1 py-2 px-4 rounded-lg border text-sm ${form.thankYouPage.submissionAction === 'redirect_to_url' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Alihkan ke URL Lain</button>
-                    </div>
-
-                    {form.thankYouPage.submissionAction === 'show_thank_you_page' ? (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Judul Halaman</label>
-                                <input type="text" value={form.thankYouPage.title} onChange={e => handleSubNestedFieldChange('thankYouPage', null, 'title', e.target.value)} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Pesan Utama</label>
-                                <textarea value={form.thankYouPage.message} onChange={e => handleSubNestedFieldChange('thankYouPage', null, 'message', e.target.value)} rows={3} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"></textarea>
-                            </div>
-                            <div className="flex items-center justify-between py-2">
-                                <label className="text-sm font-medium">Tampilkan Ringkasan Pesanan</label>
-                                <ToggleSwitch checked={form.thankYouPage.showOrderSummary} onChange={v => handleSubNestedFieldChange('thankYouPage', null, 'showOrderSummary', v)} />
-                            </div>
-
-                            <div className="border-t pt-4 mt-2">
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="text-sm font-medium flex items-center gap-2"><WhatsAppIcon className="w-4 h-4 text-green-500" /> Konfirmasi ke WhatsApp</label>
-                                    <ToggleSwitch checked={form.thankYouPage.whatsappConfirmation.active} onChange={v => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'active', v)} />
-                                </div>
-
-                                {form.thankYouPage.whatsappConfirmation.active && (
-                                    <div className="space-y-3 pl-4 border-l-2 border-slate-200 dark:border-slate-700">
-                                        <div>
-                                            <label className="block text-xs font-medium mb-1">Tujuan Pesan</label>
-                                            <div className="flex gap-2 text-sm">
-                                                <label className="flex items-center gap-1 cursor-pointer">
-                                                    <input type="radio" name="waDestination" checked={form.thankYouPage.whatsappConfirmation.destination === 'assigned_cs'} onChange={() => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'destination', 'assigned_cs')} /> CS Tertunjuk
-                                                </label>
-                                                <label className="flex items-center gap-1 cursor-pointer">
-                                                    <input type="radio" name="waDestination" checked={form.thankYouPage.whatsappConfirmation.destination === 'custom'} onChange={() => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'destination', 'custom')} /> Nomor Custom
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        {form.thankYouPage.whatsappConfirmation.destination === 'custom' && (
-                                            <div>
-                                                <label className="block text-xs font-medium mb-1">Nomor WhatsApp Admin</label>
-                                                <input type="tel" value={form.thankYouPage.whatsappConfirmation.number} onChange={e => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'number', e.target.value)} placeholder="628..." className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                            </div>
-                                        )}
-
-                                        <div>
-                                            <label className="block text-xs font-medium mb-1">Isi Pesan Template</label>
-                                            <textarea value={form.thankYouPage.whatsappConfirmation.messageTemplate} onChange={e => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'messageTemplate', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"></textarea>
-                                            <p className="text-xs text-slate-500 mt-1">Gunakan: [PRODUCT_NAME], [ORDER_ID], [CUSTOMER_NAME], [TOTAL_PRICE], [PAYMENT_METHOD]</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </>
-                    ) : (
-                        <div>
-                            <label className="block text-sm font-medium mb-1">URL Pengalihan</label>
-                            <input type="url" value={form.thankYouPage.redirectUrl} onChange={e => handleSubNestedFieldChange('thankYouPage', null, 'redirectUrl', e.target.value)} placeholder="https://..." className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600" />
-                            <p className="text-xs text-slate-500 mt-2">
-                                Tersedia parameter URL: [ORDER_ID], [TOTAL_PRICE], [CUSTOMER_NAME], [CUSTOMER_PHONE], [CUSTOMER_EMAIL]
-                            </p>
-                        </div>
-                    )}
-                </EditorCard>
-
-                <EditorCard icon={UserGroupIcon} title="Distribusi CS (Rotator)">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs text-slate-500">Pilih mode dan assign minimal 1 CS</p>
-                        <span className="text-xs text-red-500 font-medium">Wajib</span>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex gap-4">
-                            <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'mode', 'single')} className={`flex-1 py-2 px-3 rounded-lg border text-sm ${form.thankYouPage.csAssignment?.mode === 'single' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Satu CS</button>
-                            <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'mode', 'round_robin')} className={`flex-1 py-2 px-3 rounded-lg border text-sm ${form.thankYouPage.csAssignment?.mode === 'round_robin' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Round Robin (Bagi Rata)</button>
-                        </div>
-
-                        {form.thankYouPage.csAssignment?.mode === 'single' ? (
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Pilih CS</label>
-                                <select
-                                    value={form.thankYouPage.csAssignment?.singleAgentId || ''}
-                                    onChange={e => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'singleAgentId', e.target.value)}
-                                    className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"
-                                >
-                                    <option value="">Pilih Agen...</option>
-                                    {csAgents.map(agent => (
-                                        <option key={agent.id} value={agent.id}>{agent.name} ({agent.status})</option>
-                                    ))}
-                                </select>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Daftar CS & Bobot (%)</p>
-                                {form.thankYouPage.csAssignment?.roundRobinAgents?.map((setting, index) => {
-                                    const agent = csAgents.find(a => a.id === setting.csAgentId);
-                                    return (
-                                        <div key={index} className="flex items-center gap-2">
-                                            <div className="flex-grow p-2 bg-slate-100 dark:bg-slate-700 rounded text-sm">{agent?.name || 'Unknown Agent'}</div>
-                                            <input
-                                                type="number"
-                                                value={setting.percentage}
-                                                onChange={e => {
-                                                    const newArr = [...(form.thankYouPage.csAssignment?.roundRobinAgents || [])];
-                                                    newArr[index] = { ...newArr[index], percentage: parseInt(e.target.value) || 0 };
-                                                    handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
-                                                }}
-                                                className="w-16 p-2 border rounded text-center dark:bg-slate-700"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const newArr = (form.thankYouPage.csAssignment?.roundRobinAgents || []).filter((_, i) => i !== index);
-                                                    handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
-                                                }}
-                                                className="text-red-500 hover:bg-red-50 p-2 rounded"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    )
-                                })}
-
-                                <div className="flex gap-2 mt-2">
-                                    <select id="new-cs-select" className="flex-grow p-2 border rounded-lg bg-white dark:bg-slate-700 text-sm">
-                                        <option value="">Tambah Agen...</option>
-                                        {csAgents.filter(a => !(form.thankYouPage.csAssignment?.roundRobinAgents || []).some(ra => ra.csAgentId === a.id)).map(agent => (
-                                            <option key={agent.id} value={agent.id}>{agent.name}</option>
-                                        ))}
-                                    </select>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <p className="text-sm text-slate-500 mb-3">Belum ada opsi varian</p>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const select = document.getElementById('new-cs-select') as HTMLSelectElement;
-                                            const agentId = select.value;
-                                            if (agentId) {
-                                                const newArr = [...(form.thankYouPage.csAssignment?.roundRobinAgents || []), { csAgentId: agentId, percentage: 50 }];
-                                                handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
-                                                select.value = "";
-                                            }
+                                            setForm(prev => {
+                                                if (!prev) return prev;
+                                                const newOption: ProductOption = {
+                                                    id: Date.now(),
+                                                    name: 'WARNA',
+                                                    values: ['HITAM', 'MERAH', 'BIRU'],
+                                                    displayStyle: 'radio'
+                                                };
+                                                return { ...prev, productOptions: [newOption] };
+                                            });
                                         }}
-                                        className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200"
+                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm"
                                     >
-                                        Tambah
+                                        Buat Opsi Pertama
                                     </button>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                </EditorCard>
+                            )}
+                        </EditorCard>
 
-                <EditorCard icon={CheckCircleFilledIcon} title="Platform Tracking Terpilih">
+                        {/* Next Step Button */}
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => goToStep(2)}
+                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm flex items-center gap-2"
+                            >
+                                Selanjutnya <ChevronDownIcon className="w-4 h-4 -rotate-90" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* STEP 2: Pengaturan */}
+                {wizardStep === 2 && (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                            Pilih platform untuk fokus tracking pada campaign tertentu. Hanya pixel dari platform yang dipilih yang akan dimuat di halaman formulir.
-                        </p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {(
-                                [
-                                    { value: null, name: 'Semua Platform', icon: CheckCircleFilledIcon },
-                                    { value: 'meta' as const, name: 'Meta Pixel', icon: MetaIcon },
-                                    { value: 'tiktok' as const, name: 'TikTok Pixel', icon: TikTokIcon },
-                                    { value: 'google' as const, name: 'Google Analytics', icon: GoogleIcon },
-                                    { value: 'snack' as const, name: 'Snack Video', icon: SnackVideoIcon },
-                                ] as const
-                            ).map((platform) => {
-                                const IconComponent = platform.icon;
-                                const isSelected = form.assignedPlatform === platform.value;
+                        <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
+                            <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
+                            {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
+                                // Skip city, district, village, and postalCode as they're controlled by province
+                                if (key === 'city' || key === 'district' || key === 'village' || key === 'postalCode') return null;
+
+                                const isProvince = key === 'province';
 
                                 return (
-                                    <button
-                                        key={platform.value || 'all'}
-                                        type="button"
-                                        onClick={() => handleFieldChange('assignedPlatform', platform.value)}
-                                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${isSelected
-                                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
-                                            : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
-                                            }`}
-                                    >
-                                        <IconComponent className={`w-5 h-5 ${isSelected ? 'text-indigo-600' : 'text-slate-600 dark:text-slate-400'
-                                            }`} />
-                                        <span className={`text-xs font-medium text-center ${isSelected ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-300'
-                                            }`}>
-                                            {platform.name}
-                                        </span>
-                                    </button>
+                                    <div key={key}>
+                                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                                            <span className="capitalize text-sm">{key}</span>
+                                            <div className="flex items-center gap-4">
+                                                <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
+                                                <label className="flex items-center gap-1 text-xs">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={(form.customerFields as any)[key].required && (form.customerFields as any)[key].visible}
+                                                        onChange={e => handleSubNestedFieldChange('customerFields', key, 'required', e.target.checked)}
+                                                        disabled={!(form.customerFields as any)[key].visible}
+                                                        className="rounded disabled:opacity-50"
+                                                    />
+                                                    Wajib
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {/* Show City, District, and Village as children of Province */}
+                                        {isProvince && form.customerFields.province.visible && (
+                                            <div className="ml-6 mt-1 space-y-1">
+                                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-400">↳ City (Kota/Kabupaten)</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.city.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.city.required} disabled className="rounded opacity-50" /> Wajib</label>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-400">↳ District (Kecamatan)</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.visible} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.district.required} disabled className="rounded opacity-50" /> Wajib</label>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-400">↳ Village (Kelurahan/Desa)</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.village?.visible || false} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.village?.required || false} disabled className="rounded opacity-50" /> Wajib</label>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-indigo-300 dark:border-indigo-600">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-400">↳ Postal Code (Kode Pos)</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.postalCode?.visible || false} disabled className="rounded opacity-50" /> Tampilkan</label>
+                                                        <label className="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" checked={form.customerFields.postalCode?.required || false} disabled className="rounded opacity-50" /> Wajib</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
-                        </div>
-                        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg text-sm text-indigo-700 dark:text-indigo-200">
-                            <strong>Info:</strong> Setting ini adalah default. Kamu bisa override dengan parameter URL: <code className="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs">?platform=meta|tiktok|google|snack</code>
-                        </div>
-                    </div>
-                </EditorCard>
+                        </EditorCard>
 
-                <EditorCard icon={TrackingIcon} title="Pelacakan & Pixel">
-                    <div className="space-y-6">
-                        <div>
-                            <div className="flex items-center justify-between mb-3 border-b pb-1">
-                                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Halaman Formulir</h4>
-                                <span className="text-xs text-red-500 font-medium">Min. 1 Pixel</span>
+                        <EditorCard icon={ShipIcon} title="Pengaturan Pengiriman" defaultOpen={false}>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs text-slate-500">Minimal 1 metode pengiriman harus ditampilkan</p>
+                                <span className="text-xs text-red-500 font-medium">Wajib</span>
+                            </div>
+                            {(Object.keys(SHIPPING_LABELS) as Array<keyof ShippingSettings>).map(key => (
+                                <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                                    <label htmlFor={`shipping-toggle-${key}`} className="flex-grow flex items-center gap-2 cursor-pointer">
+                                        <ToggleSwitch checked={form.shippingSettings[key].visible} onChange={v => handleSubNestedFieldChange('shippingSettings', key, 'visible', v)} />
+                                        <span className="text-sm">{SHIPPING_LABELS[key]}</span>
+                                    </label>
+                                    {key !== 'free' && (
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm">Biaya per kg</label>
+                                            <input
+                                                type="number"
+                                                value={form.shippingSettings[key].cost}
+                                                onChange={e => handleSubNestedFieldChange('shippingSettings', key, 'cost', parseFloat(e.target.value))}
+                                                className="w-28 p-1.5 border rounded text-sm bg-white dark:bg-slate-700 dark:border-slate-600"
+                                                disabled={!form.shippingSettings[key].visible}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </EditorCard>
+
+                        <EditorCard icon={CreditCardIcon} title="Pengaturan Pembayaran" defaultOpen={false}>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs text-slate-500">Minimal 1 metode pembayaran harus ditampilkan</p>
+                                <span className="text-xs text-red-500 font-medium">Wajib</span>
+                            </div>
+                            {(Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>).sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99)).map(key => {
+                                const setting = form.paymentSettings[key];
+                                const config = PAYMENT_CONFIG[key];
+                                if (!config) return null;
+                                const Icon = config.icon;
+
+                                return (
+                                    <div key={key} className="p-3 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <ToggleSwitch checked={setting.visible} onChange={v => handleSubNestedFieldChange('paymentSettings', key, 'visible', v)} />
+                                                <Icon className="w-5 h-5" />
+                                                <span className="font-medium text-sm">{config.label}</span>
+                                            </label>
+                                        </div>
+                                        {setting.visible && (
+                                            <div className="pl-8 space-y-2">
+                                                {key === 'cod' && (
+                                                    <>
+                                                        <div className="flex items-center gap-2 text-sm">
+                                                            <span>Biaya Penanganan:</span>
+                                                            <input type="number" value={(setting as CODSettings).handlingFeePercentage || 0} onChange={e => handleSubNestedFieldChange('paymentSettings', 'cod', 'handlingFeePercentage', parseFloat(e.target.value))} className="w-20 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600" />
+                                                            <span>%</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-sm mt-2">
+                                                            <span>Basis Hitung:</span>
+                                                            <select
+                                                                value={(setting as CODSettings).handlingFeeBase || 'product_and_shipping'}
+                                                                onChange={e => handleSubNestedFieldChange('paymentSettings', 'cod', 'handlingFeeBase', e.target.value)}
+                                                                className="p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                            >
+                                                                <option value="product">Harga Produk saja</option>
+                                                                <option value="product_and_shipping">Harga Produk + Ongkir</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 mt-1">Biaya ini akan ditambahkan ke total tagihan.</div>
+                                                    </>
+                                                )}
+                                                {key === 'bankTransfer' && (
+                                                    <div>
+                                                        {(setting as BankTransferSetting).accounts.map((acc, index) => (
+                                                            <div key={acc.id} className="flex items-center gap-2 mb-2">
+                                                                <input type="text" placeholder="Nama Bank" value={acc.bankName} onChange={e => handleBankTransferAccountChange(index, 'bankName', e.target.value)} className="flex-1 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                                <input type="text" placeholder="Nomor Rekening" value={acc.accountNumber} onChange={e => handleBankTransferAccountChange(index, 'accountNumber', e.target.value)} className="flex-1 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                                <input type="text" placeholder="Atas Nama" value={acc.accountHolder} onChange={e => handleBankTransferAccountChange(index, 'accountHolder', e.target.value)} className="flex-1 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                                <button type="button" onClick={() => removeBankAccount(index)}><TrashIcon className="w-4 h-4 text-red-500" /></button>
+                                                            </div>
+                                                        ))}
+                                                        <button type="button" onClick={addBankAccount} className="text-xs font-medium text-indigo-600 hover:text-indigo-500">+ Tambah Rekening</button>
+                                                    </div>
+                                                )}
+                                                {key === 'qris' && (
+                                                    <div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="relative w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
+                                                                {qrisImagePreview ? <img src={qrisImagePreview} className="w-full h-full object-cover" /> : <span className="text-xs text-slate-500">No Image</span>}
+                                                            </div>
+                                                            <label className="cursor-pointer text-sm text-indigo-600 hover:underline">
+                                                                Unggah Kode QR
+                                                                <input type="file" className="hidden" accept="image/*" onChange={e => handleImageChange(e, 'qris')} />
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </EditorCard>
+
+                        <EditorCard icon={CheckCircleFilledIcon} title="Halaman Terima Kasih" defaultOpen={false}>
+                            <div className="flex gap-4 mb-4">
+                                <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'submissionAction', null, 'show_thank_you_page')} className={`flex-1 py-2 px-4 rounded-lg border text-sm ${form.thankYouPage.submissionAction === 'show_thank_you_page' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Tampilkan Halaman Terima Kasih</button>
+                                <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'submissionAction', null, 'redirect_to_url')} className={`flex-1 py-2 px-4 rounded-lg border text-sm ${form.thankYouPage.submissionAction === 'redirect_to_url' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Alihkan ke URL Lain</button>
+                            </div>
+
+                            {form.thankYouPage.submissionAction === 'show_thank_you_page' ? (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Judul Halaman</label>
+                                        <input type="text" value={form.thankYouPage.title} onChange={e => handleSubNestedFieldChange('thankYouPage', null, 'title', e.target.value)} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Pesan Utama</label>
+                                        <textarea value={form.thankYouPage.message} onChange={e => handleSubNestedFieldChange('thankYouPage', null, 'message', e.target.value)} rows={3} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"></textarea>
+                                    </div>
+                                    <div className="flex items-center justify-between py-2">
+                                        <label className="text-sm font-medium">Tampilkan Ringkasan Pesanan</label>
+                                        <ToggleSwitch checked={form.thankYouPage.showOrderSummary} onChange={v => handleSubNestedFieldChange('thankYouPage', null, 'showOrderSummary', v)} />
+                                    </div>
+
+                                    <div className="border-t pt-4 mt-2">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="text-sm font-medium flex items-center gap-2"><WhatsAppIcon className="w-4 h-4 text-green-500" /> Konfirmasi ke WhatsApp</label>
+                                            <ToggleSwitch checked={form.thankYouPage.whatsappConfirmation.active} onChange={v => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'active', v)} />
+                                        </div>
+
+                                        {form.thankYouPage.whatsappConfirmation.active && (
+                                            <div className="space-y-3 pl-4 border-l-2 border-slate-200 dark:border-slate-700">
+                                                <div>
+                                                    <label className="block text-xs font-medium mb-1">Tujuan Pesan</label>
+                                                    <div className="flex gap-2 text-sm">
+                                                        <label className="flex items-center gap-1 cursor-pointer">
+                                                            <input type="radio" name="waDestination" checked={form.thankYouPage.whatsappConfirmation.destination === 'assigned_cs'} onChange={() => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'destination', 'assigned_cs')} /> CS Tertunjuk
+                                                        </label>
+                                                        <label className="flex items-center gap-1 cursor-pointer">
+                                                            <input type="radio" name="waDestination" checked={form.thankYouPage.whatsappConfirmation.destination === 'custom'} onChange={() => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'destination', 'custom')} /> Nomor Custom
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                {form.thankYouPage.whatsappConfirmation.destination === 'custom' && (
+                                                    <div>
+                                                        <label className="block text-xs font-medium mb-1">Nomor WhatsApp Admin</label>
+                                                        <input type="tel" value={form.thankYouPage.whatsappConfirmation.number} onChange={e => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'number', e.target.value)} placeholder="628..." className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <label className="block text-xs font-medium mb-1">Isi Pesan Template</label>
+                                                    <textarea value={form.thankYouPage.whatsappConfirmation.messageTemplate} onChange={e => handleSubNestedFieldChange('thankYouPage', 'whatsappConfirmation', 'messageTemplate', e.target.value)} rows={4} className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"></textarea>
+                                                    <p className="text-xs text-slate-500 mt-1">Gunakan: [PRODUCT_NAME], [ORDER_ID], [CUSTOMER_NAME], [TOTAL_PRICE], [PAYMENT_METHOD]</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">URL Pengalihan</label>
+                                    <input type="url" value={form.thankYouPage.redirectUrl} onChange={e => handleSubNestedFieldChange('thankYouPage', null, 'redirectUrl', e.target.value)} placeholder="https://..." className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600" />
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Tersedia parameter URL: [ORDER_ID], [TOTAL_PRICE], [CUSTOMER_NAME], [CUSTOMER_PHONE], [CUSTOMER_EMAIL]
+                                    </p>
+                                </div>
+                            )}
+                        </EditorCard>
+
+                        <EditorCard icon={UserGroupIcon} title="Distribusi CS (Rotator)" badge={form.thankYouPage?.csAssignment?.singleAgentId || (form.thankYouPage?.csAssignment?.roundRobinAgents?.length || 0) > 0 ? 'Aktif' : undefined} badgeColor="green" defaultOpen={false}>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-xs text-slate-500">Pilih mode dan assign minimal 1 CS</p>
+                                <span className="text-xs text-red-500 font-medium">Wajib</span>
                             </div>
                             <div className="space-y-4">
-                                {Object.keys(PLATFORM_CONFIG).map(key => {
-                                    const platformKey = key as keyof FormPageTrackingSettings;
-                                    const config = PLATFORM_CONFIG[platformKey];
-                                    const setting = form.trackingSettings?.formPage[platformKey];
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'mode', 'single')} className={`flex-1 py-2 px-3 rounded-lg border text-sm ${form.thankYouPage.csAssignment?.mode === 'single' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Satu CS</button>
+                                    <button type="button" onClick={() => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'mode', 'round_robin')} className={`flex-1 py-2 px-3 rounded-lg border text-sm ${form.thankYouPage.csAssignment?.mode === 'round_robin' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-gray-200 dark:border-gray-700'}`}>Round Robin (Bagi Rata)</button>
+                                </div>
 
-                                    const globalOptions = globalPixels[platformKey as keyof GlobalPixelSettings] || [];
-
-                                    return (
-                                        <div key={`form-${key}`} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                                            <div className="flex items-center gap-2 mb-2 font-medium">
-                                                <config.icon className="w-4 h-4" /> {config.name}
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs text-slate-500 mb-1">Pixel ID</label>
-                                                    <PixelMultiSelectDropdown
-                                                        options={globalOptions}
-                                                        selectedIds={setting?.pixelIds || []}
-                                                        onChange={(ids) => handleTrackingChange('formPage', platformKey, 'pixelIds', ids)}
+                                {form.thankYouPage.csAssignment?.mode === 'single' ? (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Pilih CS</label>
+                                        <select
+                                            value={form.thankYouPage.csAssignment?.singleAgentId || ''}
+                                            onChange={e => handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'singleAgentId', e.target.value)}
+                                            className="w-full p-2 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600"
+                                        >
+                                            <option value="">Pilih Agen...</option>
+                                            {csAgents.map(agent => (
+                                                <option key={agent.id} value={agent.id}>{agent.name} ({agent.status})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Daftar CS & Bobot (%)</p>
+                                        {form.thankYouPage.csAssignment?.roundRobinAgents?.map((setting, index) => {
+                                            const agent = csAgents.find(a => a.id === setting.csAgentId);
+                                            return (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <div className="flex-grow p-2 bg-slate-100 dark:bg-slate-700 rounded text-sm">{agent?.name || 'Unknown Agent'}</div>
+                                                    <input
+                                                        type="number"
+                                                        value={setting.percentage}
+                                                        onChange={e => {
+                                                            const newArr = [...(form.thankYouPage.csAssignment?.roundRobinAgents || [])];
+                                                            newArr[index] = { ...newArr[index], percentage: parseInt(e.target.value) || 0 };
+                                                            handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
+                                                        }}
+                                                        className="w-16 p-2 border rounded text-center dark:bg-slate-700"
                                                     />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-slate-500 mb-1">Event</label>
-                                                    <select
-                                                        value={setting?.eventName || 'ViewContent'}
-                                                        onChange={(e) => handleTrackingChange('formPage', platformKey, 'eventName', e.target.value)}
-                                                        className="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700"
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newArr = (form.thankYouPage.csAssignment?.roundRobinAgents || []).filter((_, i) => i !== index);
+                                                            handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
+                                                        }}
+                                                        className="text-red-500 hover:bg-red-50 p-2 rounded"
                                                     >
-                                                        {TRACKING_EVENTS.map(ev => <option key={ev} value={ev}>{ev}</option>)}
-                                                    </select>
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                            )
+                                        })}
 
-                        <div>
-                            <div className="flex items-center justify-between mb-3 border-b pb-1">
-                                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Halaman Terima Kasih</h4>
-                                <span className="text-xs text-red-500 font-medium">Min. 1 Pixel</span>
-                            </div>
-                            <div className="space-y-4">
-                                {Object.keys(PLATFORM_CONFIG).map(key => {
-                                    const platformKey = key as keyof FormPageTrackingSettings;
-                                    const config = PLATFORM_CONFIG[platformKey];
-                                    const setting = form.trackingSettings?.thankYouPage[platformKey];
-                                    const globalOptions = globalPixels[platformKey as keyof GlobalPixelSettings] || [];
-
-                                    return (
-                                        <div key={`thankyou-${key}`} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                                            <div className="flex items-center gap-2 mb-2 font-medium">
-                                                <config.icon className="w-4 h-4" /> {config.name}
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs text-slate-500 mb-1">Pixel ID</label>
-                                                    <PixelMultiSelectDropdown
-                                                        options={globalOptions}
-                                                        selectedIds={setting?.pixelIds || []}
-                                                        onChange={(ids) => handleTrackingChange('thankYouPage', platformKey, 'pixelIds', ids)}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-slate-500 mb-1">Event</label>
-                                                    <select
-                                                        value={setting?.eventName || 'Purchase'}
-                                                        onChange={(e) => handleTrackingChange('thankYouPage', platformKey, 'eventName', e.target.value)}
-                                                        className="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700"
-                                                    >
-                                                        {TRACKING_EVENTS.map(ev => <option key={ev} value={ev}>{ev}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
+                                        <div className="flex gap-2 mt-2">
+                                            <select id="new-cs-select" className="flex-grow p-2 border rounded-lg bg-white dark:bg-slate-700 text-sm">
+                                                <option value="">Tambah Agen...</option>
+                                                {csAgents.filter(a => !(form.thankYouPage.csAssignment?.roundRobinAgents || []).some(ra => ra.csAgentId === a.id)).map(agent => (
+                                                    <option key={agent.id} value={agent.id}>{agent.name}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const select = document.getElementById('new-cs-select') as HTMLSelectElement;
+                                                    const agentId = select.value;
+                                                    if (agentId) {
+                                                        const newArr = [...(form.thankYouPage.csAssignment?.roundRobinAgents || []), { csAgentId: agentId, percentage: 50 }];
+                                                        handleSubNestedFieldChange('thankYouPage', 'csAssignment', 'roundRobinAgents', newArr);
+                                                        select.value = "";
+                                                    }
+                                                }}
+                                                className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200"
+                                            >
+                                                Tambah
+                                            </button>
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                )}
                             </div>
+                        </EditorCard>
+
+                        {/* Step Navigation */}
+                        <div className="flex justify-between">
+                            <button
+                                type="button"
+                                onClick={() => goToStep(1, true)}
+                                className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm flex items-center gap-2"
+                            >
+                                <ChevronDownIcon className="w-4 h-4 rotate-90" /> Kembali
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => goToStep(3)}
+                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm flex items-center gap-2"
+                            >
+                                Selanjutnya <ChevronDownIcon className="w-4 h-4 -rotate-90" />
+                            </button>
                         </div>
                     </div>
-                </EditorCard>
+                )}
 
-                <EditorCard icon={CodeIcon} title="Custom Scripts (Advanced)">
+                {/* STEP 3: Lanjutan */}
+                {wizardStep === 3 && (
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Script Halaman Formulir (Head)</label>
-                            <textarea
-                                value={form.customScripts?.formPage || ''}
-                                onChange={e => handleSubNestedFieldChange('customScripts', null, 'formPage', e.target.value)}
-                                rows={4}
-                                className="w-full p-2 border rounded-lg font-mono text-xs bg-slate-50 dark:bg-slate-900 dark:border-slate-700"
-                                placeholder="<!-- Masukkan script custom di sini, e.g., GTM, Hotjar -->"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Script Halaman Terima Kasih (Head)</label>
-                            <textarea
-                                value={form.customScripts?.thankYouPage || ''}
-                                onChange={e => handleSubNestedFieldChange('customScripts', null, 'thankYouPage', e.target.value)}
-                                rows={4}
-                                className="w-full p-2 border rounded-lg font-mono text-xs bg-slate-50 dark:bg-slate-900 dark:border-slate-700"
-                                placeholder="Gunakan [TOTAL_PRICE], [ORDER_ID] untuk data dinamis."
-                            />
-                        </div>
-                    </div>
-                </EditorCard>
+                        <EditorCard icon={CheckCircleFilledIcon} title="Platform Tracking Terpilih">
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Pilih platform untuk fokus tracking pada campaign tertentu. Hanya pixel dari platform yang dipilih yang akan dimuat di halaman formulir.
+                                </p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {(
+                                        [
+                                            { value: null, name: 'Semua Platform', icon: CheckCircleFilledIcon },
+                                            { value: 'meta' as const, name: 'Meta Pixel', icon: MetaIcon },
+                                            { value: 'tiktok' as const, name: 'TikTok Pixel', icon: TikTokIcon },
+                                            { value: 'google' as const, name: 'Google Analytics', icon: GoogleIcon },
+                                            { value: 'snack' as const, name: 'Snack Video', icon: SnackVideoIcon },
+                                        ] as const
+                                    ).map((platform) => {
+                                        const IconComponent = platform.icon;
+                                        const isSelected = form.assignedPlatform === platform.value;
 
-                <EditorCard icon={ClockIcon} title="Fitur Tambahan (Konversi)">
-                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                            <ClockIcon className="w-5 h-5 text-indigo-500" />
-                            <div>
-                                <p className="text-sm font-medium">Countdown Timer</p>
-                                <p className="text-xs text-slate-500">Batas waktu checkout (e.g. 10:00)</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {form.countdownSettings?.active && (
-                                <input
-                                    type="number"
-                                    value={form.countdownSettings.duration}
-                                    onChange={e => handleSubNestedFieldChange('countdownSettings', null, 'duration', parseInt(e.target.value))}
-                                    className="w-16 p-1 text-sm border rounded text-center"
-                                />
-                            )}
-                            <ToggleSwitch checked={form.countdownSettings?.active || false} onChange={v => handleSubNestedFieldChange('countdownSettings', null, 'active', v)} />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mt-3">
-                        <div className="flex items-center gap-3">
-                            <ArchiveIcon className="w-5 h-5 text-orange-500" />
-                            <div>
-                                <p className="text-sm font-medium">Stock Countdown (Fake)</p>
-                                <p className="text-xs text-slate-500">Stok menipis otomatis</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {form.stockCountdownSettings?.active && (
-                                <input
-                                    type="number"
-                                    value={form.stockCountdownSettings.initialStock}
-                                    onChange={e => handleSubNestedFieldChange('stockCountdownSettings', null, 'initialStock', parseInt(e.target.value))}
-                                    className="w-16 p-1 text-sm border rounded text-center"
-                                    title="Stok Awal"
-                                />
-                            )}
-                            <ToggleSwitch checked={form.stockCountdownSettings?.active || false} onChange={v => handleSubNestedFieldChange('stockCountdownSettings', null, 'active', v)} />
-                        </div>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mt-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                                <ChatBubbleIcon className="w-5 h-5 text-green-500" />
-                                <div>
-                                    <p className="text-sm font-medium">Social Proof (Sales Popup)</p>
-                                    <p className="text-xs text-slate-500">Notifikasi pembelian palsu</p>
-                                </div>
-                            </div>
-                            <ToggleSwitch checked={form.socialProofSettings?.active || false} onChange={v => handleSubNestedFieldChange('socialProofSettings', null, 'active', v)} />
-                        </div>
-                        {form.socialProofSettings?.active && (
-                            <div className="space-y-3 mt-3 pl-2 border-l-2 border-slate-200 dark:border-slate-700">
-                                <div>
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Posisi Popup</label>
-                                    <div className="grid grid-cols-2 gap-2 mt-1">
-                                        {(['bottom-left', 'bottom-right', 'top-left', 'top-right'] as const).map(pos => (
+                                        return (
                                             <button
-                                                key={pos}
-                                                onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'position', pos)}
-                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.position === pos
-                                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                key={platform.value || 'all'}
+                                                type="button"
+                                                onClick={() => handleFieldChange('assignedPlatform', platform.value)}
+                                                className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${isSelected
+                                                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
+                                                    : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'
                                                     }`}
                                             >
-                                                {pos === 'bottom-left' && '↙ Bawah Kiri'}
-                                                {pos === 'bottom-right' && '↘ Bawah Kanan'}
-                                                {pos === 'top-left' && '↖ Atas Kiri'}
-                                                {pos === 'top-right' && '↗ Atas Kanan'}
+                                                <IconComponent className={`w-5 h-5 ${isSelected ? 'text-indigo-600' : 'text-slate-600 dark:text-slate-400'
+                                                    }`} />
+                                                <span className={`text-xs font-medium text-center ${isSelected ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-300'
+                                                    }`}>
+                                                    {platform.name}
+                                                </span>
                                             </button>
-                                        ))}
+                                        );
+                                    })}
+                                </div>
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg text-sm text-indigo-700 dark:text-indigo-200">
+                                    <strong>Info:</strong> Setting ini adalah default. Kamu bisa override dengan parameter URL: <code className="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs">?platform=meta|tiktok|google|snack</code>
+                                </div>
+                            </div>
+                        </EditorCard>
+
+                        <EditorCard icon={TrackingIcon} title="Pelacakan & Pixel" defaultOpen={false}>
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="flex items-center justify-between mb-3 border-b pb-1">
+                                        <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Halaman Formulir</h4>
+                                        <span className="text-xs text-red-500 font-medium">Min. 1 Pixel</span>
                                     </div>
+                                    <div className="space-y-4">
+                                        {Object.keys(PLATFORM_CONFIG).map(key => {
+                                            const platformKey = key as keyof FormPageTrackingSettings;
+                                            const config = PLATFORM_CONFIG[platformKey];
+                                            const setting = form.trackingSettings?.formPage[platformKey];
+
+                                            const globalOptions = globalPixels[platformKey as keyof GlobalPixelSettings] || [];
+
+                                            return (
+                                                <div key={`form-${key}`} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                                                    <div className="flex items-center gap-2 mb-2 font-medium">
+                                                        <config.icon className="w-4 h-4" /> {config.name}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="block text-xs text-slate-500 mb-1">Pixel ID</label>
+                                                            <PixelMultiSelectDropdown
+                                                                options={globalOptions}
+                                                                selectedIds={setting?.pixelIds || []}
+                                                                onChange={(ids) => handleTrackingChange('formPage', platformKey, 'pixelIds', ids)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs text-slate-500 mb-1">Event</label>
+                                                            <select
+                                                                value={setting?.eventName || 'ViewContent'}
+                                                                onChange={(e) => handleTrackingChange('formPage', platformKey, 'eventName', e.target.value)}
+                                                                className="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700"
+                                                            >
+                                                                {TRACKING_EVENTS.map(ev => <option key={ev} value={ev}>{ev}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-3 border-b pb-1">
+                                        <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Halaman Terima Kasih</h4>
+                                        <span className="text-xs text-red-500 font-medium">Min. 1 Pixel</span>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {Object.keys(PLATFORM_CONFIG).map(key => {
+                                            const platformKey = key as keyof FormPageTrackingSettings;
+                                            const config = PLATFORM_CONFIG[platformKey];
+                                            const setting = form.trackingSettings?.thankYouPage[platformKey];
+                                            const globalOptions = globalPixels[platformKey as keyof GlobalPixelSettings] || [];
+
+                                            return (
+                                                <div key={`thankyou-${key}`} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                                                    <div className="flex items-center gap-2 mb-2 font-medium">
+                                                        <config.icon className="w-4 h-4" /> {config.name}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="block text-xs text-slate-500 mb-1">Pixel ID</label>
+                                                            <PixelMultiSelectDropdown
+                                                                options={globalOptions}
+                                                                selectedIds={setting?.pixelIds || []}
+                                                                onChange={(ids) => handleTrackingChange('thankYouPage', platformKey, 'pixelIds', ids)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs text-slate-500 mb-1">Event</label>
+                                                            <select
+                                                                value={setting?.eventName || 'Purchase'}
+                                                                onChange={(e) => handleTrackingChange('thankYouPage', platformKey, 'eventName', e.target.value)}
+                                                                className="w-full p-2 border rounded-lg text-sm bg-white dark:bg-slate-700"
+                                                            >
+                                                                {TRACKING_EVENTS.map(ev => <option key={ev} value={ev}>{ev}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </EditorCard>
+
+                        <EditorCard icon={CodeIcon} title="Custom Scripts (Advanced)" defaultOpen={false}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Script Halaman Formulir (Head)</label>
+                                    <textarea
+                                        value={form.customScripts?.formPage || ''}
+                                        onChange={e => handleSubNestedFieldChange('customScripts', null, 'formPage', e.target.value)}
+                                        rows={4}
+                                        className="w-full p-2 border rounded-lg font-mono text-xs bg-slate-50 dark:bg-slate-900 dark:border-slate-700"
+                                        placeholder="<!-- Masukkan script custom di sini, e.g., GTM, Hotjar -->"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Animasi</label>
-                                    <div className="grid grid-cols-3 gap-2 mt-1">
-                                        {(['slide-up', 'slide-down', 'fade-in'] as const).map(anim => (
-                                            <button
-                                                key={anim}
-                                                onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'animation', anim)}
-                                                className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.animation === anim
-                                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
-                                                    }`}
-                                            >
-                                                {anim === 'slide-up' && '↑ Geser'}
-                                                {anim === 'slide-down' && '↓ Turun'}
-                                                {anim === 'fade-in' && '✦ Muncul'}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Script Halaman Terima Kasih (Head)</label>
+                                    <textarea
+                                        value={form.customScripts?.thankYouPage || ''}
+                                        onChange={e => handleSubNestedFieldChange('customScripts', null, 'thankYouPage', e.target.value)}
+                                        rows={4}
+                                        className="w-full p-2 border rounded-lg font-mono text-xs bg-slate-50 dark:bg-slate-900 dark:border-slate-700"
+                                        placeholder="Gunakan [TOTAL_PRICE], [ORDER_ID] untuk data dinamis."
+                                    />
                                 </div>
-                                <div className="grid grid-cols-3 gap-2">
+                            </div>
+                        </EditorCard>
+
+                        <EditorCard icon={ClockIcon} title="Fitur Tambahan (Konversi)" defaultOpen={false}>
+                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <ClockIcon className="w-5 h-5 text-indigo-500" />
                                     <div>
-                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Mulai Setelah (detik)</label>
+                                        <p className="text-sm font-medium">Countdown Timer</p>
+                                        <p className="text-xs text-slate-500">Batas waktu checkout (e.g. 10:00)</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {form.countdownSettings?.active && (
                                         <input
                                             type="number"
-                                            value={form.socialProofSettings.initialDelaySeconds || 5}
-                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'initialDelaySeconds', parseInt(e.target.value))}
-                                            className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
-                                            min="0"
+                                            value={form.countdownSettings.duration}
+                                            onChange={e => handleSubNestedFieldChange('countdownSettings', null, 'duration', parseInt(e.target.value))}
+                                            className="w-16 p-1 text-sm border rounded text-center"
+                                        />
+                                    )}
+                                    <ToggleSwitch checked={form.countdownSettings?.active || false} onChange={v => handleSubNestedFieldChange('countdownSettings', null, 'active', v)} />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mt-3">
+                                <div className="flex items-center gap-3">
+                                    <ArchiveIcon className="w-5 h-5 text-orange-500" />
+                                    <div>
+                                        <p className="text-sm font-medium">Stock Countdown (Fake)</p>
+                                        <p className="text-xs text-slate-500">Stok menipis otomatis</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {form.stockCountdownSettings?.active && (
+                                        <input
+                                            type="number"
+                                            value={form.stockCountdownSettings.initialStock}
+                                            onChange={e => handleSubNestedFieldChange('stockCountdownSettings', null, 'initialStock', parseInt(e.target.value))}
+                                            className="w-16 p-1 text-sm border rounded text-center"
+                                            title="Stok Awal"
+                                        />
+                                    )}
+                                    <ToggleSwitch checked={form.stockCountdownSettings?.active || false} onChange={v => handleSubNestedFieldChange('stockCountdownSettings', null, 'active', v)} />
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mt-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <ChatBubbleIcon className="w-5 h-5 text-green-500" />
+                                        <div>
+                                            <p className="text-sm font-medium">Social Proof (Sales Popup)</p>
+                                            <p className="text-xs text-slate-500">Notifikasi pembelian palsu</p>
+                                        </div>
+                                    </div>
+                                    <ToggleSwitch checked={form.socialProofSettings?.active || false} onChange={v => handleSubNestedFieldChange('socialProofSettings', null, 'active', v)} />
+                                </div>
+                                {form.socialProofSettings?.active && (
+                                    <div className="space-y-3 mt-3 pl-2 border-l-2 border-slate-200 dark:border-slate-700">
+                                        <div>
+                                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Posisi Popup</label>
+                                            <div className="grid grid-cols-2 gap-2 mt-1">
+                                                {(['bottom-left', 'bottom-right', 'top-left', 'top-right'] as const).map(pos => (
+                                                    <button
+                                                        key={pos}
+                                                        onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'position', pos)}
+                                                        className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.position === pos
+                                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                            }`}
+                                                    >
+                                                        {pos === 'bottom-left' && '↙ Bawah Kiri'}
+                                                        {pos === 'bottom-right' && '↘ Bawah Kanan'}
+                                                        {pos === 'top-left' && '↖ Atas Kiri'}
+                                                        {pos === 'top-right' && '↗ Atas Kanan'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Animasi</label>
+                                            <div className="grid grid-cols-3 gap-2 mt-1">
+                                                {(['slide-up', 'slide-down', 'fade-in'] as const).map(anim => (
+                                                    <button
+                                                        key={anim}
+                                                        onClick={() => handleSubNestedFieldChange('socialProofSettings', null, 'animation', anim)}
+                                                        className={`px-3 py-2 text-xs font-medium rounded border transition ${form.socialProofSettings?.animation === anim
+                                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                            }`}
+                                                    >
+                                                        {anim === 'slide-up' && '↑ Geser'}
+                                                        {anim === 'slide-down' && '↓ Turun'}
+                                                        {anim === 'fade-in' && '✦ Muncul'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Mulai Setelah (detik)</label>
+                                                <input
+                                                    type="number"
+                                                    value={form.socialProofSettings.initialDelaySeconds || 5}
+                                                    onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'initialDelaySeconds', parseInt(e.target.value))}
+                                                    className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Durasi Tampil (detik)</label>
+                                                <input
+                                                    type="number"
+                                                    value={form.socialProofSettings.displayDurationSeconds || 5}
+                                                    onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'displayDurationSeconds', parseInt(e.target.value))}
+                                                    className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
+                                                    min="1"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Interval Tampil (detik)</label>
+                                                <input
+                                                    type="number"
+                                                    value={form.socialProofSettings.intervalSeconds || 10}
+                                                    onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'intervalSeconds', parseInt(e.target.value))}
+                                                    className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
+                                                    min="1"
+                                                />
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            placeholder="Daftar Nama (pisahkan dengan baris baru)"
+                                            value={form.socialProofSettings.customerNames}
+                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'customerNames', e.target.value)}
+                                            className="w-full p-2 text-xs border rounded"
+                                            rows={3}
+                                        />
+                                        <textarea
+                                            placeholder="Daftar Kota (pisahkan dengan baris baru)"
+                                            value={form.socialProofSettings.customerCities}
+                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'customerCities', e.target.value)}
+                                            className="w-full p-2 text-xs border rounded"
+                                            rows={3}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mt-3">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <CursorClickIcon className="w-5 h-5 text-blue-500" />
+                                    <p className="text-sm font-medium">Teks Tombol & Urgensi</p>
+                                </div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1">Teks Tombol</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Pesan Sekarang"
+                                            value={form.ctaSettings?.mainText || ''}
+                                            onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'mainText', e.target.value)}
+                                            className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Durasi Tampil (detik)</label>
+                                        <label className="block text-xs font-medium mb-1">Teks Urgensi</label>
                                         <input
-                                            type="number"
-                                            value={form.socialProofSettings.displayDurationSeconds || 5}
-                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'displayDurationSeconds', parseInt(e.target.value))}
-                                            className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
-                                            min="1"
+                                            type="text"
+                                            placeholder="e.g. {count} sudah beli hari ini (gunakan {count} untuk angka)"
+                                            value={form.ctaSettings?.urgencyText || ''}
+                                            onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'urgencyText', e.target.value)}
+                                            className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
                                         />
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div>
+                                            <label className="block text-xs font-medium mb-1">Angka Awal</label>
+                                            <input
+                                                type="number"
+                                                placeholder="265"
+                                                value={form.ctaSettings?.initialCount || 265}
+                                                onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'initialCount', parseInt(e.target.value))}
+                                                className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium mb-1">Interval (detik)</label>
+                                            <input
+                                                type="number"
+                                                placeholder="1"
+                                                value={form.ctaSettings?.increaseIntervalSeconds || 1}
+                                                onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'increaseIntervalSeconds', parseInt(e.target.value))}
+                                                className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                                min="1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium mb-1">Tambah Per Interval</label>
+                                            <input
+                                                type="number"
+                                                placeholder="2"
+                                                value={form.ctaSettings?.incrementPerSecond || 2}
+                                                onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'incrementPerSecond', parseInt(e.target.value))}
+                                                className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
+                                                min="1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium mb-1">Warna Tombol</label>
+                                            <input
+                                                type="color"
+                                                value={form.ctaSettings?.buttonColor || '#6366f1'}
+                                                onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
+                                                className="w-full p-2 text-sm border rounded cursor-pointer"
+                                            />
+                                        </div>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Interval Tampil (detik)</label>
+                                        <label className="block text-xs font-medium mb-1">Kode Hex Warna</label>
                                         <input
-                                            type="number"
-                                            value={form.socialProofSettings.intervalSeconds || 10}
-                                            onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'intervalSeconds', parseInt(e.target.value))}
-                                            className="w-full p-2 text-xs border rounded mt-1 bg-white dark:bg-slate-800"
-                                            min="1"
+                                            type="text"
+                                            placeholder="#6366f1"
+                                            value={form.ctaSettings?.buttonColor || '#6366f1'}
+                                            onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
+                                            className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600 font-mono"
                                         />
                                     </div>
-                                </div>
-                                <textarea
-                                    placeholder="Daftar Nama (pisahkan dengan baris baru)"
-                                    value={form.socialProofSettings.customerNames}
-                                    onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'customerNames', e.target.value)}
-                                    className="w-full p-2 text-xs border rounded"
-                                    rows={3}
-                                />
-                                <textarea
-                                    placeholder="Daftar Kota (pisahkan dengan baris baru)"
-                                    value={form.socialProofSettings.customerCities}
-                                    onChange={e => handleSubNestedFieldChange('socialProofSettings', null, 'customerCities', e.target.value)}
-                                    className="w-full p-2 text-xs border rounded"
-                                    rows={3}
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mt-3">
-                        <div className="flex items-center gap-3 mb-2">
-                            <CursorClickIcon className="w-5 h-5 text-blue-500" />
-                            <p className="text-sm font-medium">Teks Tombol & Urgensi</p>
-                        </div>
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-medium mb-1">Teks Tombol</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Pesan Sekarang"
-                                    value={form.ctaSettings?.mainText || ''}
-                                    onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'mainText', e.target.value)}
-                                    className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium mb-1">Teks Urgensi</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. {count} sudah beli hari ini (gunakan {count} untuk angka)"
-                                    value={form.ctaSettings?.urgencyText || ''}
-                                    onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'urgencyText', e.target.value)}
-                                    className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
-                                />
-                            </div>
-                            <div className="grid grid-cols-4 gap-2">
-                                <div>
-                                    <label className="block text-xs font-medium mb-1">Angka Awal</label>
-                                    <input
-                                        type="number"
-                                        placeholder="265"
-                                        value={form.ctaSettings?.initialCount || 265}
-                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'initialCount', parseInt(e.target.value))}
-                                        className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
-                                        min="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium mb-1">Interval (detik)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="1"
-                                        value={form.ctaSettings?.increaseIntervalSeconds || 1}
-                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'increaseIntervalSeconds', parseInt(e.target.value))}
-                                        className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
-                                        min="1"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium mb-1">Tambah Per Interval</label>
-                                    <input
-                                        type="number"
-                                        placeholder="2"
-                                        value={form.ctaSettings?.incrementPerSecond || 2}
-                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'incrementPerSecond', parseInt(e.target.value))}
-                                        className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600"
-                                        min="1"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium mb-1">Warna Tombol</label>
-                                    <input
-                                        type="color"
-                                        value={form.ctaSettings?.buttonColor || '#6366f1'}
-                                        onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
-                                        className="w-full p-2 text-sm border rounded cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium mb-1">Kode Hex Warna</label>
-                                <input
-                                    type="text"
-                                    placeholder="#6366f1"
-                                    value={form.ctaSettings?.buttonColor || '#6366f1'}
-                                    onChange={e => handleSubNestedFieldChange('ctaSettings', null, 'buttonColor', e.target.value)}
-                                    className="w-full p-2 text-sm border rounded bg-white dark:bg-slate-700 dark:border-slate-600 font-mono"
-                                />
-                            </div>
-                            <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/30 rounded">
-                                <label className="text-sm font-medium">Animasi Tombol</label>
-                                <ToggleSwitch
-                                    checked={form.ctaSettings?.animationEnabled || false}
-                                    onChange={v => handleSubNestedFieldChange('ctaSettings', null, 'animationEnabled', v)}
-                                />
-                            </div>
-                            {form.ctaSettings?.animationEnabled && (
-                                <div>
-                                    <label className="block text-xs font-medium mb-2">Pilih Jenis Animasi</label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            { value: 'pulse', label: '💓 Pulse', desc: 'Denyut Lembut' },
-                                            { value: 'shine', label: '✨ Shine', desc: 'Cahaya Gerak' },
-                                            { value: 'bounce', label: '⬆️ Bounce', desc: 'Memantul' },
-                                            { value: 'scale', label: '📏 Scale', desc: 'Membesar' },
-                                            { value: 'glow', label: '🌟 Glow', desc: 'Bersinar' },
-                                            { value: 'rotate', label: '🔄 Rotate', desc: 'Berputar' }
-                                        ].map(anim => (
-                                            <button
-                                                key={anim.value}
-                                                onClick={() => handleSubNestedFieldChange('ctaSettings', null, 'animationType', anim.value as any)}
-                                                className={`p-2 text-xs font-medium rounded border transition ${form.ctaSettings?.animationType === anim.value
-                                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
-                                                    }`}
-                                            >
-                                                <div>{anim.label}</div>
-                                                <div className="text-xs opacity-70">{anim.desc}</div>
-                                            </button>
-                                        ))}
+                                    <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/30 rounded">
+                                        <label className="text-sm font-medium">Animasi Tombol</label>
+                                        <ToggleSwitch
+                                            checked={form.ctaSettings?.animationEnabled || false}
+                                            onChange={v => handleSubNestedFieldChange('ctaSettings', null, 'animationEnabled', v)}
+                                        />
                                     </div>
+                                    {form.ctaSettings?.animationEnabled && (
+                                        <div>
+                                            <label className="block text-xs font-medium mb-2">Pilih Jenis Animasi</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {[
+                                                    { value: 'pulse', label: '💓 Pulse', desc: 'Denyut Lembut' },
+                                                    { value: 'shine', label: '✨ Shine', desc: 'Cahaya Gerak' },
+                                                    { value: 'bounce', label: '⬆️ Bounce', desc: 'Memantul' },
+                                                    { value: 'scale', label: '📏 Scale', desc: 'Membesar' },
+                                                    { value: 'glow', label: '🌟 Glow', desc: 'Bersinar' },
+                                                    { value: 'rotate', label: '🔄 Rotate', desc: 'Berputar' }
+                                                ].map(anim => (
+                                                    <button
+                                                        key={anim.value}
+                                                        onClick={() => handleSubNestedFieldChange('ctaSettings', null, 'animationType', anim.value as any)}
+                                                        className={`p-2 text-xs font-medium rounded border transition ${form.ctaSettings?.animationType === anim.value
+                                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-500'
+                                                            }`}
+                                                    >
+                                                        <div>{anim.label}</div>
+                                                        <div className="text-xs opacity-70">{anim.desc}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
+                        </EditorCard>
+
+                        {/* Step Navigation */}
+                        <div className="flex justify-between">
+                            <button
+                                type="button"
+                                onClick={() => goToStep(2, true)}
+                                className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm flex items-center gap-2"
+                            >
+                                <ChevronDownIcon className="w-4 h-4 rotate-90" /> Kembali
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSave}
+                                disabled={isSaving || mainImageUploading}
+                                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm flex items-center gap-2 disabled:opacity-60"
+                            >
+                                {(isSaving || mainImageUploading) && <SpinnerIcon className="w-4 h-4 animate-spin" />}
+                                {isSaving ? 'Menyimpan...' : '✓ Simpan Formulir'}
+                            </button>
                         </div>
                     </div>
-                </EditorCard>
+                )}
             </div>
 
             <div className="hidden lg:block lg:col-span-4 sticky top-6">
@@ -3295,6 +3472,21 @@ const FormEditorPage: React.FC = () => {
                     onConfirm={confirmDelete}
                     onClose={() => setShowDeleteConfirmation(false)}
                     isLoading={isSaving}
+                />
+            )}
+
+            {showCancelConfirmation && (
+                <ConfirmationModal
+                    isOpen={true}
+                    title="Batalkan Perubahan?"
+                    message="Perubahan yang belum disimpan akan hilang. Apakah Anda yakin ingin keluar?"
+                    confirmLabel="Ya, Keluar"
+                    variant="warning"
+                    onConfirm={() => {
+                        setShowCancelConfirmation(false);
+                        handleClose();
+                    }}
+                    onClose={() => setShowCancelConfirmation(false)}
                 />
             )}
         </div>
