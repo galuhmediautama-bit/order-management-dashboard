@@ -1637,26 +1637,10 @@ const OrdersPage: React.FC = () => {
                                                 )}
                                                 {columnVisibility.find(c => c.key === 'address')?.visible && (
                                                     <td className="px-6 py-5 align-top">
-                                                        <div className="max-w-xs text-sm text-slate-600 dark:text-slate-400 space-y-0.5">
-                                                            {order.province && (
-                                                                <div className="font-medium text-slate-700 dark:text-slate-300">{order.province}</div>
-                                                            )}
-                                                            {order.city && (
-                                                                <div>{order.city}</div>
-                                                            )}
-                                                            {order.district && (
-                                                                <div className="text-xs">Kec. {order.district}</div>
-                                                            )}
-                                                            {order.village && (
-                                                                <div className="text-xs">Kel. {order.village}</div>
-                                                            )}
-                                                            {order.shippingAddress && (
-                                                                <div className="text-xs text-slate-500 dark:text-slate-500 line-clamp-2" title={order.shippingAddress}>{order.shippingAddress}</div>
-                                                            )}
-                                                            {order.postalCode && (
-                                                                <div className="text-xs font-mono text-indigo-600 dark:text-indigo-400">{order.postalCode}</div>
-                                                            )}
-                                                            {!order.province && !order.city && !order.shippingAddress && (
+                                                        <div className="max-w-xs text-sm text-slate-600 dark:text-slate-400">
+                                                            {order.city ? (
+                                                                <span className="text-slate-700 dark:text-slate-300">{order.city}</span>
+                                                            ) : (
                                                                 <span className="text-slate-400 italic">-</span>
                                                             )}
                                                         </div>
