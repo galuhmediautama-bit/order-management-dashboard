@@ -253,11 +253,6 @@ const LoginPage: React.FC = () => {
         const village = villages.find(v => v.id === villageId);
         const villageName = village ? formatName(village.nama) : '';
         setSelectedVillage(villageName);
-
-        // Auto-fetch postal code when village is selected
-        if (villageName && selectedDistrict && selectedCity) {
-            fetchPostalCode(villageName, selectedDistrict, selectedCity);
-        }
     };
 
 
