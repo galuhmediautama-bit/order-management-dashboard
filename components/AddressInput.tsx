@@ -77,13 +77,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
   required = false, // Legacy - if true, makes detailAddress required
   addressError // Error message for address field
 }) => {
-  const [selectedProvince, setSelectedProvince] = useState(value.province || '');
+  // Local state - use IDs only for dropdown values
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
-  const [selectedCity, setSelectedCity] = useState(value.city || '');
   const [selectedCityId, setSelectedCityId] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState(value.district || '');
   const [selectedDistrictId, setSelectedDistrictId] = useState('');
-  const [selectedVillage, setSelectedVillage] = useState(value.village || '');
+  const [selectedVillageId, setSelectedVillageId] = useState('');
   const [detailAddress, setDetailAddress] = useState(value.detailAddress || '');
   const [postalCode, setPostalCode] = useState(value.postalCode || '');
 
@@ -100,15 +98,9 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [loadingVillages, setLoadingVillages] = useState(false);
   const [loadingPostalCode, setLoadingPostalCode] = useState(false);
 
-  // Ref to track if we're updating from internal changes (to prevent loops)
-  const isInternalUpdate = useRef(false);
-
-  // Track if this is the initial mount
-  const isInitialMount = useRef(true);
-  const lastSyncedValue = useRef<string>('');
-
-  // Add separate ref to track village ID
-  const selectedVillageId = useRef('');
+  // Track if we're syncing from external value to avoid loops
+  const isSyncing = useRef(false);
+  const previousValueRef = useRef<string>('');
 
   // Helper to sort data A-Z by nama
   const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
@@ -132,8 +124,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
         const res = await fetch(`${API_BASE}/provinsi.json`);
         if (!res.ok) throw new Error('Failed to fetch provinces');
         const data: ApiProvince[] = await res.json();
-        const sorted = sortByName(data);
-        setProvinces(sorted);
+        setProvinces(sortByName(data));
       } catch (err) {
         console.error('Error fetching provinces:', err);
         setProvinces([]);
@@ -144,12 +135,18 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchProvinces();
   }, []);
 
-  // Fetch cities when province changes
+  // Fetch cities when province ID changes
   useEffect(() => {
     if (!selectedProvinceId) {
       setCities([]);
+      setSelectedCityId('');
+      setSelectedDistrictId('');
+      setSelectedVillageId('');
+      setDistricts([]);
+      setVillages([]);
       return;
     }
+
     const fetchCities = async () => {
       setLoadingCities(true);
       try {
@@ -166,12 +163,16 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchCities();
   }, [selectedProvinceId]);
 
-  // Fetch districts when city changes
+  // Fetch districts when city ID changes
   useEffect(() => {
     if (!selectedCityId) {
       setDistricts([]);
+      setSelectedDistrictId('');
+      setSelectedVillageId('');
+      setVillages([]);
       return;
     }
+
     const fetchDistricts = async () => {
       setLoadingDistricts(true);
       try {
@@ -188,12 +189,14 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchDistricts();
   }, [selectedCityId]);
 
-  // Fetch villages when district changes
+  // Fetch villages when district ID changes
   useEffect(() => {
     if (!selectedDistrictId) {
       setVillages([]);
+      setSelectedVillageId('');
       return;
     }
+
     const fetchVillages = async () => {
       setLoadingVillages(true);
       try {
@@ -210,180 +213,91 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchVillages();
   }, [selectedDistrictId]);
 
-  // Sync internal state when value prop changes (for edit mode)
-  // Only sync if the value actually changed from external source (not from our own onChange)
+  // Sync external value prop to local state (for edit mode)
   useEffect(() => {
-    // Create a string representation to compare
-    const valueString = JSON.stringify({
+    const currentValueStr = JSON.stringify({
       province: value.province,
       city: value.city,
       district: value.district,
       village: value.village,
-      detailAddress: value.detailAddress,
-      postalCode: value.postalCode
     });
 
-    // Skip if value hasn't actually changed (prevents loops)
-    if (valueString === lastSyncedValue.current && !isInitialMount.current) {
+    // If value hasn't changed, skip sync
+    if (currentValueStr === previousValueRef.current) {
       return;
     }
 
-    // Only sync detailAddress and postalCode on initial mount
-    if (isInitialMount.current) {
-      setDetailAddress(value.detailAddress || '');
-      setPostalCode(value.postalCode || '');
-      isInitialMount.current = false;
+    previousValueRef.current = currentValueStr;
+
+    if (isSyncing.current) {
+      isSyncing.current = false;
+      return;
     }
 
-    // Update our reference
-    lastSyncedValue.current = valueString;
-
-    // If we have province name but no ID, try to find the ID
-    if (value.province && provinces.length > 0 && !selectedProvinceId) {
-      const normalizedValueProvince = value.province.toLowerCase().trim();
+    // Find and set province
+    if (value.province && provinces.length > 0) {
+      const normalized = value.province.toLowerCase().trim();
       const matchedProvince = provinces.find(p =>
-        p.nama.toLowerCase().trim() === normalizedValueProvince ||
-        formatName(p.nama).toLowerCase() === normalizedValueProvince
+        p.nama.toLowerCase().trim() === normalized ||
+        formatName(p.nama).toLowerCase() === normalized
       );
-      if (matchedProvince) {
-        isInternalUpdate.current = true;
+      if (matchedProvince && matchedProvince.id !== selectedProvinceId) {
         setSelectedProvinceId(matchedProvince.id);
-        setSelectedProvince(formatName(matchedProvince.nama));
-      } else {
-        // Set province name even if no match (display only)
-        isInternalUpdate.current = true;
-        setSelectedProvince(value.province || '');
+        return; // Let next effect handle cities
       }
-    } else if (!value.province && selectedProvince) {
-      isInternalUpdate.current = true;
-      setSelectedProvince('');
-      setSelectedProvinceId('');
     }
-  }, [value.province, value.city, value.district, value.village, value.detailAddress, value.postalCode, provinces.length, selectedProvinceId, selectedProvince]);
 
-  // Sync city when cities are loaded and we have a city name
-  useEffect(() => {
-    if (value.city && cities.length > 0 && !selectedCityId) {
-      const normalizedValueCity = value.city.toLowerCase().trim();
+    // Find and set city
+    if (value.city && cities.length > 0 && selectedProvinceId) {
+      const normalized = value.city.toLowerCase().trim();
       const matchedCity = cities.find(c =>
-        c.nama.toLowerCase().trim() === normalizedValueCity ||
-        formatName(c.nama).toLowerCase() === normalizedValueCity
+        c.nama.toLowerCase().trim() === normalized ||
+        formatName(c.nama).toLowerCase() === normalized
       );
-      if (matchedCity) {
-        isInternalUpdate.current = true;
+      if (matchedCity && matchedCity.id !== selectedCityId) {
         setSelectedCityId(matchedCity.id);
-        setSelectedCity(formatName(matchedCity.nama));
-      } else {
-        isInternalUpdate.current = true;
-        setSelectedCity(value.city || '');
+        return; // Let next effect handle districts
       }
-    } else if (!value.city && selectedCity) {
-      isInternalUpdate.current = true;
-      setSelectedCity('');
-      setSelectedCityId('');
     }
-  }, [value.city, cities.length, selectedCityId, selectedCity]);
 
-  // Sync district when districts are loaded and we have a district name
-  useEffect(() => {
-    if (value.district && districts.length > 0 && !selectedDistrictId) {
-      const normalizedValueDistrict = value.district.toLowerCase().trim();
+    // Find and set district
+    if (value.district && districts.length > 0 && selectedCityId) {
+      const normalized = value.district.toLowerCase().trim();
       const matchedDistrict = districts.find(d =>
-        d.nama.toLowerCase().trim() === normalizedValueDistrict ||
-        formatName(d.nama).toLowerCase() === normalizedValueDistrict
+        d.nama.toLowerCase().trim() === normalized ||
+        formatName(d.nama).toLowerCase() === normalized
       );
-      if (matchedDistrict) {
-        isInternalUpdate.current = true;
+      if (matchedDistrict && matchedDistrict.id !== selectedDistrictId) {
         setSelectedDistrictId(matchedDistrict.id);
-        setSelectedDistrict(formatName(matchedDistrict.nama));
-      } else {
-        isInternalUpdate.current = true;
-        setSelectedDistrict(value.district || '');
+        return; // Let next effect handle villages
       }
-    } else if (!value.district && selectedDistrict) {
-      isInternalUpdate.current = true;
-      setSelectedDistrict('');
-      setSelectedDistrictId('');
     }
-  }, [value.district, districts.length, selectedDistrictId, selectedDistrict]);
 
-  // Sync village when villages are loaded and we have a village name
-  useEffect(() => {
-    if (value.village && villages.length > 0 && !selectedVillageId.current) {
-      const normalizedValueVillage = value.village.toLowerCase().trim();
+    // Find and set village
+    if (value.village && villages.length > 0) {
+      const normalized = value.village.toLowerCase().trim();
       const matchedVillage = villages.find(v =>
-        v.nama.toLowerCase().trim() === normalizedValueVillage ||
-        formatName(v.nama).toLowerCase() === normalizedValueVillage
+        v.nama.toLowerCase().trim() === normalized ||
+        formatName(v.nama).toLowerCase() === normalized
       );
-      if (matchedVillage) {
-        isInternalUpdate.current = true;
-        selectedVillageId.current = matchedVillage.id;
-        setSelectedVillage(formatName(matchedVillage.nama));
-      } else {
-        isInternalUpdate.current = true;
-        setSelectedVillage(value.village || '');
+      if (matchedVillage && matchedVillage.id !== selectedVillageId) {
+        setSelectedVillageId(matchedVillage.id);
       }
-    } else if (!value.village && selectedVillage) {
-      isInternalUpdate.current = true;
-      selectedVillageId.current = '';
-      setSelectedVillage('');
     }
-  }, [value.village, villages.length, selectedVillage]);
+  }, [value.province, value.city, value.district, value.village, provinces, cities, districts, villages, selectedProvinceId, selectedCityId, selectedDistrictId, selectedVillageId]);
 
-  // Handle province change
-  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const provId = e.target.value;
-    const prov = provinces.find(p => p.id === provId);
-    setSelectedProvinceId(provId);
-    setSelectedProvince(prov ? formatName(prov.nama) : '');
-    // Reset downstream
-    setSelectedCity('');
-    setSelectedCityId('');
-    setSelectedDistrict('');
-    setSelectedDistrictId('');
-    setSelectedVillage('');
-    setCities([]);
-    setDistricts([]);
-    setVillages([]);
-  };
+  // Fetch postal code based on village
+  const fetchPostalCode = useCallback(async (villageId: string) => {
+    if (!villageId || !selectedVillageId) return;
 
-  // Handle city change
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const cityId = e.target.value;
-    const city = cities.find(c => c.id === cityId);
-    setSelectedCityId(cityId);
-    setSelectedCity(city ? formatName(city.nama) : '');
-    // Reset downstream
-    setSelectedDistrict('');
-    setSelectedDistrictId('');
-    setSelectedVillage('');
-    setDistricts([]);
-    setVillages([]);
-  };
-
-  // Handle district change
-  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const distId = e.target.value;
-    const dist = districts.find(d => d.id === distId);
-    setSelectedDistrictId(distId);
-    setSelectedDistrict(dist ? formatName(dist.nama) : '');
-    // Reset village and postal code
-    setSelectedVillage('');
-    setPostalCode('');
-    setVillages([]);
-  };
-
-  // Fetch postal code based on village and district using multiple APIs
-  const fetchPostalCode = async (villageName: string, districtName: string, cityName: string) => {
-    if (!villageName || !districtName) return;
+    const village = villages.find(v => v.id === villageId);
+    const district = districts.find(d => d.id === selectedDistrictId);
+    if (!village || !district) return;
 
     setLoadingPostalCode(true);
     try {
-      // Clean up names for search
-      const cleanVillage = villageName.replace(/^(desa|kelurahan)\s+/i, '').trim();
-      const cleanDistrict = districtName.replace(/^(kecamatan)\s+/i, '').trim();
-
-      // Try primary API (sooluh/kodepos) - more complete data
+      const cleanVillage = village.nama.replace(/^(desa|kelurahan)\s+/i, '').trim();
+      const cleanDistrict = district.nama.replace(/^(kecamatan)\s+/i, '').trim();
       const searchQuery = encodeURIComponent(`${cleanVillage} ${cleanDistrict}`);
 
       let found = false;
@@ -394,7 +308,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
         if (res.ok) {
           const data = await res.json();
           if (data.statusCode === 200 && data.data && data.data.length > 0) {
-            // Find best match - match village and district
             const exactMatch = data.data.find((item: any) =>
               item.village?.toLowerCase() === cleanVillage.toLowerCase() &&
               item.district?.toLowerCase() === cleanDistrict.toLowerCase()
@@ -406,7 +319,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
             );
 
             const match = exactMatch || partialMatch || data.data[0];
-
             if (match?.code) {
               setPostalCode(match.code.toString());
               found = true;
@@ -444,7 +356,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
           if (simpleRes.ok) {
             const simpleData = await simpleRes.json();
             if (simpleData.statusCode === 200 && simpleData.data && simpleData.data.length > 0) {
-              // Try to match by district name
               const matchByDistrict = simpleData.data.find((item: any) =>
                 item.district?.toLowerCase().includes(cleanDistrict.toLowerCase())
               );
@@ -456,23 +367,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
             }
           }
         } catch (simpleErr) {
-          console.log('Simple search also failed');
-        }
-      }
-
-      // Try with district + city if still not found
-      if (!found && cityName) {
-        try {
-          const cityQuery = encodeURIComponent(`${cleanDistrict} ${cityName}`);
-          const cityRes = await fetch(`${POSTAL_API_PRIMARY}/?q=${cityQuery}`);
-          if (cityRes.ok) {
-            const cityData = await cityRes.json();
-            if (cityData.statusCode === 200 && cityData.data && cityData.data.length > 0) {
-              setPostalCode(cityData.data[0].code?.toString() || '');
-            }
-          }
-        } catch (cityErr) {
-          console.log('City search also failed');
+          console.log('Simple search failed');
         }
       }
     } catch (err) {
@@ -480,57 +375,72 @@ const AddressInput: React.FC<AddressInputProps> = ({
     } finally {
       setLoadingPostalCode(false);
     }
+  }, [villages, districts, selectedVillageId, selectedDistrictId]);
+
+  // Handle province change
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const provId = e.target.value;
+    isSyncing.current = true;
+    setSelectedProvinceId(provId);
+  };
+
+  // Handle city change
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cityId = e.target.value;
+    isSyncing.current = true;
+    setSelectedCityId(cityId);
+  };
+
+  // Handle district change
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const distId = e.target.value;
+    isSyncing.current = true;
+    setSelectedDistrictId(distId);
   };
 
   // Handle village change
   const handleVillageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const villId = e.target.value;
-    const vill = villages.find(v => v.id === villId);
-    const villageName = vill ? formatName(vill.nama) : '';
-    selectedVillageId.current = villId;
-    setSelectedVillage(villageName);
+    isSyncing.current = true;
+    setSelectedVillageId(villId);
 
     // Auto-fetch postal code
-    if (villageName && selectedDistrict) {
-      fetchPostalCode(villageName, selectedDistrict, selectedCity);
+    if (villId) {
+      fetchPostalCode(villId);
     }
   };
 
-  // Handle postal code change
-  const handlePostalCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPostalCode(e.target.value);
-  };
-
-  // Stable onChange callback
-  const stableOnChange = useCallback(onChange, []);
-
-  // Update parent component when any field changes
+  // Update parent when local state changes
   useEffect(() => {
-    // Skip if this is triggered by syncing from parent
-    if (isInternalUpdate.current) {
-      isInternalUpdate.current = false;
+    if (isSyncing.current) {
+      isSyncing.current = false;
       return;
     }
 
+    const selectedProvinceName = provinces.find(p => p.id === selectedProvinceId)?.nama || '';
+    const selectedCityName = cities.find(c => c.id === selectedCityId)?.nama || '';
+    const selectedDistrictName = districts.find(d => d.id === selectedDistrictId)?.nama || '';
+    const selectedVillageName = villages.find(v => v.id === selectedVillageId)?.nama || '';
+
     const fullAddress = [
       detailAddress,
-      selectedVillage,
-      selectedDistrict,
-      selectedCity,
-      selectedProvince,
+      selectedVillageName,
+      selectedDistrictName,
+      selectedCityName,
+      selectedProvinceName,
       postalCode
     ].filter(Boolean).join(', ');
 
-    stableOnChange({
-      province: selectedProvince,
-      city: selectedCity,
-      district: selectedDistrict,
-      village: selectedVillage,
+    onChange({
+      province: selectedProvinceName ? formatName(selectedProvinceName) : '',
+      city: selectedCityName ? formatName(selectedCityName) : '',
+      district: selectedDistrictName ? formatName(selectedDistrictName) : '',
+      village: selectedVillageName ? formatName(selectedVillageName) : '',
       detailAddress,
       postalCode,
       fullAddress
     });
-  }, [selectedProvince, selectedCity, selectedDistrict, selectedVillage, detailAddress, postalCode, stableOnChange]);
+  }, [selectedProvinceId, selectedCityId, selectedDistrictId, selectedVillageId, detailAddress, postalCode, provinces, cities, districts, villages, onChange]);
 
   return (
     <div className="space-y-4">
@@ -614,7 +524,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
             Kelurahan/Desa {requiredVillage && <span className="text-red-500">*</span>}
           </label>
           <select
-            value={selectedVillageId.current}
+            value={selectedVillageId}
             onChange={handleVillageChange}
             disabled={disabled || !selectedDistrictId || loadingVillages}
             required={requiredVillage}
@@ -664,7 +574,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
             <input
               type="text"
               value={postalCode}
-              onChange={handlePostalCodeChange}
+              onChange={(e) => setPostalCode(e.target.value)}
               disabled={disabled || loadingPostalCode}
               placeholder={loadingPostalCode ? "Mencari kode pos..." : "Masukkan kode pos"}
               maxLength={5}
@@ -680,7 +590,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
               </div>
             )}
           </div>
-          {selectedVillage && !postalCode && !loadingPostalCode && (
+          {selectedVillageId && !postalCode && !loadingPostalCode && (
             <p className="text-xs text-gray-500 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
           )}
         </div>
