@@ -682,7 +682,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                     <input type="email" placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                                 </div>
                             )}
-                            {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.postalCode?.visible || form.customerFields.address?.visible) && (
+                            {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.address?.visible) && (
                                 <AddressInput
                                     value={addressData}
                                     onChange={setAddressData}
@@ -1071,7 +1071,7 @@ const FormEditorPage: React.FC = () => {
                     // Buat form baru - langsung set dan tampilkan
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, postalCode: { visible: false, required: false }, address: { visible: true, required: true } },
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] }, },
                         countdownSettings: { active: true, duration: 300 },
@@ -1847,11 +1847,9 @@ const FormEditorPage: React.FC = () => {
             if (!prev) return null;
             const mainFieldValue = (prev as any)[mainField] || {};
 
-            // Special handling for province/city/district/village/postalCode package
-            if (mainField === 'customerFields' && subField === 'province') {
+                        if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
-                    // When province visibility changes, city, district, village, and postalCode follow
-                    // If unchecking visible, also uncheck required
+                                        // If unchecking visible, also uncheck required
                     const newRequired = val ? prev.customerFields.province.required : false;
                     return {
                         ...prev,
@@ -1860,21 +1858,18 @@ const FormEditorPage: React.FC = () => {
                             province: { ...prev.customerFields.province, visible: val, required: newRequired },
                             city: { ...prev.customerFields.city, visible: val, required: val ? prev.customerFields.city.required : false },
                             district: { ...prev.customerFields.district, visible: val, required: val ? prev.customerFields.district.required : false },
-                            village: { ...(prev.customerFields.village || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.village?.required || false) : false },
-                            postalCode: { ...(prev.customerFields.postalCode || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.postalCode?.required || false) : false }
+                            village: { ...(prev.customerFields.village || { visible: false, required: false }), visible: val, required: val ? (prev.customerFields.village?.required || false) : false }
                         }
                     };
                 } else if (prop === 'required') {
-                    // When province required changes, city, district, village, and postalCode follow
-                    return {
+                                        return {
                         ...prev,
                         customerFields: {
                             ...prev.customerFields,
                             province: { ...prev.customerFields.province, required: val },
                             city: { ...prev.customerFields.city, required: val },
                             district: { ...prev.customerFields.district, required: val },
-                            village: { ...(prev.customerFields.village || { visible: false, required: false }), required: val },
-                            postalCode: { ...(prev.customerFields.postalCode || { visible: false, required: false }), required: val }
+                            village: { ...(prev.customerFields.village || { visible: false, required: false }), required: val }
                         }
                     };
                 }
@@ -2645,8 +2640,7 @@ const FormEditorPage: React.FC = () => {
                         <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
                             <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
                             {(['name', 'whatsapp', 'email', 'province', 'address'] as const).map(key => {
-                                // Skip city, district, village, postalCode as they're shown as sub-items of province
-                                if (key === 'city' || key === 'district' || key === 'village' || key === 'postalCode') return null;
+                                                                if (key === 'city' || key === 'district' || key === 'village') return null;
 
                                 const isProvince = key === 'province';
                                 const isAddress = key === 'address';
@@ -3498,3 +3492,11 @@ const FormEditorPage: React.FC = () => {
 };
 
 export default FormEditorPage;
+
+
+
+
+
+
+
+
