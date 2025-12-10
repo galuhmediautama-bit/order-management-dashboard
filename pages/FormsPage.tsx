@@ -143,6 +143,8 @@ const FormsPage: React.FC = () => {
     const [productDropdownOpen, setProductDropdownOpen] = useState(false);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
     const [trackingLinksForm, setTrackingLinksForm] = useState<Form | null>(null);
+    const [embedFormModal, setEmbedFormModal] = useState<Form | null>(null);
+    const [embedType, setEmbedType] = useState<'html' | 'javascript' | 'iframe'>('iframe');
     const actionMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -289,8 +291,75 @@ const FormsPage: React.FC = () => {
         window.open(getFormUrl(form), '_blank');
     };
 
-    const handleViewStandalone = (form: Form) => {
-        window.open(getStandaloneUrl(form), '_blank');
+    // Generate embed codes for form
+    const generateEmbedCode = (form: Form, type: 'html' | 'javascript' | 'iframe'): string => {
+        const formUrl = getFormUrl(form);
+        const formTitle = form.title || 'Order Form';
+        
+        switch (type) {
+            case 'iframe':
+                return `<!-- Embed ${formTitle} -->
+<iframe 
+  src="${formUrl}" 
+  width="100%" 
+  height="800" 
+  frameborder="0" 
+  style="border: none; max-width: 100%;"
+  title="${formTitle}"
+  allow="payment"
+></iframe>`;
+            
+            case 'javascript':
+                return `<!-- Embed ${formTitle} -->
+<div id="order-form-container-${form.id.substring(0, 8)}"></div>
+<script>
+(function() {
+  var container = document.getElementById('order-form-container-${form.id.substring(0, 8)}');
+  var iframe = document.createElement('iframe');
+  iframe.src = '${formUrl}';
+  iframe.width = '100%';
+  iframe.height = '800';
+  iframe.frameBorder = '0';
+  iframe.style.border = 'none';
+  iframe.style.maxWidth = '100%';
+  iframe.title = '${formTitle}';
+  iframe.allow = 'payment';
+  container.appendChild(iframe);
+})();
+</script>`;
+            
+            case 'html':
+                return `<!-- Link ke ${formTitle} -->
+<a 
+  href="${formUrl}" 
+  target="_blank" 
+  rel="noopener noreferrer"
+  style="display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;"
+>
+  Buka Form Pemesanan
+</a>
+
+<!-- Atau gunakan button -->
+<button 
+  onclick="window.open('${formUrl}', '_blank')" 
+  style="padding: 12px 24px; background-color: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;"
+>
+  Pesan Sekarang
+</button>`;
+            
+            default:
+                return '';
+        }
+    };
+
+    const handleCopyEmbedCode = async (form: Form, type: 'html' | 'javascript' | 'iframe') => {
+        const code = generateEmbedCode(form, type);
+        try {
+            await navigator.clipboard.writeText(code);
+            showToast(`Kode ${type.toUpperCase()} berhasil disalin!`, 'success');
+        } catch (err) {
+            showToast('Gagal menyalin kode', 'error');
+        }
     };
 
     const handleCopyLink = (form: Form) => {
@@ -703,11 +772,11 @@ const FormsPage: React.FC = () => {
                                                             Edit Formulir
                                                         </button>
                                                         <button
-                                                            onClick={() => { handleViewStandalone(form); setOpenActionMenuId(null); }}
+                                                            onClick={() => { setEmbedFormModal(form); setOpenActionMenuId(null); }}
                                                             className="w-full px-4 py-2.5 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
                                                         >
                                                             <CodeIcon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                                            Lihat HTML
+                                                            Embed Form
                                                         </button>
                                                         <button
                                                             onClick={() => { setEditingTemplatesFor(form); setOpenActionMenuId(null); }}
@@ -872,6 +941,126 @@ const FormsPage: React.FC = () => {
                         </div>
                         <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 rounded-b-xl flex justify-end">
                             <button onClick={() => setTrackingLinksForm(null)} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">Tutup</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Embed Form Modal */}
+            {embedFormModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <CodeIcon className="w-5 h-5 text-orange-500" />
+                                        Embed Form
+                                    </h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                        Form: <span className="font-semibold text-slate-900 dark:text-white">{embedFormModal.title}</span>
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => setEmbedFormModal(null)} 
+                                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <XIcon className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Embed Type Selector */}
+                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                            <div className="flex gap-2">
+                                {[
+                                    { type: 'iframe' as const, label: 'iFrame', desc: 'Paling mudah' },
+                                    { type: 'javascript' as const, label: 'JavaScript', desc: 'Lebih fleksibel' },
+                                    { type: 'html' as const, label: 'HTML Link', desc: 'Tombol/Link' },
+                                ].map((option) => (
+                                    <button
+                                        key={option.type}
+                                        onClick={() => setEmbedType(option.type)}
+                                        className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
+                                            embedType === option.type
+                                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                                        }`}
+                                    >
+                                        <div className={`text-sm font-bold ${embedType === option.type ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>
+                                            {option.label}
+                                        </div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            {option.desc}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Code Display */}
+                        <div className="p-4 flex-1 overflow-auto">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Kode {embedType.toUpperCase()}
+                                </span>
+                                <button
+                                    onClick={() => handleCopyEmbedCode(embedFormModal, embedType)}
+                                    className="px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                                >
+                                    <ClipboardListIcon className="w-4 h-4" />
+                                    Salin Kode
+                                </button>
+                            </div>
+                            <div className="relative">
+                                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap break-all font-mono">
+                                    <code>{generateEmbedCode(embedFormModal, embedType)}</code>
+                                </pre>
+                            </div>
+
+                            {/* Instructions */}
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-2">📋 Cara Penggunaan:</h4>
+                                {embedType === 'iframe' && (
+                                    <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                                        <li>Salin kode di atas</li>
+                                        <li>Paste ke halaman website Anda di bagian yang diinginkan</li>
+                                        <li>Ubah nilai <code className="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">height</code> sesuai kebutuhan</li>
+                                    </ul>
+                                )}
+                                {embedType === 'javascript' && (
+                                    <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                                        <li>Salin kode di atas</li>
+                                        <li>Paste ke bagian body website Anda</li>
+                                        <li>Script akan otomatis membuat iframe di dalam container</li>
+                                    </ul>
+                                )}
+                                {embedType === 'html' && (
+                                    <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                                        <li>Pilih kode link atau button sesuai kebutuhan</li>
+                                        <li>Paste ke website Anda</li>
+                                        <li>Form akan terbuka di tab baru saat diklik</li>
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                            <a 
+                                href={getFormUrl(embedFormModal)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                            >
+                                <EyeIcon className="w-4 h-4" />
+                                Preview Form
+                            </a>
+                            <button 
+                                onClick={() => setEmbedFormModal(null)} 
+                                className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
+                            >
+                                Tutup
+                            </button>
                         </div>
                     </div>
                 </div>
