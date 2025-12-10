@@ -30,6 +30,7 @@ export const ALL_MENUS = [
   { id: 'announcements', name: 'Pengumuman', category: 'submenu', description: 'Announcements' },
   { id: 'deletion_requests', name: 'Permintaan Hapus', category: 'submenu', description: 'Data deletion requests' },
   { id: 'cuan_rank', name: 'CuanRank', category: 'submenu', description: 'Rank settings' },
+  { id: 'error_logs', name: 'Log Error', category: 'submenu', description: 'System error logs monitoring' },
 ] as const;
 
 export const ALL_FEATURES = [
@@ -52,6 +53,7 @@ export const ALL_FEATURES = [
   { id: 'view_top_advertisers', name: 'View Top Advertisers', category: 'feature', description: 'Can view top advertisers ranking' },
   { id: 'view_top_cs', name: 'View Top CS', category: 'feature', description: 'Can view top CS ranking' },
   { id: 'view_recent_orders', name: 'View Recent Orders', category: 'feature', description: 'Can view recent orders on dashboard' },
+  { id: 'manage_error_logs', name: 'Manage Error Logs', category: 'feature', description: 'Can view and manage system error logs' },
 ] as const;
 
 // Default role permissions

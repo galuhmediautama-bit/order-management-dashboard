@@ -26,6 +26,7 @@ import TrashIcon from './icons/TrashIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import Squares2x2Icon from './icons/Squares2x2Icon';
 import DashboardIcon from './icons/DashboardIcon';
+import ExclamationTriangleIcon from './icons/ExclamationTriangleIcon';
 import { supabase } from '../firebase';
 import { getNormalizedRole } from '../utils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -63,6 +64,7 @@ const pageToPath: Record<string, string> = {
     'Profil Saya': '/profil',
     'Pelanggan': '/pelanggan',
     'Penghasilan': '/penghasilan',
+    'Log Error': '/pengaturan/log-error',
     'Performance Dashboard': '/monitoring/performance',
 };
 
@@ -91,6 +93,7 @@ const menuNameToRbacId: Record<string, string> = {
     'Pengumuman': 'announcements',
     'Permintaan Hapus': 'deletion_requests',
     'CuanRank': 'cuan_rank',
+    'Log Error': 'error_logs',
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => {
@@ -275,6 +278,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                 { name: 'Manajemen CS', icon: CustomerServiceIcon },
                 { name: 'CuanRank', icon: TrophyIcon },
                 { name: 'Pelacakan', icon: TrackingIcon },
+                { name: 'Log Error', icon: ExclamationTriangleIcon },
                 { name: 'Performance Dashboard', icon: DashboardIcon },
             ]
         },

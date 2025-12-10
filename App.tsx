@@ -99,6 +99,7 @@ const ProductDetailsPage = lazyWithRetry(() => import('./pages/ProductDetailsPag
 const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'));
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
 const PerformanceDashboardPage = lazyWithRetry(() => import('./pages/PerformanceDashboardPage'));
+const ErrorLogsPage = lazyWithRetry(() => import('./pages/ErrorLogsPage'));
 
 
 const FormViewerWrapper: React.FC = () => {
@@ -183,6 +184,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
               <Route path="/notifikasi" element={<NotificationsPage />} />
               <Route path="/pengaturan/permintaan-hapus" element={<PendingDeletionsPage />} />
               <Route path="/pengaturan/cuan-rank" element={<SettingsPage subPage="CuanRank" />} />
+              <Route path="/pengaturan/log-error" element={<ErrorLogsPage />} />
               <Route path="/daftar-produk" element={<ProductsPage />} />
               <Route path="/daftar-produk/tambah" element={<ProductFormPage />} />
               <Route path="/daftar-produk/edit/:id" element={<ProductFormPage />} />

@@ -29,6 +29,7 @@ export type Page =
   | 'Permintaan Hapus'
   | 'Penghasilan'
   | 'CuanRank' // Added for new feature
+  | 'Log Error' // Error logs from all users
   | 'Pengaturan Akun'
   | 'Monitoring'
   | 'Performance Dashboard';

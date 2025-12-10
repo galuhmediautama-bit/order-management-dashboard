@@ -1,6 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { AlertCircle, RotateCw } from 'lucide-react';
 import { handleError } from '../utils/errorHandling';
+import { logError } from '../utils/errorLogger';
 
 interface Props {
     children: ReactNode;
@@ -46,6 +47,11 @@ export class ErrorBoundary extends Component<Props, State> {
         this.setState({
             message,
             recoverable,
+        });
+
+        // Log error to Supabase database
+        logError(error, this.props.context || 'ErrorBoundary', {
+            componentStack: errorInfo.componentStack,
         });
 
         // Log to error reporting service if available
