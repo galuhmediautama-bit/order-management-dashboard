@@ -103,6 +103,10 @@ const AddressInput: React.FC<AddressInputProps> = ({
   // Ref to track if we're updating from internal changes (to prevent loops)
   const isInternalUpdate = useRef(false);
   
+  // Track if this is the initial mount
+  const isInitialMount = useRef(true);
+  const lastSyncedValue = useRef<string>('');
+  
   // Add separate ref to track village ID
   const selectedVillageId = useRef('');
 
