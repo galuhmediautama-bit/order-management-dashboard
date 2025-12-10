@@ -52,6 +52,53 @@ const LoginPage: React.FC = () => {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    
+    // UX Enhancement states
+    const [isAddressExpanded, setIsAddressExpanded] = useState(false);
+    const [userCount, setUserCount] = useState(0);
+    
+    // Email validation
+    const isValidEmail = (email: string) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+    
+    // Password strength checker
+    const getPasswordStrength = (pwd: string): { level: number; label: string; color: string } => {
+        if (!pwd) return { level: 0, label: '', color: '' };
+        let score = 0;
+        if (pwd.length >= 6) score++;
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+        
+        if (score <= 2) return { level: 1, label: 'Lemah', color: 'bg-red-500' };
+        if (score <= 3) return { level: 2, label: 'Sedang', color: 'bg-yellow-500' };
+        return { level: 3, label: 'Kuat', color: 'bg-green-500' };
+    };
+    
+    const passwordStrength = getPasswordStrength(password);
+    
+    // Animated counter effect
+    useEffect(() => {
+        const targetCount = 1247;
+        const duration = 2000;
+        const steps = 60;
+        const increment = targetCount / steps;
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= targetCount) {
+                setUserCount(targetCount);
+                clearInterval(timer);
+            } else {
+                setUserCount(Math.floor(current));
+            }
+        }, duration / steps);
+        
+        return () => clearInterval(timer);
+    }, []);
 
     // Helper functions
     const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
@@ -404,8 +451,24 @@ const LoginPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Testimonial Card */}
-                    <div className="relative z-10">
+                    {/* Testimonial Card + User Counter */}
+                    <div className="relative z-10 space-y-6">
+                        {/* Animated User Counter */}
+                        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 flex items-center gap-4">
+                            <div className="flex -space-x-3">
+                                {['👨', '👩', '👨‍💼', '👩‍💼'].map((emoji, i) => (
+                                    <div key={i} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl border-2 border-white/30">
+                                        {emoji}
+                                    </div>
+                                ))}
+                            </div>
+                            <div>
+                                <p className="text-3xl font-bold text-white">{userCount.toLocaleString()}+</p>
+                                <p className="text-indigo-200 text-sm">Pengguna aktif</p>
+                            </div>
+                        </div>
+                        
+                        {/* Testimonial */}
                         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
                             <p className="text-white italic mb-4 text-lg">"Platform ini mengubah cara kami mengelola bisnis. Efisiensi meningkat 40% dalam sebulan pertama."</p>
                             <div className="flex items-center gap-4">
@@ -498,79 +561,99 @@ const LoginPage: React.FC = () => {
 
                             {!isForgotPassword && isRegistering && (
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
-                                        Alamat
-                                    </label>
-                                    <div className="space-y-3">
-                                        {/* Province Dropdown */}
-                                        <div className="relative">
-                                            <select
-                                                value={selectedProvinceId}
-                                                onChange={handleProvinceChange}
-                                                disabled={loadingProvinces}
-                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                            >
-                                                <option value="">{loadingProvinces ? '⏳ Memuat provinsi...' : '-- Pilih Provinsi --'}</option>
-                                                {provinces.map((p) => (
-                                                    <option key={p.id} value={p.id}>{formatName(p.nama)}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                    {/* Collapsible Address Section */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddressExpanded(!isAddressExpanded)}
+                                        className="w-full flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition duration-200"
+                                    >
+                                        <span className="flex items-center gap-2 font-semibold text-sm">
+                                            <span>📍</span> Alamat {selectedProvince && `- ${selectedProvince}`}
+                                        </span>
+                                        <span className={`transform transition-transform duration-200 ${isAddressExpanded ? 'rotate-180' : ''}`}>
+                                            ▼
+                                        </span>
+                                    </button>
+                                    
+                                    {isAddressExpanded && (
+                                        <div className="mt-3 space-y-3 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                            {/* Province Dropdown */}
+                                            <div className="relative">
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Provinsi</label>
+                                                <select
+                                                    value={selectedProvinceId}
+                                                    onChange={handleProvinceChange}
+                                                    disabled={loadingProvinces}
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                                                >
+                                                    <option value="">{loadingProvinces ? '⏳ Memuat...' : '-- Pilih Provinsi --'}</option>
+                                                    {provinces.map((p) => (
+                                                        <option key={p.id} value={p.id}>{formatName(p.nama)}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                        {/* City Dropdown */}
-                                        <div className="relative">
-                                            <select
-                                                value={selectedCityId}
-                                                onChange={handleCityChange}
-                                                disabled={!selectedProvinceId || loadingCities}
-                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">{loadingCities ? '⏳ Memuat kota...' : !selectedProvinceId ? '-- Pilih provinsi dulu --' : '-- Pilih Kota/Kabupaten --'}</option>
-                                                {cities.map((c) => (
-                                                    <option key={c.id} value={c.id}>{formatName(c.nama)}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                            {/* City Dropdown */}
+                                            <div className="relative">
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Kota/Kabupaten</label>
+                                                <select
+                                                    value={selectedCityId}
+                                                    onChange={handleCityChange}
+                                                    disabled={!selectedProvinceId || loadingCities}
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="">{loadingCities ? '⏳ Memuat...' : '-- Pilih Kota --'}</option>
+                                                    {cities.map((c) => (
+                                                        <option key={c.id} value={c.id}>{formatName(c.nama)}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                        {/* District Dropdown */}
-                                        <div className="relative">
-                                            <select
-                                                value={selectedDistrictId}
-                                                onChange={handleDistrictChange}
-                                                disabled={!selectedCityId || loadingDistricts}
-                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">{loadingDistricts ? '⏳ Memuat kecamatan...' : !selectedCityId ? '-- Pilih kota dulu --' : '-- Pilih Kecamatan --'}</option>
-                                                {districts.map((d) => (
-                                                    <option key={d.id} value={d.id}>{formatName(d.nama)}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                            {/* District Dropdown */}
+                                            <div className="relative">
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Kecamatan</label>
+                                                <select
+                                                    value={selectedDistrictId}
+                                                    onChange={handleDistrictChange}
+                                                    disabled={!selectedCityId || loadingDistricts}
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="">{loadingDistricts ? '⏳ Memuat...' : '-- Pilih Kecamatan --'}</option>
+                                                    {districts.map((d) => (
+                                                        <option key={d.id} value={d.id}>{formatName(d.nama)}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                        {/* Village Dropdown */}
-                                        <div className="relative">
-                                            <select
-                                                value={villages.find(v => formatName(v.nama) === selectedVillage)?.id || ''}
-                                                onChange={handleVillageChange}
-                                                disabled={!selectedDistrictId || loadingVillages}
-                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">{loadingVillages ? '⏳ Memuat kelurahan...' : !selectedDistrictId ? '-- Pilih kecamatan dulu --' : '-- Pilih Kelurahan/Desa --'}</option>
-                                                {villages.map((v) => (
-                                                    <option key={v.id} value={v.id}>{formatName(v.nama)}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                            {/* Village Dropdown */}
+                                            <div className="relative">
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Kelurahan/Desa</label>
+                                                <select
+                                                    value={villages.find(v => formatName(v.nama) === selectedVillage)?.id || ''}
+                                                    onChange={handleVillageChange}
+                                                    disabled={!selectedDistrictId || loadingVillages}
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="">{loadingVillages ? '⏳ Memuat...' : '-- Pilih Kelurahan --'}</option>
+                                                    {villages.map((v) => (
+                                                        <option key={v.id} value={v.id}>{formatName(v.nama)}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                        {/* Detail Address */}
-                                        <textarea
-                                            placeholder="Alamat detail: Jl. ..., RT/RW ..., No. Rumah ..."
-                                            value={detailAddress}
-                                            onChange={(e) => setDetailAddress(e.target.value)}
-                                            rows={2}
-                                            className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
-                                        />
-                                    </div>
+                                            {/* Detail Address */}
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Alamat Detail</label>
+                                                <textarea
+                                                    placeholder="Jl. ..., RT/RW ..., No. Rumah ..."
+                                                    value={detailAddress}
+                                                    onChange={(e) => setDetailAddress(e.target.value)}
+                                                    rows={2}
+                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -591,9 +674,20 @@ const LoginPage: React.FC = () => {
                                         autoCorrect="off"
                                         autoCapitalize="off"
                                         spellCheck="false"
-                                        className="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                                        className={`w-full pl-12 pr-12 py-3 border rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 ${
+                                            email && !isValidEmail(email) ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-slate-700'
+                                        }`}
                                     />
+                                    {/* Email validation indicator */}
+                                    {email && (
+                                        <span className={`absolute right-4 top-3.5 text-lg ${isValidEmail(email) ? 'text-green-500' : 'text-red-500'}`}>
+                                            {isValidEmail(email) ? '✓' : '✗'}
+                                        </span>
+                                    )}
                                 </div>
+                                {email && !isValidEmail(email) && (
+                                    <p className="text-xs text-red-500 mt-1">Format email tidak valid</p>
+                                )}
                             </div>
 
                             {!isForgotPassword && (
@@ -628,7 +722,37 @@ const LoginPage: React.FC = () => {
                                             )}
                                         </button>
                                     </div>
-                                    {isRegistering && <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Minimal 6 karakter, kombinasi huruf dan angka</p>}
+                                    
+                                    {/* Password Strength Indicator */}
+                                    {isRegistering && password && (
+                                        <div className="mt-2">
+                                            <div className="flex gap-1 mb-1">
+                                                {[1, 2, 3].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                                            passwordStrength.level >= level 
+                                                                ? passwordStrength.color 
+                                                                : 'bg-slate-200 dark:bg-slate-700'
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className={`text-xs ${
+                                                passwordStrength.level === 1 ? 'text-red-500' : 
+                                                passwordStrength.level === 2 ? 'text-yellow-600' : 
+                                                'text-green-500'
+                                            }`}>
+                                                Kekuatan: {passwordStrength.label}
+                                            </p>
+                                        </div>
+                                    )}
+                                    
+                                    {isRegistering && !password && (
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                            Minimal 6 karakter, kombinasi huruf dan angka
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
