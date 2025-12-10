@@ -2676,7 +2676,8 @@ const FormEditorPage: React.FC = () => {
                                                     id: Date.now(),
                                                     name: 'WARNA',
                                                     values: ['HITAM', 'MERAH', 'BIRU'],
-                                                    displayStyle: 'radio'
+                                                    displayStyle: 'radio',
+                                                    showPrice: true
                                                 };
                                                 return { ...prev, productOptions: [newOption] };
                                             });
