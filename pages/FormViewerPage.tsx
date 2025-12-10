@@ -1256,7 +1256,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         } else if (addressCheck.normalized && addressCheck.normalized.length < 2) {
             next.address = 'Alamat minimal 2 karakter.';
         } else if (!addressCheck.isValid) {
-            next.address = 'Alamat kurang lengkap (min. 15 karakter + kecamatan/kota).';
+            next.address = 'Alamat kurang lengkap (min. 15 karakter, sertakan RT/RW/No Rumah).';
         }
 
         return next;
