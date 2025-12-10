@@ -26,7 +26,64 @@ CREATE INDEX IF NOT EXISTS idx_error_logs_user_id ON error_logs("userId");
 CREATE INDEX IF NOT EXISTS idx_error_logs_resolved ON error_logs("resolved");
 CREATE INDEX IF NOT EXISTS idx_error_logs_error_type ON error_logs("errorType");
 
+-- ============================================
+-- AUTO-CLEANUP FUNCTION
+-- Keeps max 500 logs, deletes logs older than 30 days
+-- ============================================
+
+-- Function to cleanup old error logs
+CREATE OR REPLACE FUNCTION cleanup_error_logs()
+RETURNS void AS $$
+DECLARE
+    max_logs INTEGER := 500;
+    max_age_days INTEGER := 30;
+    current_count INTEGER;
+BEGIN
+    -- Delete logs older than 30 days (resolved ones first)
+    DELETE FROM error_logs
+    WHERE "createdAt" < NOW() - INTERVAL '30 days';
+    
+    -- Delete resolved logs older than 7 days
+    DELETE FROM error_logs
+    WHERE resolved = true 
+    AND "createdAt" < NOW() - INTERVAL '7 days';
+    
+    -- If still over limit, delete oldest logs
+    SELECT COUNT(*) INTO current_count FROM error_logs;
+    
+    IF current_count > max_logs THEN
+        DELETE FROM error_logs
+        WHERE id IN (
+            SELECT id FROM error_logs
+            ORDER BY "createdAt" ASC
+            LIMIT (current_count - max_logs)
+        );
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger function to auto-cleanup on insert
+CREATE OR REPLACE FUNCTION trigger_cleanup_error_logs()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Run cleanup every 50 inserts (check row count)
+    IF (SELECT COUNT(*) FROM error_logs) > 550 THEN
+        PERFORM cleanup_error_logs();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger (drop if exists first)
+DROP TRIGGER IF EXISTS error_logs_cleanup_trigger ON error_logs;
+CREATE TRIGGER error_logs_cleanup_trigger
+    AFTER INSERT ON error_logs
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION trigger_cleanup_error_logs();
+
+-- ============================================
 -- RLS Policies
+-- ============================================
 ALTER TABLE error_logs ENABLE ROW LEVEL SECURITY;
 
 -- Super Admin can see all error logs

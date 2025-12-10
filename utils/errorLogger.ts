@@ -1,6 +1,12 @@
 /**
  * Error Logger Utility
  * Logs errors to Supabase for monitoring and debugging
+ * 
+ * LIMITS:
+ * - Max 500 logs in database (auto-cleanup via SQL trigger)
+ * - Logs older than 30 days auto-deleted
+ * - Resolved logs older than 7 days auto-deleted
+ * - Rate limiting: max 10 errors per minute per session
  */
 
 import { supabase } from '../firebase';
@@ -14,6 +20,36 @@ export interface ErrorLogPayload {
     errorType?: ErrorType;
     additionalInfo?: Record<string, any>;
 }
+
+// Rate limiting to prevent spam
+const ERROR_RATE_LIMIT = 10; // max errors per minute
+const ERROR_RATE_WINDOW = 60000; // 1 minute in ms
+let errorCount = 0;
+let lastResetTime = Date.now();
+
+/**
+ * Check if we can log (rate limiting)
+ */
+const canLogError = (): boolean => {
+    const now = Date.now();
+    
+    // Reset counter if window passed
+    if (now - lastResetTime > ERROR_RATE_WINDOW) {
+        errorCount = 0;
+        lastResetTime = now;
+    }
+    
+    // Check rate limit
+    if (errorCount >= ERROR_RATE_LIMIT) {
+        if (import.meta.env.DEV) {
+            console.warn('[ErrorLogger] Rate limit reached, skipping error log');
+        }
+        return false;
+    }
+    
+    errorCount++;
+    return true;
+};
 
 /**
  * Get current user info from Supabase session
@@ -88,12 +124,18 @@ const getErrorType = (error: Error | unknown): ErrorType => {
 
 /**
  * Log error to Supabase
+ * Rate limited to prevent spam (max 10 errors per minute)
  */
 export const logError = async (
     error: Error | string,
     context?: string,
     additionalInfo?: Record<string, any>
 ): Promise<void> => {
+    // Check rate limit first
+    if (!canLogError()) {
+        return;
+    }
+    
     try {
         const userInfo = await getCurrentUserInfo();
         const errorObj = error instanceof Error ? error : new Error(String(error));
