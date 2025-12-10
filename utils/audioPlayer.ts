@@ -3,6 +3,9 @@ import type { NotificationType } from '../types';
 // Audio Context singleton
 let audioContext: AudioContext | null = null;
 
+// Cached audio buffer for MP3 file
+let cashRegisterBuffer: AudioBuffer | null = null;
+
 /**
  * Get or create AudioContext
  */
@@ -15,6 +18,50 @@ function getAudioContext(): AudioContext {
     audioContext.resume();
   }
   return audioContext;
+}
+
+/**
+ * Load and cache the cash register MP3 file
+ */
+async function loadCashRegisterSound(): Promise<AudioBuffer | null> {
+  if (cashRegisterBuffer) return cashRegisterBuffer;
+
+  try {
+    const ctx = getAudioContext();
+    const response = await fetch('/sounds/cash-register.mp3');
+    const arrayBuffer = await response.arrayBuffer();
+    cashRegisterBuffer = await ctx.decodeAudioData(arrayBuffer);
+    return cashRegisterBuffer;
+  } catch (error) {
+    console.error('Error loading cash register sound:', error);
+    return null;
+  }
+}
+
+/**
+ * Play the cash register MP3 sound
+ */
+async function playCashRegisterMP3(volume: number = 0.8): Promise<void> {
+  const ctx = getAudioContext();
+  const buffer = await loadCashRegisterSound();
+
+  if (!buffer) {
+    // Fallback to generated tone if MP3 fails
+    console.warn('MP3 failed, using fallback tone');
+    await playToneSequence(SOUND_CONFIGS.ORDER_NEW, volume);
+    return;
+  }
+
+  const source = ctx.createBufferSource();
+  const gainNode = ctx.createGain();
+
+  source.buffer = buffer;
+  gainNode.gain.value = volume;
+
+  source.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  source.start(0);
 }
 
 /**
@@ -80,10 +127,10 @@ async function playToneSequence(config: SoundConfig, volume: number = 1): Promis
     // Volume envelope for cleaner sound
     const effectiveGainStart = config.gainStart * volume;
     const effectiveGainEnd = config.gainEnd * volume;
-    
+
     gainNode.gain.setValueAtTime(effectiveGainStart, startTime);
     gainNode.gain.exponentialRampToValueAtTime(
-      Math.max(effectiveGainEnd, 0.001), 
+      Math.max(effectiveGainEnd, 0.001),
       startTime + config.durations[i]
     );
 
@@ -104,6 +151,12 @@ async function playToneSequence(config: SoundConfig, volume: number = 1): Promis
  */
 export async function playSound(type: NotificationType, volume: number = 0.8): Promise<void> {
   try {
+    // Use MP3 file for new order notification
+    if (type === 'ORDER_NEW') {
+      await playCashRegisterMP3(volume);
+      return;
+    }
+
     const config = SOUND_CONFIGS[type];
     if (!config) {
       console.warn(`No sound configured for notification type: ${type}`);
@@ -195,11 +248,11 @@ export async function testAllSounds(): Promise<void> {
   console.log('Testing ORDER_NEW sound...');
   await playSound('ORDER_NEW');
   await new Promise(resolve => setTimeout(resolve, 1500));
-  
+
   console.log('Testing CART_ABANDON sound...');
   await playSound('CART_ABANDON');
   await new Promise(resolve => setTimeout(resolve, 1500));
-  
+
   console.log('Testing SYSTEM_ALERT sound...');
   await playSound('SYSTEM_ALERT');
 }

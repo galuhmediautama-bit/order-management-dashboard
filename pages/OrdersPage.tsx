@@ -201,11 +201,11 @@ const OrdersPage: React.FC = () => {
             }
 
             // 2. Orders (exclude soft-deleted orders)
-            // Optimized: Only select needed columns + limit to recent 500 orders + withRetry
+            // Optimized: Select all needed columns for display + limit to recent 500 orders + withRetry
             const { data: ordersData } = await withRetry(() =>
                 supabase
                     .from('orders')
-                    .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, product_id, csCommission, advCommission, deletedAt')
+                    .select('id, customer, customerPhone, customerEmail, shippingAddress, province, city, district, village, postalCode, productName, variant, productPrice, shippingMethod, shippingCost, codFee, paymentMethod, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId, quantity, product_id, csCommission, advCommission, deletedAt')
                     .is('deletedAt', null)
                     .order('date', { ascending: false })
                     .limit(500)
@@ -553,10 +553,10 @@ const OrdersPage: React.FC = () => {
     // --- Fallback polling for new orders (faster interval) ---
     const refreshOrdersSilently = useCallback(async () => {
         try {
-            // Optimized: Only fetch recent orders for notification check
+            // Optimized: Fetch recent orders with all display fields for notification check
             const { data: ordersData, error: ordersError } = await supabase
                 .from('orders')
-                .select('id, customer, customerPhone, shippingAddress, totalPrice, status, date, assignedCsId, brandId, formId, variant, quantity, product_id, csCommission, advCommission, deletedAt')
+                .select('id, customer, customerPhone, customerEmail, shippingAddress, province, city, district, village, postalCode, productName, variant, productPrice, shippingMethod, shippingCost, codFee, paymentMethod, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId, quantity, product_id, csCommission, advCommission, deletedAt')
                 .is('deletedAt', null)
                 .order('date', { ascending: false })
                 .limit(100);
@@ -2029,162 +2029,254 @@ const OrderDetailModal: React.FC<{
     const advertiserInfo = allUsers.find(u => u.id === order.assignedAdvertiserId);
     const productInfo = products.find(p => p.id === order.productId);
 
+    // ESC key handler
+    React.useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="p-6 border-b dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Detail Pesanan</h2>
-                    <button onClick={onClose} className="hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg p-1 transition">
-                        <XIcon className="w-6 h-6 text-slate-500" />
-                    </button>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+                {/* Header */}
+                <div className="p-5 border-b dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-indigo-600 to-purple-600">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Detail Pesanan</h2>
+                            <p className="text-white/70 text-sm font-mono">{order.id}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <StatusBadge status={order.status} />
+                        <button onClick={onClose} className="hover:bg-white/20 rounded-lg p-2 transition text-white">
+                            <XIcon className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
-                <div className="p-8 space-y-6">
-                    {/* Order Info */}
-                    <div>
-                        <h3 className="font-bold text-lg mb-3">Informasi Pesanan</h3>
-                        <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg">
-                            <div><p className="text-slate-500 text-sm">ID</p><p className="font-mono font-bold">{order.id}</p></div>
-                            <div><p className="text-slate-500 text-sm">Tanggal</p><p className="font-medium">{order.date ? new Date(order.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</p></div>
-                            <div><p className="text-slate-500 text-sm">Status</p><div className="mt-1"><StatusBadge status={order.status} /></div></div>
-                            <div>
-                                <p className="text-slate-500 text-sm">Metode Bayar</p>
-                                <p className="font-medium text-slate-900 dark:text-white">
-                                    {order.paymentMethod || 'COD (Bayar di Tempat)'}
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Kolom Kiri */}
+                        <div className="space-y-5">
+                            {/* Info Pesanan */}
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Informasi Pesanan
+                                </h4>
+                                <div className="space-y-2.5">
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-slate-500">Tanggal</span>
+                                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                                            {order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-slate-500">Metode Bayar</span>
+                                        <span className="text-sm font-medium text-slate-900 dark:text-white">{order.paymentMethod || 'COD'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-slate-500">Metode Kirim</span>
+                                        <span className="text-sm font-medium text-slate-900 dark:text-white">{order.shippingMethod || 'Regular'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Data Pelanggan */}
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                    Data Pelanggan
+                                </h4>
+                                <div className="space-y-2.5">
+                                    <div>
+                                        <span className="text-xs text-slate-500">Nama</span>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{order.customer || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs text-slate-500">WhatsApp</span>
+                                        <p className="text-sm font-medium text-slate-900 dark:text-white">{order.customerPhone || '-'}</p>
+                                    </div>
+                                    {order.customerEmail && (
+                                        <div>
+                                            <span className="text-xs text-slate-500">Email</span>
+                                            <p className="text-sm font-medium text-slate-900 dark:text-white">{order.customerEmail}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Alamat */}
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    Alamat Pengiriman
+                                </h4>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                    {[
+                                        order.shippingAddress,
+                                        order.village ? `Desa/Kel. ${order.village}` : null,
+                                        order.district ? `Kec. ${order.district}` : null,
+                                        order.city,
+                                        order.province,
+                                        order.postalCode
+                                    ].filter(Boolean).join(', ') || '-'}
                                 </p>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Customer */}
-                    <div className="border-t dark:border-slate-700 pt-6">
-                        <h3 className="font-bold text-lg mb-3">Data Pelanggan</h3>
-                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
-                            <div><p className="text-slate-500 text-sm">Nama</p><p className="font-medium text-slate-900 dark:text-white">{order.customer || '-'}</p></div>
-                            <div><p className="text-slate-500 text-sm">WhatsApp</p><p className="font-medium text-slate-900 dark:text-white">{order.customerPhone || '-'}</p></div>
-                            {order.customerEmail && <div><p className="text-slate-500 text-sm">Email</p><p className="font-medium text-slate-900 dark:text-white">{order.customerEmail}</p></div>}
-                            
-                            {/* Address Details - Show grid only if we have separate address fields */}
-                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
-                                <p className="text-slate-500 text-sm font-medium mb-2">Alamat Pengiriman</p>
-                                
-                                {/* Show detailed address grid only if at least one field exists */}
-                                {(order.province || order.city || order.district || order.village || order.postalCode) ? (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-3 mb-3">
-                                            {order.province && <div><p className="text-slate-400 text-xs">Provinsi</p><p className="text-slate-900 dark:text-white">{order.province}</p></div>}
-                                            {order.city && <div><p className="text-slate-400 text-xs">Kota/Kabupaten</p><p className="text-slate-900 dark:text-white">{order.city}</p></div>}
-                                            {order.district && <div><p className="text-slate-400 text-xs">Kecamatan</p><p className="text-slate-900 dark:text-white">{order.district}</p></div>}
-                                            {order.village && <div><p className="text-slate-400 text-xs">Kelurahan/Desa</p><p className="text-slate-900 dark:text-white">{order.village}</p></div>}
-                                            {order.postalCode && <div><p className="text-slate-400 text-xs">Kode Pos</p><p className="text-slate-900 dark:text-white">{order.postalCode}</p></div>}
+                            {/* Tim Pengelola */}
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                    Tim Pengelola
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-slate-200 dark:border-slate-600">
+                                        <span className="text-xs text-slate-500">Merek</span>
+                                        <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">{brandInfo?.name || '-'}</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-slate-200 dark:border-slate-600">
+                                        <span className="text-xs text-slate-500">CS</span>
+                                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">{csInfo?.name || '-'}</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-slate-200 dark:border-slate-600">
+                                        <span className="text-xs text-slate-500">Advertiser</span>
+                                        <p className="text-sm font-medium text-green-600 dark:text-green-400 truncate">{advertiserInfo?.name || '-'}</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 rounded-lg p-2.5 border border-slate-200 dark:border-slate-600">
+                                        <span className="text-xs text-slate-500">Produk</span>
+                                        <p className="text-sm font-medium text-purple-600 dark:text-purple-400 truncate">{productInfo?.name || order.productName || '-'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Kolom Kanan */}
+                        <div className="space-y-5">
+                            {/* Detail Produk */}
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                    Detail Produk
+                                </h4>
+                                <div className="space-y-2.5">
+                                    <div>
+                                        <span className="text-xs text-slate-500">Nama Produk</span>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{order.productName || '-'}</p>
+                                    </div>
+                                    {order.variant && (
+                                        <div>
+                                            <span className="text-xs text-slate-500">Varian</span>
+                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{order.variant}</p>
                                         </div>
-                                        {order.shippingAddress && (
-                                            <div>
-                                                <p className="text-slate-400 text-xs">Detail Alamat</p>
-                                                <p className="text-slate-900 dark:text-white">{order.shippingAddress}</p>
+                                    )}
+                                    <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-600">
+                                        <span className="text-xs text-slate-500">Jumlah</span>
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white bg-indigo-100 dark:bg-indigo-900 px-2.5 py-0.5 rounded-full">{order.quantity || 1}x</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Rincian Harga */}
+                            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800">
+                                <h4 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                    Rincian Pembayaran
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-600 dark:text-slate-400">Harga Produk</span>
+                                        <span className="font-medium text-slate-900 dark:text-white">Rp {(order.productPrice || 0).toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-600 dark:text-slate-400">Ongkos Kirim</span>
+                                        <span className="font-medium text-slate-900 dark:text-white">Rp {(order.shippingCost || 0).toLocaleString('id-ID')}</span>
+                                    </div>
+                                    {order.codFee !== undefined && order.codFee > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-600 dark:text-slate-400">Biaya COD</span>
+                                            <span className="font-medium text-orange-600">Rp {order.codFee.toLocaleString('id-ID')}</span>
+                                        </div>
+                                    )}
+                                    <div className="pt-3 mt-2 border-t border-indigo-200 dark:border-indigo-700 flex justify-between items-center">
+                                        <span className="font-bold text-indigo-700 dark:text-indigo-300">Total</span>
+                                        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Komisi */}
+                            {(order.csCommission || order.advCommission) && (
+                                <div className="bg-amber-50 dark:bg-amber-950/50 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                                    <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Komisi
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {order.csCommission !== undefined && (
+                                            <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center">
+                                                <span className="text-xs text-slate-500 block mb-1">Komisi CS</span>
+                                                <span className="text-lg font-bold text-orange-600">Rp {order.csCommission?.toLocaleString('id-ID')}</span>
                                             </div>
                                         )}
-                                    </>
-                                ) : (
-                                    /* Fallback: Show full address string for legacy orders */
-                                    <p className="text-slate-900 dark:text-white">{order.shippingAddress || '-'}</p>
-                                )}
-                            </div>
-                            
-                            {order.shippingMethod && (
-                                <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
-                                    <p className="text-slate-500 text-sm">Metode Pengiriman</p>
-                                    <p className="font-medium text-slate-900 dark:text-white">{order.shippingMethod}</p>
+                                        {order.advCommission !== undefined && (
+                                            <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center">
+                                                <span className="text-xs text-slate-500 block mb-1">Komisi Advertiser</span>
+                                                <span className="text-lg font-bold text-yellow-600">Rp {order.advCommission?.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Resi */}
+                            {(order.status === 'Shipped' || order.status === 'Delivered') && order.shippingResi && (
+                                <div className="bg-emerald-50 dark:bg-emerald-950/50 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+                                    <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-2 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
+                                        Nomor Resi
+                                    </h4>
+                                    <p className="font-mono text-lg font-bold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg">{order.shippingResi}</p>
+                                </div>
+                            )}
+
+                            {/* Pembatalan */}
+                            {order.status === 'Canceled' && order.cancellationReason && (
+                                <div className="bg-red-50 dark:bg-red-950/50 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                                    <h4 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                        Alasan Pembatalan
+                                    </h4>
+                                    <p className="text-sm font-medium text-red-700 dark:text-red-300">{order.cancellationReason}</p>
+                                </div>
+                            )}
+
+                            {/* Catatan */}
+                            {order.notes && (
+                                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        Catatan
+                                    </h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">{order.notes}</p>
                                 </div>
                             )}
                         </div>
                     </div>
+                </div>
 
-                    {/* Tracking */}
-                    <div className="border-t dark:border-slate-700 pt-6">
-                        <h3 className="font-bold text-lg mb-3">Pelacakan</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Merek</p><p className="font-semibold">{brandInfo?.name || order.brandId || '-'}</p></div>
-                            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-                                <p className="text-slate-500 text-sm">CS Ditugaskan</p>
-                                <p className="font-semibold">{csInfo?.name || order.assignedCsId || '-'}</p>
-                            </div>
-                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Advertiser</p><p className="font-semibold">{advertiserInfo?.name || order.assignedAdvertiserId || '-'}</p></div>
-                            <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Produk</p><p className="font-semibold">{productInfo?.name || order.productName || '-'}</p></div>
-                        </div>
-                    </div>
-
-                    {/* Product */}
-                    <div className="border-t dark:border-slate-700 pt-6">
-                        <h3 className="font-bold text-lg mb-3">Produk</h3>
-                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
-                            <div><p className="text-slate-500 text-sm">Nama Produk</p><p className="font-medium text-slate-900 dark:text-white">{order.productName || '-'}</p></div>
-                            {order.variant && <div><p className="text-slate-500 text-sm">Varian</p><p className="text-slate-900 dark:text-white">{order.variant}</p></div>}
-                            <div><p className="text-slate-500 text-sm">Jumlah</p><p className="text-slate-900 dark:text-white">{order.quantity || 1}</p></div>
-                            {order.notes && <div><p className="text-slate-500 text-sm">Catatan</p><p className="text-slate-900 dark:text-white">{order.notes}</p></div>}
-                        </div>
-                    </div>
-
-                    {/* Pricing & Shipping */}
-                    <div className="border-t dark:border-slate-700 pt-6">
-                        <h3 className="font-bold text-lg mb-3">Rincian Pembayaran</h3>
-                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg space-y-3">
-                            <div className="flex justify-between items-center">
-                                <p className="text-slate-500 text-sm">Harga Produk</p>
-                                <p className="font-medium text-slate-900 dark:text-white">Rp {(order.productPrice || 0).toLocaleString('id-ID')}</p>
-                            </div>
-                            
-                            {/* Shipping */}
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="text-slate-500 text-sm">Pengiriman</p>
-                                    <p className="text-xs text-slate-400">{order.shippingMethod || 'Regular'}</p>
-                                </div>
-                                <p className="font-medium text-slate-900 dark:text-white">Rp {(order.shippingCost || 0).toLocaleString('id-ID')}</p>
-                            </div>
-                            
-                            {/* COD Fee */}
-                            {order.codFee !== undefined && order.codFee > 0 && (
-                                <div className="flex justify-between items-center">
-                                    <p className="text-slate-500 text-sm">Biaya Penanganan COD</p>
-                                    <p className="font-medium text-orange-600">Rp {order.codFee.toLocaleString('id-ID')}</p>
-                                </div>
-                            )}
-                            
-                            {/* Total */}
-                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                                <p className="font-bold text-slate-900 dark:text-white">Total</p>
-                                <p className="text-2xl font-bold text-indigo-600">Rp {(order.totalPrice || 0).toLocaleString('id-ID')}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {order.status === 'Canceled' && order.cancellationReason && (
-                        <div className="border-t dark:border-slate-700 pt-6">
-                            <h3 className="font-bold text-lg mb-3">Alasan Pembatalan</h3>
-                            <div className="bg-red-50 dark:bg-red-950 p-4 rounded-lg"><p className="font-semibold text-red-900">{order.cancellationReason}</p></div>
-                        </div>
-                    )}
-
-                    {(order.status === 'Shipped' || order.status === 'Delivered') && order.shippingResi && (
-                        <div className="border-t dark:border-slate-700 pt-6">
-                            <h3 className="font-bold text-lg mb-3">Nomor Resi</h3>
-                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg"><p className="font-mono font-bold text-lg">{order.shippingResi}</p></div>
-                        </div>
-                    )}
-
-                    {(order.csCommission || order.advCommission) && (
-                        <div className="border-t dark:border-slate-700 pt-6">
-                            <h3 className="font-bold text-lg mb-3">Komisi</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {order.csCommission !== undefined && (
-                                    <div className="bg-orange-50 dark:bg-orange-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Komisi CS</p><p className="font-bold text-orange-700">Rp {order.csCommission?.toLocaleString('id-ID')}</p></div>
-                                )}
-                                {order.advCommission !== undefined && (
-                                    <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg"><p className="text-slate-500 text-sm">Komisi Advertiser</p><p className="font-bold text-yellow-700">Rp {order.advCommission?.toLocaleString('id-ID')}</p></div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                {/* Footer */}
+                <div className="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+                    <button onClick={onClose} className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors font-medium">
+                        Tutup
+                    </button>
                 </div>
             </div>
         </div>
@@ -2198,8 +2290,12 @@ const ManualOrderModal: React.FC<{
     editOrder?: Order | null;
     onClose: () => void;
     onSave: (o: Omit<Order, 'id'>) => void
-}> = ({ forms, csUsers, currentUser, editOrder, onClose, onSave }) => {
-    const [selectedFormId, setSelectedFormId] = useState(editOrder?.formId || forms[0]?.id || '');
+}> = ({ forms: initialForms, csUsers, currentUser, editOrder, onClose, onSave }) => {
+    // Local forms state - will be refreshed with full data including variantCombinations
+    const [forms, setLocalForms] = useState<Form[]>(initialForms);
+    const [loadingForms, setLoadingForms] = useState(false);
+
+    const [selectedFormId, setSelectedFormId] = useState(editOrder?.formId || initialForms[0]?.id || '');
     const [customerData, setCustomerData] = useState({
         name: editOrder?.customer || '',
         phone: editOrder?.customerPhone || '',
@@ -2225,6 +2321,26 @@ const ManualOrderModal: React.FC<{
     const [notes, setNotes] = useState<string>(editOrder?.notes || '');
     const [variant, setVariant] = useState<string>(editOrder?.variant || '');
     const [quantity, setQuantity] = useState<number>(editOrder?.quantity || 1);
+
+    // Fetch forms with variantCombinations on mount
+    useEffect(() => {
+        const fetchFormsWithVariants = async () => {
+            setLoadingForms(true);
+            try {
+                const { data } = await supabase
+                    .from('forms')
+                    .select('id, title, brandId, paymentSettings, variantCombinations');
+                if (data) {
+                    setLocalForms(data as Form[]);
+                }
+            } catch (err) {
+                console.error('Error fetching forms with variants:', err);
+            } finally {
+                setLoadingForms(false);
+            }
+        };
+        fetchFormsWithVariants();
+    }, []);
 
     // Update state when editOrder changes (when opening modal for edit)
     useEffect(() => {
@@ -2297,6 +2413,32 @@ const ManualOrderModal: React.FC<{
         }));
     }, [addressData]);
 
+    // Auto-calculate COD fee based on form settings
+    useEffect(() => {
+        if (paymentMethod === 'Bayar di Tempat (COD)') {
+            const form = forms.find(f => f.id === selectedFormId);
+            if (form?.paymentSettings?.cod) {
+                const codSettings = form.paymentSettings.cod;
+                const percentage = codSettings.handlingFeePercentage || 0;
+                const base = codSettings.handlingFeeBase || 'product_and_shipping';
+
+                let baseAmount = 0;
+                if (base === 'product') {
+                    baseAmount = productPrice;
+                } else {
+                    baseAmount = productPrice + shippingCost;
+                }
+
+                const calculatedFee = Math.round(baseAmount * percentage / 100);
+                setCodFee(calculatedFee);
+            } else {
+                setCodFee(0);
+            }
+        } else {
+            setCodFee(0);
+        }
+    }, [paymentMethod, selectedFormId, productPrice, shippingCost, forms]);
+
     // Auto-calculate total
     useEffect(() => {
         setOrderTotal(productPrice + shippingCost + codFee);
@@ -2341,270 +2483,323 @@ const ManualOrderModal: React.FC<{
     return (
         <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>
             <div className="min-h-full flex items-start justify-center p-4 py-8">
-                <div 
+                <div
                     className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl relative"
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Header - Sticky */}
                     <div className="sticky top-0 bg-white dark:bg-slate-800 px-6 py-4 border-b dark:border-slate-700 rounded-t-xl z-10">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">{editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}</h3>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                <PencilIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            </span>
+                            {editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}
+                        </h3>
                     </div>
 
                     {/* Content - Scrollable */}
-                    <div className="p-6 max-h-[70vh] overflow-y-auto">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Kolom Kiri */}
-                            <div className="space-y-4">
-                                {/* Product/Form Field - Only show when creating new order */}
-                                {!editOrder && (
-                                    <div>
-                                        <label className="block text-xs text-slate-500 mb-1">Produk (Formulir)</label>
-                                        <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600" value={selectedFormId} onChange={e => setSelectedFormId(e.target.value)}>
-                                            {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
-                                        </select>
-                                    </div>
-                                )}
+                    <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
 
-                                {/* CS Assignment Field - Only for Admin */}
-                                {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-                                    <div>
-                                        <label className="block text-xs text-slate-500 mb-1">Tugaskan ke CS</label>
-                                        <select
-                                            className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                            value={selectedCsId}
-                                            onChange={e => setSelectedCsId(e.target.value)}
-                                        >
-                                            <option value="">Pilih CS...</option>
-                                            {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
-                                        </select>
+                        {/* Section: Pengaturan Pesanan */}
+                        {(!editOrder || currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    Pengaturan Pesanan
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Product/Form Field - Only show when creating new order */}
+                                    {!editOrder && (
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Produk (Formulir)</label>
+                                            <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm" value={selectedFormId} onChange={e => setSelectedFormId(e.target.value)}>
+                                                {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {/* CS Assignment Field - Only for Admin */}
+                                    {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Tugaskan ke CS</label>
+                                            <select
+                                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                value={selectedCsId}
+                                                onChange={e => setSelectedCsId(e.target.value)}
+                                            >
+                                                <option value="">Pilih CS...</option>
+                                                {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Pelanggan</label>
-                            <input
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                placeholder="Nama Pelanggan"
-                                value={customerData.name}
-                                onChange={e => setCustomerData({ ...customerData, name: e.target.value })}
-                            />
-                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Kolom Kiri */}
+                            <div className="space-y-6">
+                                {/* Section: Data Pelanggan */}
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                        Data Pelanggan
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Nama Pelanggan</label>
+                                            <input
+                                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                placeholder="Nama Pelanggan"
+                                                value={customerData.name}
+                                                onChange={e => setCustomerData({ ...customerData, name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">WhatsApp</label>
+                                            <input
+                                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                placeholder="0812xxxxxxxx"
+                                                value={customerData.phone}
+                                                onChange={e => setCustomerData({ ...customerData, phone: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">WhatsApp</label>
-                            <input
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                placeholder="WhatsApp (e.g. 0812...)"
-                                value={customerData.phone}
-                                onChange={e => setCustomerData({ ...customerData, phone: e.target.value })}
-                            />
-                        </div>
-
-                        {(() => {
-                            const selectedForm = forms.find(f => f.id === selectedFormId);
-                            const variants = selectedForm?.variantCombinations || [];
-
-                            // Find matching variant index based on stored variant string
-                            const matchingIndex = variants.findIndex((v) => {
-                                const variantLabel = Object.entries(v.attributes || {})
-                                    .map(([key, val]) => `${key}: ${val}`)
-                                    .join(', ');
-                                return variant === variantLabel;
-                            });
-
-                            const currentValue = matchingIndex >= 0 ? `${matchingIndex}::${variant}` : variant;
-
-                            return (
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Variant</label>
-                                    {variants.length > 0 ? (
-                                        <select
-                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                            value={currentValue}
-                                            onChange={e => {
-                                                const selectedIndex = parseInt(e.target.value.split('::')[0]);
-                                                const selectedVariant = variants[selectedIndex];
-                                                const variantName = e.target.value.split('::')[1] || e.target.value;
-                                                setVariant(variantName);
-                                                // Auto-update price when variant changes
-                                                if (selectedVariant?.sellingPrice) {
-                                                    setProductPrice(selectedVariant.sellingPrice * quantity);
-                                                }
-                                            }}
-                                        >
-                                            <option value="">Pilih Variant...</option>
-                                            {variants.map((v, idx) => {
+                                {/* Section: Detail Produk */}
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                        Detail Produk
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {(() => {
+                                            const selectedForm = forms.find(f => f.id === selectedFormId);
+                                            const variants = selectedForm?.variantCombinations || [];
+                                            const matchingIndex = variants.findIndex((v) => {
                                                 const variantLabel = Object.entries(v.attributes || {})
                                                     .map(([key, val]) => `${key}: ${val}`)
                                                     .join(', ');
-                                                const variantValue = `${idx}::${variantLabel}`;
-                                                return (
-                                                    <option key={idx} value={variantValue}>
-                                                        {variantLabel} - Rp {v.sellingPrice?.toLocaleString('id-ID') || 0}
-                                                    </option>
-                                                );
-                                            })}
-                                            {/* Show current variant even if not in list */}
-                                            {variant && matchingIndex < 0 && (
-                                                <option value={variant}>{variant} (Tidak tersedia)</option>
+                                                return variant === variantLabel;
+                                            });
+                                            const currentValue = matchingIndex >= 0 ? `${matchingIndex}::${variant}` : variant;
+
+                                            return (
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                                                        Variant {loadingForms && <span className="text-slate-400">(Loading...)</span>}
+                                                    </label>
+                                                    {loadingForms ? (
+                                                        <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 bg-slate-100 text-sm" disabled>
+                                                            <option>Memuat variant...</option>
+                                                        </select>
+                                                    ) : variants.length > 0 ? (
+                                                        <select
+                                                            className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                            value={currentValue}
+                                                            onChange={e => {
+                                                                const selectedIndex = parseInt(e.target.value.split('::')[0]);
+                                                                const selectedVariant = variants[selectedIndex];
+                                                                const variantName = e.target.value.split('::')[1] || e.target.value;
+                                                                setVariant(variantName);
+                                                                if (selectedVariant?.sellingPrice) {
+                                                                    setProductPrice(selectedVariant.sellingPrice * quantity);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">Pilih Variant...</option>
+                                                            {variants.map((v, idx) => {
+                                                                const variantLabel = Object.entries(v.attributes || {})
+                                                                    .map(([key, val]) => `${key}: ${val}`)
+                                                                    .join(', ');
+                                                                return (
+                                                                    <option key={idx} value={`${idx}::${variantLabel}`}>
+                                                                        {variantLabel} - Rp {v.sellingPrice?.toLocaleString('id-ID') || 0}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                            {variant && matchingIndex < 0 && (
+                                                                <option value={variant}>{variant} (Tidak tersedia)</option>
+                                                            )}
+                                                        </select>
+                                                    ) : (
+                                                        <select
+                                                            className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                            value={variant}
+                                                            onChange={e => setVariant(e.target.value)}
+                                                        >
+                                                            {variant ? (
+                                                                <option value={variant}>{variant}</option>
+                                                            ) : (
+                                                                <option value="">Tidak ada variant</option>
+                                                            )}
+                                                        </select>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Jumlah</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                    value={quantity}
+                                                    onChange={e => {
+                                                        const newQty = parseInt(e.target.value) || 1;
+                                                        setQuantity(newQty);
+                                                        const selectedForm = forms.find(f => f.id === selectedFormId);
+                                                        const variants = selectedForm?.variantCombinations || [];
+                                                        const selectedVariant = variants.find((v) => {
+                                                            const variantLabel = Object.entries(v.attributes || {})
+                                                                .map(([key, val]) => `${key}: ${val}`)
+                                                                .join(', ');
+                                                            return variant === variantLabel;
+                                                        });
+                                                        if (selectedVariant?.sellingPrice) {
+                                                            setProductPrice(selectedVariant.sellingPrice * newQty);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Harga Produk</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full p-2.5 pl-9 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                        value={productPrice}
+                                                        onChange={e => setProductPrice(parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section: Pengiriman & Pembayaran */}
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
+                                        Pengiriman & Pembayaran
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Metode Pengiriman</label>
+                                                <select
+                                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                    value={shippingMethod}
+                                                    onChange={e => setShippingMethod(e.target.value)}
+                                                >
+                                                    <option value="Regular">Regular</option>
+                                                    <option value="Gratis Ongkir">Gratis Ongkir</option>
+                                                    <option value="Flat Ongkir Pulau Jawa">Flat Jawa</option>
+                                                    <option value="Flat Ongkir Pulau Bali">Flat Bali</option>
+                                                    <option value="Flat Ongkir Pulau Sumatra">Flat Sumatra</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Biaya Ongkir</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full p-2.5 pl-9 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                        value={shippingCost}
+                                                        onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Metode Pembayaran</label>
+                                                <select
+                                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                    value={paymentMethod}
+                                                    onChange={e => setPaymentMethod(e.target.value)}
+                                                >
+                                                    <option value="Bayar di Tempat (COD)">COD</option>
+                                                    <option value="QRIS">QRIS</option>
+                                                    <option value="Transfer Bank">Transfer Bank</option>
+                                                </select>
+                                            </div>
+                                            {paymentMethod === 'Bayar di Tempat (COD)' && (
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Biaya COD</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full p-2.5 pl-9 border rounded-lg bg-slate-100 dark:bg-slate-600 dark:border-slate-600 text-sm cursor-not-allowed"
+                                                            value={codFee.toLocaleString('id-ID')}
+                                                            readOnly
+                                                        />
+                                                    </div>
+                                                </div>
                                             )}
-                                        </select>
-                                    ) : (
-                                        variant ? (
-                                            <input
-                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                                value={variant}
-                                                onChange={e => setVariant(e.target.value)}
-                                            />
-                                        ) : (
-                                            <input
-                                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 bg-gray-100 dark:bg-gray-900"
-                                                placeholder="Tidak ada variant"
-                                                value=""
-                                                disabled
-                                            />
-                                        )
-                                    )}
+                                        </div>
+
+                                        {/* Total Box */}
+                                        <div className="mt-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Total Harga</span>
+                                                <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">Rp {orderTotal.toLocaleString('id-ID')}</span>
+                                            </div>
+                                            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1">Produk + Ongkir{paymentMethod === 'Bayar di Tempat (COD)' ? ' + COD' : ''}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            );
-                        })()}
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jumlah</label>
-                            <input
-                                type="number"
-                                min="1"
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                placeholder="1"
-                                value={quantity}
-                                onChange={e => {
-                                    const newQty = parseInt(e.target.value) || 1;
-                                    setQuantity(newQty);
-                                    // Auto-calculate total if variant is selected
-                                    const selectedForm = forms.find(f => f.id === selectedFormId);
-                                    const variants = selectedForm?.variantCombinations || [];
-                                    // Try to find variant by checking if current variant matches any variant label
-                                    const selectedVariant = variants.find((v, idx) => {
-                                        const variantLabel = Object.entries(v.attributes || {})
-                                            .map(([key, val]) => `${key}: ${val}`)
-                                            .join(', ');
-                                        return variant === variantLabel || variant === `${idx}::${variantLabel}`;
-                                    });
-                                    if (selectedVariant?.sellingPrice) {
-                                        setProductPrice(selectedVariant.sellingPrice * newQty);
-                                    }
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Produk</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
-                                <input
-                                    type="number"
-                                    className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                    placeholder="0"
-                                    value={productPrice}
-                                    onChange={e => setProductPrice(parseFloat(e.target.value) || 0)}
-                                />
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Metode Pengiriman</label>
-                                <select
-                                    className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                    value={shippingMethod}
-                                    onChange={e => setShippingMethod(e.target.value)}
-                                >
-                                    <option value="Regular">Regular</option>
-                                    <option value="Gratis Ongkir">Gratis Ongkir</option>
-                                    <option value="Flat Ongkir Pulau Jawa">Flat Ongkir Pulau Jawa</option>
-                                    <option value="Flat Ongkir Pulau Bali">Flat Ongkir Pulau Bali</option>
-                                    <option value="Flat Ongkir Pulau Sumatra">Flat Ongkir Pulau Sumatra</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Biaya Ongkir</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
-                                    <input
-                                        type="number"
-                                        className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                        placeholder="0"
-                                        value={shippingCost}
-                                        onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
+                            {/* Kolom Kanan */}
+                            <div className="space-y-6">
+                                {/* Section: Alamat Pengiriman */}
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        Alamat Pengiriman
+                                    </h4>
+                                    <AddressInput
+                                        value={addressData}
+                                        onChange={setAddressData}
+                                        required={true}
+                                    />
+                                </div>
+
+                                {/* Section: Catatan */}
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        Catatan
+                                    </h4>
+                                    <textarea
+                                        className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm resize-none"
+                                        placeholder="Catatan tambahan untuk pesanan ini..."
+                                        rows={4}
+                                        value={notes}
+                                        onChange={e => setNotes(e.target.value)}
                                     />
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Metode Pembayaran</label>
-                                <select
-                                    className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                    value={paymentMethod}
-                                    onChange={e => setPaymentMethod(e.target.value)}
-                                >
-                                    <option value="Bayar di Tempat (COD)">Bayar di Tempat (COD)</option>
-                                    <option value="QRIS">QRIS</option>
-                                    <option value="Transfer Bank">Transfer Bank</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Biaya COD</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-medium">Rp</span>
-                                    <input
-                                        type="number"
-                                        className="w-full p-3 pl-10 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                        placeholder="0"
-                                        value={codFee}
-                                        onChange={e => setCodFee(parseFloat(e.target.value) || 0)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded-lg">
-                            <label className="block text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-1">Total Harga</label>
-                            <p className="text-2xl font-bold text-indigo-600">Rp {orderTotal.toLocaleString('id-ID')}</p>
-                            <p className="text-xs text-indigo-500 mt-1">Harga Produk + Ongkir + COD</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Catatan</label>
-                            <textarea
-                                className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600"
-                                placeholder="Catatan tambahan untuk pesanan ini"
-                                rows={3}
-                                value={notes}
-                                onChange={e => setNotes(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Kolom Kanan */}
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Alamat Lengkap</label>
-                            <AddressInput
-                                value={addressData}
-                                onChange={setAddressData}
-                                required={true}
-                            />
-                        </div>
-                    </div>
                         </div>
                     </div>
 
                     {/* Footer - Sticky */}
-                    <div className="sticky bottom-0 bg-white dark:bg-slate-800 px-6 py-4 border-t dark:border-slate-700 rounded-b-xl flex justify-end gap-2">
-                        <button onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">Batal</button>
-                        <button onClick={handleSubmit} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Simpan</button>
+                    <div className="sticky bottom-0 bg-white dark:bg-slate-800 px-6 py-4 border-t dark:border-slate-700 rounded-b-xl flex justify-end gap-3">
+                        <button onClick={onClose} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium">
+                            Batal
+                        </button>
+                        <button onClick={handleSubmit} className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            Simpan
+                        </button>
                     </div>
                 </div>
             </div>

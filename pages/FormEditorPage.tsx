@@ -42,6 +42,7 @@ import CodeIcon from '../components/icons/CodeIcon';
 import CubeIcon from '../components/icons/CubeIcon';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmationModal from '../components/ConfirmationModal';
+import AddressInput, { AddressData } from '../components/AddressInput';
 
 
 const SHIPPING_LABELS: Record<keyof ShippingSettings, string> = {
@@ -150,6 +151,20 @@ const TagInput: React.FC<{ values: string[]; onChange: (values: string[]) => voi
     );
 };
 
+// FadeInBlock component - sama dengan FormViewerPage
+const FadeInBlock: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => setIsVisible(true), delay);
+        return () => clearTimeout(timer);
+    }, [delay]);
+    return (
+        <div className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            {children}
+        </div>
+    );
+};
+
 const SocialProofPopupPreview: React.FC<{
     settings: Form['socialProofSettings'];
     productName: string;
@@ -244,6 +259,15 @@ const SocialProofPopupPreview: React.FC<{
 
 const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+    const [addressData, setAddressData] = useState<AddressData>({
+        province: '',
+        city: '',
+        district: '',
+        village: '',
+        postalCode: '',
+        detailAddress: '',
+        fullAddress: ''
+    });
 
     // Sync selectedOptions when form.productOptions changes in the editor
     useEffect(() => {
@@ -433,299 +457,344 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
         setCurrentGalleryImage(imageUrl);
     };
 
+    // Get variant details function for radio/dropdown display
+    const getVariantDetails = (option: ProductOption, attributeValue: string) => {
+        if (!form.variantCombinations || form.variantCombinations.length === 0) return null;
+        
+        // Build current selection with this value
+        const testSelection = { ...selectedOptions, [option.name]: attributeValue };
+        
+        // Find matching combination
+        const match = form.variantCombinations.find(combo => {
+            return Object.entries(testSelection).every(([key, val]) =>
+                combo.attributes[key] === val
+            );
+        });
+        
+        return match;
+    };
+
+    const currentVariantStock = useMemo(() => {
+        const variantKey = Object.values(selectedOptions).join(' / ');
+        return variantStock[variantKey];
+    }, [selectedOptions, variantStock]);
+
+    const hasVisibleShipping = (Object.keys(form.shippingSettings) as Array<keyof ShippingSettings>).some(key => form.shippingSettings[key]?.visible);
+
+    const sortedPaymentKeys = (Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>)
+        .filter(key => form.paymentSettings[key].visible)
+        .sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99));
+
+    const hasVisiblePayment = sortedPaymentKeys.length > 0;
+
     return (
-        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md border dark:border-gray-700 text-slate-900 dark:text-slate-100">
-            {/* Main Gallery */}
-            <div className="mb-4">
-                {currentGalleryImage && <img src={currentGalleryImage} alt={form.title} className="w-full aspect-square object-cover rounded-lg transition-opacity duration-300" />}
-                {!currentGalleryImage && <div className="w-full aspect-square bg-slate-200 dark:bg-slate-700 flex items-center justify-center rounded-lg text-slate-500">Gambar Utama</div>}
-            </div>
-
-            {form.productImages && form.productImages.length > 0 && (
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                    <div
-                        onClick={() => handleGalleryImageClick(form.mainImage)}
-                        className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === form.mainImage
-                            ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
-                            : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
-                            }`}
-                    >
-                        <img src={form.mainImage} alt="Main" className="w-full h-full object-cover rounded-lg" />
-                    </div>
-                    {form.productImages.map((img, idx) => (
-                        <div
-                            key={idx}
-                            onClick={() => handleGalleryImageClick(img)}
-                            className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === img
-                                ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
-                                : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
-                                }`}
-                        >
-                            <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 py-8 px-4 relative">
+            <div className="w-full max-w-lg mx-auto">
+                <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md border dark:border-gray-700 text-slate-900 dark:text-slate-100">
+                    <FadeInBlock delay={0}>
+                        {/* Main Gallery */}
+                        <div className="mb-4">
+                            {currentGalleryImage && <img src={currentGalleryImage} alt={form.title} className="w-full aspect-square object-cover rounded-lg transition-opacity duration-300" />}
+                            {!currentGalleryImage && <div className="w-full aspect-square bg-slate-200 dark:bg-slate-700 flex items-center justify-center rounded-lg text-slate-500">Gambar Utama</div>}
                         </div>
-                    ))}
-                </div>
-            )}
 
-            {(form.showTitle ?? true) && <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{form.title || 'Judul Produk'}</h1>}
-            {(form.showDescription ?? true) && <p className={descriptionClasses}>{form.description || 'Deskripsi produk akan muncul di sini.'}</p>}
-
-            {form.countdownSettings?.active && (
-                <div className="my-4 text-center bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg shadow-sm font-medium">
-                    ⏳ Pesanan Anda akan di-hold selama <span className="font-bold tabular-nums">{formatTime(timeLeft)}</span>.
-                </div>
-            )}
-
-            {form.productOptions.length > 0 && <div className="mb-4 space-y-4">
-                {form.productOptions.map((option, index) => {
-                    const displayStyle = option.displayStyle || 'dropdown';
-                    return (
-                        <div key={option.id}>
-                            <div className="flex justify-between items-baseline mb-2">
-                                <label className="font-semibold block text-sm text-slate-900 dark:text-slate-100">{option.name}:</label>
-                            </div>
-                            {displayStyle === 'dropdown' && (
-                                <select
-                                    onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
-                                    value={selectedOptions[option.name] || ''}
-                                    className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
+                        {form.productImages && form.productImages.length > 0 && (
+                            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                <div
+                                    onClick={() => handleGalleryImageClick(form.mainImage)}
+                                    className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === form.mainImage
+                                        ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
+                                        : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                                        }`}
                                 >
-                                    {option.values.map(val => <option key={val} value={val}>{val}</option>)}
-                                </select>
-                            )}
-                            {displayStyle === 'radio' && (
-                                <div className="space-y-2">
-                                    {option.values.map(val => (
-                                        <label
-                                            key={val}
-                                            className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${selectedOptions[option.name] === val
-                                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
-                                                : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedOptions[option.name] === val ? 'border-white' : 'border-gray-400'
-                                                    }`}>
-                                                    {selectedOptions[option.name] === val && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-                                                </div>
-                                                <input
-                                                    type="radio"
-                                                    name={option.name}
-                                                    value={val}
-                                                    checked={selectedOptions[option.name] === val}
-                                                    onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
-                                                    className="hidden"
-                                                />
-                                                <span className="font-medium">{val}</span>
-                                            </div>
-                                            {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
-                                                <span className={`text-sm font-medium animate-pulse ${selectedOptions[option.name] === val ? 'text-red-200' : 'text-red-600 dark:text-red-400'
-                                                    }`}>
-                                                    Stok: {variantStock[val]} pcs
-                                                </span>
-                                            )}
-                                        </label>
-                                    ))}
+                                    <img src={form.mainImage} alt="Main" className="w-full h-full object-cover rounded-lg" />
                                 </div>
-                            )}
-                            {displayStyle === 'modern' && (
-                                <div className="flex flex-col gap-2">
-                                    {option.values.map(val => (
-                                        <button
-                                            key={val}
-                                            type="button"
-                                            onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))}
-                                            className={`w-full flex justify-between items-center px-3 py-1.5 border rounded-lg text-sm transition-colors ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}
-                                        >
-                                            <span>{val}</span>
-                                            {form.stockCountdownSettings?.active && variantStock[val] !== undefined && (
-                                                <span className="text-xs font-medium opacity-80 animate-pulse">
-                                                    Stok: {variantStock[val]}
-                                                </span>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>}
-
-            <div className="mb-4">
-                <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
-                <form className="space-y-3">
-                    {form.customerFields.name.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
-                            <input type="text" placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                    )}
-                    {form.customerFields.whatsapp.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
-                            <input type="tel" placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                    )}
-                    {form.customerFields.email.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email {form.customerFields.email.required && <span className="text-red-500">*</span>}</label>
-                            <input type="email" placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                    )}
-                    {form.customerFields.province?.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Provinsi {form.customerFields.province.required && <span className="text-red-500">*</span>}</label>
-                            <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-                                <option value="">Pilih Provinsi</option>
-                            </select>
-                        </div>
-                    )}
-                    {form.customerFields.city?.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Kota/Kabupaten {form.customerFields.city.required && <span className="text-red-500">*</span>}</label>
-                            <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-                                <option value="">Pilih Kota/Kabupaten</option>
-                            </select>
-                        </div>
-                    )}
-                    {form.customerFields.district?.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Kecamatan {form.customerFields.district.required && <span className="text-red-500">*</span>}</label>
-                            <select className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-                                <option value="">Pilih Kecamatan</option>
-                            </select>
-                        </div>
-                    )}
-                    {form.customerFields.address.visible && (
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alamat Lengkap {form.customerFields.address.required && <span className="text-red-500">*</span>}</label>
-                            <textarea rows={3} placeholder="Sertakan nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota/kabupaten, dan kode pos" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
-                        </div>
-                    )}
-                </form>
-            </div>
-
-            {(Object.values(form.shippingSettings) as ShippingSetting[]).some(s => s.visible) && <div className="mb-4">
-                <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Metode Pengiriman:</h3>
-                <div className="space-y-2">
-                    {(Object.keys(form.shippingSettings) as Array<keyof ShippingSettings>).map(key => {
-                        const setting = form.shippingSettings[key];
-                        if (!setting?.visible) return null;
-
-                        const isFlatRate = key.startsWith('flat_');
-                        const costLabel = setting.cost > 0
-                            ? `${setting.cost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}${isFlatRate ? ' / kg' : ''}`
-                            : 'Gratis';
-
-                        return (
-                            <div key={key}>
-                                <label htmlFor={`shipping-preview-${key}`} className={`p-3 border rounded-lg flex justify-between items-center cursor-pointer ${selectedShippingKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="radio"
-                                            id={`shipping-preview-${key}`}
-                                            name="shippingMethod"
-                                            value={key}
-                                            checked={selectedShippingKey === key}
-                                            onChange={() => setSelectedShippingKey(key)}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-                                        />
-                                        <span>{SHIPPING_LABELS[key as keyof typeof SHIPPING_LABELS]}</span>
+                                {form.productImages.map((img, idx) => (
+                                    <div
+                                        key={idx}
+                                        onClick={() => handleGalleryImageClick(img)}
+                                        className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 cursor-pointer transition-all ${currentGalleryImage === img
+                                            ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800'
+                                            : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                                            }`}
+                                    >
+                                        <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
                                     </div>
-                                    <span className="font-semibold">{costLabel}</span>
-                                </label>
+                                ))}
                             </div>
-                        );
-                    })}
-                </div>
-            </div>}
+                        )}
+                    </FadeInBlock>
 
-            {(Object.values(form.paymentSettings) as PaymentSetting[]).some(s => s.visible) && <div className="mb-4">
-                <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Metode Pembayaran:</h3>
-                <div className="space-y-2">
-                    {(Object.keys(form.paymentSettings) as Array<keyof PaymentSettings>)
-                        .filter(key => form.paymentSettings[key].visible)
-                        .sort((a, b) => (form.paymentSettings[a].order || 99) - (form.paymentSettings[b].order || 99))
-                        .map(key => {
-                            const setting = form.paymentSettings[key];
-                            const config = PAYMENT_CONFIG[key];
-                            const Icon = config.icon;
-                            if (!setting.visible) return null;
+                    <FadeInBlock delay={150}>
+                        {(form.showTitle ?? true) && <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">{form.title || 'Judul Produk'}</h1>}
+                        {(form.showDescription ?? true) && <p className={descriptionClasses}>{form.description || 'Deskripsi produk akan muncul di sini.'}</p>}
 
-                            return (
-                                <div key={key}>
-                                    <label htmlFor={`payment-preview-${key}`} className={`p-3 border rounded-lg flex items-center gap-3 cursor-pointer ${selectedPaymentKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
-                                        <input
-                                            type="radio"
-                                            id={`payment-preview-${key}`}
-                                            name="paymentMethod"
-                                            value={key}
-                                            checked={selectedPaymentKey === key}
-                                            onChange={() => setSelectedPaymentKey(key)}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-                                        />
-                                        <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
-                                        <span className="font-medium">{config.label}</span>
-                                    </label>
-                                    {key === 'bankTransfer' && selectedPaymentKey === 'bankTransfer' && (
-                                        <div className="mt-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm space-y-2">
-                                            <p className="font-semibold">Silakan transfer ke salah satu rekening berikut:</p>
-                                            {(setting as BankTransferSetting).accounts && (setting as BankTransferSetting).accounts.length > 0 ? (
-                                                (setting as BankTransferSetting).accounts.map(acc => (
-                                                    <div key={acc.id}>
-                                                        <p><strong>{acc.bankName}:</strong> {acc.accountNumber} (a/n {acc.accountHolder})</p>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p>Detail rekening belum diatur.</p>
+                        {form.countdownSettings?.active && (
+                            <div className="my-4 text-center bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg shadow-sm font-medium">
+                                ⏳ Pesanan Anda akan di-hold selama <span className="font-bold tabular-nums">{formatTime(timeLeft)}</span>.
+                            </div>
+                        )}
+                    </FadeInBlock>
+
+                    <FadeInBlock delay={300}>
+                        {form.productOptions.length > 0 && (
+                            <div className="mb-4 space-y-6">
+                                {form.productOptions.map((option, index) => {
+                                    const displayStyle = option.displayStyle || 'radio';
+                                    
+                                    return (
+                                        <div key={option.id} className="space-y-3">
+                                            {/* Header Variasi */}
+                                            <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                                    {option.name}
+                                                </h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    Pilih salah satu opsi di bawah
+                                                </p>
+                                            </div>
+
+                                            {displayStyle === 'dropdown' && (
+                                                <select
+                                                    onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
+                                                    value={selectedOptions[option.name] || ''}
+                                                    className="w-full p-3 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 font-medium"
+                                                >
+                                                    {option.values.map(val => {
+                                                        const details = getVariantDetails(option, val);
+                                                        const label = details?.sellingPrice
+                                                            ? `${val} - Rp ${details.sellingPrice.toLocaleString('id-ID')}`
+                                                            : val;
+                                                        return <option key={val} value={val}>{label}</option>;
+                                                    })}
+                                                </select>
+                                            )}
+                                            {displayStyle === 'radio' && (
+                                                <div className="space-y-2">
+                                                    {option.values.map(val => {
+                                                        const details = getVariantDetails(option, val);
+                                                        const isSelected = selectedOptions[option.name] === val;
+
+                                                        return (
+                                                            <label
+                                                                key={val}
+                                                                className={`flex items-center justify-between gap-2 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${isSelected
+                                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
+                                                                    : 'border-gray-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-white' : 'border-gray-400'
+                                                                        }`}>
+                                                                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                                    </div>
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={option.name}
+                                                                        value={val}
+                                                                        checked={isSelected}
+                                                                        onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
+                                                                        className="hidden"
+                                                                    />
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-medium">{val}</span>
+                                                                        {details?.sellingPrice && (
+                                                                            <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                                Rp {details.sellingPrice.toLocaleString('id-ID')}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                {form.stockCountdownSettings?.active && details && (
+                                                                    <span className={`text-sm font-medium animate-pulse ${isSelected ? 'text-red-200' : 'text-red-600 dark:text-red-400'
+                                                                        }`}>
+                                                                        Stok: {variantStock[Object.values(details.attributes).join(' / ')] || 0} pcs
+                                                                    </span>
+                                                                )}
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            {displayStyle === 'modern' && (
+                                                <div className="flex flex-col gap-2">
+                                                    {option.values.map(val => (
+                                                        <button
+                                                            key={val}
+                                                            type="button"
+                                                            onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))}
+                                                            className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}
+                                                        >
+                                                            <span>{val}</span>
+                                                            {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
+                                                                <span className="text-xs font-medium opacity-80 animate-pulse">
+                                                                    Stok: {currentVariantStock}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
-                                    )}
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </FadeInBlock>
+
+                    <FadeInBlock delay={450}>
+                        <div className="mb-4 space-y-3">
+                            <h3 className="font-semibold text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
+                            {form.customerFields.name.visible && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
+                                    <input type="text" placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                                 </div>
-                            );
-                        })}
-                </div>
-            </div>}
+                            )}
+                            {form.customerFields.whatsapp.visible && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
+                                    <input type="tel" placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                            )}
+                            {form.customerFields.email.visible && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email {form.customerFields.email.required && <span className="text-red-500">*</span>}</label>
+                                    <input type="email" placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
+                                </div>
+                            )}
+                            {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.address?.visible) && (
+                                <AddressInput
+                                    value={addressData}
+                                    onChange={setAddressData}
+                                    showProvince={form.customerFields.province?.visible || false}
+                                    showCity={form.customerFields.city?.visible || false}
+                                    showDistrict={form.customerFields.district?.visible || false}
+                                    showVillage={form.customerFields.village?.visible || false}
+                                    showDetailAddress={form.customerFields.address?.visible || false}
+                                    requiredProvince={form.customerFields.province?.required || false}
+                                    requiredCity={form.customerFields.city?.required || false}
+                                    requiredDistrict={form.customerFields.district?.required || false}
+                                    requiredVillage={form.customerFields.village?.required || false}
+                                    requiredDetailAddress={form.customerFields.address?.required || false}
+                                />
+                            )}
+                        </div>
+                    </FadeInBlock>
 
-            <div className="border-t dark:border-gray-700 pt-4 mt-4 space-y-2">
-                <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
+                    <FadeInBlock delay={600}>
+                        {hasVisibleShipping && (
+                            <div className="mb-4">
+                                <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Metode Pengiriman:</h3>
+                                <div className="space-y-2">
+                                    {(Object.keys(form.shippingSettings) as Array<keyof ShippingSettings>).map(key => {
+                                        const setting = form.shippingSettings[key];
+                                        if (!setting?.visible) return null;
 
-                <div className="flex justify-between items-baseline text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-                    <div className="flex items-baseline gap-2">
-                        {currentCombination && currentCombination.strikethroughPrice && currentCombination.strikethroughPrice > subtotal && (
-                            <span className="text-gray-400 line-through">
-                                {currentCombination.strikethroughPrice.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
-                            </span>
+                                        const isFlatRate = key.startsWith('flat_');
+                                        const costLabel = setting.cost > 0
+                                            ? `${setting.cost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}${isFlatRate ? ' / kg' : ''}`
+                                            : 'Gratis';
+
+                                        return (
+                                            <div key={key}>
+                                                <label htmlFor={`shipping-preview-${key}`} className={`p-3 border rounded-lg flex justify-between items-center cursor-pointer ${selectedShippingKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="radio"
+                                                            id={`shipping-preview-${key}`}
+                                                            name="shippingMethod"
+                                                            value={key}
+                                                            checked={selectedShippingKey === key}
+                                                            onChange={() => setSelectedShippingKey(key)}
+                                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                                                        />
+                                                        <span>{SHIPPING_LABELS[key as keyof typeof SHIPPING_LABELS]}</span>
+                                                    </div>
+                                                    <span className="font-semibold">{costLabel}</span>
+                                                </label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         )}
-                        <span className="font-medium">
-                            {subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
-                        </span>
-                    </div>
+
+                        {hasVisiblePayment && (
+                            <div className="mb-4">
+                                <h3 className="font-semibold mb-2 text-slate-900 dark:text-slate-100">Metode Pembayaran:</h3>
+                                <div className="space-y-2">
+                                    {sortedPaymentKeys.map(key => {
+                                        const setting = form.paymentSettings[key];
+                                        const config = PAYMENT_CONFIG[key];
+                                        const Icon = config.icon;
+
+                                        return (
+                                            <div key={key}>
+                                                <label htmlFor={`payment-preview-${key}`} className={`p-3 border rounded-lg flex items-center gap-3 cursor-pointer ${selectedPaymentKey === key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50' : 'border-gray-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+                                                    <input
+                                                        type="radio"
+                                                        id={`payment-preview-${key}`}
+                                                        name="paymentMethod"
+                                                        value={key}
+                                                        checked={selectedPaymentKey === key}
+                                                        onChange={() => setSelectedPaymentKey(key)}
+                                                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                                                    />
+                                                    <Icon className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+                                                    <span className="font-medium">{config.label}</span>
+                                                </label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </FadeInBlock>
+
+                    <FadeInBlock delay={750}>
+                        <div className="border-t dark:border-gray-700 pt-4 mt-4 space-y-2">
+                            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Ringkasan Pesanan</h3>
+
+                            <div className="flex justify-between items-baseline text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
+                                <div className="flex items-baseline gap-2">
+                                    {currentCombination && currentCombination.strikethroughPrice && currentCombination.strikethroughPrice > subtotal && (
+                                        <span className="text-gray-400 line-through">
+                                            {currentCombination.strikethroughPrice.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
+                                        </span>
+                                    )}
+                                    <span className="font-medium">
+                                        {subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Pengiriman</span><span className="font-medium">{shippingCost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
+                            {codFee > 0 && (
+                                <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Biaya Penanganan COD</span><span className="font-medium">{codFee.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
+                            )}
+                            <div className="flex justify-between font-bold text-lg text-slate-900 dark:text-slate-100"><span>Total</span><span>{total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
+                        </div>
+
+                        <button
+                            disabled={!currentCombination}
+                            className="w-full mt-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed flex flex-col items-center justify-center p-2 min-h-[4rem] transition-all shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/40"
+                        >
+                            {currentCombination ? (
+                                <>
+                                    <span className="text-lg leading-tight">{form.ctaSettings?.mainText || 'Kirim Pesanan'}</span>
+                                    {form.ctaSettings && (
+                                        <span className="text-xs font-normal opacity-80 leading-tight">
+                                            {form.ctaSettings.urgencyText.replace('{count}', String(checkoutCount))}
+                                        </span>
+                                    )}
+                                </>
+                            ) : 'Varian tidak tersedia'}
+                        </button>
+                    </FadeInBlock>
                 </div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Pengiriman</span><span className="font-medium">{shippingCost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
-                {codFee > 0 && (
-                    <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Biaya Penanganan COD</span><span className="font-medium">{codFee.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
-                )}
-                <div className="flex justify-between font-bold text-lg text-slate-900 dark:text-slate-100"><span >Total</span><span>{total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</span></div>
             </div>
-
-            <button
-                disabled={!currentCombination}
-                className="w-full mt-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed flex flex-col items-center justify-center p-2 min-h-[4rem] transition-all shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/40"
-            >
-                {currentCombination ? (
-                    <>
-                        <span className="text-lg leading-tight">{form.ctaSettings?.mainText || 'Kirim Pesanan'}</span>
-                        {form.ctaSettings && (
-                            <span className="text-xs font-normal opacity-80 leading-tight">
-                                {form.ctaSettings.urgencyText.replace('{count}', String(checkoutCount))}
-                            </span>
-                        )}
-                    </>
-                ) : 'Varian tidak tersedia'}
-            </button>
+            {form.socialProofSettings && <SocialProofPopupPreview settings={form.socialProofSettings} productName={form.title} />}
         </div>
     );
 };
@@ -2560,7 +2629,18 @@ const FormEditorPage: React.FC = () => {
                                                     <input type="number" value={(setting as CODSettings).handlingFeePercentage || 0} onChange={e => handleSubNestedFieldChange('paymentSettings', 'cod', 'handlingFeePercentage', parseFloat(e.target.value))} className="w-20 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600" />
                                                     <span>%</span>
                                                 </div>
-                                                <div className="text-xs text-slate-500">Biaya ini akan ditambahkan ke total tagihan.</div>
+                                                <div className="flex items-center gap-2 text-sm mt-2">
+                                                    <span>Basis Hitung:</span>
+                                                    <select
+                                                        value={(setting as CODSettings).handlingFeeBase || 'product_and_shipping'}
+                                                        onChange={e => handleSubNestedFieldChange('paymentSettings', 'cod', 'handlingFeeBase', e.target.value)}
+                                                        className="p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                    >
+                                                        <option value="product">Harga Produk saja</option>
+                                                        <option value="product_and_shipping">Harga Produk + Ongkir</option>
+                                                    </select>
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1">Biaya ini akan ditambahkan ke total tagihan.</div>
                                             </>
                                         )}
                                         {key === 'bankTransfer' && (
@@ -3195,14 +3275,9 @@ const FormEditorPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="bg-slate-100 dark:bg-slate-900 p-4 h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar relative">
+                    <div className="bg-slate-100 dark:bg-slate-900 h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
                         {activePreviewTab === 'form' ? (
-                            <>
-                                <FormPreview form={form} />
-                                {form.socialProofSettings?.active && (
-                                    <SocialProofPopupPreview settings={form.socialProofSettings} productName={form.title || 'Produk'} />
-                                )}
-                            </>
+                            <FormPreview form={form} />
                         ) : (
                             <ThankYouPagePreview thankYouPage={form.thankYouPage} formTitle={form.title} />
                         )}

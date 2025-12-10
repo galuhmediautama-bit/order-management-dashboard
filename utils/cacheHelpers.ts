@@ -50,7 +50,7 @@ export const CACHE_KEYS = {
 export async function getCachedForms() {
     return cacheQuery(
         CACHE_KEYS.FORMS,
-        () => supabase.from('forms').select('id, title, brandId'),
+        () => supabase.from('forms').select('id, title, brandId, paymentSettings, variantCombinations'),
         5 * 60 * 1000 // 5 minutes
     );
 }

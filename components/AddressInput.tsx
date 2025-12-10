@@ -97,6 +97,15 @@ const AddressInput: React.FC<AddressInputProps> = ({
     return [...data].sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
   };
 
+  // Helper to format name (Title Case)
+  const formatName = (name: string) => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // Fetch provinces on mount
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -181,23 +190,88 @@ const AddressInput: React.FC<AddressInputProps> = ({
   }, [selectedDistrictId]);
 
   // Sync internal state when value prop changes (for edit mode)
+  // This performs reverse lookup: find ID from name to enable cascading dropdowns
   useEffect(() => {
-    setSelectedProvince(value.province || '');
-    setSelectedCity(value.city || '');
-    setSelectedDistrict(value.district || '');
-    setSelectedVillage(value.village || '');
     setDetailAddress(value.detailAddress || '');
     setPostalCode(value.postalCode || '');
-  }, [value]);
 
-  // Helper to format name (Title Case)
-  const formatName = (name: string) => {
-    return name
-      .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
+    // If we have province name but no ID, try to find the ID
+    if (value.province && provinces.length > 0 && !selectedProvinceId) {
+      const normalizedValueProvince = value.province.toLowerCase().trim();
+      const matchedProvince = provinces.find(p =>
+        p.nama.toLowerCase().trim() === normalizedValueProvince ||
+        formatName(p.nama).toLowerCase() === normalizedValueProvince
+      );
+      if (matchedProvince) {
+        setSelectedProvinceId(matchedProvince.id);
+        setSelectedProvince(formatName(matchedProvince.nama));
+      } else {
+        // Set province name even if no match (display only)
+        setSelectedProvince(value.province || '');
+      }
+    } else if (!value.province) {
+      setSelectedProvince('');
+      setSelectedProvinceId('');
+    }
+  }, [value, provinces]);
+
+  // Sync city when cities are loaded and we have a city name
+  useEffect(() => {
+    if (value.city && cities.length > 0 && !selectedCityId) {
+      const normalizedValueCity = value.city.toLowerCase().trim();
+      const matchedCity = cities.find(c =>
+        c.nama.toLowerCase().trim() === normalizedValueCity ||
+        formatName(c.nama).toLowerCase() === normalizedValueCity
+      );
+      if (matchedCity) {
+        setSelectedCityId(matchedCity.id);
+        setSelectedCity(formatName(matchedCity.nama));
+      } else {
+        setSelectedCity(value.city || '');
+      }
+    } else if (!value.city) {
+      setSelectedCity('');
+      setSelectedCityId('');
+    }
+  }, [value.city, cities]);
+
+  // Sync district when districts are loaded and we have a district name
+  useEffect(() => {
+    if (value.district && districts.length > 0 && !selectedDistrictId) {
+      const normalizedValueDistrict = value.district.toLowerCase().trim();
+      const matchedDistrict = districts.find(d =>
+        d.nama.toLowerCase().trim() === normalizedValueDistrict ||
+        formatName(d.nama).toLowerCase() === normalizedValueDistrict
+      );
+      if (matchedDistrict) {
+        setSelectedDistrictId(matchedDistrict.id);
+        setSelectedDistrict(formatName(matchedDistrict.nama));
+      } else {
+        setSelectedDistrict(value.district || '');
+      }
+    } else if (!value.district) {
+      setSelectedDistrict('');
+      setSelectedDistrictId('');
+    }
+  }, [value.district, districts]);
+
+  // Sync village when villages are loaded and we have a village name
+  useEffect(() => {
+    if (value.village && villages.length > 0) {
+      const normalizedValueVillage = value.village.toLowerCase().trim();
+      const matchedVillage = villages.find(v =>
+        v.nama.toLowerCase().trim() === normalizedValueVillage ||
+        formatName(v.nama).toLowerCase() === normalizedValueVillage
+      );
+      if (matchedVillage) {
+        setSelectedVillage(formatName(matchedVillage.nama));
+      } else {
+        setSelectedVillage(value.village || '');
+      }
+    } else if (!value.village) {
+      setSelectedVillage('');
+    }
+  }, [value.village, villages]);
 
   // Handle province change
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -245,18 +319,18 @@ const AddressInput: React.FC<AddressInputProps> = ({
   // Fetch postal code based on village and district using multiple APIs
   const fetchPostalCode = async (villageName: string, districtName: string, cityName: string) => {
     if (!villageName || !districtName) return;
-    
+
     setLoadingPostalCode(true);
     try {
       // Clean up names for search
       const cleanVillage = villageName.replace(/^(desa|kelurahan)\s+/i, '').trim();
       const cleanDistrict = districtName.replace(/^(kecamatan)\s+/i, '').trim();
-      
+
       // Try primary API (sooluh/kodepos) - more complete data
       const searchQuery = encodeURIComponent(`${cleanVillage} ${cleanDistrict}`);
-      
+
       let found = false;
-      
+
       // Try primary API
       try {
         const res = await fetch(`${POSTAL_API_PRIMARY}/?q=${searchQuery}`);
@@ -264,18 +338,18 @@ const AddressInput: React.FC<AddressInputProps> = ({
           const data = await res.json();
           if (data.statusCode === 200 && data.data && data.data.length > 0) {
             // Find best match - match village and district
-            const exactMatch = data.data.find((item: any) => 
+            const exactMatch = data.data.find((item: any) =>
               item.village?.toLowerCase() === cleanVillage.toLowerCase() &&
               item.district?.toLowerCase() === cleanDistrict.toLowerCase()
             );
-            
-            const partialMatch = data.data.find((item: any) => 
+
+            const partialMatch = data.data.find((item: any) =>
               item.village?.toLowerCase().includes(cleanVillage.toLowerCase()) ||
               cleanVillage.toLowerCase().includes(item.village?.toLowerCase() || '')
             );
-            
+
             const match = exactMatch || partialMatch || data.data[0];
-            
+
             if (match?.code) {
               setPostalCode(match.code.toString());
               found = true;
@@ -285,7 +359,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       } catch (primaryErr) {
         console.log('Primary API failed, trying fallback...');
       }
-      
+
       // Try fallback API if primary failed
       if (!found) {
         try {
@@ -304,7 +378,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
           console.log('Fallback API also failed');
         }
       }
-      
+
       // Try with just village name if still not found
       if (!found) {
         try {
@@ -328,7 +402,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
           console.log('Simple search also failed');
         }
       }
-      
+
       // Try with district + city if still not found
       if (!found && cityName) {
         try {
@@ -357,7 +431,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
     const vill = villages.find(v => v.id === villId);
     const villageName = vill ? formatName(vill.nama) : '';
     setSelectedVillage(villageName);
-    
+
     // Auto-fetch postal code
     if (villageName && selectedDistrict) {
       fetchPostalCode(villageName, selectedDistrict, selectedCity);

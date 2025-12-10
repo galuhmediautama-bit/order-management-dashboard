@@ -333,12 +333,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     });
 
     // Form state
-    const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '', province: '', city: '', district: '' });
+    const [customerData, setCustomerData] = useState({ name: '', whatsapp: '', email: '', address: '', province: '', city: '', district: '', village: '' });
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [addressData, setAddressData] = useState<AddressData>({
         province: '',
         city: '',
         district: '',
+        village: '',
         postalCode: '',
         detailAddress: '',
         fullAddress: ''
@@ -792,6 +793,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             province: addressData.province,
             city: addressData.city,
             district: addressData.district,
+            village: addressData.village,
             address: addressData.detailAddress || prev.address
         }));
     }, [addressData]);
@@ -1286,6 +1288,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 formId: form.id || null,
                 formTitle: form.title,
                 assignedCsId: assignedCsId || null,
+                assignedAdvertiserId: form.assignedAdvertiserId || null, // Advertiser dari form
                 // Use snake_case column for Supabase insert
                 product_id: form.productId || null,
                 commissionSnapshot: finalCsCommission, // Legacy field for backwards compatibility
@@ -1685,7 +1688,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                             {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                                         </div>
                                     )}
-                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.address?.visible) && (
+                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.address?.visible) && (
                                         <div>
                                             <AddressInput
                                                 value={addressData}
