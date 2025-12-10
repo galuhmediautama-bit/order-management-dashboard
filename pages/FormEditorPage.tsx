@@ -949,6 +949,7 @@ const FormEditorPage: React.FC = () => {
     const [advertisers, setAdvertisers] = useState<User[]>([]); // Advertisers list
 
     const [form, setForm] = useState<Form | null>(null);
+    const [draggedOptionId, setDraggedOptionId] = useState<number | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadingProductDetails, setLoadingProductDetails] = useState(false);
@@ -1458,6 +1459,27 @@ const FormEditorPage: React.FC = () => {
         setSlugAvailable(null);
         const timer = setTimeout(() => { checkSlugAvailability(newSlug); }, 500);
         return () => clearTimeout(timer);
+    };
+
+    const handleDragStart = (optIndex: number) => {
+        setDraggedOptionId(optIndex);
+    };
+
+    const handleDropOption = (targetIndex: number) => {
+        if (draggedOptionId === null || draggedOptionId === targetIndex || !form) return;
+
+        setForm(prev => {
+            if (!prev) return prev;
+            const updated = [...prev.productOptions];
+            const [draggedItem] = updated.splice(draggedOptionId, 1);
+            updated.splice(targetIndex, 0, draggedItem);
+            return { ...prev, productOptions: updated };
+        });
+        setDraggedOptionId(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedOptionId(null);
     };
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'product' | 'qris') => {
@@ -2419,9 +2441,25 @@ const FormEditorPage: React.FC = () => {
                             {form.productOptions && form.productOptions.length > 0 ? (
                                 <div className="space-y-4">
                                     {form.productOptions.map((option, optIndex) => (
-                                        <div key={option.id} className="p-4 border rounded-lg dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30">
+                                        <div
+                                            key={option.id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(optIndex)}
+                                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                            onDrop={() => handleDropOption(optIndex)}
+                                            onDragEnd={handleDragEnd}
+                                            className={`p-4 border rounded-lg dark:border-slate-600 transition-all cursor-move ${
+                                                draggedOptionId === optIndex
+                                                    ? 'opacity-50 bg-indigo-100 dark:bg-indigo-900/30 border-indigo-500'
+                                                    : 'bg-slate-50 dark:bg-slate-900/30 hover:border-indigo-300 dark:hover:border-indigo-700'
+                                            }`}
+                                        >
                                             {/* Header Opsi */}
                                             <div className="flex items-center gap-3 mb-3">
+                                                <div className="flex items-center gap-2 text-slate-400 cursor-grab active:cursor-grabbing" title="Geser untuk mengubah urutan">
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z"/></svg>
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z"/></svg>
+                                                </div>
                                                 <input
                                                     type="text"
                                                     value={option.name}
