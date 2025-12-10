@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // API Base URL for Indonesia regions data
 const API_BASE = 'https://ibnux.github.io/data-indonesia';
@@ -24,17 +24,12 @@ interface ApiVillage {
   nama: string;
 }
 
-// Postal code API - using sooluh/kodepos (more complete)
-const POSTAL_API_PRIMARY = 'https://kodepos.vercel.app/search';
-const POSTAL_API_FALLBACK = 'https://kodepos.onrender.com/search';
-
 export interface AddressData {
   province: string;
   city: string;
   district: string;
   village: string;
   detailAddress: string;
-  postalCode: string;
   fullAddress: string;
 }
 
@@ -46,13 +41,11 @@ interface AddressInputProps {
   showCity?: boolean;
   showDistrict?: boolean;
   showVillage?: boolean;
-  showPostalCode?: boolean;
   showDetailAddress?: boolean;
   requiredProvince?: boolean;
   requiredCity?: boolean;
   requiredDistrict?: boolean;
   requiredVillage?: boolean;
-  requiredPostalCode?: boolean;
   requiredDetailAddress?: boolean;
   required?: boolean; // Legacy prop for backward compatibility
   addressError?: string; // Error message for address field
@@ -66,13 +59,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
   showCity = true,
   showDistrict = true,
   showVillage = true,
-  showPostalCode = true,
   showDetailAddress = true,
   requiredProvince = false,
   requiredCity = false,
   requiredDistrict = false,
   requiredVillage = false,
-  requiredPostalCode = false,
   requiredDetailAddress = false,
   required = false, // Legacy - if true, makes detailAddress required
   addressError // Error message for address field
@@ -83,7 +74,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [selectedDistrictId, setSelectedDistrictId] = useState('');
   const [selectedVillageId, setSelectedVillageId] = useState('');
   const [detailAddress, setDetailAddress] = useState(value.detailAddress || '');
-  const [postalCode, setPostalCode] = useState(value.postalCode || '');
 
   // Data states
   const [provinces, setProvinces] = useState<ApiProvince[]>([]);
@@ -96,7 +86,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingVillages, setLoadingVillages] = useState(false);
-  const [loadingPostalCode, setLoadingPostalCode] = useState(false);
 
   // Track if we're syncing from external value to avoid loops
   const isSyncing = useRef(false);
@@ -286,97 +275,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
     }
   }, [value.province, value.city, value.district, value.village, provinces, cities, districts, villages, selectedProvinceId, selectedCityId, selectedDistrictId, selectedVillageId]);
 
-  // Fetch postal code based on village
-  const fetchPostalCode = useCallback(async (villageId: string) => {
-    if (!villageId || !selectedVillageId) return;
-
-    const village = villages.find(v => v.id === villageId);
-    const district = districts.find(d => d.id === selectedDistrictId);
-    if (!village || !district) return;
-
-    setLoadingPostalCode(true);
-    try {
-      const cleanVillage = village.nama.replace(/^(desa|kelurahan)\s+/i, '').trim();
-      const cleanDistrict = district.nama.replace(/^(kecamatan)\s+/i, '').trim();
-      const searchQuery = encodeURIComponent(`${cleanVillage} ${cleanDistrict}`);
-
-      let found = false;
-
-      // Try primary API
-      try {
-        const res = await fetch(`${POSTAL_API_PRIMARY}/?q=${searchQuery}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.statusCode === 200 && data.data && data.data.length > 0) {
-            const exactMatch = data.data.find((item: any) =>
-              item.village?.toLowerCase() === cleanVillage.toLowerCase() &&
-              item.district?.toLowerCase() === cleanDistrict.toLowerCase()
-            );
-
-            const partialMatch = data.data.find((item: any) =>
-              item.village?.toLowerCase().includes(cleanVillage.toLowerCase()) ||
-              cleanVillage.toLowerCase().includes(item.village?.toLowerCase() || '')
-            );
-
-            const match = exactMatch || partialMatch || data.data[0];
-            if (match?.code) {
-              setPostalCode(match.code.toString());
-              found = true;
-            }
-          }
-        }
-      } catch (primaryErr) {
-        console.log('Primary API failed, trying fallback...');
-      }
-
-      // Try fallback API if primary failed
-      if (!found) {
-        try {
-          const fallbackRes = await fetch(`${POSTAL_API_FALLBACK}/?q=${searchQuery}`);
-          if (fallbackRes.ok) {
-            const fallbackData = await fallbackRes.json();
-            if (fallbackData.statusCode === 200 && fallbackData.data && fallbackData.data.length > 0) {
-              const match = fallbackData.data[0];
-              if (match?.code) {
-                setPostalCode(match.code.toString());
-                found = true;
-              }
-            }
-          }
-        } catch (fallbackErr) {
-          console.log('Fallback API also failed');
-        }
-      }
-
-      // Try with just village name if still not found
-      if (!found) {
-        try {
-          const simpleQuery = encodeURIComponent(cleanVillage);
-          const simpleRes = await fetch(`${POSTAL_API_PRIMARY}/?q=${simpleQuery}`);
-          if (simpleRes.ok) {
-            const simpleData = await simpleRes.json();
-            if (simpleData.statusCode === 200 && simpleData.data && simpleData.data.length > 0) {
-              const matchByDistrict = simpleData.data.find((item: any) =>
-                item.district?.toLowerCase().includes(cleanDistrict.toLowerCase())
-              );
-              const match = matchByDistrict || simpleData.data[0];
-              if (match?.code) {
-                setPostalCode(match.code.toString());
-                found = true;
-              }
-            }
-          }
-        } catch (simpleErr) {
-          console.log('Simple search failed');
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching postal code:', err);
-    } finally {
-      setLoadingPostalCode(false);
-    }
-  }, [villages, districts, selectedVillageId, selectedDistrictId]);
-
   // Handle province change
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const provId = e.target.value;
@@ -403,11 +301,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
     const villId = e.target.value;
     isSyncing.current = true;
     setSelectedVillageId(villId);
-
-    // Auto-fetch postal code
-    if (villId) {
-      fetchPostalCode(villId);
-    }
   };
 
   // Update parent when local state changes
@@ -427,8 +320,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       selectedVillageName,
       selectedDistrictName,
       selectedCityName,
-      selectedProvinceName,
-      postalCode
+      selectedProvinceName
     ].filter(Boolean).join(', ');
 
     onChange({
@@ -437,10 +329,9 @@ const AddressInput: React.FC<AddressInputProps> = ({
       district: selectedDistrictName ? formatName(selectedDistrictName) : '',
       village: selectedVillageName ? formatName(selectedVillageName) : '',
       detailAddress,
-      postalCode,
       fullAddress
     });
-  }, [selectedProvinceId, selectedCityId, selectedDistrictId, selectedVillageId, detailAddress, postalCode, provinces, cities, districts, villages, onChange]);
+  }, [selectedProvinceId, selectedCityId, selectedDistrictId, selectedVillageId, detailAddress, provinces, cities, districts, villages, onChange]);
 
   return (
     <div className="space-y-4">
@@ -542,7 +433,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
         </div>
       )}
 
-      {/* Alamat Lengkap - DI ATAS Kode Pos */}
+      {/* Alamat Lengkap */}
       {showDetailAddress && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -559,39 +450,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
           />
           {addressError && (
             <p className="text-xs text-red-500 mt-1">{addressError}</p>
-          )}
-        </div>
-      )}
-
-      {/* Kode Pos - DI BAWAH Alamat Lengkap */}
-      {showPostalCode && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Kode Pos {requiredPostalCode && <span className="text-red-500">*</span>}
-            {loadingPostalCode && <span className="text-indigo-500 text-xs ml-1">(Mencari...)</span>}
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              disabled={disabled || loadingPostalCode}
-              placeholder={loadingPostalCode ? "Mencari kode pos..." : "Masukkan kode pos"}
-              maxLength={5}
-              required={requiredPostalCode}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-            />
-            {loadingPostalCode && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <svg className="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-            )}
-          </div>
-          {selectedVillageId && !postalCode && !loadingPostalCode && (
-            <p className="text-xs text-gray-500 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
           )}
         </div>
       )}

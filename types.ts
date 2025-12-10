@@ -384,7 +384,7 @@ export interface Form {
     city: CustomerFieldSetting;
     district: CustomerFieldSetting;
     village: CustomerFieldSetting;
-    postalCode: CustomerFieldSetting;
+    
     address: CustomerFieldSetting;
   };
   shippingSettings: ShippingSettings;
