@@ -68,17 +68,20 @@ export async function getNotifications(options?: { limit?: number }) {
     return (data || []).map((n: any) => ({
       id: n.id,
       type: n.type,
+      title: n.title,
       message: n.message,
+      metadata: n.metadata,
       timestamp: n.created_at,
       read: n.is_read,
       user_id: n.user_id,
-      order_id: n.order_id,
+      order_id: n.metadata?.order_id || n.metadata?.orderId || null,
       created_at: n.created_at,
       // Normalize camelCase fields expected by UI components
       createdAt: n.created_at,
       updatedAt: n.updated_at,
       isRead: n.is_read,
       isDeleted: n.is_deleted,
+      readAt: n.read_at,
     })) as Notification[];
   } catch (error) {
     console.error('Error in getNotifications:', error);

@@ -222,13 +222,12 @@ const AbandonedCartsPage: React.FC = () => {
                             // Insert to notifications table
                             try {
                                 await supabase.from('notifications').insert({
-                                    id: `cart-${newCart.id}`,
-                                    type: 'cart_abandon',
-                                    message: `🛒 Keranjang ditinggalkan oleh ${newCart.customerName || 'Pelanggan'} - Rp${(newCart.totalAmount || 0).toLocaleString('id-ID')}`,
-                                    read: false,
-                                    timestamp: new Date().toISOString(),
                                     user_id: currentUser?.id,
-                                    created_at: new Date().toISOString(),
+                                    type: 'CART_ABANDON',
+                                    title: 'Keranjang Ditinggalkan',
+                                    message: `🛒 Keranjang ditinggalkan oleh ${newCart.customerName || 'Pelanggan'} - Rp${(newCart.totalPrice || 0).toLocaleString('id-ID')}`,
+                                    is_read: false,
+                                    metadata: { cart_id: newCart.id },
                                 });
                             } catch (err) {
                                 console.warn('Failed to insert cart notification:', err);

@@ -543,14 +543,12 @@ const OrdersPage: React.FC = () => {
                             // Insert to notifications table
                             try {
                                 await supabase.from('notifications').insert({
-                                    id: `order-${newOrder.id}`,
-                                    type: 'new_order',
-                                    message: `📦 Pesanan baru dari ${newOrder.customer || 'Pelanggan'} - Rp${(newOrder.totalPrice || 0).toLocaleString('id-ID')}`,
-                                    read: false,
-                                    timestamp: new Date().toISOString(),
                                     user_id: currentUser?.id,
-                                    order_id: newOrder.id,
-                                    created_at: new Date().toISOString(),
+                                    type: 'ORDER_NEW',
+                                    title: 'Pesanan Baru',
+                                    message: `📦 Pesanan baru dari ${newOrder.customer || 'Pelanggan'} - Rp${(newOrder.totalPrice || 0).toLocaleString('id-ID')}`,
+                                    is_read: false,
+                                    metadata: { order_id: newOrder.id },
                                 });
                             } catch (err) {
                                 console.warn('Failed to insert notification:', err);
@@ -771,14 +769,12 @@ const OrdersPage: React.FC = () => {
                 const message = statusMessages[newStatus] || `Status pesanan berubah menjadi ${newStatus}`;
 
                 await supabase.from('notifications').insert({
-                    id: `order-status-${orderId}-${Date.now()}`,
-                    type: 'order_status_change',
-                    message: `${message} - ${updatedOrder?.customer || 'Pesanan'}`,
-                    read: false,
-                    timestamp: new Date().toISOString(),
                     user_id: currentUser?.id,
-                    order_id: orderId,
-                    created_at: new Date().toISOString(),
+                    type: 'SYSTEM_ALERT',
+                    title: 'Status Pesanan Berubah',
+                    message: `${message} - ${updatedOrder?.customer || 'Pesanan'}`,
+                    is_read: false,
+                    metadata: { order_id: orderId, new_status: newStatus },
                 });
             } catch (err) {
                 console.warn('Failed to insert status change notification:', err);
