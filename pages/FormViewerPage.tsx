@@ -600,35 +600,30 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         };
     }, [derivedOptions]);
 
-    // Pilih sumber opsi: gunakan productOptions jika lengkap, tapi fallback ke derivedOptions atau compositeFallback untuk hindari gabungan ("Hitam - A4")
+    // Pilih sumber opsi: PRIORITAS TINGGI untuk form.productOptions karena itu yang diedit di editor (drag-drop order)
     const displayOptions = useMemo(() => {
         if (!form) return [] as Form['productOptions'];
 
-        // Utamakan variantOptions dari produk
+        // Utamakan variantOptions dari produk (external product catalog)
         if (productOptionsOverride.length > 0) {
             return productOptionsOverride;
         }
 
-        if (compositeFallback) return compositeFallback.options;
-
         const hasProductOptions = Array.isArray(form.productOptions) && form.productOptions.length > 0;
 
+        // PRIORITAS: Selalu gunakan form.productOptions jika ada (ini yang diedit user di editor dengan drag-drop)
         if (hasProductOptions) {
-            // Jika productOptions hanya satu atribut tetapi derivedOptions punya lebih dari satu, pakai derived agar tidak jadi satu gabungan
-            if (derivedOptions.length > 1 && form.productOptions.length === 1) {
-                return derivedOptions;
-            }
-
-            // Jika derivedOptions lebih lengkap (jumlah atribut lebih banyak), gunakan derived
-            if (derivedOptions.length > form.productOptions.length) {
-                return derivedOptions;
-            }
-
             return form.productOptions;
         }
 
+        // Fallback: Jika tidak ada productOptions, gunakan compositeFallback (untuk form lama yang hanya punya satu atribut "A - B")
+        if (compositeFallback) {
+            return compositeFallback.options;
+        }
+
+        // Terakhir: Derive dari variantCombinations jika semua fallback gagal
         return derivedOptions;
-    }, [form, derivedOptions, productOptionsOverride]);
+    }, [form, derivedOptions, productOptionsOverride, compositeFallback]);
 
     // --- TRACKING CALCULATOR ---
     // Hitung pixel untuk FORM PAGE (sekali saat form load)
