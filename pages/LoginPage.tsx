@@ -733,15 +733,15 @@ const LoginPage: React.FC = () => {
                                                 <div
                                                     key={level}
                                                     className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${passwordStrength.level >= level
-                                                            ? passwordStrength.color
-                                                            : 'bg-slate-200 dark:bg-slate-700'
+                                                        ? passwordStrength.color
+                                                        : 'bg-slate-200 dark:bg-slate-700'
                                                         }`}
                                                 />
                                             ))}
                                         </div>
                                         <p className={`text-xs ${passwordStrength.level === 1 ? 'text-red-500' :
-                                                passwordStrength.level === 2 ? 'text-yellow-600' :
-                                                    'text-green-500'
+                                            passwordStrength.level === 2 ? 'text-yellow-600' :
+                                                'text-green-500'
                                             }`}>
                                             Kekuatan: {passwordStrength.label}
                                         </p>

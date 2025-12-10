@@ -1869,9 +1869,9 @@ const FormEditorPage: React.FC = () => {
             if (!prev) return null;
             const mainFieldValue = (prev as any)[mainField] || {};
 
-                        if (mainField === 'customerFields' && subField === 'province') {
+            if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
-                                        // If unchecking visible, also uncheck required
+                    // If unchecking visible, also uncheck required
                     const newRequired = val ? prev.customerFields.province.required : false;
                     return {
                         ...prev,
@@ -1884,7 +1884,7 @@ const FormEditorPage: React.FC = () => {
                         }
                     };
                 } else if (prop === 'required') {
-                                        return {
+                    return {
                         ...prev,
                         customerFields: {
                             ...prev.customerFields,
@@ -2448,17 +2448,16 @@ const FormEditorPage: React.FC = () => {
                                             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                                             onDrop={() => handleDropOption(optIndex)}
                                             onDragEnd={handleDragEnd}
-                                            className={`p-4 border rounded-lg dark:border-slate-600 transition-all cursor-move ${
-                                                draggedOptionId === optIndex
+                                            className={`p-4 border rounded-lg dark:border-slate-600 transition-all cursor-move ${draggedOptionId === optIndex
                                                     ? 'opacity-50 bg-indigo-100 dark:bg-indigo-900/30 border-indigo-500'
                                                     : 'bg-slate-50 dark:bg-slate-900/30 hover:border-indigo-300 dark:hover:border-indigo-700'
-                                            }`}
+                                                }`}
                                         >
                                             {/* Header Opsi */}
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className="flex items-center gap-2 text-slate-400 cursor-grab active:cursor-grabbing" title="Geser untuk mengubah urutan">
-                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z"/></svg>
-                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z"/></svg>
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z" /></svg>
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z" /></svg>
                                                 </div>
                                                 <input
                                                     type="text"
