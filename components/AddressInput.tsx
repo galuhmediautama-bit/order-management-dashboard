@@ -195,11 +195,29 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchVillages();
   }, [selectedDistrictId]);
 
+  // Track if this is the initial mount or external value update
+  const isInitialMount = React.useRef(true);
+  const lastExternalValue = React.useRef<AddressData>(value);
+
   // Sync internal state when value prop changes (for edit mode)
-  // This performs reverse lookup: find ID from name to enable cascading dropdowns
+  // Only sync if the value actually changed from external source (not from our own onChange)
   useEffect(() => {
-    setDetailAddress(value.detailAddress || '');
-    setPostalCode(value.postalCode || '');
+    // Check if value is different from what we last knew (external update)
+    const isExternalUpdate = 
+      lastExternalValue.current.province !== value.province ||
+      lastExternalValue.current.city !== value.city ||
+      lastExternalValue.current.district !== value.district ||
+      lastExternalValue.current.village !== value.village;
+    
+    // Only sync detailAddress and postalCode on initial mount or if they're empty internally
+    if (isInitialMount.current) {
+      setDetailAddress(value.detailAddress || '');
+      setPostalCode(value.postalCode || '');
+      isInitialMount.current = false;
+    }
+    
+    // Update our reference
+    lastExternalValue.current = value;
 
     // If we have province name but no ID, try to find the ID
     if (value.province && provinces.length > 0 && !selectedProvinceId) {
@@ -571,7 +589,25 @@ const AddressInput: React.FC<AddressInputProps> = ({
         </div>
       )}
 
-      {/* Kode Pos - SEBELUM Alamat Lengkap sesuai urutan pengaturan */}
+      {/* Alamat Lengkap - DI ATAS Kode Pos */}
+      {showDetailAddress && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Alamat Lengkap {(requiredDetailAddress || required) && <span className="text-red-500">*</span>}
+          </label>
+          <textarea
+            value={detailAddress}
+            onChange={(e) => setDetailAddress(e.target.value)}
+            disabled={disabled}
+            placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
+            rows={3}
+            required={requiredDetailAddress || required}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none"
+          />
+        </div>
+      )}
+
+      {/* Kode Pos - DI BAWAH Alamat Lengkap */}
       {showPostalCode && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -601,24 +637,6 @@ const AddressInput: React.FC<AddressInputProps> = ({
           {selectedVillage && !postalCode && !loadingPostalCode && (
             <p className="text-xs text-gray-500 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
           )}
-        </div>
-      )}
-
-      {/* Alamat Lengkap - SETELAH Kode Pos */}
-      {showDetailAddress && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Alamat Lengkap {(requiredDetailAddress || required) && <span className="text-red-500">*</span>}
-          </label>
-          <textarea
-            value={detailAddress}
-            onChange={(e) => setDetailAddress(e.target.value)}
-            disabled={disabled}
-            placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
-            rows={3}
-            required={requiredDetailAddress || required}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none"
-          />
         </div>
       )}
     </div>
