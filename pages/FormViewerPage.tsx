@@ -1736,7 +1736,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                         >
                                                             {option.values.map(val => {
                                                                 const details = getVariantDetails(val);
-                                                                const label = details?.sellingPrice
+                                                                const label = option.showPrice !== false && details?.sellingPrice
                                                                     ? `${val} - Rp ${details.sellingPrice.toLocaleString('id-ID')}`
                                                                     : val;
                                                                 return <option key={val} value={val}>{label}</option>;
@@ -1772,7 +1772,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                                             />
                                                                             <div className="flex flex-col">
                                                                                 <span className="font-medium">{val}</span>
-                                                                                {details?.sellingPrice && (
+                                                                                {option.showPrice !== false && details?.sellingPrice && (
                                                                                     <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
                                                                                         Rp {details.sellingPrice.toLocaleString('id-ID')}
                                                                                     </span>
@@ -1792,16 +1792,26 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                     )}
                                                     {displayStyle === 'modern' && (
                                                         <div className="flex flex-col gap-2">
-                                                            {option.values.map(val => (
-                                                                <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))} className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
-                                                                    <span>{val}</span>
-                                                                    {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
-                                                                        <span className="text-xs font-medium opacity-80 animate-pulse">
-                                                                            Stok: {currentVariantStock}
-                                                                        </span>
-                                                                    )}
-                                                                </button>
-                                                            ))}
+                                                            {option.values.map(val => {
+                                                                const details = getVariantDetails(val);
+                                                                return (
+                                                                    <button type="button" key={val} onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))} className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}>
+                                                                        <div className="flex flex-col items-start">
+                                                                            <span>{val}</span>
+                                                                            {option.showPrice !== false && details?.sellingPrice && (
+                                                                                <span className={`text-xs ${selectedOptions[option.name] === val ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                                    Rp {details.sellingPrice.toLocaleString('id-ID')}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
+                                                                            <span className="text-xs font-medium opacity-80 animate-pulse">
+                                                                                Stok: {currentVariantStock}
+                                                                            </span>
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
                                                 </div>

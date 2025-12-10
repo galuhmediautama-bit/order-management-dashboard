@@ -260,6 +260,7 @@ export interface ProductOption {
   name: string; // e.g., "Warna"
   values: string[]; // e.g., ["Merah", "Biru"]
   displayStyle?: VariantDisplayStyle;
+  showPrice?: boolean; // Whether to show price for this attribute/option
 }
 
 export interface VariantCombination {

@@ -581,7 +581,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                                 >
                                                     {option.values.map(val => {
                                                         const details = getVariantDetails(option, val);
-                                                        const label = details?.sellingPrice
+                                                        const label = option.showPrice !== false && details?.sellingPrice
                                                             ? `${val} - Rp ${details.sellingPrice.toLocaleString('id-ID')}`
                                                             : val;
                                                         return <option key={val} value={val}>{label}</option>;
@@ -617,7 +617,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                                                     />
                                                                     <div className="flex flex-col">
                                                                         <span className="font-medium">{val}</span>
-                                                                        {details?.sellingPrice && (
+                                                                        {option.showPrice !== false && details?.sellingPrice && (
                                                                             <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
                                                                                 Rp {details.sellingPrice.toLocaleString('id-ID')}
                                                                             </span>
@@ -637,21 +637,31 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                             )}
                                             {displayStyle === 'modern' && (
                                                 <div className="flex flex-col gap-2">
-                                                    {option.values.map(val => (
-                                                        <button
-                                                            key={val}
-                                                            type="button"
-                                                            onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))}
-                                                            className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}
-                                                        >
-                                                            <span>{val}</span>
-                                                            {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
-                                                                <span className="text-xs font-medium opacity-80 animate-pulse">
-                                                                    Stok: {currentVariantStock}
-                                                                </span>
-                                                            )}
-                                                        </button>
-                                                    ))}
+                                                    {option.values.map(val => {
+                                                        const details = getVariantDetails(option, val);
+                                                        return (
+                                                            <button
+                                                                key={val}
+                                                                type="button"
+                                                                onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))}
+                                                                className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}
+                                                            >
+                                                                <div className="flex flex-col items-start">
+                                                                    <span>{val}</span>
+                                                                    {option.showPrice !== false && details?.sellingPrice && (
+                                                                        <span className={`text-xs ${selectedOptions[option.name] === val ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                            Rp {details.sellingPrice.toLocaleString('id-ID')}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
+                                                                    <span className="text-xs font-medium opacity-80 animate-pulse">
+                                                                        Stok: {currentVariantStock}
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -2503,6 +2513,26 @@ const FormEditorPage: React.FC = () => {
                                                 </button>
                                             </div>
 
+                                            {/* Show Price Toggle */}
+                                            <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
+                                                <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={option.showPrice ?? true}
+                                                        onChange={(e) => {
+                                                            setForm(prev => {
+                                                                if (!prev) return prev;
+                                                                const updated = [...prev.productOptions];
+                                                                updated[optIndex] = { ...updated[optIndex], showPrice: e.target.checked };
+                                                                return { ...prev, productOptions: updated };
+                                                            });
+                                                        }}
+                                                        className="rounded"
+                                                    />
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Tampilkan Harga</span>
+                                                </label>
+                                            </div>
+
                                             {/* Nilai-nilai */}
                                             <div className="space-y-2">
                                                 {option.values.map((value, valIndex) => (
@@ -2579,7 +2609,8 @@ const FormEditorPage: React.FC = () => {
                                                     id: Date.now(),
                                                     name: `OPSI ${prev.productOptions.length + 1}`,
                                                     values: ['Nilai 1'],
-                                                    displayStyle: 'radio'
+                                                    displayStyle: 'radio',
+                                                    showPrice: true
                                                 };
                                                 return { ...prev, productOptions: [...prev.productOptions, newOption] };
                                             });
