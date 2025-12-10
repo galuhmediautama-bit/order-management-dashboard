@@ -33,21 +33,21 @@ interface ErrorLog {
 const ErrorLogsPage: React.FC = () => {
     const { t } = useLanguage();
     const { showToast } = useToast();
-    
+
     const [logs, setLogs] = useState<ErrorLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<any>(null);
-    
+
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
     const [filterResolved, setFilterResolved] = useState<string>('all');
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
-    
+
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 20;
-    
+
     // Modal
     const [selectedLog, setSelectedLog] = useState<ErrorLog | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -91,7 +91,7 @@ const ErrorLogsPage: React.FC = () => {
             // Search filter
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
-                const matchesSearch = 
+                const matchesSearch =
                     log.errorMessage?.toLowerCase().includes(query) ||
                     log.userEmail?.toLowerCase().includes(query) ||
                     log.errorContext?.toLowerCase().includes(query) ||
@@ -149,14 +149,14 @@ const ErrorLogsPage: React.FC = () => {
 
             if (error) throw error;
 
-            setLogs(prev => prev.map(l => 
-                l.id === log.id 
-                    ? { 
-                        ...l, 
+            setLogs(prev => prev.map(l =>
+                l.id === log.id
+                    ? {
+                        ...l,
                         resolved: !l.resolved,
                         resolvedAt: !l.resolved ? new Date().toISOString() : null,
                         resolvedBy: !l.resolved ? currentUser.id : null
-                    } 
+                    }
                     : l
             ));
             showToast(log.resolved ? 'Error ditandai belum resolved' : 'Error ditandai resolved', 'success');
@@ -180,7 +180,7 @@ const ErrorLogsPage: React.FC = () => {
 
             if (error) throw error;
 
-            setLogs(prev => prev.map(l => 
+            setLogs(prev => prev.map(l =>
                 l.id === selectedLog.id ? { ...l, notes } : l
             ));
             showToast('Catatan tersimpan', 'success');

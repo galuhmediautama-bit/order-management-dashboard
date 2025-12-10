@@ -70,7 +70,7 @@ const PendingUsersPage: React.FC = () => {
             showToast('⛔ FORBIDDEN: Only galuhmediautama@gmail.com can have Super Admin role!', 'error');
             return;
         }
-        
+
         const { error } = await supabase.from('users').update({ status: 'Aktif' }).eq('id', id);
         if (error) {
             console.error('Approve error:', error);
@@ -84,19 +84,19 @@ const PendingUsersPage: React.FC = () => {
     const bulkApprove = async () => {
         const ids = Object.keys(selected).filter(k => selected[k]);
         if (ids.length === 0) return showToast('Pilih minimal satu pengguna', 'warning');
-        
+
         // SECURITY: Check if any selected user has Super Admin role (except galuhmediautama@gmail.com)
-        const invalidUsers = users.filter(u => 
-            ids.includes(u.id) && 
-            u.role === 'Super Admin' && 
+        const invalidUsers = users.filter(u =>
+            ids.includes(u.id) &&
+            u.role === 'Super Admin' &&
             u.email !== 'galuhmediautama@gmail.com'
         );
-        
+
         if (invalidUsers.length > 0) {
             showToast('⛔ FORBIDDEN: Cannot approve users with Super Admin role!', 'error');
             return;
         }
-        
+
         setLoading(true);
         try {
             const { error } = await supabase.from('users').update({ status: 'Aktif' }).in('id', ids);
@@ -187,9 +187,9 @@ const PendingUsersPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setPage(p => Math.max(1, p - 1))} 
-                                disabled={page <= 1} 
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page <= 1}
                                 className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                             >
                                 Prev
@@ -197,9 +197,9 @@ const PendingUsersPage: React.FC = () => {
                             <div className="px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg font-semibold text-sm">
                                 Halaman {page} / {totalPages}
                             </div>
-                            <button 
-                                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
-                                disabled={page >= totalPages} 
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page >= totalPages}
                                 className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                             >
                                 Next

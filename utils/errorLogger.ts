@@ -32,13 +32,13 @@ let lastResetTime = Date.now();
  */
 const canLogError = (): boolean => {
     const now = Date.now();
-    
+
     // Reset counter if window passed
     if (now - lastResetTime > ERROR_RATE_WINDOW) {
         errorCount = 0;
         lastResetTime = now;
     }
-    
+
     // Check rate limit
     if (errorCount >= ERROR_RATE_LIMIT) {
         if (import.meta.env.DEV) {
@@ -46,7 +46,7 @@ const canLogError = (): boolean => {
         }
         return false;
     }
-    
+
     errorCount++;
     return true;
 };
@@ -61,7 +61,7 @@ const getCurrentUserInfo = async (): Promise<{
 }> => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
             return { userId: null, userEmail: null, userRole: null };
         }
@@ -89,36 +89,36 @@ const getCurrentUserInfo = async (): Promise<{
 const getErrorType = (error: Error | unknown): ErrorType => {
     if (error instanceof Error) {
         const message = error.message.toLowerCase();
-        
+
         // Network errors
-        if (message.includes('network') || 
-            message.includes('fetch') || 
+        if (message.includes('network') ||
+            message.includes('fetch') ||
             message.includes('timeout') ||
             message.includes('connection') ||
             message.includes('failed to fetch')) {
             return 'network';
         }
-        
+
         // Authentication errors
-        if (message.includes('auth') || 
-            message.includes('unauthorized') || 
+        if (message.includes('auth') ||
+            message.includes('unauthorized') ||
             message.includes('forbidden') ||
             message.includes('permission') ||
             message.includes('token')) {
             return 'authentication';
         }
-        
+
         // Validation errors
-        if (message.includes('validation') || 
-            message.includes('invalid') || 
+        if (message.includes('validation') ||
+            message.includes('invalid') ||
             message.includes('required') ||
             message.includes('must be')) {
             return 'validation';
         }
-        
+
         return 'runtime';
     }
-    
+
     return 'unknown';
 };
 
@@ -135,11 +135,11 @@ export const logError = async (
     if (!canLogError()) {
         return;
     }
-    
+
     try {
         const userInfo = await getCurrentUserInfo();
         const errorObj = error instanceof Error ? error : new Error(String(error));
-        
+
         const payload = {
             userId: userInfo.userId,
             userEmail: userInfo.userEmail,
@@ -184,7 +184,7 @@ export const logError = async (
 export const logErrorWithPayload = async (payload: ErrorLogPayload): Promise<void> => {
     try {
         const userInfo = await getCurrentUserInfo();
-        
+
         const fullPayload = {
             userId: userInfo.userId,
             userEmail: userInfo.userEmail,
@@ -247,7 +247,7 @@ export const globalErrorHandler = (
     error?: Error
 ): void => {
     const errorMessage = error?.message || String(message);
-    
+
     logError(
         error || new Error(errorMessage),
         'GlobalErrorHandler',
@@ -263,10 +263,10 @@ export const globalErrorHandler = (
  * Promise rejection handler - can be used for window.onunhandledrejection
  */
 export const unhandledRejectionHandler = (event: PromiseRejectionEvent): void => {
-    const error = event.reason instanceof Error 
-        ? event.reason 
+    const error = event.reason instanceof Error
+        ? event.reason
         : new Error(String(event.reason));
-    
+
     logError(error, 'UnhandledRejection');
 };
 
@@ -277,7 +277,7 @@ export const setupGlobalErrorHandlers = (): void => {
     if (typeof window !== 'undefined') {
         window.onerror = globalErrorHandler;
         window.onunhandledrejection = unhandledRejectionHandler;
-        
+
         if (import.meta.env.DEV) {
             console.log('[ErrorLogger] Global error handlers installed');
         }

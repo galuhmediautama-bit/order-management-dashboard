@@ -541,9 +541,9 @@ const ProductsPage: React.FC = () => {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <button 
-                                    onClick={() => setPage(p => Math.max(1, p - 1))} 
-                                    disabled={page <= 1} 
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page <= 1}
                                     className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                                 >
                                     Prev
@@ -551,9 +551,9 @@ const ProductsPage: React.FC = () => {
                                 <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold text-sm">
                                     Halaman {page} / {totalPages}
                                 </div>
-                                <button 
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
-                                    disabled={page >= totalPages} 
+                                <button
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page >= totalPages}
                                     className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                                 >
                                     Next

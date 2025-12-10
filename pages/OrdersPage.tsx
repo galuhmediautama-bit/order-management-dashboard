@@ -2624,7 +2624,7 @@ const ManualOrderModal: React.FC<{
                                             className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${selectedFormId === f.id
                                                 ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
                                                 : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                            }`}
+                                                }`}
                                         >
                                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedFormId === f.id ? 'border-white' : 'border-slate-400'}`}>
                                                 {selectedFormId === f.id && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
@@ -2667,7 +2667,7 @@ const ManualOrderModal: React.FC<{
                                                 className={`flex items-center justify-between gap-2 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${isSelected
                                                     ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
                                                     : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-white' : 'border-slate-400'}`}>
@@ -2768,7 +2768,7 @@ const ManualOrderModal: React.FC<{
                                         className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${shippingMethod === opt.value
                                             ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50'
                                             : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                        }`}
+                                            }`}
                                     >
                                         <input
                                             type="radio"
@@ -2815,7 +2815,7 @@ const ManualOrderModal: React.FC<{
                                         className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${paymentMethod === opt.value
                                             ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50'
                                             : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                        }`}
+                                            }`}
                                     >
                                         <input
                                             type="radio"

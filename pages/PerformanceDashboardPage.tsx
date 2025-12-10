@@ -56,6 +56,9 @@ const formatBytes = (bytes: number) => {
 
 const formatMs = (ms: number) => `${ms.toFixed(0)} ms`;
 
+// Hardcoded droplet name - only show this one server
+const TARGET_DROPLET_NAME = 'ubuntu-s-1vcpu-1gb-sgp1-01';
+
 const PerformanceDashboardPage: React.FC = () => {
     const [summary, setSummary] = useState<MetricsSummary>(() => performanceMonitor.getSummary());
     const [recentMetrics, setRecentMetrics] = useState<PerformanceMetrics[]>(() => performanceMonitor.getMetrics(20));
@@ -65,20 +68,23 @@ const PerformanceDashboardPage: React.FC = () => {
     const [serverMetrics, setServerMetrics] = useState<ServerMetrics | null>(null);
     const [serverLoading, setServerLoading] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
-    const [droplets, setDroplets] = useState<Droplet[]>([]);
-    const [selectedDroplet, setSelectedDroplet] = useState<string>('');
+    const [targetDropletId, setTargetDropletId] = useState<string>('');
 
-    // Fetch available droplets
-    const fetchDroplets = async () => {
+    // Fetch target droplet ID by name
+    const fetchTargetDroplet = async () => {
         try {
             const { data, error } = await supabase.functions.invoke('do-metrics', {
                 body: { action: 'list-droplets' }
             });
             if (error) throw error;
             if (data?.droplets) {
-                setDroplets(data.droplets);
-                if (data.droplets.length > 0 && !selectedDroplet) {
-                    setSelectedDroplet(data.droplets[0].id);
+                // Find the specific droplet by name
+                const targetDroplet = data.droplets.find((d: Droplet) => d.name === TARGET_DROPLET_NAME);
+                if (targetDroplet) {
+                    setTargetDropletId(targetDroplet.id);
+                } else if (data.droplets.length > 0) {
+                    // Fallback to first droplet if target not found
+                    setTargetDropletId(data.droplets[0].id);
                 }
             }
         } catch (err: any) {
@@ -88,14 +94,15 @@ const PerformanceDashboardPage: React.FC = () => {
 
     // Fetch server metrics from DO
     const fetchServerMetrics = async (dropletId?: string) => {
-        if (!dropletId && !selectedDroplet) return;
+        const idToUse = dropletId || targetDropletId;
+        if (!idToUse) return;
 
         setServerLoading(true);
         setServerError(null);
 
         try {
             const { data, error } = await supabase.functions.invoke('do-metrics', {
-                body: { droplet_id: dropletId || selectedDroplet }
+                body: { droplet_id: idToUse }
             });
 
             if (error) throw error;
@@ -122,20 +129,20 @@ const PerformanceDashboardPage: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Fetch droplets on mount
+    // Fetch target droplet on mount
     useEffect(() => {
-        fetchDroplets();
+        fetchTargetDroplet();
     }, []);
 
-    // Fetch server metrics when droplet selected
+    // Fetch server metrics when droplet ID is set
     useEffect(() => {
-        if (selectedDroplet) {
-            fetchServerMetrics(selectedDroplet);
+        if (targetDropletId) {
+            fetchServerMetrics(targetDropletId);
             // Refresh every 60 seconds
-            const interval = setInterval(() => fetchServerMetrics(selectedDroplet), 60000);
+            const interval = setInterval(() => fetchServerMetrics(targetDropletId), 60000);
             return () => clearInterval(interval);
         }
-    }, [selectedDroplet]);
+    }, [targetDropletId]);
 
     const latestMemory = useMemo(() => {
         const memEntry = recentMetrics.find(m => m.memory);
@@ -190,28 +197,20 @@ const PerformanceDashboardPage: React.FC = () => {
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                         </svg>
                         Server DigitalOcean
-                    </h2>
-                    <div className="flex items-center gap-3">
-                        {droplets.length > 1 && (
-                            <select
-                                value={selectedDroplet}
-                                onChange={(e) => setSelectedDroplet(e.target.value)}
-                                className="text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-slate-700 dark:text-slate-200"
-                            >
-                                {droplets.map(d => (
-                                    <option key={d.id} value={d.id}>{d.name} ({d.region})</option>
-                                ))}
-                            </select>
+                        {serverMetrics && (
+                            <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
+                                ({serverMetrics.dropletName})
+                            </span>
                         )}
-                        <button
-                            onClick={() => fetchServerMetrics()}
-                            disabled={serverLoading || !selectedDroplet}
-                            className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {serverLoading ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : null}
-                            Refresh
-                        </button>
-                    </div>
+                    </h2>
+                    <button
+                        onClick={() => fetchServerMetrics()}
+                        disabled={serverLoading || !targetDropletId}
+                        className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {serverLoading ? <SpinnerIcon className="w-4 h-4 animate-spin" /> : null}
+                        Refresh
+                    </button>
                 </div>
 
                 {serverError && (
@@ -220,7 +219,7 @@ const PerformanceDashboardPage: React.FC = () => {
                     </div>
                 )}
 
-                {!selectedDroplet && !serverLoading && (
+                {!targetDropletId && !serverLoading && (
                     <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                         <p>Tidak ada droplet ditemukan. Pastikan DO_API_TOKEN sudah dikonfigurasi di Supabase Edge Functions.</p>
                     </div>

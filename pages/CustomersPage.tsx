@@ -87,7 +87,7 @@ const CustomerModal: React.FC<{
         fullAddress: customer?.address || ''
     });
     const isEditing = !!customer?.id;
-    
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value) || 0 : value }));
@@ -112,7 +112,7 @@ const CustomerModal: React.FC<{
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Nama Lengkap*</label><input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" required /></div>
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Email*</label><input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" required /></div>
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Nomor Telepon</label><input type="tel" name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" /></div>
-                        <div><AddressInput value={addressData} onChange={(data) => { setAddressData(data); setFormData({...formData, address: data.fullAddress}); }} /></div>
+                        <div><AddressInput value={addressData} onChange={(data) => { setAddressData(data); setFormData({ ...formData, address: data.fullAddress }); }} /></div>
                         <div><label className="text-base font-medium text-slate-700 dark:text-slate-300">Pesanan Ditolak</label><input type="number" name="rejectedOrders" value={formData.rejectedOrders || 0} onChange={handleChange} className="w-full mt-1 p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600" /></div>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
@@ -199,20 +199,20 @@ const CustomersPage: React.FC = () => {
             // Fetch explicitly saved customers (if any)
             // In this architecture, customers might be derived from orders or a separate table.
             // Assuming we use a 'customers' table for explicit management, but fallback to orders aggregation.
-            
+
             // For now, let's aggregate from orders as "Implicit Customers" + "Explicit Customers from Table"
             // Or just use the 'customers' table if you have one.
             // Let's assume we have a 'customers' table.
             const { data: customersData, error } = await supabase.from('customers').select('*');
-            
+
             let customersList: Customer[] = [];
-            
+
             if (!error && customersData) {
                 customersList = customersData as Customer[];
             } else {
                 // Aggregate from orders if table empty or error (as fallback for first run)
                 const customerMap = new Map<string, Customer>();
-                
+
                 ordersList.forEach(order => {
                     // Use Name + Phone as unique key
                     const key = `${order.customer}-${order.customerPhone}`;
@@ -231,12 +231,12 @@ const CustomersPage: React.FC = () => {
                             joinDate: order.date
                         });
                     }
-                    
+
                     const cust = customerMap.get(key)!;
                     cust.orderCount += 1;
                     cust.totalSpent += (order.totalPrice || 0);
                     if (order.status === 'Canceled') cust.rejectedOrders += 1;
-                    
+
                     // Track COD orders
                     const isCOD = order.paymentMethod?.toLowerCase().includes('cod') || order.paymentMethod?.toLowerCase().includes('bayar di tempat');
                     if (isCOD) {
@@ -245,10 +245,10 @@ const CustomersPage: React.FC = () => {
                             cust.successfulCODOrders = (cust.successfulCODOrders || 0) + 1;
                         }
                     }
-                    
+
                     if (new Date(order.date) < new Date(cust.joinDate)) cust.joinDate = order.date;
                 });
-                
+
                 customersList = Array.from(customerMap.values());
             }
 
@@ -267,7 +267,7 @@ const CustomersPage: React.FC = () => {
 
     const filteredCustomers = useMemo(() => {
         let results = customers;
-        
+
         // Score filter
         if (scoreFilter !== 'all') {
             results = results.filter(c => {
@@ -275,17 +275,17 @@ const CustomersPage: React.FC = () => {
                 return codScore === scoreFilter;
             });
         }
-        
+
         // Search filter
         if (searchTerm) {
             const lower = searchTerm.toLowerCase();
-            results = results.filter(c => 
+            results = results.filter(c =>
                 c.name.toLowerCase().includes(lower) ||
                 c.phone.includes(lower) ||
                 c.email.toLowerCase().includes(lower)
             );
         }
-        
+
         return results;
     }, [customers, searchTerm, scoreFilter]);
 
@@ -326,13 +326,13 @@ const CustomersPage: React.FC = () => {
         const totalCODOrders = customers.reduce((sum, c) => sum + (c.totalCODOrders || 0), 0);
         const successfulCOD = customers.reduce((sum, c) => sum + (c.successfulCODOrders || 0), 0);
         const overallSuccessRate = totalCODOrders > 0 ? (successfulCOD / totalCODOrders) * 100 : 0;
-        
+
         return {
             total: customers.length,
             scoreA: scoreA,
             scoreB: scoreB,
             totalRevenue: customers.reduce((sum, c) => sum + c.totalSpent, 0),
-            avgOrderValue: customers.length > 0 
+            avgOrderValue: customers.length > 0
                 ? customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.reduce((sum, c) => sum + c.orderCount, 0)
                 : 0,
             overallCODSuccessRate: overallSuccessRate
@@ -370,7 +370,7 @@ const CustomersPage: React.FC = () => {
             link.href = URL.createObjectURL(blob);
             link.download = `database-pelanggan_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            
+
             showToast('Data berhasil diekspor!', 'success');
         } catch (error) {
             console.error('Export error:', error);
@@ -382,9 +382,9 @@ const CustomersPage: React.FC = () => {
 
     const handleBulkDelete = async () => {
         if (selectedCustomers.size === 0) return;
-        
+
         if (!window.confirm(`Hapus ${selectedCustomers.size} pelanggan terpilih?`)) return;
-        
+
         try {
             for (const customerId of selectedCustomers) {
                 await supabase.from('customers').delete().eq('id', customerId);
@@ -444,7 +444,7 @@ const CustomersPage: React.FC = () => {
     };
 
     const handleDeleteCustomer = async (customerId: string) => {
-        if(window.confirm("Hapus pelanggan ini?")) {
+        if (window.confirm("Hapus pelanggan ini?")) {
             try {
                 await supabase.from('customers').delete().eq('id', customerId);
                 setCustomers(prev => prev.filter(c => c.id !== customerId));
@@ -475,7 +475,7 @@ const CustomersPage: React.FC = () => {
                     <p className="ml-13 text-base text-slate-600 dark:text-slate-400">Kelola data pelanggan dan riwayat pesanan mereka.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    <button 
+                    <button
                         onClick={handleExportCSV}
                         disabled={isExporting || filteredCustomers.length === 0}
                         className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50"
@@ -483,11 +483,11 @@ const CustomersPage: React.FC = () => {
                         {isExporting ? <SpinnerIcon className="w-5 h-5 animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
                         <span>Ekspor CSV</span>
                     </button>
-                    <button 
+                    <button
                         onClick={() => handleOpenModal()}
                         className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-600 font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:scale-105 transition-all"
                     >
-                        <PlusIcon className="w-5 h-5"/>
+                        <PlusIcon className="w-5 h-5" />
                         <span>Tambah Pelanggan</span>
                     </button>
                 </div>
@@ -562,21 +562,19 @@ const CustomersPage: React.FC = () => {
                                 { value: 'nodata', label: 'No Data', count: customers.filter(c => calculateCODScore(c).score === 'No Data').length }
                             ].map(segment => {
                                 const isActive = scoreFilter === segment.value;
-                                
+
                                 return (
                                     <button
                                         key={segment.value}
                                         onClick={() => setScoreFilter(segment.value as any)}
-                                        className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                                            isActive 
-                                                ? 'bg-indigo-600 text-white' 
+                                        className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${isActive
+                                                ? 'bg-indigo-600 text-white'
                                                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                        }`}
+                                            }`}
                                     >
                                         {segment.label}
-                                        <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                                            isActive ? 'bg-white/20 text-white' : 'bg-indigo-100 dark:bg-slate-600 text-indigo-600 dark:text-indigo-400'
-                                        }`}>
+                                        <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-indigo-100 dark:bg-slate-600 text-indigo-600 dark:text-indigo-400'
+                                            }`}>
                                             {segment.count}
                                         </span>
                                     </button>
@@ -660,15 +658,14 @@ const CustomersPage: React.FC = () => {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                 {paginatedCustomers.map(customer => {
                                     const isSelected = selectedCustomers.has(customer.id);
-                                    
+
                                     return (
-                                        <tr 
-                                            key={customer.id} 
-                                            className={`transition-colors ${
-                                                isSelected 
-                                                    ? 'bg-indigo-50 dark:bg-indigo-900/20' 
+                                        <tr
+                                            key={customer.id}
+                                            className={`transition-colors ${isSelected
+                                                    ? 'bg-indigo-50 dark:bg-indigo-900/20'
                                                     : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                            }`}
+                                                }`}
                                         >
                                             <td className="px-6 py-4">
                                                 <input
@@ -717,23 +714,23 @@ const CustomersPage: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button 
-                                                        onClick={() => handleViewHistory(customer)} 
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" 
+                                                    <button
+                                                        onClick={() => handleViewHistory(customer)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                         title="Riwayat Pesanan"
                                                     >
                                                         <ClipboardListIcon className="w-5 h-5" />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => handleOpenModal(customer)} 
-                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors" 
+                                                    <button
+                                                        onClick={() => handleOpenModal(customer)}
+                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
                                                         title="Edit"
                                                     >
                                                         <PencilIcon className="w-5 h-5" />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => handleDeleteCustomer(customer.id)} 
-                                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
+                                                    <button
+                                                        onClick={() => handleDeleteCustomer(customer.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                                         title="Hapus"
                                                     >
                                                         <TrashIcon className="w-5 h-5" />
@@ -768,9 +765,9 @@ const CustomersPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setPage(p => Math.max(1, p - 1))} 
-                                disabled={page <= 1} 
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page <= 1}
                                 className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                             >
                                 Prev
@@ -778,9 +775,9 @@ const CustomersPage: React.FC = () => {
                             <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold text-sm">
                                 Halaman {page} / {totalPages}
                             </div>
-                            <button 
-                                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
-                                disabled={page >= totalPages} 
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page >= totalPages}
                                 className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                             >
                                 Next
@@ -791,12 +788,12 @@ const CustomersPage: React.FC = () => {
             </div>
 
             {isModalOpen && <CustomerModal customer={editingCustomer} onClose={() => setIsModalOpen(false)} onSave={handleSaveCustomer} />}
-            
+
             {isHistoryOpen && viewHistoryCustomer && (
-                <OrderHistoryModal 
-                    customer={viewHistoryCustomer} 
-                    orders={orders} 
-                    onClose={() => setIsHistoryOpen(false)} 
+                <OrderHistoryModal
+                    customer={viewHistoryCustomer}
+                    orders={orders}
+                    onClose={() => setIsHistoryOpen(false)}
                 />
             )}
         </div>
