@@ -210,7 +210,7 @@ const OrdersPage: React.FC = () => {
             const { data: ordersData } = await withRetry(() =>
                 supabase
                     .from('orders')
-                    .select('id, customer, customerPhone, customerEmail, shippingAddress, province, city, district, village, postalCode, productName, variant, productPrice, shippingMethod, shippingCost, codFee, paymentMethod, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId, quantity, product_id, csCommission, advCommission, deletedAt')
+                    .select('id, customer, customerPhone, customerEmail, shippingAddress, province, city, district, village, productName, variant, productPrice, shippingMethod, shippingCost, codFee, paymentMethod, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId, quantity, product_id, csCommission, advCommission, deletedAt')
                     .is('deletedAt', null)
                     .order('date', { ascending: false })
                     .limit(500)
@@ -584,7 +584,7 @@ const OrdersPage: React.FC = () => {
             // Optimized: Fetch recent orders with all display fields for notification check
             const { data: ordersData, error: ordersError } = await supabase
                 .from('orders')
-                .select('id, customer, customerPhone, customerEmail, shippingAddress, province, city, district, village, postalCode, productName, variant, productPrice, shippingMethod, shippingCost, codFee, paymentMethod, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId, quantity, product_id, csCommission, advCommission, deletedAt')
+                .select('id, customer, customerPhone, customerEmail, shippingAddress, province, city, district, village, productName, variant, productPrice, shippingMethod, shippingCost, codFee, paymentMethod, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId, quantity, product_id, csCommission, advCommission, deletedAt')
                 .is('deletedAt', null)
                 .order('date', { ascending: false })
                 .limit(100);
@@ -890,7 +890,6 @@ const OrdersPage: React.FC = () => {
                 'Kecamatan': order.district || '-',
                 'Kelurahan/Desa': order.village || '-',
                 'Alamat Detail': order.shippingAddress || '-',
-                'Kode Pos': order.postalCode || '-',
                 'Produk': order.productName,
                 'Harga Produk': order.productPrice,
                 'Total': order.totalPrice,
@@ -2225,8 +2224,7 @@ const OrderDetailModal: React.FC<{
                                         order.village ? `Desa/Kel. ${order.village}` : null,
                                         order.district ? `Kec. ${order.district}` : null,
                                         order.city,
-                                        order.province,
-                                        order.postalCode
+                                        order.province
                                     ].filter(Boolean).join(', ') || '-'}
                                 </p>
                             </div>

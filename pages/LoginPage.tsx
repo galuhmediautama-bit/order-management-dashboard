@@ -42,13 +42,11 @@ const LoginPage: React.FC = () => {
     const [selectedDistrict, setSelectedDistrict] = useState('');
     const [selectedDistrictId, setSelectedDistrictId] = useState('');
     const [selectedVillage, setSelectedVillage] = useState('');
-    const [postalCode, setPostalCode] = useState('');
 
     const [loadingProvinces, setLoadingProvinces] = useState(false);
     const [loadingCities, setLoadingCities] = useState(false);
     const [loadingDistricts, setLoadingDistricts] = useState(false);
     const [loadingVillages, setLoadingVillages] = useState(false);
-    const [loadingPostalCode, setLoadingPostalCode] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false); // Toggle Login/Register
@@ -121,7 +119,6 @@ const LoginPage: React.FC = () => {
         if (selectedDistrict) parts.push(selectedDistrict);
         if (selectedCity) parts.push(selectedCity);
         if (selectedProvince) parts.push(selectedProvince);
-        if (postalCode) parts.push(postalCode);
         return parts.join(', ');
     };
 
@@ -263,69 +260,7 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    // Fetch postal code based on village and district using multiple APIs
-    const fetchPostalCode = async (villageName: string, districtName: string, cityName: string) => {
-        if (!villageName || !districtName) return;
 
-        setLoadingPostalCode(true);
-        setPostalCode('');
-        try {
-            // Clean up names for search
-            const cleanVillage = villageName.replace(/^(desa|kelurahan)\s+/i, '').trim();
-            const cleanDistrict = districtName.replace(/^(kecamatan)\s+/i, '').trim();
-            const searchQuery = encodeURIComponent(`${cleanVillage} ${cleanDistrict}`);
-
-            let found = false;
-
-            // Try primary API
-            try {
-                const res = await fetch(`${POSTAL_API_PRIMARY}/?q=${searchQuery}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.statusCode === 200 && data.data && data.data.length > 0) {
-                        const exactMatch = data.data.find((item: any) =>
-                            item.village?.toLowerCase() === cleanVillage.toLowerCase() &&
-                            item.district?.toLowerCase() === cleanDistrict.toLowerCase()
-                        );
-                        const partialMatch = data.data.find((item: any) =>
-                            item.village?.toLowerCase().includes(cleanVillage.toLowerCase()) ||
-                            cleanVillage.toLowerCase().includes(item.village?.toLowerCase() || '')
-                        );
-                        const match = exactMatch || partialMatch || data.data[0];
-                        if (match?.code) {
-                            setPostalCode(match.code.toString());
-                            found = true;
-                        }
-                    }
-                }
-            } catch (primaryErr) {
-                console.log('Primary postal API failed, trying fallback...');
-            }
-
-            // Try fallback API if primary failed
-            if (!found) {
-                try {
-                    const fallbackRes = await fetch(`${POSTAL_API_FALLBACK}/?q=${searchQuery}`);
-                    if (fallbackRes.ok) {
-                        const fallbackData = await fallbackRes.json();
-                        if (fallbackData.statusCode === 200 && fallbackData.data && fallbackData.data.length > 0) {
-                            const match = fallbackData.data[0];
-                            if (match?.code) {
-                                setPostalCode(match.code.toString());
-                                found = true;
-                            }
-                        }
-                    }
-                } catch (fallbackErr) {
-                    console.log('Fallback postal API also failed');
-                }
-            }
-        } catch (err) {
-            console.error('Error fetching postal code:', err);
-        } finally {
-            setLoadingPostalCode(false);
-        }
-    };
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -724,35 +659,6 @@ const LoginPage: React.FC = () => {
                                                 rows={2}
                                                 className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
                                             />
-                                        </div>
-
-                                        {/* Postal Code */}
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                                Kode Pos {loadingPostalCode && <span className="text-indigo-500 text-xs ml-1">(Mencari...)</span>}
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder={loadingPostalCode ? 'Mencari kode pos...' : 'Contoh: 12345'}
-                                                    value={postalCode}
-                                                    onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                                                    disabled={loadingPostalCode}
-                                                    maxLength={5}
-                                                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50"
-                                                />
-                                                {loadingPostalCode && (
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                        <svg className="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {selectedVillage && !postalCode && !loadingPostalCode && (
-                                                <p className="text-xs text-slate-400 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
-                                            )}
                                         </div>
                                     </div>
                                 )}

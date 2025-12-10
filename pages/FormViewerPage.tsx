@@ -1422,7 +1422,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 city: addressData.city || null,
                 district: addressData.district || null,
                 village: addressData.village || null,
-                postalCode: addressData.postalCode || null,
                 productName: form.title,
                 variant: variantString || null,
                 productPrice: subtotal,
