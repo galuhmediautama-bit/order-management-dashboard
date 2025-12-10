@@ -46,12 +46,15 @@ interface AddressInputProps {
   showCity?: boolean;
   showDistrict?: boolean;
   showVillage?: boolean;
+  showPostalCode?: boolean;
   showDetailAddress?: boolean;
   requiredProvince?: boolean;
   requiredCity?: boolean;
   requiredDistrict?: boolean;
   requiredVillage?: boolean;
+  requiredPostalCode?: boolean;
   requiredDetailAddress?: boolean;
+  required?: boolean; // Legacy prop for backward compatibility
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({
@@ -62,12 +65,15 @@ const AddressInput: React.FC<AddressInputProps> = ({
   showCity = true,
   showDistrict = true,
   showVillage = true,
+  showPostalCode = true,
   showDetailAddress = true,
   requiredProvince = false,
   requiredCity = false,
   requiredDistrict = false,
   requiredVillage = false,
-  requiredDetailAddress = false
+  requiredPostalCode = false,
+  requiredDetailAddress = false,
+  required = false // Legacy - if true, makes detailAddress required
 }) => {
   const [selectedProvince, setSelectedProvince] = useState(value.province || '');
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
@@ -565,11 +571,44 @@ const AddressInput: React.FC<AddressInputProps> = ({
         </div>
       )}
 
-      {/* Alamat Lengkap */}
+      {/* Kode Pos - SEBELUM Alamat Lengkap sesuai urutan pengaturan */}
+      {showPostalCode && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Kode Pos {requiredPostalCode && <span className="text-red-500">*</span>}
+            {loadingPostalCode && <span className="text-indigo-500 text-xs ml-1">(Mencari...)</span>}
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={postalCode}
+              onChange={handlePostalCodeChange}
+              disabled={disabled || loadingPostalCode}
+              placeholder={loadingPostalCode ? "Mencari kode pos..." : "Masukkan kode pos"}
+              maxLength={5}
+              required={requiredPostalCode}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+            />
+            {loadingPostalCode && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <svg className="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            )}
+          </div>
+          {selectedVillage && !postalCode && !loadingPostalCode && (
+            <p className="text-xs text-gray-500 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
+          )}
+        </div>
+      )}
+
+      {/* Alamat Lengkap - SETELAH Kode Pos */}
       {showDetailAddress && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Alamat Lengkap {requiredDetailAddress && <span className="text-red-500">*</span>}
+            Alamat Lengkap {(requiredDetailAddress || required) && <span className="text-red-500">*</span>}
           </label>
           <textarea
             value={detailAddress}
@@ -577,40 +616,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
             disabled={disabled}
             placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
             rows={3}
-            required={requiredDetailAddress}
+            required={requiredDetailAddress || required}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none"
           />
         </div>
       )}
-
-      {/* Kode Pos */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Kode Pos {loadingPostalCode && <span className="text-indigo-500 text-xs ml-1">(Mencari...)</span>}
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            value={postalCode}
-            onChange={handlePostalCodeChange}
-            disabled={disabled || loadingPostalCode}
-            placeholder={loadingPostalCode ? "Mencari kode pos..." : "Masukkan kode pos"}
-            maxLength={5}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900"
-          />
-          {loadingPostalCode && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <svg className="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
-          )}
-        </div>
-        {selectedVillage && !postalCode && !loadingPostalCode && (
-          <p className="text-xs text-gray-500 mt-1">Kode pos tidak ditemukan, silakan isi manual</p>
-        )}
-      </div>
     </div>
   );
 };

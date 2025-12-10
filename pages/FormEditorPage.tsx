@@ -682,7 +682,7 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                     <input type="email" placeholder="email@example.com" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
                                 </div>
                             )}
-                            {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.address?.visible) && (
+                            {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.postalCode?.visible || form.customerFields.address?.visible) && (
                                 <AddressInput
                                     value={addressData}
                                     onChange={setAddressData}
@@ -690,11 +690,13 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                     showCity={form.customerFields.city?.visible || false}
                                     showDistrict={form.customerFields.district?.visible || false}
                                     showVillage={form.customerFields.village?.visible || false}
+                                    showPostalCode={form.customerFields.postalCode?.visible || false}
                                     showDetailAddress={form.customerFields.address?.visible || false}
                                     requiredProvince={form.customerFields.province?.required || false}
                                     requiredCity={form.customerFields.city?.required || false}
                                     requiredDistrict={form.customerFields.district?.required || false}
                                     requiredVillage={form.customerFields.village?.required || false}
+                                    requiredPostalCode={form.customerFields.postalCode?.required || false}
                                     requiredDetailAddress={form.customerFields.address?.required || false}
                                 />
                             )}
@@ -2642,16 +2644,18 @@ const FormEditorPage: React.FC = () => {
                     <div className="space-y-4">
                         <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
                             <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
-                            {(['name', 'whatsapp', 'email', 'province', 'city', 'district', 'address'] as const).map(key => {
-                                // Skip city, district, village, and postalCode as they're controlled by province
+                            {(['name', 'whatsapp', 'email', 'province', 'address'] as const).map(key => {
+                                // Skip city, district, village, postalCode as they're shown as sub-items of province
                                 if (key === 'city' || key === 'district' || key === 'village' || key === 'postalCode') return null;
 
                                 const isProvince = key === 'province';
+                                const isAddress = key === 'address';
+                                const displayLabel = isAddress ? 'Alamat Lengkap' : key;
 
                                 return (
                                     <div key={key}>
                                         <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                                            <span className="capitalize text-sm">{key}</span>
+                                            <span className="capitalize text-sm">{displayLabel}</span>
                                             <div className="flex items-center gap-4">
                                                 <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={(form.customerFields as any)[key].visible} onChange={e => handleSubNestedFieldChange('customerFields', key, 'visible', e.target.checked)} className="rounded" /> Tampilkan</label>
                                                 <label className="flex items-center gap-1 text-xs">

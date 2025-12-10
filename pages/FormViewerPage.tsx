@@ -1842,7 +1842,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                             {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                                         </div>
                                     )}
-                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.address?.visible) && (
+                                    {(form.customerFields.province?.visible || form.customerFields.city?.visible || form.customerFields.district?.visible || form.customerFields.village?.visible || form.customerFields.postalCode?.visible || form.customerFields.address?.visible) && (
                                         <div>
                                             <AddressInput
                                                 value={addressData}
@@ -1851,11 +1851,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                                 showCity={form.customerFields.city?.visible || false}
                                                 showDistrict={form.customerFields.district?.visible || false}
                                                 showVillage={form.customerFields.village?.visible || false}
+                                                showPostalCode={form.customerFields.postalCode?.visible || false}
                                                 showDetailAddress={form.customerFields.address?.visible || false}
                                                 requiredProvince={form.customerFields.province?.required || false}
                                                 requiredCity={form.customerFields.city?.required || false}
                                                 requiredDistrict={form.customerFields.district?.required || false}
                                                 requiredVillage={form.customerFields.village?.required || false}
+                                                requiredPostalCode={form.customerFields.postalCode?.required || false}
                                                 requiredDetailAddress={form.customerFields.address?.required || false}
                                             />
                                             {(fieldErrors.province || fieldErrors.city || fieldErrors.district || fieldErrors.address) && (
