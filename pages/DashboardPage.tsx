@@ -6,6 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import DateRangePicker from '../components/DateRangePicker';
 import type { DateRange } from '../components/DateRangePicker';
 import CustomTooltip from '../components/CustomTooltip';
+import ErrorLog from '../components/ErrorLog';
 import DollarSignIcon from '../components/icons/DollarSignIcon';
 import ShoppingCartIcon from '../components/icons/ShoppingCartIcon';
 import UsersIcon from '../components/icons/UsersIcon';
@@ -613,6 +614,11 @@ const DashboardPage: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Error Log - System Health Monitor */}
+      {currentUser && getNormalizedRole(currentUser.role) === 'Super Admin' && (
+        <ErrorLog maxEntries={10} className="mb-4" />
       )}
 
       {/* Top Products - Check feature permission */}

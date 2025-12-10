@@ -6,6 +6,8 @@ export async function createNotification(
   userId: string,
   payload: { type: string; title: string; message: string; metadata?: Record<string, any> }
 ) {
+  console.log('[NotificationService] 📝 Creating notification:', { userId, type: payload.type, title: payload.title });
+  
   try {
     const { data, error } = await supabase
       .from('notifications')
@@ -22,9 +24,17 @@ export async function createNotification(
       .single();
 
     if (error) {
-      console.error('Error creating notification:', error);
+      console.error('[NotificationService] ❌ Error creating notification:', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        userId,
+        payload,
+      });
       return null;
     }
+
+    console.log('[NotificationService] ✅ Notification created:', data.id);
 
     return {
       id: data.id,
@@ -40,18 +50,25 @@ export async function createNotification(
       readAt: data.read_at,
     } as Notification;
   } catch (err) {
-    console.error('Error in createNotification:', err);
+    console.error('[NotificationService] ❌ Exception in createNotification:', err);
     return null;
   }
 }
 
 // Get notifications for current user
 export async function getNotifications(options?: { limit?: number }) {
+  console.log('[NotificationService] 📥 Fetching notifications...');
+  
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!user) {
+      console.warn('[NotificationService] ⚠️ No authenticated user');
+      return [];
+    }
 
     const limit = options?.limit || 50;
+    console.log('[NotificationService] 🔍 Query: user_id =', user.id, ', limit =', limit);
+    
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -61,9 +78,15 @@ export async function getNotifications(options?: { limit?: number }) {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('[NotificationService] ❌ Error fetching notifications:', {
+        error: error.message,
+        code: error.code,
+        userId: user.id,
+      });
       return [];
     }
+
+    console.log('[NotificationService] ✅ Fetched', data?.length || 0, 'notifications');
 
     return (data || []).map((n: any) => ({
       id: n.id,
