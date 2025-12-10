@@ -142,6 +142,7 @@ const OrdersPage: React.FC = () => {
     const [columnVisibility, setColumnVisibility] = useState<ColumnConfig[]>([
         { key: 'orderId', label: 'Order ID & Tanggal', visible: true },
         { key: 'customer', label: 'Pelanggan', visible: true },
+        { key: 'address', label: 'Alamat Lengkap', visible: true },
         { key: 'product', label: 'Produk & Total', visible: true },
         { key: 'status', label: 'Status & Pembayaran', visible: true },
         { key: 'platform', label: 'Platform', visible: true },
@@ -868,7 +869,12 @@ const OrdersPage: React.FC = () => {
                 'Pelanggan': order.customer,
                 'WhatsApp': order.customerPhone,
                 'Email': order.customerEmail,
-                'Alamat': order.shippingAddress,
+                'Provinsi': order.province || '-',
+                'Kota/Kabupaten': order.city || '-',
+                'Kecamatan': order.district || '-',
+                'Kelurahan/Desa': order.village || '-',
+                'Alamat Detail': order.shippingAddress || '-',
+                'Kode Pos': order.postalCode || '-',
                 'Produk': order.productName,
                 'Harga Produk': order.productPrice,
                 'Total': order.totalPrice,
@@ -1576,6 +1582,7 @@ const OrdersPage: React.FC = () => {
                                         </th>
                                         {columnVisibility.find(c => c.key === 'orderId')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>}
                                         {columnVisibility.find(c => c.key === 'customer')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>}
+                                        {columnVisibility.find(c => c.key === 'address')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alamat Lengkap</th>}
                                         {columnVisibility.find(c => c.key === 'product')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>}
                                         {columnVisibility.find(c => c.key === 'status')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>}
                                         {columnVisibility.find(c => c.key === 'platform')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>}
@@ -1625,6 +1632,33 @@ const OrdersPage: React.FC = () => {
                                                                 <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
                                                                 {order.customerPhone}
                                                             </div>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {columnVisibility.find(c => c.key === 'address')?.visible && (
+                                                    <td className="px-6 py-5 align-top">
+                                                        <div className="max-w-xs text-sm text-slate-600 dark:text-slate-400 space-y-0.5">
+                                                            {order.province && (
+                                                                <div className="font-medium text-slate-700 dark:text-slate-300">{order.province}</div>
+                                                            )}
+                                                            {order.city && (
+                                                                <div>{order.city}</div>
+                                                            )}
+                                                            {order.district && (
+                                                                <div className="text-xs">Kec. {order.district}</div>
+                                                            )}
+                                                            {order.village && (
+                                                                <div className="text-xs">Kel. {order.village}</div>
+                                                            )}
+                                                            {order.shippingAddress && (
+                                                                <div className="text-xs text-slate-500 dark:text-slate-500 line-clamp-2" title={order.shippingAddress}>{order.shippingAddress}</div>
+                                                            )}
+                                                            {order.postalCode && (
+                                                                <div className="text-xs font-mono text-indigo-600 dark:text-indigo-400">{order.postalCode}</div>
+                                                            )}
+                                                            {!order.province && !order.city && !order.shippingAddress && (
+                                                                <span className="text-slate-400 italic">-</span>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 )}
