@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../firebase';
 import MailIcon from '../components/icons/MailIcon';
 import LockClosedIcon from '../components/icons/LockClosedIcon';
@@ -9,6 +9,14 @@ import SpinnerIcon from '../components/icons/SpinnerIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 import { createNotification } from '../services/notificationService';
 
+// API Base URL for Indonesia regions data
+const API_BASE = 'https://ibnux.github.io/data-indonesia';
+
+interface ApiProvince { id: string; nama: string; }
+interface ApiCity { id: string; nama: string; }
+interface ApiDistrict { id: string; nama: string; }
+interface ApiVillage { id: string; nama: string; }
+
 const LoginPage: React.FC = () => {
     const { t } = useLanguage();
     // Security: No auto-fill credentials
@@ -17,7 +25,26 @@ const LoginPage: React.FC = () => {
     const [fullName, setFullName] = useState('');
     const [selectedRole, setSelectedRole] = useState('Advertiser'); // Default: Advertiser
     const [whatsapp, setWhatsapp] = useState('');
-    const [address, setAddress] = useState('');
+    const [detailAddress, setDetailAddress] = useState('');
+    
+    // Address dropdown states
+    const [provinces, setProvinces] = useState<ApiProvince[]>([]);
+    const [cities, setCities] = useState<ApiCity[]>([]);
+    const [districts, setDistricts] = useState<ApiDistrict[]>([]);
+    const [villages, setVillages] = useState<ApiVillage[]>([]);
+    
+    const [selectedProvince, setSelectedProvince] = useState('');
+    const [selectedProvinceId, setSelectedProvinceId] = useState('');
+    const [selectedCity, setSelectedCity] = useState('');
+    const [selectedCityId, setSelectedCityId] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
+    const [selectedDistrictId, setSelectedDistrictId] = useState('');
+    const [selectedVillage, setSelectedVillage] = useState('');
+    
+    const [loadingProvinces, setLoadingProvinces] = useState(false);
+    const [loadingCities, setLoadingCities] = useState(false);
+    const [loadingDistricts, setLoadingDistricts] = useState(false);
+    const [loadingVillages, setLoadingVillages] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false); // Toggle Login/Register
@@ -25,6 +52,158 @@ const LoginPage: React.FC = () => {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Helper functions
+    const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
+        return [...data].sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+    };
+
+    const formatName = (name: string) => {
+        return name.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    // Build full address string
+    const getFullAddress = () => {
+        const parts = [];
+        if (detailAddress) parts.push(detailAddress);
+        if (selectedVillage) parts.push(selectedVillage);
+        if (selectedDistrict) parts.push(selectedDistrict);
+        if (selectedCity) parts.push(selectedCity);
+        if (selectedProvince) parts.push(selectedProvince);
+        return parts.join(', ');
+    };
+
+    // Fetch provinces on component mount when registering
+    useEffect(() => {
+        if (!isRegistering) return;
+        const fetchProvinces = async () => {
+            setLoadingProvinces(true);
+            try {
+                const res = await fetch(`${API_BASE}/provinsi.json`);
+                const data: ApiProvince[] = await res.json();
+                setProvinces(sortByName(data));
+            } catch (err) {
+                console.error('Error fetching provinces:', err);
+            } finally {
+                setLoadingProvinces(false);
+            }
+        };
+        fetchProvinces();
+    }, [isRegistering]);
+
+    // Fetch cities when province changes
+    useEffect(() => {
+        if (!selectedProvinceId) {
+            setCities([]);
+            setSelectedCity('');
+            setSelectedCityId('');
+            return;
+        }
+        const fetchCities = async () => {
+            setLoadingCities(true);
+            try {
+                const res = await fetch(`${API_BASE}/kabupaten/${selectedProvinceId}.json`);
+                const data: ApiCity[] = await res.json();
+                setCities(sortByName(data));
+            } catch (err) {
+                console.error('Error fetching cities:', err);
+                setCities([]);
+            } finally {
+                setLoadingCities(false);
+            }
+        };
+        fetchCities();
+    }, [selectedProvinceId]);
+
+    // Fetch districts when city changes
+    useEffect(() => {
+        if (!selectedCityId) {
+            setDistricts([]);
+            setSelectedDistrict('');
+            setSelectedDistrictId('');
+            return;
+        }
+        const fetchDistricts = async () => {
+            setLoadingDistricts(true);
+            try {
+                const res = await fetch(`${API_BASE}/kecamatan/${selectedCityId}.json`);
+                const data: ApiDistrict[] = await res.json();
+                setDistricts(sortByName(data));
+            } catch (err) {
+                console.error('Error fetching districts:', err);
+                setDistricts([]);
+            } finally {
+                setLoadingDistricts(false);
+            }
+        };
+        fetchDistricts();
+    }, [selectedCityId]);
+
+    // Fetch villages when district changes
+    useEffect(() => {
+        if (!selectedDistrictId) {
+            setVillages([]);
+            setSelectedVillage('');
+            return;
+        }
+        const fetchVillages = async () => {
+            setLoadingVillages(true);
+            try {
+                const res = await fetch(`${API_BASE}/kelurahan/${selectedDistrictId}.json`);
+                const data: ApiVillage[] = await res.json();
+                setVillages(sortByName(data));
+            } catch (err) {
+                console.error('Error fetching villages:', err);
+                setVillages([]);
+            } finally {
+                setLoadingVillages(false);
+            }
+        };
+        fetchVillages();
+    }, [selectedDistrictId]);
+
+    // Handle province change
+    const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const provinceId = e.target.value;
+        const province = provinces.find(p => p.id === provinceId);
+        setSelectedProvinceId(provinceId);
+        setSelectedProvince(province ? formatName(province.nama) : '');
+        // Reset dependent fields
+        setSelectedCityId('');
+        setSelectedCity('');
+        setSelectedDistrictId('');
+        setSelectedDistrict('');
+        setSelectedVillage('');
+    };
+
+    // Handle city change
+    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const cityId = e.target.value;
+        const city = cities.find(c => c.id === cityId);
+        setSelectedCityId(cityId);
+        setSelectedCity(city ? formatName(city.nama) : '');
+        // Reset dependent fields
+        setSelectedDistrictId('');
+        setSelectedDistrict('');
+        setSelectedVillage('');
+    };
+
+    // Handle district change
+    const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const districtId = e.target.value;
+        const district = districts.find(d => d.id === districtId);
+        setSelectedDistrictId(districtId);
+        setSelectedDistrict(district ? formatName(district.nama) : '');
+        // Reset dependent fields
+        setSelectedVillage('');
+    };
+
+    // Handle village change
+    const handleVillageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const villageId = e.target.value;
+        const village = villages.find(v => v.id === villageId);
+        setSelectedVillage(village ? formatName(village.nama) : '');
+    };
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,12 +228,18 @@ const LoginPage: React.FC = () => {
 
             if (isRegistering) {
                 // --- LOGIKA PENDAFTARAN ---
+                const fullAddress = getFullAddress();
                 console.log('📝 Register request:', {
                     email,
                     fullName,
                     selectedRole,
                     whatsapp,
-                    address
+                    address: fullAddress,
+                    province: selectedProvince,
+                    city: selectedCity,
+                    district: selectedDistrict,
+                    village: selectedVillage,
+                    detailAddress
                 });
 
                 const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -65,7 +250,7 @@ const LoginPage: React.FC = () => {
                             full_name: fullName,
                             role: selectedRole,
                             phone: whatsapp || null,
-                            address: address || null
+                            address: fullAddress || null
                         }
                     }
                 });
@@ -94,7 +279,7 @@ const LoginPage: React.FC = () => {
                             email: email,
                             name: fullName || email.split('@')[0],
                             phone: whatsapp || null,
-                            address: address || null,
+                            address: fullAddress || null,
                             role: selectedRole,
                             status: 'Tidak Aktif', // User must be approved by admin before active
                             lastLogin: null
@@ -141,7 +326,14 @@ const LoginPage: React.FC = () => {
                             setPassword('');
                             setFullName('');
                             setWhatsapp('');
-                            setAddress('');
+                            setDetailAddress('');
+                            setSelectedProvince('');
+                            setSelectedProvinceId('');
+                            setSelectedCity('');
+                            setSelectedCityId('');
+                            setSelectedDistrict('');
+                            setSelectedDistrictId('');
+                            setSelectedVillage('');
                             setSelectedRole('Advertiser');
                         }
                     }
@@ -307,15 +499,78 @@ const LoginPage: React.FC = () => {
                             {!isForgotPassword && isRegistering && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
-                                        Alamat Lengkap
+                                        Alamat
                                     </label>
-                                    <textarea
-                                        placeholder="Jl. ..., RT/RW ..., Kelurahan ..., Kecamatan ..."
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        rows={2}
-                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
-                                    />
+                                    <div className="space-y-3">
+                                        {/* Province Dropdown */}
+                                        <div className="relative">
+                                            <select
+                                                value={selectedProvinceId}
+                                                onChange={handleProvinceChange}
+                                                disabled={loadingProvinces}
+                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                                            >
+                                                <option value="">{loadingProvinces ? '⏳ Memuat provinsi...' : '-- Pilih Provinsi --'}</option>
+                                                {provinces.map((p) => (
+                                                    <option key={p.id} value={p.id}>{formatName(p.nama)}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* City Dropdown */}
+                                        <div className="relative">
+                                            <select
+                                                value={selectedCityId}
+                                                onChange={handleCityChange}
+                                                disabled={!selectedProvinceId || loadingCities}
+                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">{loadingCities ? '⏳ Memuat kota...' : !selectedProvinceId ? '-- Pilih provinsi dulu --' : '-- Pilih Kota/Kabupaten --'}</option>
+                                                {cities.map((c) => (
+                                                    <option key={c.id} value={c.id}>{formatName(c.nama)}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* District Dropdown */}
+                                        <div className="relative">
+                                            <select
+                                                value={selectedDistrictId}
+                                                onChange={handleDistrictChange}
+                                                disabled={!selectedCityId || loadingDistricts}
+                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">{loadingDistricts ? '⏳ Memuat kecamatan...' : !selectedCityId ? '-- Pilih kota dulu --' : '-- Pilih Kecamatan --'}</option>
+                                                {districts.map((d) => (
+                                                    <option key={d.id} value={d.id}>{formatName(d.nama)}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Village Dropdown */}
+                                        <div className="relative">
+                                            <select
+                                                value={villages.find(v => formatName(v.nama) === selectedVillage)?.id || ''}
+                                                onChange={handleVillageChange}
+                                                disabled={!selectedDistrictId || loadingVillages}
+                                                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">{loadingVillages ? '⏳ Memuat kelurahan...' : !selectedDistrictId ? '-- Pilih kecamatan dulu --' : '-- Pilih Kelurahan/Desa --'}</option>
+                                                {villages.map((v) => (
+                                                    <option key={v.id} value={v.id}>{formatName(v.nama)}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Detail Address */}
+                                        <textarea
+                                            placeholder="Alamat detail: Jl. ..., RT/RW ..., No. Rumah ..."
+                                            value={detailAddress}
+                                            onChange={(e) => setDetailAddress(e.target.value)}
+                                            rows={2}
+                                            className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
+                                        />
+                                    </div>
                                 </div>
                             )}
 
