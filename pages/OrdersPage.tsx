@@ -2580,325 +2580,403 @@ const ManualOrderModal: React.FC<{
         });
     };
 
+    // Get selected form and variants for display
+    const selectedForm = forms.find(f => f.id === selectedFormId);
+    const variants = selectedForm?.variantCombinations || [];
+
     return (
         <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>
-            <div className="min-h-full flex items-start justify-center p-4 py-8">
+            <div className="min-h-full flex items-center justify-center p-4 py-8">
                 <div
-                    className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl relative"
+                    className="bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    {/* Header - Sticky */}
-                    <div className="sticky top-0 bg-white dark:bg-slate-800 px-6 py-4 border-b dark:border-slate-700 rounded-t-xl z-10">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                                <PencilIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                            </span>
-                            {editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}
-                        </h3>
+                    {/* Decorative Background */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-200/30 dark:bg-indigo-900/20 rounded-full blur-3xl"></div>
+                        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl"></div>
+                    </div>
+
+                    {/* Header */}
+                    <div className="relative bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 px-6 py-5 text-center">
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTZWMGg2djMwem0tNiAwSDI0VjBoNnYzMHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
+                        <div className="relative">
+                            <div className="w-14 h-14 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center backdrop-blur-sm">
+                                <PencilIcon className="w-7 h-7 text-white drop-shadow-lg" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white drop-shadow">
+                                {editOrder ? 'Edit Pesanan' : 'Buat Pesanan Manual'}
+                            </h3>
+                            <p className="text-indigo-100 text-sm mt-1">Isi data pesanan dengan lengkap</p>
+                        </div>
+                        {/* Close Button */}
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                        >
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
                     {/* Content - Scrollable */}
-                    <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+                    <div className="relative p-5 max-h-[60vh] overflow-y-auto space-y-5">
 
-                        {/* Section: Pengaturan Pesanan */}
-                        {(!editOrder || currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                    Pengaturan Pesanan
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Product/Form Field - Only show when creating new order */}
-                                    {!editOrder && (
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Produk (Formulir)</label>
-                                            <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm" value={selectedFormId} onChange={e => setSelectedFormId(e.target.value)}>
-                                                {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    {/* CS Assignment Field - Only for Admin */}
-                                    {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Tugaskan ke CS</label>
-                                            <select
-                                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                value={selectedCsId}
-                                                onChange={e => setSelectedCsId(e.target.value)}
-                                            >
-                                                <option value="">Pilih CS...</option>
-                                                {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
-                                            </select>
-                                        </div>
-                                    )}
+                        {/* Section: Pilih Produk */}
+                        {!editOrder && (
+                            <div className="space-y-3">
+                                <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                    <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                        <span className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs">📦</span>
+                                        Pilih Produk
+                                    </h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih formulir produk untuk pesanan ini</p>
+                                </div>
+                                <div className="space-y-2">
+                                    {forms.map(f => (
+                                        <label
+                                            key={f.id}
+                                            className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${selectedFormId === f.id
+                                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
+                                                : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedFormId === f.id ? 'border-white' : 'border-slate-400'}`}>
+                                                {selectedFormId === f.id && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                            </div>
+                                            <input
+                                                type="radio"
+                                                name="formSelect"
+                                                value={f.id}
+                                                checked={selectedFormId === f.id}
+                                                onChange={e => setSelectedFormId(e.target.value)}
+                                                className="hidden"
+                                            />
+                                            <span className="font-medium text-sm">{f.title}</span>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Kolom Kiri */}
-                            <div className="space-y-6">
-                                {/* Section: Data Pelanggan */}
-                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                        Data Pelanggan
+                        {/* Section: Pilih Variant */}
+                        {variants.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                    <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                        <span className="w-6 h-6 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs">🎨</span>
+                                        Pilih Variant {loadingForms && <span className="text-slate-400 text-xs">(Loading...)</span>}
                                     </h4>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Nama Pelanggan</label>
-                                            <input
-                                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                placeholder="Nama Pelanggan"
-                                                value={customerData.name}
-                                                onChange={e => setCustomerData({ ...customerData, name: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">WhatsApp</label>
-                                            <input
-                                                className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                placeholder="0812xxxxxxxx"
-                                                value={customerData.phone}
-                                                onChange={e => setCustomerData({ ...customerData, phone: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih salah satu opsi di bawah</p>
                                 </div>
+                                <div className="space-y-2">
+                                    {variants.map((v, idx) => {
+                                        const variantLabel = Object.entries(v.attributes || {})
+                                            .map(([key, val]) => `${key}: ${val}`)
+                                            .join(', ');
+                                        const isSelected = variant === variantLabel;
 
-                                {/* Section: Detail Produk */}
-                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                                        Detail Produk
-                                    </h4>
-                                    <div className="space-y-3">
-                                        {(() => {
-                                            const selectedForm = forms.find(f => f.id === selectedFormId);
-                                            const variants = selectedForm?.variantCombinations || [];
-                                            const matchingIndex = variants.findIndex((v) => {
-                                                const variantLabel = Object.entries(v.attributes || {})
-                                                    .map(([key, val]) => `${key}: ${val}`)
-                                                    .join(', ');
-                                                return variant === variantLabel;
-                                            });
-                                            const currentValue = matchingIndex >= 0 ? `${matchingIndex}::${variant}` : variant;
-
-                                            return (
-                                                <div>
-                                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                                                        Variant {loadingForms && <span className="text-slate-400">(Loading...)</span>}
-                                                    </label>
-                                                    {loadingForms ? (
-                                                        <select className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 bg-slate-100 text-sm" disabled>
-                                                            <option>Memuat variant...</option>
-                                                        </select>
-                                                    ) : variants.length > 0 ? (
-                                                        <select
-                                                            className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                            value={currentValue}
-                                                            onChange={e => {
-                                                                const selectedIndex = parseInt(e.target.value.split('::')[0]);
-                                                                const selectedVariant = variants[selectedIndex];
-                                                                const variantName = e.target.value.split('::')[1] || e.target.value;
-                                                                setVariant(variantName);
-                                                                if (selectedVariant?.sellingPrice) {
-                                                                    setProductPrice(selectedVariant.sellingPrice * quantity);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <option value="">Pilih Variant...</option>
-                                                            {variants.map((v, idx) => {
-                                                                const variantLabel = Object.entries(v.attributes || {})
-                                                                    .map(([key, val]) => `${key}: ${val}`)
-                                                                    .join(', ');
-                                                                return (
-                                                                    <option key={idx} value={`${idx}::${variantLabel}`}>
-                                                                        {variantLabel} - Rp {v.sellingPrice?.toLocaleString('id-ID') || 0}
-                                                                    </option>
-                                                                );
-                                                            })}
-                                                            {variant && matchingIndex < 0 && (
-                                                                <option value={variant}>{variant} (Tidak tersedia)</option>
-                                                            )}
-                                                        </select>
-                                                    ) : (
-                                                        <select
-                                                            className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                            value={variant}
-                                                            onChange={e => setVariant(e.target.value)}
-                                                        >
-                                                            {variant ? (
-                                                                <option value={variant}>{variant}</option>
-                                                            ) : (
-                                                                <option value="">Tidak ada variant</option>
-                                                            )}
-                                                        </select>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Jumlah</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    value={quantity}
-                                                    onChange={e => {
-                                                        const newQty = parseInt(e.target.value) || 1;
-                                                        setQuantity(newQty);
-                                                        const selectedForm = forms.find(f => f.id === selectedFormId);
-                                                        const variants = selectedForm?.variantCombinations || [];
-                                                        const selectedVariant = variants.find((v) => {
-                                                            const variantLabel = Object.entries(v.attributes || {})
-                                                                .map(([key, val]) => `${key}: ${val}`)
-                                                                .join(', ');
-                                                            return variant === variantLabel;
-                                                        });
-                                                        if (selectedVariant?.sellingPrice) {
-                                                            setProductPrice(selectedVariant.sellingPrice * newQty);
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Harga Produk</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                        return (
+                                            <label
+                                                key={idx}
+                                                className={`flex items-center justify-between gap-2 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${isSelected
+                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-[1.01]'
+                                                    : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-white' : 'border-slate-400'}`}>
+                                                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                    </div>
                                                     <input
-                                                        type="number"
-                                                        className="w-full p-2.5 pl-9 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                        value={productPrice}
-                                                        onChange={e => setProductPrice(parseFloat(e.target.value) || 0)}
+                                                        type="radio"
+                                                        name="variantSelect"
+                                                        value={variantLabel}
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                            setVariant(variantLabel);
+                                                            if (v.sellingPrice) {
+                                                                setProductPrice(v.sellingPrice * quantity);
+                                                            }
+                                                        }}
+                                                        className="hidden"
                                                     />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Section: Pengiriman & Pembayaran */}
-                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
-                                        Pengiriman & Pembayaran
-                                    </h4>
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Metode Pengiriman</label>
-                                                <select
-                                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    value={shippingMethod}
-                                                    onChange={e => setShippingMethod(e.target.value)}
-                                                >
-                                                    <option value="Regular">Regular</option>
-                                                    <option value="Gratis Ongkir">Gratis Ongkir</option>
-                                                    <option value="Flat Ongkir Pulau Jawa">Flat Jawa</option>
-                                                    <option value="Flat Ongkir Pulau Bali">Flat Bali</option>
-                                                    <option value="Flat Ongkir Pulau Sumatra">Flat Sumatra</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Biaya Ongkir</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
-                                                    <input
-                                                        type="number"
-                                                        className="w-full p-2.5 pl-9 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                        value={shippingCost}
-                                                        onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Metode Pembayaran</label>
-                                                <select
-                                                    className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    value={paymentMethod}
-                                                    onChange={e => setPaymentMethod(e.target.value)}
-                                                >
-                                                    <option value="Bayar di Tempat (COD)">COD</option>
-                                                    <option value="QRIS">QRIS</option>
-                                                    <option value="Transfer Bank">Transfer Bank</option>
-                                                </select>
-                                            </div>
-                                            {paymentMethod === 'Bayar di Tempat (COD)' && (
-                                                <div>
-                                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Biaya COD</label>
-                                                    <div className="relative">
-                                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
-                                                        <input
-                                                            type="text"
-                                                            className="w-full p-2.5 pl-9 border rounded-lg bg-slate-100 dark:bg-slate-600 dark:border-slate-600 text-sm cursor-not-allowed"
-                                                            value={codFee.toLocaleString('id-ID')}
-                                                            readOnly
-                                                        />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-sm">{variantLabel}</span>
+                                                        <span className={`text-xs ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                            Rp {(v.sellingPrice || 0).toLocaleString('id-ID')}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        {/* Total Box */}
-                                        <div className="mt-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-lg border border-indigo-100 dark:border-indigo-900">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Total Harga</span>
-                                                <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">Rp {orderTotal.toLocaleString('id-ID')}</span>
-                                            </div>
-                                            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1">Produk + Ongkir{paymentMethod === 'Bayar di Tempat (COD)' ? ' + COD' : ''}</p>
-                                        </div>
-                                    </div>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
+                        )}
 
-                            {/* Kolom Kanan */}
-                            <div className="space-y-6">
-                                {/* Section: Alamat Pengiriman */}
-                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                        Alamat Pengiriman
-                                    </h4>
-                                    <AddressInput
-                                        value={addressData}
-                                        onChange={setAddressData}
-                                        required={true}
+                        {/* Section: Informasi Pelanggan */}
+                        <div className="space-y-3">
+                            <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xs">👤</span>
+                                    Informasi Pelanggan
+                                </h4>
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Nama <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        placeholder="Nama Lengkap"
+                                        value={customerData.name}
+                                        onChange={e => setCustomerData({ ...customerData, name: e.target.value })}
                                     />
                                 </div>
-
-                                {/* Section: Catatan */}
-                                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                        Catatan
-                                    </h4>
-                                    <textarea
-                                        className="w-full p-2.5 border rounded-lg dark:bg-slate-700 dark:border-slate-600 text-sm resize-none"
-                                        placeholder="Catatan tambahan untuk pesanan ini..."
-                                        rows={4}
-                                        value={notes}
-                                        onChange={e => setNotes(e.target.value)}
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">No. WhatsApp <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="tel"
+                                        className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        placeholder="08xxxxxxxxxx"
+                                        value={customerData.phone}
+                                        onChange={e => setCustomerData({ ...customerData, phone: e.target.value })}
                                     />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section: Alamat Pengiriman */}
+                        <div className="space-y-3">
+                            <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400 text-xs">📍</span>
+                                    Alamat Pengiriman
+                                </h4>
+                            </div>
+                            <AddressInput
+                                value={addressData}
+                                onChange={setAddressData}
+                                required={true}
+                            />
+                        </div>
+
+                        {/* Section: Metode Pengiriman */}
+                        <div className="space-y-3">
+                            <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs">🚚</span>
+                                    Metode Pengiriman
+                                </h4>
+                            </div>
+                            <div className="space-y-2">
+                                {[
+                                    { value: 'Regular', label: 'Regular' },
+                                    { value: 'Gratis Ongkir', label: 'Gratis Ongkir' },
+                                    { value: 'Flat Ongkir Pulau Jawa', label: 'Flat Jawa' },
+                                    { value: 'Flat Ongkir Pulau Bali', label: 'Flat Bali' },
+                                    { value: 'Flat Ongkir Pulau Sumatra', label: 'Flat Sumatra' },
+                                ].map(opt => (
+                                    <label
+                                        key={opt.value}
+                                        className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${shippingMethod === opt.value
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50'
+                                            : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="shippingMethod"
+                                            value={opt.value}
+                                            checked={shippingMethod === opt.value}
+                                            onChange={e => setShippingMethod(e.target.value)}
+                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600"
+                                        />
+                                        <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Biaya Ongkir</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                    <input
+                                        type="number"
+                                        className="w-full p-3 pl-10 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        value={shippingCost}
+                                        onChange={e => setShippingCost(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section: Metode Pembayaran */}
+                        <div className="space-y-3">
+                            <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-xs">💳</span>
+                                    Metode Pembayaran
+                                </h4>
+                            </div>
+                            <div className="space-y-2">
+                                {[
+                                    { value: 'Bayar di Tempat (COD)', label: 'COD', icon: '📦' },
+                                    { value: 'QRIS', label: 'QRIS', icon: '📱' },
+                                    { value: 'Transfer Bank', label: 'Transfer Bank', icon: '🏦' },
+                                ].map(opt => (
+                                    <label
+                                        key={opt.value}
+                                        className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all duration-200 ${paymentMethod === opt.value
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/50'
+                                            : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value={opt.value}
+                                            checked={paymentMethod === opt.value}
+                                            onChange={e => setPaymentMethod(e.target.value)}
+                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600"
+                                        />
+                                        <span className="text-lg">{opt.icon}</span>
+                                        <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Section: CS Assignment - Only for Admin */}
+                        {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                            <div className="space-y-3">
+                                <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                    <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                        <span className="w-6 h-6 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center text-pink-600 dark:text-pink-400 text-xs">👩‍💼</span>
+                                        Tugaskan ke CS
+                                    </h4>
+                                </div>
+                                <select
+                                    className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    value={selectedCsId}
+                                    onChange={e => setSelectedCsId(e.target.value)}
+                                >
+                                    <option value="">Pilih CS...</option>
+                                    {csUsers.map(cs => <option key={cs.id} value={cs.id}>{cs.name}</option>)}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* Section: Catatan */}
+                        <div className="space-y-3">
+                            <div className="pb-2 border-b border-slate-200 dark:border-slate-700">
+                                <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-400 text-xs">📝</span>
+                                    Catatan
+                                </h4>
+                            </div>
+                            <textarea
+                                className="w-full p-3 border rounded-xl bg-slate-50 dark:bg-slate-700 dark:border-slate-600 text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                placeholder="Catatan tambahan untuk pesanan ini..."
+                                rows={3}
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Order Summary */}
+                        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-600">
+                            <h4 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs">📋</span>
+                                Ringkasan Pesanan
+                            </h4>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-600">
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">Produk</span>
+                                    <span className="font-medium text-slate-700 dark:text-slate-300 text-right">
+                                        {selectedForm?.title || '-'}
+                                        {variant && <span className="block text-xs text-slate-500 dark:text-slate-400">{variant}</span>}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-600">
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">Jumlah</span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newQty = Math.max(1, quantity - 1);
+                                                setQuantity(newQty);
+                                                const selectedVariant = variants.find((v) => {
+                                                    const variantLabel = Object.entries(v.attributes || {})
+                                                        .map(([key, val]) => `${key}: ${val}`)
+                                                        .join(', ');
+                                                    return variant === variantLabel;
+                                                });
+                                                if (selectedVariant?.sellingPrice) {
+                                                    setProductPrice(selectedVariant.sellingPrice * newQty);
+                                                }
+                                            }}
+                                            className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
+                                        >
+                                            <span className="text-lg font-bold text-slate-600 dark:text-slate-300">-</span>
+                                        </button>
+                                        <span className="w-8 text-center font-medium text-slate-700 dark:text-slate-300">{quantity}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newQty = quantity + 1;
+                                                setQuantity(newQty);
+                                                const selectedVariant = variants.find((v) => {
+                                                    const variantLabel = Object.entries(v.attributes || {})
+                                                        .map(([key, val]) => `${key}: ${val}`)
+                                                        .join(', ');
+                                                    return variant === variantLabel;
+                                                });
+                                                if (selectedVariant?.sellingPrice) {
+                                                    setProductPrice(selectedVariant.sellingPrice * newQty);
+                                                }
+                                            }}
+                                            className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
+                                        >
+                                            <span className="text-lg font-bold text-slate-600 dark:text-slate-300">+</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-sm py-2 border-b border-slate-200 dark:border-slate-600">
+                                    <span className="text-slate-500 dark:text-slate-400">Harga Produk</span>
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">Rp {productPrice.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="flex justify-between text-sm py-2 border-b border-slate-200 dark:border-slate-600">
+                                    <span className="text-slate-500 dark:text-slate-400">Pengiriman</span>
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">Rp {shippingCost.toLocaleString('id-ID')}</span>
+                                </div>
+                                {codFee > 0 && (
+                                    <div className="flex justify-between text-sm py-2 border-b border-slate-200 dark:border-slate-600">
+                                        <span className="text-slate-500 dark:text-slate-400">Biaya COD</span>
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">Rp {codFee.toLocaleString('id-ID')}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center pt-2">
+                                    <span className="font-medium text-slate-600 dark:text-slate-400">Total Pembayaran</span>
+                                    <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                                        Rp {orderTotal.toLocaleString('id-ID')}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Footer - Sticky */}
-                    <div className="sticky bottom-0 bg-white dark:bg-slate-800 px-6 py-4 border-t dark:border-slate-700 rounded-b-xl flex justify-end gap-3">
-                        <button onClick={onClose} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium">
-                            Batal
-                        </button>
-                        <button onClick={handleSubmit} className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Simpan
+                    {/* Footer */}
+                    <div className="relative px-5 py-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+                        <button
+                            onClick={handleSubmit}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all transform hover:scale-[1.01] active:scale-[0.99]"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{editOrder ? 'Simpan Perubahan' : 'Buat Pesanan'}</span>
                         </button>
                     </div>
                 </div>
