@@ -577,8 +577,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         if (splitValues.length !== singleOption.values.length) return null; // Ada nilai yang tidak bisa di-split, jangan paksa
 
-        const attr1Values = Array.from(new Set(splitValues.map(parts => parts[0])));
-        const attr2Values = Array.from(new Set(splitValues.map(parts => parts[1])));
+        const attr1Values: string[] = Array.from(new Set(splitValues.map(parts => parts[0])));
+        const attr2Values: string[] = Array.from(new Set(splitValues.map(parts => parts[1])));
 
         const compositeOptions: Form['productOptions'] = [
             { id: 1, name: 'Atribut 1', values: attr1Values, displayStyle: 'radio' },

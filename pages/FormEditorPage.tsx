@@ -1952,7 +1952,7 @@ const FormEditorPage: React.FC = () => {
 
     const addBankAccount = () => {
         if (!form) return;
-        const newAccount: BankAccount = { id: Date.now(), bankName: '', accountNumber: '', accountHolder: 'Pemilik' };
+        const newAccount: BankAccount = { id: String(Date.now()), bankName: '', accountNumber: '', accountHolder: 'Pemilik', isDefault: false };
         const newAccounts = [...form.paymentSettings.bankTransfer.accounts, newAccount];
         handleSubNestedFieldChange('paymentSettings', 'bankTransfer', 'accounts', newAccounts);
     };
@@ -2678,8 +2678,6 @@ const FormEditorPage: React.FC = () => {
                         <EditorCard icon={UserGroupIcon} title="Informasi Pelanggan">
                             <p className="text-xs text-slate-500 mb-3">Default: Nama, WhatsApp, dan Alamat Lengkap (wajib)</p>
                             {(['name', 'whatsapp', 'email', 'province', 'address'] as const).map(key => {
-                                                                if (key === 'city' || key === 'district' || key === 'village') return null;
-
                                 const isProvince = key === 'province';
                                 const isAddress = key === 'address';
                                 const displayLabel = isAddress ? 'Alamat Lengkap' : key;
