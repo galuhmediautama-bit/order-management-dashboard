@@ -646,12 +646,32 @@ const OrdersPage: React.FC = () => {
                     .update({
                         customer: newOrderData.customer,
                         customerPhone: newOrderData.customerPhone,
+                        customerEmail: newOrderData.customerEmail,
                         shippingAddress: newOrderData.shippingAddress,
+                        province: newOrderData.province,
+                        city: newOrderData.city,
+                        district: newOrderData.district,
+                        village: newOrderData.village,
+                        shippingMethod: newOrderData.shippingMethod,
+                        paymentMethod: newOrderData.paymentMethod,
+                        productName: newOrderData.productName,
+                        productPrice: newOrderData.productPrice,
+                        shippingCost: newOrderData.shippingCost,
+                        codFee: newOrderData.codFee,
                         totalPrice: newOrderData.totalPrice,
                         assignedCsId: newOrderData.assignedCsId,
                         notes: newOrderData.notes,
                         variant: newOrderData.variant,
-                        quantity: newOrderData.quantity
+                        quantity: newOrderData.quantity,
+                        formId: newOrderData.formId,
+                        formTitle: newOrderData.formTitle,
+                        brandId: newOrderData.brandId,
+                        productId: (newOrderData as any).productId,
+                        product_id: (newOrderData as any).product_id,
+                        status: newOrderData.status,
+                        urgency: newOrderData.urgency,
+                        followUps: newOrderData.followUps,
+                        date: newOrderData.date
                     })
                     .eq('id', selectedOrder.id);
 
@@ -2387,7 +2407,6 @@ const ManualOrderModal: React.FC<{
         city: editOrder?.city || '',
         district: editOrder?.district || '',
         village: editOrder?.village || '',
-        postalCode: editOrder?.postalCode || '',
         detailAddress: editOrder?.shippingAddress || '',
         fullAddress: editOrder?.shippingAddress || ''
     });
@@ -2438,7 +2457,6 @@ const ManualOrderModal: React.FC<{
                 city: editOrder.city || '',
                 district: editOrder.district || '',
                 village: editOrder.village || '',
-                postalCode: editOrder.postalCode || '',
                 detailAddress: editOrder.shippingAddress || '',
                 fullAddress: editOrder.shippingAddress || ''
             });
@@ -2461,7 +2479,6 @@ const ManualOrderModal: React.FC<{
                 city: '',
                 district: '',
                 village: '',
-                postalCode: '',
                 detailAddress: '',
                 fullAddress: ''
             });
@@ -2532,13 +2549,12 @@ const ManualOrderModal: React.FC<{
             customer: customerData.name,
             customerPhone: customerData.phone,
             customerEmail: customerData.email || '',
-            shippingAddress: addressData.detailAddress || customerData.address,
+            shippingAddress: addressData.fullAddress || addressData.detailAddress || customerData.address,
             // Separate address fields
             province: addressData.province || undefined,
             city: addressData.city || undefined,
             district: addressData.district || undefined,
             village: addressData.village || undefined,
-            postalCode: addressData.postalCode || undefined,
             productName: form.title,
             productPrice: productPrice,
             shippingMethod: shippingMethod,
