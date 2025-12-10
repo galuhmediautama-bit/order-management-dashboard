@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       port: 3000,
+      strictPort: true, // Kunci di port 3000, jangan pindah ke port lain
       host: '0.0.0.0',
       hmr: {
         overlay: true, // Show errors in overlay
