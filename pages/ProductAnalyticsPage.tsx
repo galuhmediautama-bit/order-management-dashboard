@@ -32,10 +32,10 @@ const ProductAnalyticsPage: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [view, setView] = useState<'aggregate' | 'advertiser'>('aggregate');
-    
+
     // Aggregate view - Product performance
     const [productsPerformance, setProductsPerformance] = useState<ProductPerformance[]>([]);
-    
+
     // Advertiser view - Advertiser performance
     const [advertiserPerformance, setAdvertiserPerformance] = useState<AdvertiserPerformance[]>([]);
 
@@ -79,7 +79,7 @@ const ProductAnalyticsPage: React.FC = () => {
             // Get user's assigned brands (for Advertiser role) or all brands (for Admin)
             let brandIds: string[] = [];
             const role = currentUser.role?.toLowerCase();
-            
+
             if (role === 'super admin' || role === 'admin') {
                 // Admin sees all brands
                 const { data: brands } = await supabase.from('brands').select('id');
@@ -133,7 +133,7 @@ const ProductAnalyticsPage: React.FC = () => {
 
             // Also create entries for forms without product_id (using productName from orders)
             const formProductMap = new Map<string, string>(); // formId -> productName
-            
+
             // Count forms per product
             (forms || []).forEach(form => {
                 if (form.productId && productMap.has(form.productId)) {
@@ -207,7 +207,7 @@ const ProductAnalyticsPage: React.FC = () => {
             // Get user's assigned brands
             let brandIds: string[] = [];
             const role = currentUser.role?.toLowerCase();
-            
+
             if (role === 'super admin' || role === 'admin') {
                 const { data: brands } = await supabase.from('brands').select('id');
                 brandIds = (brands || []).map(b => b.id);
@@ -313,13 +313,13 @@ const ProductAnalyticsPage: React.FC = () => {
         views: acc.views + (p.totalViews || 0),
         orders: acc.orders + (p.totalOrders || 0),
         revenue: acc.revenue + (p.totalRevenue || 0),
-        avgConversion: productsPerformance.length > 0 
+        avgConversion: productsPerformance.length > 0
             ? (acc.avgConversion * (productsPerformance.indexOf(p)) + (p.conversionRatePercent || 0)) / (productsPerformance.indexOf(p) + 1)
             : 0,
     }), { views: 0, orders: 0, revenue: 0, avgConversion: 0 });
 
     // Recalculate average conversion properly
-    const avgConversion = productsPerformance.length > 0 
+    const avgConversion = productsPerformance.length > 0
         ? productsPerformance.reduce((sum, p) => sum + (p.conversionRatePercent || 0), 0) / productsPerformance.length
         : 0;
 
@@ -354,21 +354,19 @@ const ProductAnalyticsPage: React.FC = () => {
             <div className="flex gap-4 bg-white dark:bg-slate-800 p-4 rounded-lg">
                 <button
                     onClick={() => setView('aggregate')}
-                    className={`px-6 py-2 rounded-lg font-medium transition ${
-                        view === 'aggregate'
+                    className={`px-6 py-2 rounded-lg font-medium transition ${view === 'aggregate'
                             ? 'bg-indigo-600 text-white'
                             : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600'
-                    }`}
+                        }`}
                 >
                     Performa Produk
                 </button>
                 <button
                     onClick={() => setView('advertiser')}
-                    className={`px-6 py-2 rounded-lg font-medium transition ${
-                        view === 'advertiser'
+                    className={`px-6 py-2 rounded-lg font-medium transition ${view === 'advertiser'
                             ? 'bg-indigo-600 text-white'
                             : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600'
-                    }`}
+                        }`}
                 >
                     Performa Advertiser
                 </button>
@@ -583,13 +581,12 @@ const ProductAnalyticsPage: React.FC = () => {
                                                 Rp {perf.totalRevenue.toLocaleString('id-ID')}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                    perf.conversionRatePercent >= 5
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${perf.conversionRatePercent >= 5
                                                         ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                                                         : perf.conversionRatePercent >= 2
-                                                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                                                }`}>
+                                                            ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                                                    }`}>
                                                     {perf.conversionRatePercent.toFixed(2)}%
                                                 </span>
                                             </td>

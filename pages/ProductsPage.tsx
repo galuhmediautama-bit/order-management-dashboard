@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
@@ -8,6 +8,7 @@ import { DEFAULT_ROLE_PERMISSIONS } from '../utils/rolePermissions';
 import { Product } from '../types';
 import { productService } from '../services/productService';
 import { supabase } from '../firebase';
+import { paginateArray, PAGE_SIZES } from '../utils/pagination';
 import SearchIcon from '../components/icons/SearchIcon';
 import PencilIcon from '../components/icons/PencilIcon';
 import TrashIcon from '../components/icons/TrashIcon';
@@ -270,10 +271,40 @@ const ProductsPage: React.FC = () => {
         }
     };
 
-    const filteredProducts = products.filter(p =>
+    const filteredProducts = useMemo(() => products.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         getSKU(p).toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ), [products, searchQuery]);
+
+    // --- Pagination State ---
+    const [pageSize, setPageSize] = useState<number>(PAGE_SIZES.SMALL); // default 10 per page
+    const [page, setPage] = useState<number>(1);
+
+    // Reset to first page when filters/search/pageSize change
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, pageSize, products]);
+
+    const paginationResult = useMemo(() => {
+        if (!filteredProducts || filteredProducts.length === 0) {
+            return {
+                data: [],
+                page: 1,
+                pageSize,
+                total: 0,
+                totalPages: 1,
+                hasNext: false,
+                hasPrev: false,
+            };
+        }
+
+        // pageSize === 0 means show all
+        const effectivePageSize = pageSize === 0 ? Math.max(1, filteredProducts.length) : pageSize;
+        return paginateArray(filteredProducts, page, effectivePageSize);
+    }, [filteredProducts, page, pageSize]);
+
+    const paginatedProducts = paginationResult.data;
+    const totalPages = paginationResult.totalPages;
 
     return (
         <div className="space-y-5">
@@ -354,7 +385,7 @@ const ProductsPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {filteredProducts.map((product) => (
+                            {paginatedProducts.map((product) => (
                                 <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
                                     <td className="px-5 py-3 text-slate-900 dark:text-slate-100 font-medium">
                                         {product.name}
@@ -489,6 +520,47 @@ const ProductsPage: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    {filteredProducts.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center gap-3">
+                                <label className="text-sm text-slate-600 dark:text-slate-400">Tampilkan:</label>
+                                <select
+                                    value={pageSize}
+                                    onChange={e => setPageSize(parseInt(e.target.value, 10))}
+                                    className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                >
+                                    <option value={PAGE_SIZES.SMALL}>10</option>
+                                    <option value={PAGE_SIZES.MEDIUM}>25</option>
+                                    <option value={PAGE_SIZES.LARGE}>50</option>
+                                    <option value={PAGE_SIZES.EXTRA_LARGE}>100</option>
+                                    <option value={0}>Semua</option>
+                                </select>
+                                <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold text-sm">Total: {filteredProducts.length}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setPage(p => Math.max(1, p - 1))} 
+                                    disabled={page <= 1} 
+                                    className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                                >
+                                    Prev
+                                </button>
+                                <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold text-sm">
+                                    Halaman {page} / {totalPages}
+                                </div>
+                                <button 
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                                    disabled={page >= totalPages} 
+                                    className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

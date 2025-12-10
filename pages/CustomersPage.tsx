@@ -16,6 +16,7 @@ import BanknotesIcon from '../components/icons/BanknotesIcon';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import { supabase } from '../firebase';
 import { capitalizeWords } from '../utils';
+import { paginateArray, PAGE_SIZES } from '../utils/pagination';
 import { useToast } from '../contexts/ToastContext';
 import AddressInput, { type AddressData } from '../components/AddressInput';
 
@@ -288,6 +289,36 @@ const CustomersPage: React.FC = () => {
         return results;
     }, [customers, searchTerm, scoreFilter]);
 
+    // --- Pagination State ---
+    const [pageSize, setPageSize] = useState<number>(PAGE_SIZES.SMALL); // default 10 per page
+    const [page, setPage] = useState<number>(1);
+
+    // Reset to first page when filters/search/pageSize change
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm, scoreFilter, pageSize, customers]);
+
+    const paginationResult = useMemo(() => {
+        if (!filteredCustomers || filteredCustomers.length === 0) {
+            return {
+                data: [],
+                page: 1,
+                pageSize,
+                total: 0,
+                totalPages: 1,
+                hasNext: false,
+                hasPrev: false,
+            };
+        }
+
+        // pageSize === 0 means show all
+        const effectivePageSize = pageSize === 0 ? Math.max(1, filteredCustomers.length) : pageSize;
+        return paginateArray(filteredCustomers, page, effectivePageSize);
+    }, [filteredCustomers, page, pageSize]);
+
+    const paginatedCustomers = paginationResult.data;
+    const totalPages = paginationResult.totalPages;
+
     // Statistics
     const stats = useMemo(() => {
         const scoreA = customers.filter(c => calculateCODScore(c).score === 'A').length;
@@ -378,10 +409,10 @@ const CustomersPage: React.FC = () => {
     };
 
     const handleToggleSelectAll = () => {
-        if (selectedCustomers.size === filteredCustomers.length) {
+        if (selectedCustomers.size === paginatedCustomers.length && paginatedCustomers.length > 0) {
             setSelectedCustomers(new Set());
         } else {
-            setSelectedCustomers(new Set(filteredCustomers.map(c => c.id)));
+            setSelectedCustomers(new Set(paginatedCustomers.map(c => c.id)));
         }
     };
 
@@ -614,7 +645,7 @@ const CustomersPage: React.FC = () => {
                                     <th className="px-6 py-4 text-left">
                                         <input
                                             type="checkbox"
-                                            checked={selectedCustomers.size === filteredCustomers.length && filteredCustomers.length > 0}
+                                            checked={selectedCustomers.size === paginatedCustomers.length && paginatedCustomers.length > 0}
                                             onChange={handleToggleSelectAll}
                                             className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                         />
@@ -627,7 +658,7 @@ const CustomersPage: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {filteredCustomers.map(customer => {
+                                {paginatedCustomers.map(customer => {
                                     const isSelected = selectedCustomers.has(customer.id);
                                     
                                     return (
@@ -716,6 +747,47 @@ const CustomersPage: React.FC = () => {
                         </table>
                     )}
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredCustomers.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm text-slate-600 dark:text-slate-400">Tampilkan:</label>
+                            <select
+                                value={pageSize}
+                                onChange={e => setPageSize(parseInt(e.target.value, 10))}
+                                className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                            >
+                                <option value={PAGE_SIZES.SMALL}>10</option>
+                                <option value={PAGE_SIZES.MEDIUM}>25</option>
+                                <option value={PAGE_SIZES.LARGE}>50</option>
+                                <option value={PAGE_SIZES.EXTRA_LARGE}>100</option>
+                                <option value={0}>Semua</option>
+                            </select>
+                            <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold text-sm">Total: {filteredCustomers.length}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                                disabled={page <= 1} 
+                                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            >
+                                Prev
+                            </button>
+                            <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-semibold text-sm">
+                                Halaman {page} / {totalPages}
+                            </div>
+                            <button 
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                                disabled={page >= totalPages} 
+                                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {isModalOpen && <CustomerModal customer={editingCustomer} onClose={() => setIsModalOpen(false)} onSave={handleSaveCustomer} />}

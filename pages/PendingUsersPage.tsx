@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../firebase';
 import { useToast } from '../contexts/ToastContext';
 import { User } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
+import { paginateArray, PAGE_SIZES } from '../utils/pagination';
 
 const PendingUsersPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -10,6 +11,36 @@ const PendingUsersPage: React.FC = () => {
     const [selected, setSelected] = useState<Record<string, boolean>>({});
     const { showToast } = useToast();
     const navigate = useNavigate();
+
+    // --- Pagination State ---
+    const [pageSize, setPageSize] = useState<number>(PAGE_SIZES.SMALL); // default 10 per page
+    const [page, setPage] = useState<number>(1);
+
+    const paginationResult = useMemo(() => {
+        if (!users || users.length === 0) {
+            return {
+                data: [],
+                page: 1,
+                pageSize,
+                total: 0,
+                totalPages: 1,
+                hasNext: false,
+                hasPrev: false,
+            };
+        }
+
+        // pageSize === 0 means show all
+        const effectivePageSize = pageSize === 0 ? Math.max(1, users.length) : pageSize;
+        return paginateArray(users, page, effectivePageSize);
+    }, [users, page, pageSize]);
+
+    const paginatedUsers = paginationResult.data;
+    const totalPages = paginationResult.totalPages;
+
+    // Reset to first page when pageSize changes
+    useEffect(() => {
+        setPage(1);
+    }, [pageSize, users]);
 
     const fetchPending = async () => {
         setLoading(true);
@@ -107,7 +138,7 @@ const PendingUsersPage: React.FC = () => {
                                 <th className="px-3 py-2"><input type="checkbox" onChange={(e) => {
                                     const checked = e.target.checked;
                                     const s: Record<string, boolean> = {};
-                                    users.forEach(u => s[u.id] = checked);
+                                    paginatedUsers.forEach(u => s[u.id] = checked);
                                     setSelected(s);
                                 }} /></th>
                                 <th className="px-3 py-2">Nama</th>
@@ -119,7 +150,7 @@ const PendingUsersPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(u => (
+                            {paginatedUsers.map(u => (
                                 <tr key={u.id} className="border-b dark:border-gray-700">
                                     <td className="px-3 py-2"><input type="checkbox" checked={!!selected[u.id]} onChange={(e) => setSelected(s => ({ ...s, [u.id]: e.target.checked }))} /></td>
                                     <td className="px-3 py-2">{u.name}</td>
@@ -134,6 +165,47 @@ const PendingUsersPage: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                )}
+
+                {/* Pagination Controls */}
+                {users.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm text-slate-600 dark:text-slate-400">Tampilkan:</label>
+                            <select
+                                value={pageSize}
+                                onChange={e => setPageSize(parseInt(e.target.value, 10))}
+                                className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-green-500 outline-none text-sm"
+                            >
+                                <option value={PAGE_SIZES.SMALL}>10</option>
+                                <option value={PAGE_SIZES.MEDIUM}>25</option>
+                                <option value={PAGE_SIZES.LARGE}>50</option>
+                                <option value={PAGE_SIZES.EXTRA_LARGE}>100</option>
+                                <option value={0}>Semua</option>
+                            </select>
+                            <span className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg font-semibold text-sm">Total: {users.length}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                                disabled={page <= 1} 
+                                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            >
+                                Prev
+                            </button>
+                            <div className="px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg font-semibold text-sm">
+                                Halaman {page} / {totalPages}
+                            </div>
+                            <button 
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                                disabled={page >= totalPages} 
+                                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

@@ -10,6 +10,7 @@ import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import BellIcon from './icons/BellIcon';
 import { NotificationDropdown } from './NotificationDropdown';
+import GlobalSearch from './GlobalSearch';
 import type { User as FirebaseUser } from '@supabase/supabase-js'; // Changed to Supabase type
 import { supabase } from '../firebase';
 import { useNotificationContext } from '../contexts/NotificationContext';
@@ -41,6 +42,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentTheme, user, logout }) => {
   const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isNotificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [isSearchOpen, setSearchOpen] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string | undefined>(user.user_metadata?.avatar_url);
   const { unreadCount } = useNotificationContext();
 
@@ -49,6 +51,25 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
 
   const userDisplayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const userEmail = user.email || 'user@email.com';
+
+  // Global keyboard shortcut for search (Ctrl+/ or /)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+/ untuk buka search (tidak konflik dengan browser)
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+      // / untuk buka search jika tidak di input field
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Fetch user avatar from database to get latest version
   useEffect(() => {
@@ -116,18 +137,20 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
 
         {/* Search Bar - Desktop */}
         <div className="hidden lg:flex flex-1 max-w-2xl">
-          <div className="relative w-full group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="relative w-full group"
+          >
+            <div className="flex items-center w-full pl-4 pr-4 h-11 border border-slate-200 dark:border-slate-700 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shadow-inner cursor-pointer">
+              <SearchIcon className="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors mr-3" />
+              <span className="flex-1 text-left text-sm text-slate-400 dark:text-slate-500">
+                Cari pesanan, pelanggan, produk...
+              </span>
+              <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs font-medium text-slate-400 bg-slate-200 dark:bg-slate-700 rounded ml-2">
+                Ctrl+/
+              </kbd>
             </div>
-            <input
-              type="search"
-              name="search"
-              id="search"
-              className="block w-full pl-12 pr-4 h-11 border border-slate-200 dark:border-slate-700 rounded-full bg-slate-50 dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm text-slate-900 dark:text-white transition-all shadow-inner"
-              placeholder="Cari pesanan, pelanggan, produk..."
-            />
-          </div>
+          </button>
         </div>
 
         <div className="flex-1 lg:hidden"></div>
@@ -135,7 +158,10 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
         {/* Right Section - Actions */}
         <div className="flex items-center space-x-2 md:space-x-3">
           {/* Search Button - Mobile */}
-          <button className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+          >
             <SearchIcon className="h-6 w-6" />
           </button>
 
@@ -237,6 +263,9 @@ const Header: React.FC<HeaderProps> = ({ sidebarToggle, toggleTheme, currentThem
           </div>
         </div>
       </div>
+
+      {/* Global Search Modal */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 };

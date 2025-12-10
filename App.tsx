@@ -176,6 +176,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
               <Route path="/pengaturan/jam-kerja" element={<SettingsPage subPage="Jam Kerja" />} />
               <Route path="/pengaturan/merek" element={<SettingsPage subPage="Merek" />} />
               <Route path="/pengaturan/pelacakan" element={<SettingsPage subPage="Pelacakan" />} />
+              <Route path="/pengaturan/template-pesan" element={<SettingsPage subPage="Template Pesan" />} />
               <Route path="/pengaturan/pending-users" element={<PendingUsersPage />} />
               <Route path="/pengaturan/pengumuman/kelola" element={<AnnouncementsPage />} />
               <Route path="/pengaturan/pengumuman/settings" element={<SettingsPage subPage="Pengaturan Pengumuman" />} />

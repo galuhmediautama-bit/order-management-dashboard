@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { supabase } from '../firebase';
 import type { AbandonedCart, User, UserRole, Order } from '../types';
 import { capitalizeWords, filterDataByBrand, getNormalizedRole } from '../utils';
+import { paginateArray, PAGE_SIZES } from '../utils/pagination';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import WhatsAppIcon from '../components/icons/WhatsAppIcon';
 import CheckCircleFilledIcon from '../components/icons/CheckCircleFilledIcon';
@@ -439,13 +440,7 @@ const AbandonedCartsPage: React.FC = () => {
         setSelectedCarts(newSet);
     };
 
-    const handleToggleSelectAll = () => {
-        if (selectedCarts.size === filteredCarts.length) {
-            setSelectedCarts(new Set());
-        } else {
-            setSelectedCarts(new Set(filteredCarts.map(c => c.id)));
-        }
-    };
+    // handleToggleSelectAll moved after paginatedCarts definition
 
     const filteredCarts = useMemo(() => {
         let results = filterDataByBrand<AbandonedCart>(carts, currentUser);
@@ -478,6 +473,45 @@ const AbandonedCartsPage: React.FC = () => {
         }
         return results;
     }, [carts, currentUser, searchTerm, statusFilter, dateRange]);
+
+    // --- Pagination State ---
+    const [pageSize, setPageSize] = useState<number>(PAGE_SIZES.SMALL); // default 10 per page
+    const [page, setPage] = useState<number>(1);
+
+    // Reset to first page when filters/search/pageSize change
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm, statusFilter, dateRange, pageSize, carts]);
+
+    const paginationResult = useMemo(() => {
+        if (!filteredCarts || filteredCarts.length === 0) {
+            return {
+                data: [],
+                page: 1,
+                pageSize,
+                total: 0,
+                totalPages: 1,
+                hasNext: false,
+                hasPrev: false,
+            };
+        }
+
+        // pageSize === 0 means show all
+        const effectivePageSize = pageSize === 0 ? Math.max(1, filteredCarts.length) : pageSize;
+        return paginateArray(filteredCarts, page, effectivePageSize);
+    }, [filteredCarts, page, pageSize]);
+
+    const paginatedCarts = paginationResult.data;
+    const totalPages = paginationResult.totalPages;
+
+    // Toggle Select All (now uses paginatedCarts for current page only)
+    const handleToggleSelectAll = () => {
+        if (selectedCarts.size === paginatedCarts.length && paginatedCarts.length > 0) {
+            setSelectedCarts(new Set());
+        } else {
+            setSelectedCarts(new Set(paginatedCarts.map(c => c.id)));
+        }
+    };
 
     // Statistics
     const stats = useMemo(() => {
@@ -804,7 +838,7 @@ const AbandonedCartsPage: React.FC = () => {
                                     <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider w-12">
                                         <input
                                             type="checkbox"
-                                            checked={selectedCarts.size === filteredCarts.length && filteredCarts.length > 0}
+                                            checked={selectedCarts.size === paginatedCarts.length && paginatedCarts.length > 0}
                                             onChange={handleToggleSelectAll}
                                             className="w-4 h-4 text-amber-600 border-slate-300 rounded focus:ring-amber-500"
                                         />
@@ -819,7 +853,7 @@ const AbandonedCartsPage: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                {filteredCarts.map(cart => (
+                                {paginatedCarts.map(cart => (
                                     <tr key={cart.id} className="hover:bg-amber-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
                                         <td className="px-4 py-3 align-middle">
                                             <input
@@ -926,6 +960,47 @@ const AbandonedCartsPage: React.FC = () => {
                         </table>
                     )}
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredCarts.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm text-slate-600 dark:text-slate-400">Tampilkan:</label>
+                            <select
+                                value={pageSize}
+                                onChange={e => setPageSize(parseInt(e.target.value, 10))}
+                                className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 font-medium focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                            >
+                                <option value={PAGE_SIZES.SMALL}>10</option>
+                                <option value={PAGE_SIZES.MEDIUM}>25</option>
+                                <option value={PAGE_SIZES.LARGE}>50</option>
+                                <option value={PAGE_SIZES.EXTRA_LARGE}>100</option>
+                                <option value={0}>Semua</option>
+                            </select>
+                            <span className="px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg font-semibold text-sm">Total: {filteredCarts.length}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                                disabled={page <= 1} 
+                                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            >
+                                Prev
+                            </button>
+                            <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg font-semibold text-sm">
+                                Halaman {page} / {totalPages}
+                            </div>
+                            <button 
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                                disabled={page >= totalPages} 
+                                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {deleteModalOpen && (
