@@ -1221,8 +1221,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         const nameTrimmed = customerData.name.trim();
         if (form?.customerFields.name.required && !nameTrimmed) {
             next.name = 'Nama wajib diisi.';
-        } else if (nameTrimmed && nameTrimmed.length < 5) {
-            next.name = 'Nama minimal 5 huruf.';
+        } else if (nameTrimmed && nameTrimmed.length < 3) {
+            next.name = 'Nama minimal 3 huruf.';
         }
 
         const whatsappTrimmed = customerData.whatsapp.trim();

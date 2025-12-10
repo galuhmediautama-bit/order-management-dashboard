@@ -255,7 +255,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       // Fetch notifications
       const data = await getNotifications({ limit: 50 });
       console.log('[NotificationContext] ✅ Fetched notifications:', data.length);
-      
+
       const filtered = filterNotificationsByRole(data, userRole || '');
       dispatch({ type: 'SET_NOTIFICATIONS', payload: filtered });
 

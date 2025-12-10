@@ -295,7 +295,7 @@ const FormsPage: React.FC = () => {
     const generateEmbedCode = (form: Form, type: 'html' | 'javascript' | 'iframe'): string => {
         const formUrl = getFormUrl(form);
         const formTitle = form.title || 'Order Form';
-        
+
         switch (type) {
             case 'iframe':
                 return `<!-- Embed ${formTitle} -->
@@ -308,7 +308,7 @@ const FormsPage: React.FC = () => {
   title="${formTitle}"
   allow="payment"
 ></iframe>`;
-            
+
             case 'javascript':
                 return `<!-- Embed ${formTitle} -->
 <div id="order-form-container-${form.id.substring(0, 8)}"></div>
@@ -327,7 +327,7 @@ const FormsPage: React.FC = () => {
   container.appendChild(iframe);
 })();
 </script>`;
-            
+
             case 'html':
                 return `<!-- Link ke ${formTitle} -->
 <a 
@@ -346,7 +346,7 @@ const FormsPage: React.FC = () => {
 >
   Pesan Sekarang
 </button>`;
-            
+
             default:
                 return '';
         }
@@ -961,15 +961,15 @@ const FormsPage: React.FC = () => {
                                         Form: <span className="font-semibold text-slate-900 dark:text-white">{embedFormModal.title}</span>
                                     </p>
                                 </div>
-                                <button 
-                                    onClick={() => setEmbedFormModal(null)} 
+                                <button
+                                    onClick={() => setEmbedFormModal(null)}
                                     className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     <XIcon className="w-5 h-5 text-slate-400" />
                                 </button>
                             </div>
                         </div>
-                        
+
                         {/* Embed Type Selector */}
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                             <div className="flex gap-2">
@@ -981,11 +981,10 @@ const FormsPage: React.FC = () => {
                                     <button
                                         key={option.type}
                                         onClick={() => setEmbedType(option.type)}
-                                        className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                                            embedType === option.type
+                                        className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${embedType === option.type
                                                 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
                                                 : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                                        }`}
+                                            }`}
                                     >
                                         <div className={`text-sm font-bold ${embedType === option.type ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>
                                             {option.label}
@@ -1046,17 +1045,17 @@ const FormsPage: React.FC = () => {
                         </div>
 
                         <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                            <a 
-                                href={getFormUrl(embedFormModal)} 
-                                target="_blank" 
+                            <a
+                                href={getFormUrl(embedFormModal)}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                             >
                                 <EyeIcon className="w-4 h-4" />
                                 Preview Form
                             </a>
-                            <button 
-                                onClick={() => setEmbedFormModal(null)} 
+                            <button
+                                onClick={() => setEmbedFormModal(null)}
                                 className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white text-sm font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
                             >
                                 Tutup

@@ -151,7 +151,7 @@ const ErrorLog: React.FC<ErrorLogProps> = ({ maxEntries = 10, className = '' }) 
         const expiresDate = new Date(expiresAt * 1000);
         const now = new Date();
         const diffMinutes = (expiresDate.getTime() - now.getTime()) / (1000 * 60);
-        
+
         if (diffMinutes < 5) {
           return {
             id: `auth-expiring-${Date.now()}`,
@@ -216,7 +216,7 @@ const ErrorLog: React.FC<ErrorLogProps> = ({ maxEntries = 10, className = '' }) 
     const originalError = console.error;
     console.error = (...args) => {
       originalError.apply(console, args);
-      
+
       // Capture specific errors
       const errorMsg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
       if (errorMsg.includes('supabase') || errorMsg.includes('notification') || errorMsg.includes('Error')) {
@@ -277,12 +277,11 @@ const ErrorLog: React.FC<ErrorLogProps> = ({ maxEntries = 10, className = '' }) 
   return (
     <div className={`bg-white dark:bg-slate-800 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden ${className}`}>
       {/* Header */}
-      <div 
-        className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
-          hasErrors 
-            ? 'bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30' 
+      <div
+        className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${hasErrors
+            ? 'bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30'
             : 'bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-900/30'
-        }`}
+          }`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-3">
@@ -311,20 +310,18 @@ const ErrorLog: React.FC<ErrorLogProps> = ({ maxEntries = 10, className = '' }) 
               runHealthCheck();
             }}
             disabled={isChecking}
-            className={`p-1.5 rounded-lg transition-colors ${
-              isChecking 
-                ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' 
+            className={`p-1.5 rounded-lg transition-colors ${isChecking
+                ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed'
                 : 'hover:bg-slate-200 dark:hover:bg-slate-600'
-            }`}
+              }`}
             title="Refresh health check"
           >
             <RefreshIcon className={`w-4 h-4 text-slate-500 dark:text-slate-400 ${isChecking ? 'animate-spin' : ''}`} />
           </button>
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-            hasErrors 
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' 
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${hasErrors
+              ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
               : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-          }`}>
+            }`}>
             {isExpanded ? '▲' : '▼'}
           </span>
         </div>

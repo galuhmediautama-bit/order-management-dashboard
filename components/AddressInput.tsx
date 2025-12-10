@@ -102,11 +102,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
   // Ref to track if we're updating from internal changes (to prevent loops)
   const isInternalUpdate = useRef(false);
-  
+
   // Track if this is the initial mount
   const isInitialMount = useRef(true);
   const lastSyncedValue = useRef<string>('');
-  
+
   // Add separate ref to track village ID
   const selectedVillageId = useRef('');
 
@@ -222,19 +222,19 @@ const AddressInput: React.FC<AddressInputProps> = ({
       detailAddress: value.detailAddress,
       postalCode: value.postalCode
     });
-    
+
     // Skip if value hasn't actually changed (prevents loops)
     if (valueString === lastSyncedValue.current && !isInitialMount.current) {
       return;
     }
-    
+
     // Only sync detailAddress and postalCode on initial mount
     if (isInitialMount.current) {
       setDetailAddress(value.detailAddress || '');
       setPostalCode(value.postalCode || '');
       isInitialMount.current = false;
     }
-    
+
     // Update our reference
     lastSyncedValue.current = valueString;
 

@@ -7,7 +7,7 @@ export async function createNotification(
   payload: { type: string; title: string; message: string; metadata?: Record<string, any> }
 ) {
   console.log('[NotificationService] 📝 Creating notification:', { userId, type: payload.type, title: payload.title });
-  
+
   try {
     const { data, error } = await supabase
       .from('notifications')
@@ -58,7 +58,7 @@ export async function createNotification(
 // Get notifications for current user
 export async function getNotifications(options?: { limit?: number }) {
   console.log('[NotificationService] 📥 Fetching notifications...');
-  
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -68,7 +68,7 @@ export async function getNotifications(options?: { limit?: number }) {
 
     const limit = options?.limit || 50;
     console.log('[NotificationService] 🔍 Query: user_id =', user.id, ', limit =', limit);
-    
+
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
