@@ -250,6 +250,7 @@ export interface Shipment {
 export interface CustomerFieldSetting {
   visible: boolean;
   required: boolean;
+  minCharacters?: number; // Minimum characters for field validation
 }
 
 export type VariantDisplayStyle = 'dropdown' | 'radio' | 'modern';

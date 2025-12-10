@@ -1213,10 +1213,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         const next: Record<string, string> = {};
 
         const nameTrimmed = customerData.name.trim();
+        const minNameChars = form?.customerFields.name.minCharacters || 3;
         if (form?.customerFields.name.required && !nameTrimmed) {
-            next.name = 'Nama wajib diisi.';
-        } else if (nameTrimmed && nameTrimmed.length < 3) {
-            next.name = 'Nama minimal 3 huruf.';
+            next.name = 'Nama Lengkap wajib diisi.';
+        } else if (nameTrimmed && nameTrimmed.length < minNameChars) {
+            next.name = `Nama Lengkap minimal ${minNameChars} karakter.`;
         }
 
         const whatsappTrimmed = customerData.whatsapp.trim();
@@ -1245,12 +1246,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
 
         const addressCheck = validateAddress();
+        const minAddressChars = form?.customerFields.address.minCharacters || 15;
         if (form?.customerFields.address.required && !addressCheck.normalized) {
-            next.address = 'Alamat wajib diisi.';
-        } else if (addressCheck.normalized && addressCheck.normalized.length < 2) {
-            next.address = 'Alamat minimal 2 karakter.';
-        } else if (!addressCheck.isValid) {
-            next.address = 'Alamat kurang lengkap (min. 15 karakter, sertakan RT/RW/No Rumah).';
+            next.address = 'Alamat Lengkap wajib diisi.';
+        } else if (addressCheck.normalized && addressCheck.normalized.length < minAddressChars) {
+            next.address = `Alamat Lengkap minimal ${minAddressChars} karakter.`;
         }
 
         return next;
@@ -1816,7 +1816,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
                                     {form.customerFields.name.visible && (
                                         <div>
-                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap {form.customerFields.name.required && <span className="text-red-500">*</span>}{form.customerFields.name.minCharacters && form.customerFields.name.minCharacters > 0 && <span className="text-xs text-slate-500"> (min. {form.customerFields.name.minCharacters} karakter)</span>}</label>
                                             <input type="text" name="name" value={customerData.name} onChange={handleCustomerDataChange} placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.name.required} />
                                             {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
                                         </div>
