@@ -67,20 +67,15 @@ export async function getNotifications(options?: { limit?: number }) {
 
     return (data || []).map((n: any) => ({
       id: n.id,
+      userId: n.user_id,
       type: n.type,
       title: n.title,
       message: n.message,
       metadata: n.metadata,
-      timestamp: n.created_at,
-      read: n.is_read,
-      user_id: n.user_id,
-      order_id: n.metadata?.order_id || n.metadata?.orderId || null,
-      created_at: n.created_at,
-      // Normalize camelCase fields expected by UI components
-      createdAt: n.created_at,
-      updatedAt: n.updated_at,
       isRead: n.is_read,
       isDeleted: n.is_deleted,
+      createdAt: n.created_at,
+      updatedAt: n.updated_at,
       readAt: n.read_at,
     })) as Notification[];
   } catch (error) {
@@ -132,17 +127,16 @@ export function subscribeToNotifications(userId: string, callback: (notification
         const n = payload.new;
         callback({
           id: n.id,
+          userId: n.user_id,
           type: n.type,
+          title: n.title || '',
           message: n.message,
-          timestamp: n.created_at,
-          read: n.is_read,
-          user_id: n.user_id,
-          order_id: n.order_id,
-          created_at: n.created_at,
-          createdAt: n.created_at,
-          updatedAt: n.updated_at,
+          metadata: n.metadata,
           isRead: n.is_read,
           isDeleted: n.is_deleted,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          readAt: n.read_at,
         });
       }
     )
@@ -169,17 +163,16 @@ export function subscribeToNotificationUpdates(userId: string, callback: (notifi
         const n = payload.new;
         callback({
           id: n.id,
+          userId: n.user_id,
           type: n.type,
+          title: n.title || '',
           message: n.message,
-          timestamp: n.created_at,
-          read: n.is_read,
-          user_id: n.user_id,
-          order_id: n.order_id,
-          created_at: n.created_at,
-          createdAt: n.created_at,
-          updatedAt: n.updated_at,
+          metadata: n.metadata,
           isRead: n.is_read,
           isDeleted: n.is_deleted,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          readAt: n.read_at,
         });
       }
     )

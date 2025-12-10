@@ -19,10 +19,14 @@ export type Page =
   | 'Analitik Produk'
   | 'Pengaturan'
   | 'Pengaturan Website'
+  | 'Website' // Short name for sidebar
   | 'Manajemen Pengguna'
+  | 'Pengguna' // Short name for sidebar
   | 'Manajemen Peran'
+  | 'Peran' // Short name for sidebar
   | 'Merek'
   | 'Manajemen CS'
+  | 'Customer Service' // Short name for sidebar
   | 'Pelacakan'
   | 'Template Pesan'
   | 'Pengaturan Pengumuman'
@@ -32,7 +36,8 @@ export type Page =
   | 'Log Error' // Error logs from all users
   | 'Pengaturan Akun'
   | 'Monitoring'
-  | 'Performance Dashboard';
+  | 'Performance Dashboard'
+  | 'Performa'; // Short name for sidebar
 
 export interface NavItem {
   name: Page;
