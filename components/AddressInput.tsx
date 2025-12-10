@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // API Base URL for Indonesia regions data
 const API_BASE = 'https://ibnux.github.io/data-indonesia';
@@ -100,6 +100,13 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const [loadingVillages, setLoadingVillages] = useState(false);
   const [loadingPostalCode, setLoadingPostalCode] = useState(false);
 
+  // Ref to track if we're updating from internal changes (to prevent loops)
+  const isInternalUpdate = useRef(false);
+  
+  // Track if this is the initial mount
+  const isInitialMount = useRef(true);
+  const lastSyncedValue = useRef<string>('');
+
   // Helper to sort data A-Z by nama
   const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
     return [...data].sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
@@ -197,21 +204,25 @@ const AddressInput: React.FC<AddressInputProps> = ({
     fetchVillages();
   }, [selectedDistrictId]);
 
-  // Track if this is the initial mount or external value update
-  const isInitialMount = React.useRef(true);
-  const lastExternalValue = React.useRef<AddressData>(value);
-
   // Sync internal state when value prop changes (for edit mode)
   // Only sync if the value actually changed from external source (not from our own onChange)
   useEffect(() => {
-    // Check if value is different from what we last knew (external update)
-    const isExternalUpdate = 
-      lastExternalValue.current.province !== value.province ||
-      lastExternalValue.current.city !== value.city ||
-      lastExternalValue.current.district !== value.district ||
-      lastExternalValue.current.village !== value.village;
+    // Create a string representation to compare
+    const valueString = JSON.stringify({
+      province: value.province,
+      city: value.city,
+      district: value.district,
+      village: value.village,
+      detailAddress: value.detailAddress,
+      postalCode: value.postalCode
+    });
     
-    // Only sync detailAddress and postalCode on initial mount or if they're empty internally
+    // Skip if value hasn't actually changed (prevents loops)
+    if (valueString === lastSyncedValue.current && !isInitialMount.current) {
+      return;
+    }
+    
+    // Only sync detailAddress and postalCode on initial mount
     if (isInitialMount.current) {
       setDetailAddress(value.detailAddress || '');
       setPostalCode(value.postalCode || '');
@@ -219,7 +230,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
     }
     
     // Update our reference
-    lastExternalValue.current = value;
+    lastSyncedValue.current = valueString;
 
     // If we have province name but no ID, try to find the ID
     if (value.province && provinces.length > 0 && !selectedProvinceId) {
@@ -229,17 +240,20 @@ const AddressInput: React.FC<AddressInputProps> = ({
         formatName(p.nama).toLowerCase() === normalizedValueProvince
       );
       if (matchedProvince) {
+        isInternalUpdate.current = true;
         setSelectedProvinceId(matchedProvince.id);
         setSelectedProvince(formatName(matchedProvince.nama));
       } else {
         // Set province name even if no match (display only)
+        isInternalUpdate.current = true;
         setSelectedProvince(value.province || '');
       }
-    } else if (!value.province) {
+    } else if (!value.province && selectedProvince) {
+      isInternalUpdate.current = true;
       setSelectedProvince('');
       setSelectedProvinceId('');
     }
-  }, [value, provinces]);
+  }, [value.province, value.city, value.district, value.village, value.detailAddress, value.postalCode, provinces.length, selectedProvinceId, selectedProvince]);
 
   // Sync city when cities are loaded and we have a city name
   useEffect(() => {
@@ -250,16 +264,19 @@ const AddressInput: React.FC<AddressInputProps> = ({
         formatName(c.nama).toLowerCase() === normalizedValueCity
       );
       if (matchedCity) {
+        isInternalUpdate.current = true;
         setSelectedCityId(matchedCity.id);
         setSelectedCity(formatName(matchedCity.nama));
       } else {
+        isInternalUpdate.current = true;
         setSelectedCity(value.city || '');
       }
-    } else if (!value.city) {
+    } else if (!value.city && selectedCity) {
+      isInternalUpdate.current = true;
       setSelectedCity('');
       setSelectedCityId('');
     }
-  }, [value.city, cities]);
+  }, [value.city, cities.length, selectedCityId, selectedCity]);
 
   // Sync district when districts are loaded and we have a district name
   useEffect(() => {
@@ -270,16 +287,19 @@ const AddressInput: React.FC<AddressInputProps> = ({
         formatName(d.nama).toLowerCase() === normalizedValueDistrict
       );
       if (matchedDistrict) {
+        isInternalUpdate.current = true;
         setSelectedDistrictId(matchedDistrict.id);
         setSelectedDistrict(formatName(matchedDistrict.nama));
       } else {
+        isInternalUpdate.current = true;
         setSelectedDistrict(value.district || '');
       }
-    } else if (!value.district) {
+    } else if (!value.district && selectedDistrict) {
+      isInternalUpdate.current = true;
       setSelectedDistrict('');
       setSelectedDistrictId('');
     }
-  }, [value.district, districts]);
+  }, [value.district, districts.length, selectedDistrictId, selectedDistrict]);
 
   // Sync village when villages are loaded and we have a village name
   useEffect(() => {
@@ -290,14 +310,17 @@ const AddressInput: React.FC<AddressInputProps> = ({
         formatName(v.nama).toLowerCase() === normalizedValueVillage
       );
       if (matchedVillage) {
+        isInternalUpdate.current = true;
         setSelectedVillage(formatName(matchedVillage.nama));
       } else {
+        isInternalUpdate.current = true;
         setSelectedVillage(value.village || '');
       }
-    } else if (!value.village) {
+    } else if (!value.village && selectedVillage) {
+      isInternalUpdate.current = true;
       setSelectedVillage('');
     }
-  }, [value.village, villages]);
+  }, [value.village, villages.length, selectedVillage]);
 
   // Handle province change
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -469,8 +492,17 @@ const AddressInput: React.FC<AddressInputProps> = ({
     setPostalCode(e.target.value);
   };
 
+  // Stable onChange callback
+  const stableOnChange = useCallback(onChange, []);
+
   // Update parent component when any field changes
   useEffect(() => {
+    // Skip if this is triggered by syncing from parent
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+
     const fullAddress = [
       detailAddress,
       selectedVillage,
@@ -480,7 +512,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       postalCode
     ].filter(Boolean).join(', ');
 
-    onChange({
+    stableOnChange({
       province: selectedProvince,
       city: selectedCity,
       district: selectedDistrict,
@@ -489,7 +521,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       postalCode,
       fullAddress
     });
-  }, [selectedProvince, selectedCity, selectedDistrict, selectedVillage, detailAddress, postalCode]);
+  }, [selectedProvince, selectedCity, selectedDistrict, selectedVillage, detailAddress, postalCode, stableOnChange]);
 
   return (
     <div className="space-y-4">
