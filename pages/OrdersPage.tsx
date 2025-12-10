@@ -2589,21 +2589,58 @@ const ManualOrderModal: React.FC<{
             .join(', ')
         );
 
+        // Try exact match first
         const exactMatch = labels.find(l => l === editOrder.variant);
-        const looseMatch = labels.find(l =>
-            l.toLowerCase() === editOrder.variant.toLowerCase() ||
-            l.toLowerCase().includes(editOrder.variant.toLowerCase()) ||
-            editOrder.variant.toLowerCase().includes(l.toLowerCase())
-        );
+        if (exactMatch && variant !== exactMatch) {
+            setVariant(exactMatch);
+            // Auto-set price based on variant
+            const matchedVariant = variants.find(v => {
+                const label = Object.entries(v.attributes || {})
+                    .map(([key, val]) => `${key}: ${val}`)
+                    .join(', ');
+                return label === exactMatch;
+            });
+            if (matchedVariant?.sellingPrice) {
+                setProductPrice(matchedVariant.sellingPrice * quantity);
+            }
+            return;
+        }
 
-        if (!labels.includes(variant)) {
-            if (exactMatch) {
-                setVariant(exactMatch);
-            } else if (looseMatch) {
-                setVariant(looseMatch);
+        // Try case-insensitive match
+        const caseMatch = labels.find(l => l.toLowerCase() === editOrder.variant.toLowerCase());
+        if (caseMatch && variant !== caseMatch) {
+            setVariant(caseMatch);
+            const matchedVariant = variants.find(v => {
+                const label = Object.entries(v.attributes || {})
+                    .map(([key, val]) => `${key}: ${val}`)
+                    .join(', ');
+                return label === caseMatch;
+            });
+            if (matchedVariant?.sellingPrice) {
+                setProductPrice(matchedVariant.sellingPrice * quantity);
+            }
+            return;
+        }
+
+        // Try partial match (stored variant contains label or vice versa)
+        const partialMatch = labels.find(l => {
+            const lowerLabel = l.toLowerCase();
+            const lowerVariant = editOrder.variant.toLowerCase();
+            return lowerLabel.includes(lowerVariant) || lowerVariant.includes(lowerLabel);
+        });
+        if (partialMatch && variant !== partialMatch) {
+            setVariant(partialMatch);
+            const matchedVariant = variants.find(v => {
+                const label = Object.entries(v.attributes || {})
+                    .map(([key, val]) => `${key}: ${val}`)
+                    .join(', ');
+                return label === partialMatch;
+            });
+            if (matchedVariant?.sellingPrice) {
+                setProductPrice(matchedVariant.sellingPrice * quantity);
             }
         }
-    }, [variants, editOrder, variant]);
+    }, [variants, editOrder, variant, quantity]);
 
     return (
         <div className="fixed inset-0 bg-black/60 z-[60] overflow-y-auto" onClick={onClose}>

@@ -91,6 +91,13 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const isSyncing = useRef(false);
   const previousValueRef = useRef<string>('');
 
+  // Sync detailAddress from prop when it changes
+  useEffect(() => {
+    if (value.detailAddress !== detailAddress) {
+      setDetailAddress(value.detailAddress);
+    }
+  }, [value.detailAddress]);
+
   // Helper to sort data A-Z by nama
   const sortByName = <T extends { nama: string }>(data: T[]): T[] => {
     return [...data].sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
@@ -232,8 +239,11 @@ const AddressInput: React.FC<AddressInputProps> = ({
       return;
     }
 
+    // Only match if provinces loaded
+    if (!provinces.length) return;
+
     // Find and set province
-    if (value.province && provinces.length > 0) {
+    if (value.province) {
       const normalized = normalizeName(value.province);
       const matchedProvince = provinces.find(p =>
         normalizeName(p.nama) === normalized ||
@@ -272,7 +282,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
     }
 
     // Find and set village
-    if (value.village && villages.length > 0) {
+    if (value.village && villages.length > 0 && selectedDistrictId) {
       const normalized = normalizeName(value.village);
       const matchedVillage = villages.find(v =>
         normalizeName(v.nama) === normalized ||
