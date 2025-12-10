@@ -606,6 +606,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         // Utamakan variantOptions dari produk (external product catalog)
         if (productOptionsOverride.length > 0) {
+            console.log('[FormViewer] Using productOptionsOverride:', productOptionsOverride);
             return productOptionsOverride;
         }
 
@@ -613,15 +614,18 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         // PRIORITAS: Selalu gunakan form.productOptions jika ada (ini yang diedit user di editor dengan drag-drop)
         if (hasProductOptions) {
+            console.log('[FormViewer] Using form.productOptions (edited order):', form.productOptions);
             return form.productOptions;
         }
 
         // Fallback: Jika tidak ada productOptions, gunakan compositeFallback (untuk form lama yang hanya punya satu atribut "A - B")
         if (compositeFallback) {
+            console.log('[FormViewer] Using compositeFallback:', compositeFallback.options);
             return compositeFallback.options;
         }
 
         // Terakhir: Derive dari variantCombinations jika semua fallback gagal
+        console.log('[FormViewer] Using derivedOptions:', derivedOptions);
         return derivedOptions;
     }, [form, derivedOptions, productOptionsOverride, compositeFallback]);
 
