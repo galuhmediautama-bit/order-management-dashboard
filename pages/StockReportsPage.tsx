@@ -54,7 +54,7 @@ const StockReportsPage: React.FC = () => {
       setLoading(true);
       let query = supabase
         .from('orders')
-        .select('id, productName, variant, quantity, date, customer, status, brandId, shippingResi, product_id, productId')
+        .select('id, productName, variant, quantity, date, customer, status, brandId, shippingResi, product_id')
         .order('date', { ascending: false });
 
       if (selectedBrandId) {
@@ -89,7 +89,7 @@ const StockReportsPage: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      let query = supabase.from('products').select('id, brand_id, name, stock_mode, initial_stock');
+      let query = supabase.from('products').select('id, brand_id, name');
       if (selectedBrandId) {
         query = query.eq('brand_id', selectedBrandId);
       }
@@ -100,8 +100,8 @@ const StockReportsPage: React.FC = () => {
           id: p.id,
           brandId: p.brand_id,
           name: p.name,
-          stockMode: p.stock_mode || 'auto',
-          initialStock: p.initial_stock ?? 0,
+          stockMode: 'auto',
+          initialStock: 0,
         }))
       );
     } catch (error) {

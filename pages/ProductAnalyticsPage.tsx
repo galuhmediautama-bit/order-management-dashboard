@@ -97,7 +97,7 @@ const ProductAnalyticsPage: React.FC = () => {
             // Get forms for these brands
             const { data: forms } = await supabase
                 .from('forms')
-                .select('id, title, brandId, productId')
+                .select('id, title, brandId')
                 .in('brandId', brandIds);
 
             // Get orders for these brands
