@@ -1203,22 +1203,35 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
 
         // Province, city, district, village validation - check from addressData (AddressInput)
-        if (form?.customerFields.province?.visible && form?.customerFields.province?.required && !addressData.province?.trim()) {
+        // ONLY validate if field is both VISIBLE and REQUIRED
+        if (form?.customerFields.province?.visible && form?.customerFields.province?.required && (!addressData.province || !addressData.province.trim())) {
             next.province = 'Provinsi wajib diisi.';
         }
-        if (form?.customerFields.city?.visible && form?.customerFields.city?.required && !addressData.city?.trim()) {
+        if (form?.customerFields.city?.visible && form?.customerFields.city?.required && (!addressData.city || !addressData.city.trim())) {
             next.city = 'Kota/Kabupaten wajib diisi.';
         }
-        if (form?.customerFields.district?.visible && form?.customerFields.district?.required && !addressData.district?.trim()) {
+        if (form?.customerFields.district?.visible && form?.customerFields.district?.required && (!addressData.district || !addressData.district.trim())) {
             next.district = 'Kecamatan wajib diisi.';
         }
 
-        // Address validation - only check if visible AND required and not empty
+        // Address validation - only check if visible AND required
         // Address comes from addressData (AddressInput component), not customerData.address
         const addressFromInput = (addressData.detailAddress || addressData.fullAddress || '').trim();
         
-        if (form?.customerFields.address.visible && form?.customerFields.address.required && !addressFromInput) {
+        if (form?.customerFields.address?.visible && form?.customerFields.address?.required && !addressFromInput) {
             next.address = 'Alamat Lengkap wajib diisi.';
+        }
+
+        // Debug log untuk troubleshooting
+        if (import.meta.env.DEV && Object.keys(next).length > 0) {
+            console.log('[FormViewer] Validation errors:', next);
+            console.log('[FormViewer] addressData:', addressData);
+            console.log('[FormViewer] customerFields visibility:', {
+                province: form?.customerFields.province?.visible,
+                city: form?.customerFields.city?.visible,
+                district: form?.customerFields.district?.visible,
+                address: form?.customerFields.address?.visible
+            });
         }
 
         return next;
