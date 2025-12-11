@@ -30,6 +30,7 @@ class PerformanceMonitor {
     private totalBytes = 0;
     private latencies: number[] = [];
     private maxEntries = 100;
+    private memoryIntervalId: NodeJS.Timer | null = null;
 
     /**
      * Start monitoring
@@ -38,7 +39,7 @@ class PerformanceMonitor {
         if (typeof window === 'undefined') return;
 
         // Monitor memory usage
-        setInterval(() => {
+        this.memoryIntervalId = setInterval(() => {
             this.recordMemory();
         }, 5000); // Every 5 seconds
 
@@ -46,6 +47,19 @@ class PerformanceMonitor {
         window.addEventListener('load', () => {
             this.recordTiming();
         });
+    }
+
+    /**
+     * Stop monitoring and cleanup interval
+     */
+    stop(): void {
+        if (this.memoryIntervalId !== null) {
+            clearInterval(this.memoryIntervalId);
+            this.memoryIntervalId = null;
+            if (import.meta.env.DEV) {
+                console.log('[PerformanceMonitor] Stopped and interval cleared');
+            }
+        }
     }
 
     /**
@@ -194,9 +208,14 @@ class PerformanceMonitor {
 // Create global instance
 export const performanceMonitor = new PerformanceMonitor();
 
-// Auto-start in development
+// Auto-start in development with proper cleanup
 if (import.meta.env.DEV && typeof window !== 'undefined') {
     performanceMonitor.start();
+
+    // Cleanup on page unload to prevent memory leak
+    window.addEventListener('beforeunload', () => {
+        performanceMonitor.stop();
+    });
 }
 
 export default performanceMonitor;

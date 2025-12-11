@@ -69,13 +69,18 @@ export const closeSupabasePool = (): void => {
   }
 };
 
-// Log pool status in production
-if (isProd) {
-  setInterval(() => {
+// Log pool status in production - with proper cleanup
+if (isProd && typeof window !== 'undefined') {
+  const poolStatusInterval = setInterval(() => {
     const pool = getSupabasePool();
     if (pool) {
       console.log(pool.getPoolStatus());
     }
   }, 5 * 60 * 1000); // Every 5 minutes
+
+  // Cleanup on page unload to prevent memory leak
+  window.addEventListener('beforeunload', () => {
+    clearInterval(poolStatusInterval);
+  });
 }
 
