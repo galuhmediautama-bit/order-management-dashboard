@@ -1318,11 +1318,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     };
 
 
-    // Validate on data change
-    useEffect(() => {
-        setFieldErrors(validateCustomerFields());
-    }, [validateCustomerFields]);
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form || !currentCombination) return;
