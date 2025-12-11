@@ -97,7 +97,7 @@ const ProductAnalyticsPage: React.FC = () => {
             // Get forms for these brands
             const { data: forms } = await supabase
                 .from('forms')
-                .select('id, title, brandId, viewCount, clickCount, productId')
+                .select('id, title, brandId, productId')
                 .in('brandId', brandIds);
 
             // Get orders for these brands
@@ -139,7 +139,7 @@ const ProductAnalyticsPage: React.FC = () => {
                 if (form.productId && productMap.has(form.productId)) {
                     const perf = productMap.get(form.productId)!;
                     perf.totalForms++;
-                    perf.totalViews += form.viewCount || 0;
+                    // viewCount column doesn't exist - will be 0
                 }
             });
 
@@ -231,7 +231,7 @@ const ProductAnalyticsPage: React.FC = () => {
             // Get forms created by advertisers for these brands
             const { data: forms } = await supabase
                 .from('forms')
-                .select('id, title, brandId, viewCount, clickCount, createdBy')
+                .select('id, title, brandId, createdBy')
                 .in('brandId', brandIds);
 
             // Get orders for these brands
@@ -261,7 +261,7 @@ const ProductAnalyticsPage: React.FC = () => {
                     }
                     const perf = advertiserMap.get(form.createdBy)!;
                     perf.totalForms++;
-                    perf.totalViews += form.viewCount || 0;
+                    // viewCount column doesn't exist - will be 0
                 }
             });
 
