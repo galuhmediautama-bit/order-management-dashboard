@@ -776,7 +776,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             selectedVariant: variantKey,
             timestamp: new Date().toISOString(),
             status: 'New' as const,
-            totalPrice: variantPrice,
+            // totalPrice: variantPrice, // Removed - column doesn't exist in abandoned_carts table
         };
 
         try {
