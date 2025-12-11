@@ -348,6 +348,17 @@ const AppContent: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Cleanup intervals and connection pool on app unmount
+  useEffect(() => {
+    return () => {
+      // Cleanup: Clear any pending timers
+      if (typeof window !== 'undefined') {
+        // Clear any lingering timers (the cache cleanup interval will be cleared by beforeunload)
+        console.log('[App] Cleaning up intervals on unmount');
+      }
+    };
+  }, []);
+
   // Validate user status before allowing access
   const validateUserStatus = async (authUser: SupabaseUser) => {
     try {

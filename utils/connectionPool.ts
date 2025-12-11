@@ -30,6 +30,7 @@ export class ConnectionPoolManager {
         resolve: (conn: string) => void;
         reject: (err: Error) => void;
     }> = [];
+    private cleanupIntervalId: NodeJS.Timer | null = null;
 
     private constructor(config: PoolConfig = {}) {
         this.config = {
@@ -63,7 +64,7 @@ export class ConnectionPoolManager {
         }
 
         // Start cleanup interval
-        setInterval(() => this.cleanupIdleConnections(), 60 * 1000); // Every minute
+        this.cleanupIntervalId = setInterval(() => this.cleanupIdleConnections(), 60 * 1000); // Every minute
     }
 
     /**
@@ -184,6 +185,22 @@ export class ConnectionPoolManager {
                 console.log(`[Pool] Connection cleaned up: ${id}`);
             }
         }
+    }
+
+    /**
+     * Destroy the connection pool and stop cleanup interval
+     * Call this on app shutdown or page unload
+     */
+    destroy(): void {
+        if (this.cleanupIntervalId !== null) {
+            clearInterval(this.cleanupIntervalId);
+            this.cleanupIntervalId = null;
+            if (import.meta.env.DEV) {
+                console.log('[Pool] Connection pool destroyed and cleanup interval stopped');
+            }
+        }
+        this.connections.clear();
+        ConnectionPoolManager.instance = null as any;
     }
 
     /**

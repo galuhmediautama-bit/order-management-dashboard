@@ -136,14 +136,19 @@ export const cleanupExpiredCache = (): number => {
     return cleaned;
 };
 
-// Cleanup expired cache every minute
+// Cleanup expired cache every minute - with cleanup on page unload
 if (typeof window !== 'undefined') {
-    setInterval(() => {
+    const cleanupInterval = setInterval(() => {
         const cleaned = cleanupExpiredCache();
         if (cleaned > 0 && import.meta.env.DEV) {
             console.log(`[Cache] Cleaned up ${cleaned} expired entries`);
         }
     }, 60 * 1000);
+
+    // Ensure cleanup on page unload to prevent lingering interval
+    window.addEventListener('beforeunload', () => {
+        clearInterval(cleanupInterval);
+    });
 }
 
 export default {
