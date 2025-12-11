@@ -1226,15 +1226,14 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         // Address validation - only check if required and not empty
         const manualAddress = (customerData.address || '').trim();
-        const addressFromPicker = (addressData.detailAddress || addressData.fullAddress || '').trim();
-        const combinedAddress = manualAddress || addressFromPicker;
+        const combinedAddress = manualAddress;
         
         if (form?.customerFields.address.required && !combinedAddress) {
             next.address = 'Alamat Lengkap wajib diisi.';
         }
 
         return next;
-    }, [customerData, form, addressData]);
+    }, [customerData, form]);
 
     const assignCs = async (): Promise<string | undefined> => {
         try {
