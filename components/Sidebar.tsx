@@ -48,6 +48,8 @@ const pageToPath: Record<string, string> = {
     'Laporan': '#',
     'Laporan Iklan': '/laporan-iklan',
     'Laporan CS': '/laporan-cs',
+    'Laporan Stock': '/laporan-stock',
+    'Laporan Keuangan': '/laporan-keuangan',
     'Produk': '#',
     'Daftar Produk': '/daftar-produk',
     'Daftar Formulir': '/formulir',
@@ -81,6 +83,8 @@ const menuNameToRbacId: Record<string, string> = {
     'Laporan': 'reports',
     'Laporan Iklan': 'ad_reports',
     'Laporan CS': 'cs_reports',
+    'Laporan Stock': 'stock_reports',
+    'Laporan Keuangan': 'finance_reports',
     'Penghasilan': 'earnings',
     'Performa': 'performance_dashboard',
     'Pengaturan': 'settings',
@@ -192,7 +196,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         if (!currentUserRole) {
             console.log(`⏭️ Role loading for "${item.name}" - using fallback visibility`);
             // Show common items to all users while role loads
-            const commonItems = ['Produk', 'Pesanan', 'Pelanggan', 'Laporan', 'Penghasilan', 'Daftar Produk', 'Daftar Formulir', 'Pesanan Tertinggal', 'Daftar Pesanan', 'Laporan Iklan', 'Laporan CS'];
+            const commonItems = ['Produk', 'Pesanan', 'Pelanggan', 'Laporan', 'Penghasilan', 'Daftar Produk', 'Daftar Formulir', 'Pesanan Tertinggal', 'Daftar Pesanan', 'Laporan Iklan', 'Laporan CS', 'Laporan Stock', 'Laporan Keuangan'];
             if (commonItems.includes(item.name)) {
                 console.log(`✅ Showing "${item.name}" (common item, role loading)`);
                 return true;
@@ -261,6 +265,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             subItems: [
                 { name: 'Laporan Iklan', icon: TrendingUpIcon },
                 { name: 'Laporan CS', icon: UserGroupIcon },
+                { name: 'Laporan Stock', icon: ArchiveIcon },
+                { name: 'Laporan Keuangan', icon: BanknotesIcon },
             ]
         },
         {

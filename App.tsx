@@ -77,6 +77,8 @@ const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
 const AbandonedCartsPage = lazyWithRetry(() => import('./pages/AbandonedCartsPage'));
 const AdReportsPage = lazyWithRetry(() => import('./pages/AdReportsPage'));
 const CSReportsPage = lazyWithRetry(() => import('./pages/CSReportsPage'));
+const StockReportsPage = lazyWithRetry(() => import('./pages/StockReportsPage'));
+const FinanceReportsPage = lazyWithRetry(() => import('./pages/FinanceReportsPage'));
 const FormsPage = lazyWithRetry(() => import('./pages/FormsPage'));
 const FormEditorPage = lazyWithRetry(() => import('./pages/FormEditorPage'));
 const FormViewerPage = lazyWithRetry(() => import('./pages/FormViewerPage'));
@@ -164,6 +166,8 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
               <Route path="/pelanggan" element={<CustomersPage />} />
               <Route path="/laporan-iklan" element={<AdReportsPage user={user} />} />
               <Route path="/laporan-cs" element={<CSReportsPage />} />
+              <Route path="/laporan-stock" element={<StockReportsPage />} />
+              <Route path="/laporan-keuangan" element={<FinanceReportsPage />} />
               <Route path="/penghasilan" element={<EarningsPage />} />
               <Route path="/formulir" element={<FormsPage />} />
               <Route path="/formulir/baru" element={<FormEditorPage />} />
