@@ -1,57 +1,107 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../firebase';
 import SpinnerIcon from '../components/icons/SpinnerIcon';
 import DownloadIcon from '../components/icons/DownloadIcon';
+import * as XLSX from 'xlsx';
 
-interface FinanceCase {
+interface Order {
   id: string;
   date: string;
-  description: string;
-  category: string; // income, expense, adjustment, etc
-  amount: number;
+  customer: string;
+  productName: string;
+  variant: string;
+  totalPrice: number;
   paymentMethod: string;
-  reference: string; // Order ID, Invoice, etc
-  notes?: string;
+  status: string;
+  shippingCost: number;
+  codFee: number;
 }
 
 const FinanceReportsPage: React.FC = () => {
-  const [financeCases, setFinanceCases] = useState<FinanceCase[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterCategory, setFilterCategory] = useState<string>('semua');
+  const [filterStatus, setFilterStatus] = useState<string>('semua');
+  const [filterPayment, setFilterPayment] = useState<string>('semua');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
 
   useEffect(() => {
-    fetchFinanceCases();
+    fetchOrders();
   }, []);
 
-  const fetchFinanceCases = async () => {
+  const fetchOrders = async () => {
     try {
       setLoading(true);
-      // TODO: Fetch finance case data from database
-      setFinanceCases([]);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, date, customer, productName, variant, totalPrice, paymentMethod, status, shippingCost, codFee')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
     } catch (error) {
-      console.error('Error fetching finance cases:', error);
+      console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredOrders = useMemo(() => {
+    let filtered = orders;
+
+    // Filter by status
+    if (filterStatus !== 'semua') {
+      filtered = filtered.filter((o) => o.status === filterStatus);
+    }
+
+    // Filter by payment method
+    if (filterPayment !== 'semua') {
+      filtered = filtered.filter((o) => o.paymentMethod === filterPayment);
+    }
+
+    // Filter by date range
+    if (filterDateFrom) {
+      filtered = filtered.filter((o) => new Date(o.date) >= new Date(filterDateFrom));
+    }
+    if (filterDateTo) {
+      const endDate = new Date(filterDateTo);
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((o) => new Date(o.date) <= endDate);
+    }
+
+    return filtered;
+  }, [orders, filterStatus, filterPayment, filterDateFrom, filterDateTo]);
+
   const handleExport = () => {
-    // TODO: Implement export to Excel/CSV
-    alert('Fitur export akan segera tersedia');
+    const exportData = filteredOrders.map((order) => ({
+      Tanggal: new Date(order.date).toLocaleDateString('id-ID'),
+      'Order ID': order.id,
+      Pelanggan: order.customer,
+      Produk: order.productName || '-',
+      Varian: order.variant || '-',
+      'Total Harga': order.totalPrice,
+      'Biaya Kirim': order.shippingCost || 0,
+      'Biaya COD': order.codFee || 0,
+      'Metode Pembayaran': order.paymentMethod,
+      Status: order.status,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan');
+    
+    const fileName = `Laporan_Keuangan_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   // Calculate totals
-  const totalIncome = financeCases
-    .filter((c) => c.category === 'income')
-    .reduce((sum, c) => sum + c.amount, 0);
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const totalShipping = filteredOrders.reduce((sum, o) => sum + (o.shippingCost || 0), 0);
+  const totalCOD = filteredOrders.reduce((sum, o) => sum + (o.codFee || 0), 0);
+  const netRevenue = totalRevenue - totalShipping - totalCOD;
 
-  const totalExpense = financeCases
-    .filter((c) => c.category === 'expense')
-    .reduce((sum, c) => sum + c.amount, 0);
-
-  const balance = totalIncome - totalExpense;
+  const deliveredOrders = filteredOrders.filter((o) => o.status === 'Delivered');
+  const confirmedRevenue = deliveredOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
   if (loading) {
     return (
@@ -77,153 +127,210 @@ const FinanceReportsPage: React.FC = () => {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 border-green-500">
-          <p className="text-sm text-slate-600 dark:text-slate-400">Total Pemasukan</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-            Rp {totalIncome.toLocaleString('id-ID')}
-          </p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-90">Total Revenue</p>
+              <p className="text-2xl font-bold mt-1">Rp {totalRevenue.toLocaleString('id-ID')}</p>
+              <p className="text-xs opacity-75 mt-1">{filteredOrders.length} transaksi</p>
+            </div>
+            <div className="text-5xl opacity-20">💰</div>
+          </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 border-red-500">
-          <p className="text-sm text-slate-600 dark:text-slate-400">Total Pengeluaran</p>
-          <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-            Rp {totalExpense.toLocaleString('id-ID')}
-          </p>
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-90">Confirmed Revenue</p>
+              <p className="text-2xl font-bold mt-1">Rp {confirmedRevenue.toLocaleString('id-ID')}</p>
+              <p className="text-xs opacity-75 mt-1">{deliveredOrders.length} delivered</p>
+            </div>
+            <div className="text-5xl opacity-20">✅</div>
+          </div>
         </div>
-        <div className={`bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 ${balance >= 0 ? 'border-indigo-500' : 'border-orange-500'}`}>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Saldo</p>
-          <p className={`text-2xl font-bold ${balance >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-orange-600 dark:text-orange-400'}`}>
-            Rp {balance.toLocaleString('id-ID')}
-          </p>
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-90">Biaya Operasional</p>
+              <p className="text-2xl font-bold mt-1">Rp {(totalShipping + totalCOD).toLocaleString('id-ID')}</p>
+              <p className="text-xs opacity-75 mt-1">Shipping + COD</p>
+            </div>
+            <div className="text-5xl opacity-20">📦</div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-90">Net Revenue</p>
+              <p className="text-2xl font-bold mt-1">Rp {netRevenue.toLocaleString('id-ID')}</p>
+              <p className="text-xs opacity-75 mt-1">After costs</p>
+            </div>
+            <div className="text-5xl opacity-20">📊</div>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Kategori
-          </label>
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-          >
-            <option value="semua">Semua Kategori</option>
-            <option value="income">Pemasukan</option>
-            <option value="expense">Pengeluaran</option>
-            <option value="adjustment">Penyesuaian</option>
-          </select>
-        </div>
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Status Order
+            </label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            >
+              <option value="semua">Semua Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Dari Tanggal
-          </label>
-          <input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => setFilterDateFrom(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Metode Pembayaran
+            </label>
+            <select
+              value={filterPayment}
+              onChange={(e) => setFilterPayment(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            >
+              <option value="semua">Semua Metode</option>
+              <option value="COD">COD</option>
+              <option value="Transfer Bank">Transfer Bank</option>
+              <option value="E-Wallet">E-Wallet</option>
+            </select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Sampai Tanggal
-          </label>
-          <input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => setFilterDateTo(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Dari Tanggal
+            </label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            &nbsp;
-          </label>
-          <button
-            onClick={fetchFinanceCases}
-            className="w-full px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition"
-          >
-            Cari
-          </button>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Sampai Tanggal
+            </label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              &nbsp;
+            </label>
+            <button
+              onClick={() => {
+                setFilterStatus('semua');
+                setFilterPayment('semua');
+                setFilterDateFrom('');
+                setFilterDateTo('');
+              }}
+              className="w-full px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden shadow">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-100 dark:bg-slate-700">
+            <thead className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
                   Tanggal
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
-                  Deskripsi
+                  Pelanggan
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
-                  Kategori
+                  Produk
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
                   Metode Pembayaran
                 </th>
                 <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
-                  Jumlah
+                  Total
+                </th>
+                <th className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300">
+                  Status
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
-                  Referensi
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
-                  Catatan
+                  Order ID
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {financeCases.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
-                    Belum ada data keuangan
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                    {loading ? (
+                      <div className="flex justify-center">
+                        <SpinnerIcon className="w-6 h-6 animate-spin text-indigo-500" />
+                      </div>
+                    ) : (
+                      'Tidak ada data keuangan'
+                    )}
                   </td>
                 </tr>
               ) : (
-                financeCases.map((fc) => (
-                  <tr key={fc.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                filteredOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                     <td className="px-4 py-3 text-slate-900 dark:text-slate-100">
-                      {new Date(fc.date).toLocaleDateString('id-ID')}
+                      {new Date(order.date).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </td>
-                    <td className="px-4 py-3 text-slate-900 dark:text-slate-100">
-                      {fc.description}
+                    <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium">
+                      {order.customer}
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          fc.category === 'income'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : fc.category === 'expense'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}
-                      >
-                        {fc.category === 'income' ? 'Masuk' : fc.category === 'expense' ? 'Keluar' : 'Penyesuaian'}
-                      </span>
+                      <div className="text-slate-900 dark:text-slate-100">{order.productName || '-'}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{order.variant || '-'}</div>
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                      {fc.paymentMethod}
+                      {order.paymentMethod}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">
-                      <span className={fc.category === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                        {fc.category === 'income' ? '+' : '-'}Rp {fc.amount.toLocaleString('id-ID')}
+                    <td className="px-4 py-3 text-right font-semibold text-green-600 dark:text-green-400">
+                      Rp {(order.totalPrice || 0).toLocaleString('id-ID')}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.status === 'Delivered'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : order.status === 'Shipped'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : order.status === 'Cancelled'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                        }`}
+                      >
+                        {order.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">
-                      {fc.reference}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
-                      {fc.notes || '-'}
+                      {order.id.slice(0, 8)}...
                     </td>
                   </tr>
                 ))
