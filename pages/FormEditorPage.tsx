@@ -615,14 +615,14 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                                                         onChange={(e) => setSelectedOptions(prev => ({ ...prev, [option.name]: e.target.value }))}
                                                                         className="hidden"
                                                                     />
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-medium">{val}</span>
+                                                                    <span className="font-medium">
+                                                                        {val}
                                                                         {option.showPrice !== false && details?.sellingPrice && (
-                                                                            <span className={`text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                            <span className={`ml-2 text-sm ${isSelected ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
                                                                                 Rp {details.sellingPrice.toLocaleString('id-ID')}
                                                                             </span>
                                                                         )}
-                                                                    </div>
+                                                                    </span>
                                                                 </div>
                                                                 {form.stockCountdownSettings?.active && details && (
                                                                     <span className={`text-sm font-medium animate-pulse ${isSelected ? 'text-red-200' : 'text-red-600 dark:text-red-400'
@@ -646,14 +646,14 @@ const FormPreviewComponent: React.FC<{ form: Form }> = ({ form }) => {
                                                                 onClick={() => setSelectedOptions(prev => ({ ...prev, [option.name]: val }))}
                                                                 className={`w-full flex justify-between items-center px-3 py-2.5 border rounded-lg text-sm transition-colors font-medium ${selectedOptions[option.name] === val ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-indigo-500'}`}
                                                             >
-                                                                <div className="flex flex-col items-start">
-                                                                    <span>{val}</span>
+                                                                <span>
+                                                                    {val}
                                                                     {option.showPrice !== false && details?.sellingPrice && (
-                                                                        <span className={`text-xs ${selectedOptions[option.name] === val ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                        <span className={`ml-2 text-xs ${selectedOptions[option.name] === val ? 'text-indigo-100' : 'text-slate-600 dark:text-slate-400'}`}>
                                                                             Rp {details.sellingPrice.toLocaleString('id-ID')}
                                                                         </span>
                                                                     )}
-                                                                </div>
+                                                                </span>
                                                                 {form.stockCountdownSettings?.active && currentVariantStock !== undefined && (
                                                                     <span className="text-xs font-medium opacity-80 animate-pulse">
                                                                         Stok: {currentVariantStock}
