@@ -533,6 +533,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                         name: opt.name || `Opsi ${idx + 1}`,
                         values: Array.isArray(opt.values) ? opt.values : [],
                         displayStyle: 'radio' as VariantDisplayStyle,
+                        showPrice: true // Default show price from product
                     }));
                     setProductOptionsOverride(mapped);
                 } else {
@@ -604,16 +605,16 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const displayOptions = useMemo(() => {
         if (!form) return [] as Form['productOptions'];
 
-        // Utamakan variantOptions dari produk (external product catalog)
-        if (productOptionsOverride.length > 0) {
-            return productOptionsOverride;
-        }
-
         const hasProductOptions = Array.isArray(form.productOptions) && form.productOptions.length > 0;
 
-        // PRIORITAS: Selalu gunakan form.productOptions jika ada (ini yang diedit user di editor dengan drag-drop)
+        // PRIORITAS TERTINGGI: Selalu gunakan form.productOptions jika ada (ini yang diedit user di editor dengan drag-drop + showPrice settings)
         if (hasProductOptions) {
             return form.productOptions;
+        }
+
+        // Fallback: Gunakan variantOptions dari produk jika form belum ada productOptions
+        if (productOptionsOverride.length > 0) {
+            return productOptionsOverride;
         }
 
         // Fallback: Jika tidak ada productOptions, gunakan compositeFallback (untuk form lama yang hanya punya satu atribut "A - B")
