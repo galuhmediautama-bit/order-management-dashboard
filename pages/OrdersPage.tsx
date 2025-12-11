@@ -131,6 +131,11 @@ const OrdersPage: React.FC = () => {
     const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
     const [cancellationReason, setCancellationReason] = useState<string>('');
 
+    // Duplicate Detection Modal State
+    const [duplicateHistoryPhone, setDuplicateHistoryPhone] = useState<string | null>(null);
+    const [isDuplicateHistoryModalOpen, setIsDuplicateHistoryModalOpen] = useState(false);
+    const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+
     const [templates, setTemplates] = useState<MessageTemplates | null>(null);
     const [cancellationReasons, setCancellationReasons] = useState<string[]>([]);
     // Assignment state for inline CS assign
@@ -1087,8 +1092,77 @@ const OrdersPage: React.FC = () => {
             );
         }
 
+        // 8. Duplicate Filter (show only suspected duplicates)
+        if (showDuplicatesOnly) {
+            const phoneMap = new Map<string, number>();
+            result.forEach(o => {
+                const phone = o.customerPhone?.replace(/\D/g, '') || '';
+                if (phone) phoneMap.set(phone, (phoneMap.get(phone) || 0) + 1);
+            });
+            result = result.filter(o => {
+                const phone = o.customerPhone?.replace(/\D/g, '') || '';
+                return phone && (phoneMap.get(phone) || 0) > 1;
+            });
+        }
+
         return result;
-    }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedProductFilter, selectedPaymentFilter, currentUser]);
+    }, [orders, activeStatusFilter, searchTerm, dateRange, selectedBrandFilter, selectedProductFilter, selectedPaymentFilter, currentUser, showDuplicatesOnly]);
+
+    // Duplicate Detection: Map phone numbers to order counts and order lists
+    const duplicateDetection = useMemo(() => {
+        const phoneMap = new Map<string, Order[]>();
+        orders.forEach(order => {
+            const phone = order.customerPhone?.replace(/\D/g, '') || '';
+            if (phone) {
+                if (!phoneMap.has(phone)) {
+                    phoneMap.set(phone, []);
+                }
+                phoneMap.get(phone)!.push(order);
+            }
+        });
+        return phoneMap;
+    }, [orders]);
+
+    // Get duplicate info for specific order
+    const getDuplicateInfo = useCallback((order: Order) => {
+        const phone = order.customerPhone?.replace(/\D/g, '') || '';
+        if (!phone) return null;
+        
+        const ordersWithSamePhone = duplicateDetection.get(phone) || [];
+        if (ordersWithSamePhone.length <= 1) return null;
+
+        // Sort by date
+        const sorted = [...ordersWithSamePhone].sort((a, b) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        const orderIndex = sorted.findIndex(o => o.id === order.id);
+        const totalOrders = sorted.length;
+        const totalValue = sorted.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+        const completedCount = sorted.filter(o => o.status === 'Delivered').length;
+        const canceledCount = sorted.filter(o => o.status === 'Canceled').length;
+
+        return {
+            orderNumber: orderIndex + 1,
+            totalOrders,
+            totalValue,
+            completedCount,
+            canceledCount,
+            allOrders: sorted,
+            isDuplicate: totalOrders > 1
+        };
+    }, [duplicateDetection]);
+
+    // Count total duplicates for filter badge
+    const duplicateCount = useMemo(() => {
+        let count = 0;
+        duplicateDetection.forEach(orders => {
+            if (orders.length > 1) {
+                count += orders.length;
+            }
+        });
+        return count;
+    }, [duplicateDetection]);
 
     // Statistics Cards Data
     const stats = useMemo(() => {
@@ -1469,6 +1543,31 @@ const OrdersPage: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Duplicate Detection Toggle */}
+                    <button
+                        onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
+                        className={`px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
+                            showDuplicatesOnly 
+                                ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-md' 
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                        title={showDuplicatesOnly ? 'Tampilkan semua order' : 'Tampilkan hanya order duplikat (nomor HP yang sama)'}
+                    >
+                        <span className="text-base">🔁</span>
+                        <span className="whitespace-nowrap">
+                            {showDuplicatesOnly ? 'Duplikat Saja' : 'Duplikat'}
+                        </span>
+                        {duplicateCount > 0 && (
+                            <span className={`px-1.5 py-0.5 text-xs rounded-full font-bold ${
+                                showDuplicatesOnly 
+                                    ? 'bg-white/20 text-white' 
+                                    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                            }`}>
+                                {duplicateCount}
+                            </span>
+                        )}
+                    </button>
                 </div>
             </div>
 
@@ -1610,9 +1709,16 @@ const OrdersPage: React.FC = () => {
                                     {paginatedOrders.map(order => {
                                         // Find CS info if viewing as admin
                                         const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
+                                        
+                                        // Get duplicate info
+                                        const duplicateInfo = getDuplicateInfo(order);
+                                        const isDuplicate = duplicateInfo?.isDuplicate || false;
+                                        const rowBgClass = isDuplicate 
+                                            ? 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/70 dark:hover:bg-amber-900/20' 
+                                            : 'hover:bg-indigo-50/50 dark:hover:bg-slate-700/30';
 
                                         return (
-                                            <tr key={order.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-700/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                                            <tr key={order.id} className={`${rowBgClass} transition-all group border-b border-slate-100 dark:border-slate-800 last:border-b-0`}>
                                                 <td className="px-6 py-5 align-middle">
                                                     <input
                                                         type="checkbox"
@@ -1642,7 +1748,22 @@ const OrdersPage: React.FC = () => {
                                                 {columnVisibility.find(c => c.key === 'customer')?.visible && (
                                                     <td className="px-6 py-5 align-top">
                                                         <div className="flex flex-col">
-                                                            <span className="font-semibold text-slate-900 dark:text-white text-base mb-1">{capitalizeWords(order.customer)}</span>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-semibold text-slate-900 dark:text-white text-base">{capitalizeWords(order.customer)}</span>
+                                                                {duplicateInfo && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setDuplicateHistoryPhone(order.customerPhone);
+                                                                            setIsDuplicateHistoryModalOpen(true);
+                                                                        }}
+                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-300 dark:border-amber-700"
+                                                                        title={`Order ke-${duplicateInfo.orderNumber} dari ${duplicateInfo.totalOrders} total | ${duplicateInfo.completedCount} selesai, ${duplicateInfo.canceledCount} batal`}
+                                                                    >
+                                                                        <span>🔁</span>
+                                                                        <span>#{duplicateInfo.orderNumber}/{duplicateInfo.totalOrders}</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                             <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
                                                                 <WhatsAppIcon className="w-3.5 h-3.5 text-green-500" />
                                                                 {order.customerPhone}
@@ -2046,6 +2167,146 @@ const OrdersPage: React.FC = () => {
                 forms={forms}
                 csAgents={csAgents}
             />
+
+            {/* Duplicate History Modal */}
+            {isDuplicateHistoryModalOpen && duplicateHistoryPhone && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="p-6 border-b dark:border-slate-700 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span className="text-2xl">🔁</span>
+                                    Riwayat Order - {duplicateHistoryPhone}
+                                </h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                    Semua pesanan dari nomor ini
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsDuplicateHistoryModalOpen(false);
+                                    setDuplicateHistoryPhone(null);
+                                }}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                                <XIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Order History */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {(() => {
+                                const phone = duplicateHistoryPhone.replace(/\\D/g, '');
+                                const relatedOrders = duplicateDetection.get(phone) || [];
+                                const sorted = [...relatedOrders].sort((a, b) => 
+                                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                                );
+
+                                const stats = {
+                                    total: sorted.length,
+                                    totalValue: sorted.reduce((sum, o) => sum + (o.totalPrice || 0), 0),
+                                    completed: sorted.filter(o => o.status === 'Delivered').length,
+                                    canceled: sorted.filter(o => o.status === 'Canceled').length,
+                                    pending: sorted.filter(o => o.status === 'Pending').length,
+                                };
+
+                                return (
+                                    <>
+                                        {/* Summary Stats */}
+                                        <div className="grid grid-cols-5 gap-4 mb-6">
+                                            <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 text-center">
+                                                <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Order</div>
+                                            </div>
+                                            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center">
+                                                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completed}</div>
+                                                <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Selesai</div>
+                                            </div>
+                                            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
+                                                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.canceled}</div>
+                                                <div className="text-xs text-red-600 dark:text-red-400 mt-1">Batal</div>
+                                            </div>
+                                            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-center">
+                                                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</div>
+                                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">Pending</div>
+                                            </div>
+                                            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 text-center">
+                                                <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                                    Rp {(stats.totalValue / 1000).toFixed(0)}K
+                                                </div>
+                                                <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">Total Nilai</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Order List */}
+                                        {sorted.map((order, idx) => (
+                                            <div
+                                                key={order.id}
+                                                className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border-l-4 border-indigo-500 hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                                                                #{sorted.length - idx}
+                                                            </span>
+                                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                                {new Date(order.date).toLocaleDateString('id-ID', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    year: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </span>
+                                                            <StatusBadge status={order.status} />
+                                                        </div>
+                                                        <div className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                                            {order.productName}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                            Order ID: {order.id}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-lg font-bold text-slate-900 dark:text-white">
+                                                            Rp {(order.totalPrice || 0).toLocaleString('id-ID')}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedOrder(order);
+                                                                setIsDetailModalOpen(true);
+                                                                setIsDuplicateHistoryModalOpen(false);
+                                                            }}
+                                                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1"
+                                                        >
+                                                            Lihat Detail →
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t dark:border-slate-700 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    setIsDuplicateHistoryModalOpen(false);
+                                    setDuplicateHistoryPhone(null);
+                                }}
+                                className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
