@@ -2733,21 +2733,6 @@ const FormEditorPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Minimum Characters Input for Name and Address */}
-                                        {(isName || isAddress) && (form.customerFields as any)[key].visible && (
-                                            <div className="ml-6 mt-1 flex items-center gap-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50">
-                                                <label className="text-xs text-slate-600 dark:text-slate-400">Min Karakter:</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="500"
-                                                    value={(form.customerFields as any)[key].minCharacters || 0}
-                                                    onChange={e => handleSubNestedFieldChange('customerFields', key, 'minCharacters', Math.max(0, parseInt(e.target.value) || 0))}
-                                                    className="w-16 p-1.5 border rounded text-xs bg-white dark:bg-slate-700 dark:border-slate-600"
-                                                />
-                                            </div>
-                                        )}
-
                                         {/* Show City, District, and Village as children of Province */}
                                         {isProvince && form.customerFields.province.visible && (
                                             <div className="ml-6 mt-1 space-y-1">
