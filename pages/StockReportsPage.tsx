@@ -14,6 +14,7 @@ interface Order {
   status: string;
   brandId: string | null;
   shippingResi?: string | null;
+  productId?: string | null;
 }
 
 interface BrandOption {
@@ -21,10 +22,18 @@ interface BrandOption {
   name: string;
 }
 
+interface ProductStockMeta {
+  id: string;
+  brandId: string;
+  name: string;
+  initialStock: number;
+}
+
 const StockReportsPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [products, setProducts] = useState<ProductStockMeta[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [stockMode, setStockMode] = useState<'auto' | 'real'>('auto');
   const [filterDateFrom, setFilterDateFrom] = useState('');
@@ -37,14 +46,20 @@ const StockReportsPage: React.FC = () => {
 
   useEffect(() => {
     fetchBrands();
+    fetchProducts();
   }, []);
+
+  useEffect(() => {
+    // Refetch products when brand filter changes to keep initialStock scoped
+    fetchProducts();
+  }, [selectedBrandId]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
       let query = supabase
         .from('orders')
-        .select('id, productName, variant, quantity, date, customer, status, brandId, shippingResi')
+        .select('id, productName, variant, quantity, date, customer, status, brandId, shippingResi, product_id, productId')
         .order('date', { ascending: false });
 
       if (selectedBrandId) {
@@ -53,7 +68,12 @@ const StockReportsPage: React.FC = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setOrders(data || []);
+      setOrders(
+        (data || []).map((d: any) => ({
+          ...d,
+          productId: d.product_id ?? d.productId ?? null,
+        }))
+      );
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -69,6 +89,28 @@ const StockReportsPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching brands:', error);
       setBrands([]);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      let query = supabase.from('products').select('id, brand_id, name, initial_stock');
+      if (selectedBrandId) {
+        query = query.eq('brand_id', selectedBrandId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      setProducts(
+        (data || []).map((p: any) => ({
+          id: p.id,
+          brandId: p.brand_id,
+          name: p.name,
+          initialStock: p.initial_stock ?? 0,
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setProducts([]);
     }
   };
 
@@ -99,6 +141,11 @@ const StockReportsPage: React.FC = () => {
 
   const brandNameMap = useMemo(() => Object.fromEntries(brands.map((b) => [b.id, b.name])), [brands]);
 
+  const initialStockSum = useMemo(
+    () => products.reduce((sum, p) => sum + (p.initialStock || 0), 0),
+    [products]
+  );
+
   // Derived stock metrics
   const shippedOrders = useMemo(
     () => filteredOrders.filter((o) => o.shippingResi || o.status === 'Shipped' || o.status === 'Delivered'),
@@ -125,8 +172,8 @@ const StockReportsPage: React.FC = () => {
   const stokAwalAuto = totalShippedQty;
   const stokAkhirAuto = totalShippedQty - totalReturnedQty;
 
-  // Mode Real (stok awal manual/fisik; fallback 0 until wired to real initialStock per SKU)
-  const stokAwalReal = 0;
+  // Mode Real (stok awal dari produk initialStock, agregat scoped brand filter)
+  const stokAwalReal = initialStockSum;
   const qtyInReal = totalReturnedQty;
   const qtyOutReal = totalShippedQty;
   const stokAkhirReal = stokAwalReal + qtyInReal - qtyOutReal;
