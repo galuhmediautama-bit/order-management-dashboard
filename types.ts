@@ -627,6 +627,8 @@ export interface GlobalPixelSettings {
 }
 
 // --- Products (Induk Produk) Types ---
+export type StockMode = 'auto' | 'real';
+
 export interface ProductStockTracking {
   enabled: boolean;
   current: number;
@@ -642,6 +644,7 @@ export interface Product {
   category?: string;
 
   // Stock management
+  stockMode: StockMode; // Required: auto (berdasar pengiriman) or real (stok gudang)
   initialStock?: number;
   stockTracking: ProductStockTracking;
 

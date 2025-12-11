@@ -37,6 +37,8 @@ interface ProductFormData {
     seoTitle: string;
     seoDescription: string;
     brandId: string;
+    stockMode: 'auto' | 'real'; // Required
+    initialStock: number; // For real mode
     // TANPA VARIANT
     basePrice?: number | null;
     comparePrice?: number | null;
@@ -74,6 +76,8 @@ const ProductFormPage: React.FC = () => {
         seoTitle: '',
         seoDescription: '',
         brandId: '',
+        stockMode: 'auto', // Default auto
+        initialStock: 0,
         // TANPA VARIANT
         basePrice: null,
         comparePrice: null,
@@ -139,6 +143,8 @@ const ProductFormPage: React.FC = () => {
                     seoTitle: product.seoTitle || '',
                     seoDescription: product.seoDescription || '',
                     brandId: product.brandId || '',
+                    stockMode: product.stockMode || 'auto',
+                    initialStock: product.initialStock || 0,
                     basePrice: product.basePrice || null,
                     comparePrice: product.comparePrice || null,
                     costPrice: product.costPrice || null,
@@ -340,6 +346,16 @@ const ProductFormPage: React.FC = () => {
             return;
         }
 
+        if (!formData.stockMode) {
+            showToast('Mode stok harus dipilih', 'error');
+            return;
+        }
+
+        if (formData.stockMode === 'real' && (!formData.initialStock || formData.initialStock <= 0)) {
+            showToast('Stok awal wajib diisi untuk mode Real (stok gudang)', 'error');
+            return;
+        }
+
         // Validasi per mode
         if (formData.variantMode === 'none') {
             if (!formData.basePrice) {
@@ -368,6 +384,8 @@ const ProductFormPage: React.FC = () => {
                 seoTitle: formData.seoTitle,
                 seoDescription: formData.seoDescription,
                 brandId: formData.brandId,
+                stockMode: formData.stockMode,
+                initialStock: formData.stockMode === 'real' ? formData.initialStock : 0,
                 status: 'active',
                 // TANPA VARIANT - simpan di level product
                 ...(formData.variantMode === 'none' && {
@@ -518,6 +536,60 @@ const ProductFormPage: React.FC = () => {
                         </>
                     )}
                 </div>
+
+                {/* Stock Mode */}
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            Mode Stok
+                        </label>
+                        <span className="text-xs text-red-500 font-medium">Wajib</span>
+                    </div>
+                    <select
+                        value={formData.stockMode}
+                        onChange={e => setFormData(prev => ({ ...prev, stockMode: e.target.value as 'auto' | 'real' }))}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${
+                            !formData.stockMode ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
+                        }`}
+                    >
+                        <option value="">-- Pilih Mode Stok --</option>
+                        <option value="auto">Auto (berdasar pengiriman)</option>
+                        <option value="real">Real (stok gudang)</option>
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">
+                        {formData.stockMode === 'auto' 
+                            ? '💡 Stok dihitung otomatis dari total pengiriman - retur. Cocok untuk dropship/reseller.' 
+                            : formData.stockMode === 'real'
+                            ? '💡 Stok dihitung dari stok fisik gudang. Cocok untuk produk yang disimpan di gudang.'
+                            : 'Pilih mode perhitungan stok untuk produk ini'
+                        }
+                    </p>
+                </div>
+
+                {/* Initial Stock (only for real mode) */}
+                {formData.stockMode === 'real' && (
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                Stok Awal (Gudang)
+                            </label>
+                            <span className="text-xs text-red-500 font-medium">Wajib untuk mode Real</span>
+                        </div>
+                        <input
+                            type="number"
+                            value={formData.initialStock}
+                            onChange={e => setFormData(prev => ({ ...prev, initialStock: parseInt(e.target.value) || 0 }))}
+                            className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${
+                                formData.initialStock <= 0 ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
+                            }`}
+                            placeholder="Jumlah stok awal di gudang"
+                            min="0"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                            Masukkan jumlah stok fisik yang ada di gudang saat ini
+                        </p>
+                    </div>
+                )}
 
                 {/* Category with Search */}
                 <div className="relative">
