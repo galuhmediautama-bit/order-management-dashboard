@@ -797,6 +797,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     };
 
     useEffect(() => {
+        // ✅ Don't trigger abandoned cart timer if already submitted
+        if (hasSubmittedRef.current || submission?.success) {
+            return;
+        }
+
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
         }
@@ -813,6 +818,10 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // ✅ Don't save abandoned cart if order already submitted
+            if (hasSubmittedRef.current || submission?.success) {
+                return;
+            }
             saveAbandonedCart();
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
