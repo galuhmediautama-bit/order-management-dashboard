@@ -131,7 +131,7 @@ export const normalizeForm = (formToEdit: Form): Form => {
         productOptions: (formToEdit.productOptions || []).map(opt => ({
             ...opt,
             displayStyle: opt.displayStyle || 'dropdown',
-            showPrice: opt.showPrice !== false ? true : false
+            showPrice: opt.showPrice ?? true // Default true if undefined
         })),
         variantCombinations: (formToEdit.variantCombinations || []).map(combo => ({
             ...combo,
