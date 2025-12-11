@@ -41,16 +41,11 @@ const StockReportsPage: React.FC = () => {
   const [searchProduct, setSearchProduct] = useState('');
 
   useEffect(() => {
-    fetchOrders();
-  }, [selectedBrandId]);
-
-  useEffect(() => {
     fetchBrands();
-    fetchProducts();
   }, []);
 
   useEffect(() => {
-    // Refetch products when brand filter changes to keep initialStock scoped
+    fetchOrders();
     fetchProducts();
   }, [selectedBrandId]);
 
