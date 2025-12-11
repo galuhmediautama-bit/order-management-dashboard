@@ -1200,12 +1200,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             return { isValid: !(form?.customerFields.address.required), normalized: '' };
         }
 
-        const hasMinLength = combined.length >= 15;
         const requiresLocationDetail = Boolean(form?.customerFields.city?.visible || form?.customerFields.district?.visible);
         const hasLocationDetail = !requiresLocationDetail || Boolean((addressData.city || '').trim() || (addressData.district || '').trim());
 
         return {
-            isValid: hasMinLength && hasLocationDetail,
+            isValid: hasLocationDetail,
             normalized: combined
         };
     };

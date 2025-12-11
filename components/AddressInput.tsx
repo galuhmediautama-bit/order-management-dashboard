@@ -460,7 +460,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
           </label>
           <textarea
             value={detailAddress}
-            onChange={(e) => setDetailAddress(e.target.value.slice(0, 500))}
+            onChange={(e) => setDetailAddress(e.target.value)}
             disabled={disabled}
             placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
             rows={3}
