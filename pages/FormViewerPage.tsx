@@ -1195,11 +1195,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         const next: Record<string, string> = {};
 
         const nameTrimmed = customerData.name.trim();
-        const minNameChars = form?.customerFields.name.minCharacters || 3;
         if (form?.customerFields.name.required && !nameTrimmed) {
             next.name = 'Nama Lengkap wajib diisi.';
-        } else if (nameTrimmed && nameTrimmed.length < minNameChars) {
-            next.name = `Nama Lengkap minimal ${minNameChars} karakter.`;
         }
 
         const whatsappTrimmed = customerData.whatsapp.trim();
