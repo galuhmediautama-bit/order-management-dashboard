@@ -1481,8 +1481,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                     await supabase.from('abandoned_carts').delete().eq('id', cartId);
 
                     // 2. Hapus notifikasi abandoned cart yang terkait
-                    // Notifikasi abandoned cart dibuat dengan ID format: cart-{cartId}
-                    await supabase.from('notifications').delete().eq('id', `cart-${cartId}`);
+                    // Query by metadata instead of ID (notifications table uses UUID primary key)
+                    await supabase.from('notifications')
+                        .delete()
+                        .eq('type', 'ABANDONED_CART')
+                        .contains('metadata', { cartId: cartId });
                     console.log('[FormViewer] Deleted abandoned cart and notification:', cartId);
                 } catch (err) {
                     console.warn("Failed to delete abandoned cart record/notification:", err);
@@ -1501,11 +1504,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
                     if (relatedCarts && relatedCarts.length > 0) {
                         const cartIds = relatedCarts.map(c => c.id);
-                        const notificationIds = cartIds.map(id => `cart-${id}`);
 
                         // Hapus abandoned carts dan notifikasinya
                         await supabase.from('abandoned_carts').delete().in('id', cartIds);
-                        await supabase.from('notifications').delete().in('id', notificationIds);
+                        
+                        // Delete notifications by metadata (not by ID with cart- prefix)
+                        for (const cId of cartIds) {
+                            await supabase.from('notifications')
+                                .delete()
+                                .eq('type', 'ABANDONED_CART')
+                                .contains('metadata', { cartId: cId });
+                        }
                         console.log('[FormViewer] Deleted related abandoned carts for phone:', customerData.whatsapp);
                     }
                 } catch (err) {
