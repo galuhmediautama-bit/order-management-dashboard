@@ -1191,24 +1191,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         return emailRegex.test(trimmed);
     };
 
-    const validateAddress = () => {
-        const manualAddress = (customerData.address || '').trim();
-        const addressFromPicker = (addressData.detailAddress || addressData.fullAddress || '').trim();
-        const combined = manualAddress || addressFromPicker;
-
-        if (!combined) {
-            return { isValid: !(form?.customerFields.address.required), normalized: '' };
-        }
-
-        const requiresLocationDetail = Boolean(form?.customerFields.city?.visible || form?.customerFields.district?.visible);
-        const hasLocationDetail = !requiresLocationDetail || Boolean((addressData.city || '').trim() || (addressData.district || '').trim());
-
-        return {
-            isValid: hasLocationDetail,
-            normalized: combined
-        };
-    };
-
     const validateCustomerFields = useCallback(() => {
         const next: Record<string, string> = {};
 
@@ -1245,12 +1227,13 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             next.district = 'Kecamatan wajib diisi.';
         }
 
-        const addressCheck = validateAddress();
-        const minAddressChars = form?.customerFields.address.minCharacters || 15;
-        if (form?.customerFields.address.required && !addressCheck.normalized) {
+        // Address validation - only check if required and not empty
+        const manualAddress = (customerData.address || '').trim();
+        const addressFromPicker = (addressData.detailAddress || addressData.fullAddress || '').trim();
+        const combinedAddress = manualAddress || addressFromPicker;
+        
+        if (form?.customerFields.address.required && !combinedAddress) {
             next.address = 'Alamat Lengkap wajib diisi.';
-        } else if (addressCheck.normalized && addressCheck.normalized.length < minAddressChars) {
-            next.address = `Alamat Lengkap minimal ${minAddressChars} karakter.`;
         }
 
         return next;
