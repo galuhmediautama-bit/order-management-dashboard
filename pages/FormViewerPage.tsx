@@ -1202,26 +1202,27 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
             next.email = 'Format email tidak valid.';
         }
 
-        if (form?.customerFields.province?.visible && form?.customerFields.province?.required && !customerData.province.trim()) {
+        // Province, city, district, village validation - check from addressData (AddressInput)
+        if (form?.customerFields.province?.visible && form?.customerFields.province?.required && !addressData.province?.trim()) {
             next.province = 'Provinsi wajib diisi.';
         }
-        if (form?.customerFields.city?.visible && form?.customerFields.city?.required && !customerData.city.trim()) {
+        if (form?.customerFields.city?.visible && form?.customerFields.city?.required && !addressData.city?.trim()) {
             next.city = 'Kota/Kabupaten wajib diisi.';
         }
-        if (form?.customerFields.district?.visible && form?.customerFields.district?.required && !customerData.district.trim()) {
+        if (form?.customerFields.district?.visible && form?.customerFields.district?.required && !addressData.district?.trim()) {
             next.district = 'Kecamatan wajib diisi.';
         }
 
         // Address validation - only check if visible AND required and not empty
-        const manualAddress = (customerData.address || '').trim();
-        const combinedAddress = manualAddress;
+        // Address comes from addressData (AddressInput component), not customerData.address
+        const addressFromInput = (addressData.detailAddress || addressData.fullAddress || '').trim();
         
-        if (form?.customerFields.address.visible && form?.customerFields.address.required && !combinedAddress) {
+        if (form?.customerFields.address.visible && form?.customerFields.address.required && !addressFromInput) {
             next.address = 'Alamat Lengkap wajib diisi.';
         }
 
         return next;
-    }, [customerData, form]);
+    }, [customerData, addressData, form]);
 
     const assignCs = async (): Promise<string | undefined> => {
         try {
