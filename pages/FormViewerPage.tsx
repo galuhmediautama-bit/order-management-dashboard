@@ -1183,40 +1183,40 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         const next: Record<string, string> = {};
 
         const nameTrimmed = customerData.name.trim();
-        if (form?.customerFields.name.required && !nameTrimmed) {
+        if (form?.customerFields.name.visible && form?.customerFields.name.required && !nameTrimmed) {
             next.name = 'Nama Lengkap wajib diisi.';
         }
 
         const whatsappTrimmed = customerData.whatsapp.trim();
         const whatsappCheck = validateWhatsappNumber(whatsappTrimmed);
-        if (form?.customerFields.whatsapp.required && !whatsappTrimmed) {
+        if (form?.customerFields.whatsapp.visible && form?.customerFields.whatsapp.required && !whatsappTrimmed) {
             next.whatsapp = 'No. WhatsApp wajib diisi.';
         } else if (whatsappTrimmed && !whatsappCheck.isValid) {
             next.whatsapp = 'Format WhatsApp harus 9-15 digit angka.';
         }
 
         const emailTrimmed = customerData.email.trim();
-        if (form?.customerFields.email.required && !emailTrimmed) {
+        if (form?.customerFields.email.visible && form?.customerFields.email.required && !emailTrimmed) {
             next.email = 'Email wajib diisi.';
         } else if (emailTrimmed && !isValidEmail(emailTrimmed)) {
             next.email = 'Format email tidak valid.';
         }
 
-        if (form?.customerFields.province?.required && !customerData.province.trim()) {
+        if (form?.customerFields.province?.visible && form?.customerFields.province?.required && !customerData.province.trim()) {
             next.province = 'Provinsi wajib diisi.';
         }
-        if (form?.customerFields.city?.required && !customerData.city.trim()) {
+        if (form?.customerFields.city?.visible && form?.customerFields.city?.required && !customerData.city.trim()) {
             next.city = 'Kota/Kabupaten wajib diisi.';
         }
-        if (form?.customerFields.district?.required && !customerData.district.trim()) {
+        if (form?.customerFields.district?.visible && form?.customerFields.district?.required && !customerData.district.trim()) {
             next.district = 'Kecamatan wajib diisi.';
         }
 
-        // Address validation - only check if required and not empty
+        // Address validation - only check if visible AND required and not empty
         const manualAddress = (customerData.address || '').trim();
         const combinedAddress = manualAddress;
         
-        if (form?.customerFields.address.required && !combinedAddress) {
+        if (form?.customerFields.address.visible && form?.customerFields.address.required && !combinedAddress) {
             next.address = 'Alamat Lengkap wajib diisi.';
         }
 
