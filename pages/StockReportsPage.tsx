@@ -12,34 +12,61 @@ interface Order {
   date: string;
   customer: string;
   status: string;
+  brandId: string | null;
+}
+
+interface BrandOption {
+  id: string;
+  name: string;
 }
 
 const StockReportsPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<'semua' | 'keluar'>('semua');
+  const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [searchProduct, setSearchProduct] = useState('');
 
   useEffect(() => {
     fetchOrders();
+  }, [selectedBrandId]);
+
+  useEffect(() => {
+    fetchBrands();
   }, []);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
-        .select('id, productName, variant, quantity, date, customer, status')
+        .select('id, productName, variant, quantity, date, customer, status, brandId')
         .order('date', { ascending: false });
 
+      if (selectedBrandId) {
+        query = query.eq('brandId', selectedBrandId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const { data, error } = await supabase.from('brands').select('id, name').order('name');
+      if (error) throw error;
+      setBrands(data || []);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      setBrands([]);
     }
   };
 
@@ -68,7 +95,11 @@ const StockReportsPage: React.FC = () => {
     return filtered;
   }, [orders, searchProduct, filterDateFrom, filterDateTo]);
 
+  const brandNameMap = useMemo(() => Object.fromEntries(brands.map((b) => [b.id, b.name])), [brands]);
+
   const handleExport = () => {
+    const brandNameMap = Object.fromEntries(brands.map(b => [b.id, b.name]));
+
     const exportData = filteredOrders.map((order) => ({
       Tanggal: new Date(order.date).toLocaleDateString('id-ID'),
       'Nama Produk': order.productName || '-',
@@ -77,6 +108,7 @@ const StockReportsPage: React.FC = () => {
       Quantity: order.quantity || 1,
       Referensi: order.id,
       Pelanggan: order.customer,
+      Brand: order.brandId ? (brandNameMap[order.brandId] || order.brandId) : '-',
       Status: order.status,
     }));
 
@@ -116,7 +148,23 @@ const StockReportsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Brand
+            </label>
+            <select
+              value={selectedBrandId}
+              onChange={(e) => setSelectedBrandId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            >
+              <option value="">Semua Brand</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Cari Produk
@@ -160,6 +208,7 @@ const StockReportsPage: React.FC = () => {
             </label>
             <button
               onClick={() => {
+                setSelectedBrandId('');
                 setSearchProduct('');
                 setFilterDateFrom('');
                 setFilterDateTo('');
@@ -220,6 +269,9 @@ const StockReportsPage: React.FC = () => {
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
                   Varian
                 </th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
+                  Brand
+                </th>
                 <th className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300">
                   Quantity
                 </th>
@@ -237,7 +289,7 @@ const StockReportsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                     {loading ? (
                       <div className="flex justify-center">
                         <SpinnerIcon className="w-6 h-6 animate-spin text-indigo-500" />
@@ -262,6 +314,9 @@ const StockReportsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                       {order.variant || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                      {order.brandId ? (brandNameMap[order.brandId] || order.brandId) : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="px-3 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 font-semibold">

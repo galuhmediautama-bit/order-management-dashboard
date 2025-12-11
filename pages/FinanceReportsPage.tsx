@@ -15,11 +15,19 @@ interface Order {
   status: string;
   shippingCost: number;
   codFee: number;
+  brandId: string | null;
+}
+
+interface BrandOption {
+  id: string;
+  name: string;
 }
 
 const FinanceReportsPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('semua');
   const [filterPayment, setFilterPayment] = useState<string>('semua');
   const [filterDateFrom, setFilterDateFrom] = useState('');
@@ -27,15 +35,25 @@ const FinanceReportsPage: React.FC = () => {
 
   useEffect(() => {
     fetchOrders();
+  }, [selectedBrandId]);
+
+  useEffect(() => {
+    fetchBrands();
   }, []);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
-        .select('id, date, customer, productName, variant, totalPrice, paymentMethod, status, shippingCost, codFee')
+        .select('id, date, customer, productName, variant, totalPrice, paymentMethod, status, shippingCost, codFee, brandId')
         .order('date', { ascending: false });
+
+      if (selectedBrandId) {
+        query = query.eq('brandId', selectedBrandId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setOrders(data || []);
@@ -46,8 +64,23 @@ const FinanceReportsPage: React.FC = () => {
     }
   };
 
+  const fetchBrands = async () => {
+    try {
+      const { data, error } = await supabase.from('brands').select('id, name').order('name');
+      if (error) throw error;
+      setBrands(data || []);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      setBrands([]);
+    }
+  };
+
   const filteredOrders = useMemo(() => {
     let filtered = orders;
+
+    if (selectedBrandId) {
+      filtered = filtered.filter((o) => o.brandId === selectedBrandId);
+    }
 
     // Filter by status
     if (filterStatus !== 'semua') {
@@ -70,7 +103,9 @@ const FinanceReportsPage: React.FC = () => {
     }
 
     return filtered;
-  }, [orders, filterStatus, filterPayment, filterDateFrom, filterDateTo]);
+  }, [orders, selectedBrandId, filterStatus, filterPayment, filterDateFrom, filterDateTo]);
+
+  const brandNameMap = useMemo(() => Object.fromEntries(brands.map((b) => [b.id, b.name])), [brands]);
 
   const handleExport = () => {
     const exportData = filteredOrders.map((order) => ({
@@ -79,6 +114,7 @@ const FinanceReportsPage: React.FC = () => {
       Pelanggan: order.customer,
       Produk: order.productName || '-',
       Varian: order.variant || '-',
+      Brand: order.brandId ? (brandNameMap[order.brandId] || order.brandId) : '-',
       'Total Harga': order.totalPrice,
       'Biaya Kirim': order.shippingCost || 0,
       'Biaya COD': order.codFee || 0,
@@ -172,7 +208,23 @@ const FinanceReportsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Brand
+            </label>
+            <select
+              value={selectedBrandId}
+              onChange={(e) => setSelectedBrandId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            >
+              <option value="">Semua Brand</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Status Order
@@ -236,6 +288,7 @@ const FinanceReportsPage: React.FC = () => {
             </label>
             <button
               onClick={() => {
+                setSelectedBrandId('');
                 setFilterStatus('semua');
                 setFilterPayment('semua');
                 setFilterDateFrom('');
@@ -262,6 +315,9 @@ const FinanceReportsPage: React.FC = () => {
                   Pelanggan
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
+                  Brand
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
                   Produk
                 </th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">
@@ -281,7 +337,7 @@ const FinanceReportsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                     {loading ? (
                       <div className="flex justify-center">
                         <SpinnerIcon className="w-6 h-6 animate-spin text-indigo-500" />
@@ -303,6 +359,9 @@ const FinanceReportsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium">
                       {order.customer}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                      {order.brandId ? (brandNameMap[order.brandId] || order.brandId) : '-'}
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-slate-900 dark:text-slate-100">{order.productName || '-'}</div>
