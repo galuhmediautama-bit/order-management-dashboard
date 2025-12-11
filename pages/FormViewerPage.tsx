@@ -933,18 +933,6 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
     }, [form?.ctaSettings]);
 
-    // Sync addressData to customerData
-    useEffect(() => {
-        setCustomerData(prev => ({
-            ...prev,
-            province: addressData.province,
-            city: addressData.city,
-            district: addressData.district,
-            village: addressData.village,
-            address: addressData.detailAddress || prev.address
-        }));
-    }, [addressData]);
-
     useEffect(() => {
         const fetchForm = async () => {
             if (!identifier) {
@@ -1359,7 +1347,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
         const { normalized: normalizedWhatsapp } = validateWhatsappNumber(customerData.whatsapp);
 
-        const { normalized: normalizedAddress } = validateAddress();
+        // Get address from addressData directly
+        const normalizedAddress = (addressData.detailAddress || addressData.fullAddress || '').trim();
 
         try {
             const assignedCsId = await assignCs();
