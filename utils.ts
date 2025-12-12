@@ -148,8 +148,12 @@ export const normalizeForm = (formToEdit: Form): Form => {
             village: formToEdit.customerFields?.village || { visible: true, required: true },
             postalCode: formToEdit.customerFields?.postalCode || { visible: true, required: false },
             address: {
-                ...(formToEdit.customerFields?.address || { visible: true, required: true }),
-                minCharacters: formToEdit.customerFields?.address?.minCharacters ?? 30, // Default 30 karakter
+                visible: formToEdit.customerFields?.address?.visible ?? true,
+                required: formToEdit.customerFields?.address?.required ?? true,
+                // Default 30 karakter - gunakan nilai dari DB jika ada dan > 0, otherwise default 30
+                minCharacters: (formToEdit.customerFields?.address?.minCharacters && formToEdit.customerFields.address.minCharacters > 0) 
+                    ? formToEdit.customerFields.address.minCharacters 
+                    : 30,
             },
         },
         shippingSettings: formToEdit.shippingSettings || defaultShippingSettings,
