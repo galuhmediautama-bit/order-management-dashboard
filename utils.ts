@@ -151,8 +151,8 @@ export const normalizeForm = (formToEdit: Form): Form => {
                 visible: formToEdit.customerFields?.address?.visible ?? true,
                 required: formToEdit.customerFields?.address?.required ?? true,
                 // Default 30 karakter - gunakan nilai dari DB jika ada dan > 0, otherwise default 30
-                minCharacters: (formToEdit.customerFields?.address?.minCharacters && formToEdit.customerFields.address.minCharacters > 0) 
-                    ? formToEdit.customerFields.address.minCharacters 
+                minCharacters: (formToEdit.customerFields?.address?.minCharacters && formToEdit.customerFields.address.minCharacters > 0)
+                    ? formToEdit.customerFields.address.minCharacters
                     : 30,
             },
         },

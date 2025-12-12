@@ -133,7 +133,7 @@ export const productService = {
                 .select('id')
                 .eq('brand_id', product.brandId)
                 .eq('name', product.name);
-            
+
             if (existingProduct && existingProduct.length > 0) {
                 throw new Error('Nama produk sudah ada untuk brand ini. Gunakan nama yang berbeda.');
             }
@@ -174,7 +174,7 @@ export const productService = {
                 console.error('Supabase insert error:', error);
                 throw error;
             }
-            
+
             return transformProduct(data);
         } catch (error: any) {
             console.error('Error in createProduct:', error);
@@ -187,7 +187,7 @@ export const productService = {
      */
     async updateProduct(productId: string, updates: Partial<Product>): Promise<Product> {
         const updateData: any = {};
-        
+
         if (updates.name) updateData.name = updates.name;
         if (updates.description) updateData.description = updates.description;
         if (updates.imageUrl) updateData.image_url = updates.imageUrl;
@@ -200,7 +200,7 @@ export const productService = {
         if (updates.isFeatured !== undefined) updateData.is_featured = updates.isFeatured;
         if (updates.seoTitle) updateData.seo_title = updates.seoTitle;
         if (updates.seoDescription) updateData.seo_description = updates.seoDescription;
-        
+
         // Simpan variant data di attributes JSONB
         updateData.attributes = {
             sku: updates.sku || null,

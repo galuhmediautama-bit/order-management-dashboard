@@ -1127,12 +1127,12 @@ const OrdersPage: React.FC = () => {
     const getDuplicateInfo = useCallback((order: Order) => {
         const phone = order.customerPhone?.replace(/\D/g, '') || '';
         if (!phone) return null;
-        
+
         const ordersWithSamePhone = duplicateDetection.get(phone) || [];
         if (ordersWithSamePhone.length <= 1) return null;
 
         // Sort by date
-        const sorted = [...ordersWithSamePhone].sort((a, b) => 
+        const sorted = [...ordersWithSamePhone].sort((a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
@@ -1547,11 +1547,10 @@ const OrdersPage: React.FC = () => {
                     {/* Duplicate Detection Toggle */}
                     <button
                         onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
-                        className={`px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
-                            showDuplicatesOnly 
-                                ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-md' 
+                        className={`px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${showDuplicatesOnly
+                                ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-md'
                                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                        }`}
+                            }`}
                         title={showDuplicatesOnly ? 'Tampilkan semua order' : 'Tampilkan hanya order duplikat (nomor HP yang sama)'}
                     >
                         <span className="text-base">🔁</span>
@@ -1559,11 +1558,10 @@ const OrdersPage: React.FC = () => {
                             {showDuplicatesOnly ? 'Duplikat Saja' : 'Duplikat'}
                         </span>
                         {duplicateCount > 0 && (
-                            <span className={`px-1.5 py-0.5 text-xs rounded-full font-bold ${
-                                showDuplicatesOnly 
-                                    ? 'bg-white/20 text-white' 
+                            <span className={`px-1.5 py-0.5 text-xs rounded-full font-bold ${showDuplicatesOnly
+                                    ? 'bg-white/20 text-white'
                                     : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                            }`}>
+                                }`}>
                                 {duplicateCount}
                             </span>
                         )}
@@ -1709,12 +1707,12 @@ const OrdersPage: React.FC = () => {
                                     {paginatedOrders.map(order => {
                                         // Find CS info if viewing as admin
                                         const assignedCS = csUsers.find(u => u.id === order.assignedCsId);
-                                        
+
                                         // Get duplicate info
                                         const duplicateInfo = getDuplicateInfo(order);
                                         const isDuplicate = duplicateInfo?.isDuplicate || false;
-                                        const rowBgClass = isDuplicate 
-                                            ? 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/70 dark:hover:bg-amber-900/20' 
+                                        const rowBgClass = isDuplicate
+                                            ? 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/70 dark:hover:bg-amber-900/20'
                                             : 'hover:bg-indigo-50/50 dark:hover:bg-slate-700/30';
 
                                         return (
@@ -1777,34 +1775,34 @@ const OrdersPage: React.FC = () => {
                                                             {(() => {
                                                                 // Check address completeness with comprehensive patterns
                                                                 const addr = order.shippingAddress || '';
-                                                                
+
                                                                 // Jalan/Dusun patterns: JL, JL., JLN, JALAN, GANG, GG, GG., DUSUN, DSN, DSN., DS, BLOK, PERUMAHAN, PERUM, KOMPLEK, KOMP, CLUSTER, GRIYA, TAMAN, RUKO
                                                                 const hasStreet = /(?:jl\.?|jln\.?|jalan|gang|gg\.?|dusun|dsn\.?|ds\.?|blok|perumahan|perum\.?|komp\.?|komplek|cluster|griya|taman|ruko|perum)/i.test(addr);
-                                                                
+
                                                                 // Nomor patterns: NO, NO., NOMOR, NOMER, NMR + any number in address
                                                                 const hasNumber = /(?:no\.?\s*\d|nomor|nomer|nmr\.?)/i.test(addr) || /\d+/.test(addr);
-                                                                
+
                                                                 // RT/RW patterns: RT, RT., RT/RW, RW, RW.
                                                                 const hasRtRw = /(?:rt\.?\s*\d|rw\.?\s*\d|rt\s*\/\s*rw|rt\s*\d+\s*\/?\s*rw)/i.test(addr);
-                                                                
+
                                                                 // Kelurahan/Desa patterns: KEL, KEL., KELURAHAN, DESA, DSA, DS., KAMPUNG, KP, KP.
                                                                 const hasKelDesa = /(?:kel\.?|kelurahan|desa|dsa|ds\.?|kampung|kp\.?)/i.test(addr);
-                                                                
+
                                                                 // Kecamatan patterns: KEC, KEC., KECAMATAN, KCMTN, CAMAT
                                                                 const hasKecamatan = /(?:kec\.?|kecamatan|kcmtn|camat)/i.test(addr);
-                                                                
+
                                                                 // Kota/Kabupaten patterns: KOTA, KOT., KAB, KAB., KABUPATEN
                                                                 const hasKotaKab = /(?:kota|kot\.?|kab\.?|kabupaten)/i.test(addr);
-                                                                
+
                                                                 // Provinsi patterns: PROV, PROV., PROVINSI, PROPINSI
                                                                 const hasProvinsi = /(?:prov\.?|provinsi|propinsi)/i.test(addr);
-                                                                
+
                                                                 // Kode Pos patterns: 5 digit number at end or standalone
                                                                 const hasKodePos = /\b\d{5}\b/.test(addr);
-                                                                
+
                                                                 // Patokan patterns: PATOKAN, DEKAT, DEPAN, SAMPING, BELAKANG, SEBERANG, SEBELAH, DI DEPAN, DI SAMPING
                                                                 const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah|di\s+depan|di\s+samping|di\s+belakang)/i.test(addr);
-                                                                
+
                                                                 // Calculate completeness score (6 required items now)
                                                                 const requiredCount = [hasStreet, hasNumber, hasRtRw, hasKelDesa, hasKecamatan, hasKotaKab].filter(Boolean).length;
                                                                 const bonusCount = [hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
@@ -1814,23 +1812,22 @@ const OrdersPage: React.FC = () => {
 
                                                                 return (
                                                                     <div className="flex items-center gap-1.5">
-                                                                        <span 
-                                                                            className={`text-sm px-1 rounded ${
-                                                                                isPerfect
+                                                                        <span
+                                                                            className={`text-sm px-1 rounded ${isPerfect
                                                                                     ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                                                                    : isComplete 
-                                                                                        ? 'bg-green-100 dark:bg-green-900/30' 
+                                                                                    : isComplete
+                                                                                        ? 'bg-green-100 dark:bg-green-900/30'
                                                                                         : isPartial
                                                                                             ? 'bg-amber-100 dark:bg-amber-900/30'
                                                                                             : 'bg-red-100 dark:bg-red-900/30'
-                                                                            }`}
+                                                                                }`}
                                                                             title={
-                                                                                isPerfect 
-                                                                                    ? `Alamat super lengkap! (6/6 wajib + ${bonusCount} bonus)` 
-                                                                                    : isComplete 
-                                                                                        ? `Alamat lengkap (6/6 wajib${bonusCount > 0 ? ` + ${bonusCount} bonus` : ''})` 
-                                                                                        : isPartial 
-                                                                                            ? `Alamat kurang lengkap (${requiredCount}/6 wajib)` 
+                                                                                isPerfect
+                                                                                    ? `Alamat super lengkap! (6/6 wajib + ${bonusCount} bonus)`
+                                                                                    : isComplete
+                                                                                        ? `Alamat lengkap (6/6 wajib${bonusCount > 0 ? ` + ${bonusCount} bonus` : ''})`
+                                                                                        : isPartial
+                                                                                            ? `Alamat kurang lengkap (${requiredCount}/6 wajib)`
                                                                                             : 'Alamat tidak lengkap'
                                                                             }
                                                                         >
@@ -2264,7 +2261,7 @@ const OrdersPage: React.FC = () => {
                             {(() => {
                                 const phone = duplicateHistoryPhone.replace(/\\D/g, '');
                                 const relatedOrders = duplicateDetection.get(phone) || [];
-                                const sorted = [...relatedOrders].sort((a, b) => 
+                                const sorted = [...relatedOrders].sort((a, b) =>
                                     new Date(b.date).getTime() - new Date(a.date).getTime()
                                 );
 

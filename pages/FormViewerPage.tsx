@@ -1226,7 +1226,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         // Address validation - only check if visible AND required
         // Address comes from addressData (AddressInput component), not customerData.address
         const addressFromInput = (addressData.detailAddress || addressData.fullAddress || '').trim();
-        
+
         if (form?.customerFields.address?.visible && form?.customerFields.address?.required && !addressFromInput) {
             next.address = 'Alamat Lengkap wajib diisi.';
         } else if (form?.customerFields.address?.visible && form?.customerFields.address?.minCharacters && form.customerFields.address.minCharacters > 0 && addressFromInput.length < form.customerFields.address.minCharacters) {
@@ -1541,7 +1541,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
                         // Hapus abandoned carts dan notifikasinya
                         await supabase.from('abandoned_carts').delete().in('id', cartIds);
-                        
+
                         // Delete notifications by metadata (not by ID with cart- prefix)
                         for (const cId of cartIds) {
                             await supabase.from('notifications')

@@ -125,7 +125,7 @@ const FinanceReportsPage: React.FC = () => {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan');
-    
+
     const fileName = `Laporan_Keuangan_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
@@ -375,15 +375,14 @@ const FinanceReportsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.status === 'Delivered'
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Delivered'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : order.status === 'Shipped'
                               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                               : order.status === 'Cancelled'
                                 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                 : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}
+                          }`}
                       >
                         {order.status}
                       </span>

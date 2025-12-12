@@ -108,7 +108,7 @@ const ProductFormPage: React.FC = () => {
                 .from('brands')
                 .select('id, name')
                 .order('name', { ascending: true });
-            
+
             if (error) throw error;
             setBrands(data || []);
         } catch (error) {
@@ -265,7 +265,7 @@ const ProductFormPage: React.FC = () => {
 
     const handleCopyValueDown = (sourceIndex: number, field: keyof VariantData) => {
         if (field === 'name') return; // Jangan copy nama
-        
+
         const sourceValue = formData.variants[sourceIndex][field];
         const newVariants = formData.variants.map((v, idx) => {
             if (idx >= sourceIndex) {
@@ -274,7 +274,7 @@ const ProductFormPage: React.FC = () => {
             return v;
         });
         setFormData(prev => ({ ...prev, variants: newVariants }));
-        
+
         const fieldNames: Record<string, string> = {
             price: 'Harga Jual',
             comparePrice: 'Harga Coret',
@@ -413,7 +413,7 @@ const ProductFormPage: React.FC = () => {
             } else {
                 await productService.createProduct(productData);
                 showToast('Produk berhasil ditambahkan', 'success');
-                
+
                 // Update brand's productCount
                 try {
                     const { data: brand } = await supabase
@@ -421,7 +421,7 @@ const ProductFormPage: React.FC = () => {
                         .select('productCount')
                         .eq('id', formData.brandId)
                         .single();
-                    
+
                     if (brand) {
                         const newCount = (brand.productCount || 0) + 1;
                         await supabase
@@ -436,10 +436,10 @@ const ProductFormPage: React.FC = () => {
             navigate('/daftar-produk');
         } catch (error: any) {
             console.error('Error saving product:', error);
-            
+
             // Parse error message untuk memberikan feedback yang lebih baik
             let errorMsg = error?.message || 'Gagal menyimpan produk';
-            
+
             // Check berbagai jenis error
             if (errorMsg.includes('sudah ada')) {
                 errorMsg = 'Nama produk sudah ada untuk brand ini. Gunakan nama yang berbeda.';
@@ -454,7 +454,7 @@ const ProductFormPage: React.FC = () => {
             } else if (errorMsg.includes('NotFound')) {
                 errorMsg = 'Tabel produk belum ada di database. Hubungi administrator.';
             }
-            
+
             showToast(errorMsg, 'error');
         } finally {
             setIsLoading(false);
@@ -518,9 +518,8 @@ const ProductFormPage: React.FC = () => {
                             <select
                                 value={formData.brandId}
                                 onChange={e => setFormData(prev => ({ ...prev, brandId: e.target.value }))}
-                                className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${
-                                    !formData.brandId ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
-                                }`}
+                                className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${!formData.brandId ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
+                                    }`}
                             >
                                 <option value="">-- Pilih Brand --</option>
                                 {brands.map(brand => (
@@ -548,20 +547,19 @@ const ProductFormPage: React.FC = () => {
                     <select
                         value={formData.stockMode}
                         onChange={e => setFormData(prev => ({ ...prev, stockMode: e.target.value as 'auto' | 'real' }))}
-                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${
-                            !formData.stockMode ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
-                        }`}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${!formData.stockMode ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
+                            }`}
                     >
                         <option value="">-- Pilih Mode Stok --</option>
                         <option value="auto">Auto (berdasar pengiriman)</option>
                         <option value="real">Real (stok gudang)</option>
                     </select>
                     <p className="text-xs text-slate-500 mt-1">
-                        {formData.stockMode === 'auto' 
-                            ? '💡 Stok dihitung otomatis dari total pengiriman - retur. Cocok untuk dropship/reseller.' 
+                        {formData.stockMode === 'auto'
+                            ? '💡 Stok dihitung otomatis dari total pengiriman - retur. Cocok untuk dropship/reseller.'
                             : formData.stockMode === 'real'
-                            ? '💡 Stok dihitung dari stok fisik gudang. Cocok untuk produk yang disimpan di gudang.'
-                            : 'Pilih mode perhitungan stok untuk produk ini'
+                                ? '💡 Stok dihitung dari stok fisik gudang. Cocok untuk produk yang disimpan di gudang.'
+                                : 'Pilih mode perhitungan stok untuk produk ini'
                         }
                     </p>
                 </div>
@@ -579,9 +577,8 @@ const ProductFormPage: React.FC = () => {
                             type="number"
                             value={formData.initialStock}
                             onChange={e => setFormData(prev => ({ ...prev, initialStock: parseInt(e.target.value) || 0 }))}
-                            className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${
-                                formData.initialStock <= 0 ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
-                            }`}
+                            className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${formData.initialStock <= 0 ? 'border-red-500 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'
+                                }`}
                             placeholder="Jumlah stok awal di gudang"
                             min="0"
                         />
@@ -635,7 +632,7 @@ const ProductFormPage: React.FC = () => {
                             ...cat,
                             items: cat.items.filter(item => item.toLowerCase().includes(searchLower))
                         })).filter(cat => cat.items.length > 0);
-                        
+
                         return (
                             <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-96 overflow-y-auto">
                                 {filtered.length > 0 ? filtered.map((cat, idx) => (
@@ -761,11 +758,10 @@ const ProductFormPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => handleVariantModeChange('none')}
-                            className={`p-4 border-2 rounded-lg text-center transition ${
-                                formData.variantMode === 'none'
+                            className={`p-4 border-2 rounded-lg text-center transition ${formData.variantMode === 'none'
                                     ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
                                     : 'border-slate-300 dark:border-slate-600'
-                            }`}
+                                }`}
                         >
                             <div className="font-semibold">Tanpa Varian</div>
                             <div className="text-xs text-slate-500 mt-1">Tidak ada pilihan varian</div>
@@ -773,11 +769,10 @@ const ProductFormPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => handleVariantModeChange('multi')}
-                            className={`p-4 border-2 rounded-lg text-center transition ${
-                                formData.variantMode === 'multi'
+                            className={`p-4 border-2 rounded-lg text-center transition ${formData.variantMode === 'multi'
                                     ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
                                     : 'border-slate-300 dark:border-slate-600'
-                            }`}
+                                }`}
                         >
                             <div className="font-semibold">Dengan Varian</div>
                             <div className="text-xs text-slate-500 mt-1">Produk dengan pilihan (warna, ukuran, dll)</div>
@@ -921,69 +916,69 @@ const ProductFormPage: React.FC = () => {
                                                     <th className="px-2 py-2 border">Aksi</th>
                                                 </tr>
                                             </thead>
-                                        <tbody>
-                                            {formData.variants.map((variant, idx) => (
-                                                <tr key={idx} className="odd:bg-white even:bg-slate-50 dark:odd:bg-slate-800 dark:even:bg-slate-700">
-                                                    <td className="px-2 py-2 border font-medium">{variant.name}</td>
-                                                    <td className="px-2 py-2 border">
-                                                        <input type="text" value={variant.sku || ''} onChange={e => handleVariantChange(idx, 'sku', e.target.value)} className="w-24 px-1 py-1 border rounded text-sm" placeholder="SKU" />
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.price} onChange={e => handleVariantChange(idx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-20 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'price')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.comparePrice} onChange={e => handleVariantChange(idx, 'comparePrice', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-20 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'comparePrice')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.costPrice} onChange={e => handleVariantChange(idx, 'costPrice', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-20 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'costPrice')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.csCommission} onChange={e => handleVariantChange(idx, 'csCommission', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'csCommission')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.advCommission} onChange={e => handleVariantChange(idx, 'advCommission', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'advCommission')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.weight} onChange={e => handleVariantChange(idx, 'weight', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'weight')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border">
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" inputMode="decimal" value={variant.initialStock} onChange={e => handleVariantChange(idx, 'initialStock', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
-                                                            <button type="button" onClick={() => handleCopyValueDown(idx, 'initialStock')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2 border text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleCopyAllDown(idx)}
-                                                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded whitespace-nowrap"
-                                                            title="Salin semua nilai ke baris di bawah"
-                                                        >
-                                                            ⬇ Semua
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            <tbody>
+                                                {formData.variants.map((variant, idx) => (
+                                                    <tr key={idx} className="odd:bg-white even:bg-slate-50 dark:odd:bg-slate-800 dark:even:bg-slate-700">
+                                                        <td className="px-2 py-2 border font-medium">{variant.name}</td>
+                                                        <td className="px-2 py-2 border">
+                                                            <input type="text" value={variant.sku || ''} onChange={e => handleVariantChange(idx, 'sku', e.target.value)} className="w-24 px-1 py-1 border rounded text-sm" placeholder="SKU" />
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.price} onChange={e => handleVariantChange(idx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-20 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'price')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.comparePrice} onChange={e => handleVariantChange(idx, 'comparePrice', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-20 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'comparePrice')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.costPrice} onChange={e => handleVariantChange(idx, 'costPrice', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-20 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'costPrice')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.csCommission} onChange={e => handleVariantChange(idx, 'csCommission', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'csCommission')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.advCommission} onChange={e => handleVariantChange(idx, 'advCommission', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'advCommission')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.weight} onChange={e => handleVariantChange(idx, 'weight', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'weight')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border">
+                                                            <div className="flex items-center gap-1">
+                                                                <input type="text" inputMode="decimal" value={variant.initialStock} onChange={e => handleVariantChange(idx, 'initialStock', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} className="w-16 px-1 py-1 border rounded text-sm" placeholder="0" />
+                                                                <button type="button" onClick={() => handleCopyValueDown(idx, 'initialStock')} className="text-blue-600 hover:text-blue-800" title="Salin ke bawah">⬇</button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-2 border text-center">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCopyAllDown(idx)}
+                                                                className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded whitespace-nowrap"
+                                                                title="Salin semua nilai ke baris di bawah"
+                                                            >
+                                                                ⬇ Semua
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             )}

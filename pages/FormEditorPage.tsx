@@ -2459,8 +2459,8 @@ const FormEditorPage: React.FC = () => {
                                             onDrop={() => handleDropOption(optIndex)}
                                             onDragEnd={handleDragEnd}
                                             className={`p-4 border rounded-lg dark:border-slate-600 transition-all cursor-move ${draggedOptionId === optIndex
-                                                    ? 'opacity-50 bg-indigo-100 dark:bg-indigo-900/30 border-indigo-500'
-                                                    : 'bg-slate-50 dark:bg-slate-900/30 hover:border-indigo-300 dark:hover:border-indigo-700'
+                                                ? 'opacity-50 bg-indigo-100 dark:bg-indigo-900/30 border-indigo-500'
+                                                : 'bg-slate-50 dark:bg-slate-900/30 hover:border-indigo-300 dark:hover:border-indigo-700'
                                                 }`}
                                         >
                                             {/* Header Opsi */}

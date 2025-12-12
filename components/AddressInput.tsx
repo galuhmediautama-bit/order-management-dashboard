@@ -465,39 +465,39 @@ const AddressInput: React.FC<AddressInputProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Alamat Lengkap {(requiredDetailAddress || required) && <span className="text-red-500">*</span>}
           </label>
-          
+
           {/* Smart Address Guidance - Real-time checklist */}
           {(() => {
             const text = detailAddress.toLowerCase();
-            
+
             // Detect address components with comprehensive patterns
             // Jalan/Dusun: JL, JL., JLN, JALAN, GANG, GG, GG., DUSUN, DSN, DSN., DS, BLOK, PERUMAHAN, PERUM, KOMPLEK, KOMP, CLUSTER, GRIYA, TAMAN, RUKO
             const hasStreetName = /(?:jl\.?|jln\.?|jalan|gang|gg\.?|dusun|dsn\.?|ds\.?|blok|perumahan|perum\.?|komp\.?|komplek|cluster|griya|taman|ruko)/i.test(detailAddress);
-            
+
             // Nomor: NO, NO., NOMOR, NOMER, NMR + any number
             const hasNumber = /(?:no\.?\s*\d|nomor|nomer|nmr\.?)/i.test(detailAddress) || /\d+/.test(detailAddress);
-            
+
             // RT/RW: RT, RT., RT/RW, RW, RW.
             const hasRtRw = /(?:rt\.?\s*\d|rw\.?\s*\d|rt\s*\/\s*rw|rt\s*\d+\s*\/?\s*rw)/i.test(detailAddress);
-            
+
             // Kelurahan/Desa: KEL, KEL., KELURAHAN, DESA, DSA, DS., KAMPUNG, KP, KP.
             const hasKelDesa = /(?:kel\.?|kelurahan|desa|dsa|ds\.?|kampung|kp\.?)/i.test(detailAddress);
-            
+
             // Kecamatan: KEC, KEC., KECAMATAN, KCMTN, CAMAT
             const hasKecamatan = /(?:kec\.?|kecamatan|kcmtn|camat)/i.test(detailAddress);
-            
+
             // Kota/Kabupaten: KOTA, KOT., KAB, KAB., KABUPATEN
             const hasKotaKab = /(?:kota|kot\.?|kab\.?|kabupaten)/i.test(detailAddress);
-            
+
             // Provinsi: PROV, PROV., PROVINSI, PROPINSI
             const hasProvinsi = /(?:prov\.?|provinsi|propinsi)/i.test(detailAddress);
-            
+
             // Kode Pos: 5 digit number
             const hasKodePos = /\b\d{5}\b/.test(detailAddress);
-            
+
             // Patokan: PATOKAN, DEKAT, DEPAN, SAMPING, BELAKANG, SEBERANG, SEBELAH
             const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah|di\s+depan|di\s+samping|di\s+belakang)/i.test(detailAddress);
-            
+
             // Required: 6 items, Optional bonus: 3 items
             const requiredCount = [hasStreetName, hasNumber, hasRtRw, hasKelDesa, hasKecamatan, hasKotaKab].filter(Boolean).length;
             const bonusCount = [hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
@@ -514,23 +514,22 @@ const AddressInput: React.FC<AddressInputProps> = ({
             if (!hasKelDesa) suggestions.push('Kel/Desa');
             if (!hasKecamatan) suggestions.push('Kecamatan');
             if (!hasKotaKab) suggestions.push('Kota/Kab');
-            
+
             // Generate bonus suggestions (3 items)
             const bonusSuggestions: string[] = [];
             if (!hasProvinsi) bonusSuggestions.push('Provinsi');
             if (!hasKodePos) bonusSuggestions.push('Kode Pos');
             if (!hasPatokan) bonusSuggestions.push('Patokan');
-            
+
             return (
-              <div className={`mb-2 p-3 rounded-lg border ${
-                isPerfect
+              <div className={`mb-2 p-3 rounded-lg border ${isPerfect
                   ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-                  : isComplete 
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                  : isComplete
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                     : isPartial
                       ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
                       : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-              }`}>
+                }`}>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold flex items-center gap-1.5">
@@ -552,19 +551,17 @@ const AddressInput: React.FC<AddressInputProps> = ({
                     )}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      isComplete 
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isComplete
                         ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                         : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                    }`}>
+                      }`}>
                       {requiredCount}/6 Wajib
                     </span>
                     {isComplete && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        bonusCount >= 2
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${bonusCount >= 2
                           ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
                           : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                      }`}>
+                        }`}>
                         +{bonusCount} Bonus
                       </span>
                     )}
@@ -682,19 +679,18 @@ const AddressInput: React.FC<AddressInputProps> = ({
             rows={3}
             maxLength={500}
             required={requiredDetailAddress || required}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${
-              addressError 
-                ? 'border-red-500' 
-                : detailAddress.length >= 70 
-                  ? 'border-emerald-400 dark:border-emerald-500' 
-                  : detailAddress.length >= 50 
-                    ? 'border-green-400 dark:border-green-500' 
-                    : detailAddress.length >= 30 
-                      ? 'border-blue-400 dark:border-blue-500' 
-                      : detailAddress.length > 0 
-                        ? 'border-amber-400 dark:border-amber-500' 
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${addressError
+                ? 'border-red-500'
+                : detailAddress.length >= 70
+                  ? 'border-emerald-400 dark:border-emerald-500'
+                  : detailAddress.length >= 50
+                    ? 'border-green-400 dark:border-green-500'
+                    : detailAddress.length >= 30
+                      ? 'border-blue-400 dark:border-blue-500'
+                      : detailAddress.length > 0
+                        ? 'border-amber-400 dark:border-amber-500'
                         : 'border-gray-300 dark:border-gray-600'
-            }`}
+              }`}
           />
           <div className="flex justify-between items-center mt-1">
             {addressError ? (
@@ -710,15 +706,14 @@ const AddressInput: React.FC<AddressInputProps> = ({
             ) : (
               <span></span>
             )}
-            <span className={`text-xs font-medium ${
-              detailAddress.length >= 70 
-                ? 'text-emerald-600 dark:text-emerald-400' 
-                : detailAddress.length >= 50 
-                  ? 'text-green-600 dark:text-green-400' 
-                  : detailAddress.length >= 30 
-                    ? 'text-blue-600 dark:text-blue-400' 
+            <span className={`text-xs font-medium ${detailAddress.length >= 70
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : detailAddress.length >= 50
+                  ? 'text-green-600 dark:text-green-400'
+                  : detailAddress.length >= 30
+                    ? 'text-blue-600 dark:text-blue-400'
                     : 'text-slate-400 dark:text-slate-500'
-            }`}>
+              }`}>
               {detailAddress.length}/500
             </span>
           </div>

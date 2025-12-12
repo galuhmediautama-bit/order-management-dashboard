@@ -199,7 +199,7 @@ const StockReportsPage: React.FC = () => {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Laporan Stock');
-    
+
     const fileName = `Laporan_Stock_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
@@ -337,8 +337,8 @@ const StockReportsPage: React.FC = () => {
               <p className="text-sm opacity-90">Total Produk</p>
               <p className="text-3xl font-bold mt-1">{products.length}</p>
               <p className="text-xs opacity-80 mt-1">
-                {hasAutoMode && hasRealMode ? `Auto: ${autoProducts.length} | Real: ${realProducts.length}` : 
-                 hasAutoMode ? `Semua mode Auto` : hasRealMode ? `Semua mode Real` : 'Belum ada produk'}
+                {hasAutoMode && hasRealMode ? `Auto: ${autoProducts.length} | Real: ${realProducts.length}` :
+                  hasAutoMode ? `Semua mode Auto` : hasRealMode ? `Semua mode Real` : 'Belum ada produk'}
               </p>
             </div>
             <div className="text-5xl opacity-20">📦</div>
@@ -420,13 +420,12 @@ const StockReportsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.status === 'Delivered'
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Delivered'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : order.status === 'Shipped'
                               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                               : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}
+                          }`}
                       >
                         {order.status}
                       </span>
