@@ -1847,9 +1847,15 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     {form.customerFields.name.visible && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
-                                            <input type="text" name="name" value={customerData.name} onChange={handleCustomerDataChange} placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.name.required} />
+                                            <input type="text" name="name" value={customerData.name} onChange={handleCustomerDataChange} placeholder="Nama Lengkap" className={`w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 ${customerData.name.length > 0 && customerData.name.length < 3 ? 'border-amber-400 dark:border-amber-500' : 'dark:border-gray-600'}`} required={form.customerFields.name.required} />
                                             <div className="flex justify-between items-center mt-1">
-                                                {fieldErrors.name ? <p className="text-xs text-red-500">{fieldErrors.name}</p> : <span></span>}
+                                                {fieldErrors.name ? (
+                                                    <p className="text-xs text-red-500">{fieldErrors.name}</p>
+                                                ) : customerData.name.length > 0 && customerData.name.length < 3 ? (
+                                                    <p className="text-xs text-amber-500">⚠️ Nama terlalu pendek</p>
+                                                ) : (
+                                                    <span></span>
+                                                )}
                                                 <span className={`text-xs ${customerData.name.length >= 3 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                                     {customerData.name.length} karakter {customerData.name.length >= 3 && '✓'}
                                                 </span>
@@ -1859,10 +1865,18 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     {form.customerFields.whatsapp.visible && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
-                                            <input type="tel" name="whatsapp" value={customerData.whatsapp} onChange={handleCustomerDataChange} placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.whatsapp.required} />
+                                            <input type="tel" name="whatsapp" value={customerData.whatsapp} onChange={handleCustomerDataChange} placeholder="08xxxxxxxxxx" className={`w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 ${customerData.whatsapp.length > 0 && (customerData.whatsapp.length < 10 || customerData.whatsapp.length > 15) ? 'border-amber-400 dark:border-amber-500' : 'dark:border-gray-600'}`} required={form.customerFields.whatsapp.required} />
                                             <div className="flex justify-between items-center mt-1">
-                                                {fieldErrors.whatsapp ? <p className="text-xs text-red-500">{fieldErrors.whatsapp}</p> : <span></span>}
-                                                <span className={`text-xs ${customerData.whatsapp.length >= 10 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                {fieldErrors.whatsapp ? (
+                                                    <p className="text-xs text-red-500">{fieldErrors.whatsapp}</p>
+                                                ) : customerData.whatsapp.length > 0 && customerData.whatsapp.length < 10 ? (
+                                                    <p className="text-xs text-amber-500">⚠️ Nomor terlalu pendek (min. 10 digit)</p>
+                                                ) : customerData.whatsapp.length > 15 ? (
+                                                    <p className="text-xs text-amber-500">⚠️ Nomor terlalu panjang (max. 15 digit)</p>
+                                                ) : (
+                                                    <span></span>
+                                                )}
+                                                <span className={`text-xs ${customerData.whatsapp.length >= 10 && customerData.whatsapp.length <= 15 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                                     {customerData.whatsapp.length} digit {customerData.whatsapp.length >= 10 && customerData.whatsapp.length <= 15 && '✓'}
                                                 </span>
                                             </div>

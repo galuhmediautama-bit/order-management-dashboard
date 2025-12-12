@@ -682,16 +682,18 @@ const AddressInput: React.FC<AddressInputProps> = ({
             rows={3}
             maxLength={500}
             required={requiredDetailAddress || required}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${addressError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${addressError ? 'border-red-500' : detailAddress.length > 0 && detailAddress.length < 30 ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}
           />
           <div className="flex justify-between items-center mt-1">
             {addressError ? (
               <p className="text-xs text-red-500">{addressError}</p>
+            ) : detailAddress.length > 0 && detailAddress.length < 30 ? (
+              <p className="text-xs text-amber-500">⚠️ Alamat terlalu pendek (min. 30 karakter)</p>
             ) : (
               <span></span>
             )}
             <span className={`text-xs ${detailAddress.length >= 30 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
-              {detailAddress.length}/500 karakter {detailAddress.length >= 30 ? '✓' : <span className="text-amber-500">(min. 30)</span>}
+              {detailAddress.length}/500 karakter {detailAddress.length >= 30 && '✓'}
             </span>
           </div>
         </div>
