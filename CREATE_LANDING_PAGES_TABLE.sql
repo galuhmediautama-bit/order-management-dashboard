@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS landing_pages (
   "sections" JSONB DEFAULT '[]'::jsonb,
   "globalStyles" JSONB DEFAULT '{"primaryColor": "#6366f1", "secondaryColor": "#f59e0b", "fontFamily": "Inter, sans-serif", "backgroundColor": "#ffffff"}'::jsonb,
   
-  -- Product Page specific fields
+  -- Product Page - OLD catalog format
   "headerImage" TEXT,
   "headerTitle" TEXT,
   "headerSubtitle" TEXT,
@@ -33,7 +33,17 @@ CREATE TABLE IF NOT EXISTS landing_pages (
   "gridColumns" INTEGER DEFAULT 3,
   "showPrice" BOOLEAN DEFAULT true,
   "buttonText" TEXT,
-  "backgroundColor" TEXT DEFAULT '#f8fafc'
+  "backgroundColor" TEXT DEFAULT '#f8fafc',
+  
+  -- Product Page - NEW Teespring-style format
+  "productName" TEXT,
+  "productDescription" TEXT,
+  "productPrice" NUMERIC,
+  "productComparePrice" NUMERIC,
+  "productImages" JSONB DEFAULT '[]'::jsonb,
+  "variants" JSONB DEFAULT '[]'::jsonb,
+  "trustBadges" JSONB DEFAULT '[]'::jsonb,
+  "accentColor" TEXT DEFAULT '#10b981'
 );
 
 -- Create index for faster lookups

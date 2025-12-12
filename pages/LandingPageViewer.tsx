@@ -56,6 +56,7 @@ interface SalesPageData {
     isPublished: boolean;
 }
 
+// Old catalog format
 interface ProductItem {
     id: string;
     formId: string;
@@ -65,18 +66,89 @@ interface ProductItem {
     isVisible: boolean;
 }
 
+// New Teespring-style format
+interface ProductImage {
+    id: string;
+    url: string;
+    isMain: boolean;
+}
+
+interface ProductVariant {
+    id: string;
+    name: string;
+    type: 'color' | 'size' | 'style';
+    options: {
+        value: string;
+        label: string;
+        image?: string;
+        colorHex?: string;
+    }[];
+}
+
+interface TrustBadge {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+}
+
+interface Review {
+    id: string;
+    name: string;
+    rating: number;
+    comment: string;
+    date: string;
+    avatar?: string;
+    photo?: string;
+    verified: boolean;
+}
+
+interface SocialProofSettings {
+    active: boolean;
+    liveViewersMin: number;
+    liveViewersMax: number;
+    recentPurchaseNames: string;
+    recentPurchaseCities: string;
+}
+
+interface UrgencySettings {
+    countdownActive: boolean;
+    countdownMinutes: number;
+    stockActive: boolean;
+    stockInitial: number;
+    stockMin: number;
+}
+
 interface ProductPageData {
     id: string;
     title: string;
     slug: string;
     type: 'product';
-    headerImage: string;
-    headerTitle: string;
-    headerSubtitle: string;
-    products: ProductItem[];
-    gridColumns: 2 | 3 | 4;
-    showPrice: boolean;
-    buttonText: string;
+    // Old catalog format
+    headerImage?: string;
+    headerTitle?: string;
+    headerSubtitle?: string;
+    products?: ProductItem[];
+    gridColumns?: 2 | 3 | 4;
+    showPrice?: boolean;
+    buttonText?: string;
+    // New Teespring-style format
+    productName?: string;
+    productDescription?: string;
+    productPrice?: number;
+    productComparePrice?: number;
+    totalSold?: number;
+    productImages?: ProductImage[];
+    variants?: ProductVariant[];
+    ctaFormId?: string;
+    ctaButtonText?: string;
+    ctaSubtext?: string;
+    trustBadges?: TrustBadge[];
+    reviews?: Review[];
+    showReviews?: boolean;
+    socialProof?: SocialProofSettings;
+    urgency?: UrgencySettings;
+    accentColor?: string;
     backgroundColor: string;
     footerText: string;
     isPublished: boolean;
@@ -106,14 +178,31 @@ const LandingPageViewer: React.FC = () => {
 
     const fetchPage = async () => {
         try {
-            const { data: pageData, error } = await supabase
+            // First try to get published page
+            let { data: pageData, error } = await supabase
                 .from('landing_pages')
                 .select('*')
                 .eq('slug', slug)
                 .eq('isPublished', true)
-                .single();
+                .maybeSingle();
 
-            if (error) throw error;
+            // If not found and user might be previewing, try without isPublished filter
+            if (!pageData) {
+                const result = await supabase
+                    .from('landing_pages')
+                    .select('*')
+                    .eq('slug', slug)
+                    .maybeSingle();
+                
+                if (result.data) {
+                    pageData = result.data;
+                    // Show preview notice for unpublished pages
+                    if (!pageData.isPublished) {
+                        console.log('Preview mode: Page is not published yet');
+                    }
+                }
+            }
+
             if (!pageData) {
                 setError('Halaman tidak ditemukan');
                 return;
@@ -121,7 +210,7 @@ const LandingPageViewer: React.FC = () => {
             setData(pageData as LandingPageData);
         } catch (error) {
             console.error('Error fetching page:', error);
-            setError('Halaman tidak ditemukan atau belum dipublikasikan');
+            setError('Halaman tidak ditemukan');
         } finally {
             setLoading(false);
         }
@@ -286,7 +375,17 @@ const LandingPageViewer: React.FC = () => {
     // Render Product Page
     if (data.type === 'product') {
         const productData = data as ProductPageData;
-        const visibleProducts = productData.products.filter(p => p.isVisible);
+        
+        // Check if it's new Teespring-style format (has productName) or old catalog format (has products array)
+        const isTeespringStyle = productData.productName && !productData.products?.length;
+
+        if (isTeespringStyle) {
+            // New Teespring-style single product page with HIGH-CONVERTING features
+            return <HighConvertingProductPage productData={productData} forms={forms} getFormLink={getFormLink} formatPrice={formatPrice} />;
+        }
+
+        // Old catalog format
+        const visibleProducts = productData.products?.filter(p => p.isVisible) || [];
 
         return (
             <div className="min-h-screen" style={{ backgroundColor: productData.backgroundColor }}>
@@ -350,7 +449,6 @@ const LandingPageViewer: React.FC = () => {
 
     return null;
 };
-
 // Widget Renderer Component for new format
 const WidgetRenderer: React.FC<{
     widget: Widget;
@@ -504,6 +602,314 @@ const WidgetRenderer: React.FC<{
         default:
             return <div style={style}>Widget: {widget.type}</div>;
     }
+};
+
+// ==================== HIGH-CONVERTING PRODUCT PAGE COMPONENT ====================
+const HighConvertingProductPage: React.FC<{
+    productData: ProductPageData;
+    forms: Form[];
+    getFormLink: (formId: string) => string;
+    formatPrice: (price: number) => string;
+}> = ({ productData, forms, getFormLink, formatPrice }) => {
+    const urgency = productData.urgency || { countdownActive: false, countdownMinutes: 15, stockActive: false, stockInitial: 50, stockMin: 5 };
+    const socialProof = productData.socialProof || { active: false, liveViewersMin: 15, liveViewersMax: 45, recentPurchaseNames: '', recentPurchaseCities: '' };
+    const reviews = productData.reviews || [];
+    const showReviews = productData.showReviews !== false;
+
+    const [countdown, setCountdown] = useState(urgency.countdownMinutes * 60);
+    const [currentStock, setCurrentStock] = useState(urgency.stockInitial);
+    const [liveViewers, setLiveViewers] = useState(Math.floor(Math.random() * (socialProof.liveViewersMax - socialProof.liveViewersMin + 1)) + socialProof.liveViewersMin);
+    const [showPopup, setShowPopup] = useState(false);
+    const [popupData, setPopupData] = useState({ name: '', city: '' });
+    const [selectedImage, setSelectedImage] = useState(0);
+    const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
+
+    const mainImage = productData.productImages?.[selectedImage] || productData.productImages?.[0];
+    const accentColor = productData.accentColor || '#dc2626';
+
+    // Countdown Timer
+    useEffect(() => {
+        if (!urgency.countdownActive) return;
+        const timer = setInterval(() => {
+            setCountdown(prev => (prev > 0 ? prev - 1 : urgency.countdownMinutes * 60));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [urgency.countdownActive, urgency.countdownMinutes]);
+
+    // Stock countdown
+    useEffect(() => {
+        if (!urgency.stockActive) return;
+        const timer = setInterval(() => {
+            setCurrentStock(prev => {
+                if (prev <= urgency.stockMin) return urgency.stockInitial;
+                return prev - 1;
+            });
+        }, 8000 + Math.random() * 7000);
+        return () => clearInterval(timer);
+    }, [urgency.stockActive]);
+
+    // Live viewers
+    useEffect(() => {
+        if (!socialProof.active) return;
+        const timer = setInterval(() => {
+            setLiveViewers(Math.floor(Math.random() * (socialProof.liveViewersMax - socialProof.liveViewersMin + 1)) + socialProof.liveViewersMin);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [socialProof.active]);
+
+    // Recent purchase popup
+    useEffect(() => {
+        if (!socialProof.active) return;
+        const names = socialProof.recentPurchaseNames.split('\n').filter(n => n.trim());
+        const cities = socialProof.recentPurchaseCities.split('\n').filter(c => c.trim());
+        if (names.length === 0 || cities.length === 0) return;
+
+        const showNextPopup = () => {
+            const name = names[Math.floor(Math.random() * names.length)];
+            const city = cities[Math.floor(Math.random() * cities.length)];
+            setPopupData({ name, city });
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 4000);
+        };
+
+        const timer = setInterval(showNextPopup, 8000);
+        setTimeout(showNextPopup, 3000);
+        return () => clearInterval(timer);
+    }, [socialProof.active]);
+
+    const formatTime = (secs: number) => {
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const savings = (productData.productComparePrice || 0) - (productData.productPrice || 0);
+    const discountPercent = productData.productComparePrice ? Math.round((1 - (productData.productPrice || 0) / productData.productComparePrice) * 100) : 0;
+
+    return (
+        <div className="min-h-screen" style={{ backgroundColor: productData.backgroundColor }}>
+            {/* Urgency Banner */}
+            {urgency.countdownActive && (
+                <div className="text-white text-center py-3 px-4" style={{ backgroundColor: accentColor }}>
+                    <p className="font-bold text-sm animate-pulse">🔥 PROMO TERBATAS! Berakhir dalam <span className="font-mono">{formatTime(countdown)}</span></p>
+                </div>
+            )}
+
+            {/* Recent Purchase Popup */}
+            {showPopup && socialProof.active && (
+                <div className="fixed bottom-20 left-4 z-40 animate-slide-up">
+                    <div className="bg-white rounded-lg shadow-2xl p-4 max-w-xs border-l-4" style={{ borderColor: accentColor }}>
+                        <p className="text-sm"><span className="font-bold">{popupData.name}</span> dari <span className="font-medium">{popupData.city}</span></p>
+                        <p className="text-xs text-slate-500">Baru saja membeli produk ini 🛒</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Main Content */}
+            <div className="max-w-6xl mx-auto px-4 py-6">
+                <div className="grid md:grid-cols-2 gap-8">
+                    {/* Left - Images */}
+                    <div>
+                        <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden mb-4 relative">
+                            {mainImage ? (
+                                <img src={mainImage.url} alt={productData.productName} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                    <ImageIcon className="w-24 h-24" />
+                                </div>
+                            )}
+                            {/* Live Viewers Badge */}
+                            {socialProof.active && (
+                                <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                    {liveViewers} orang sedang melihat
+                                </div>
+                            )}
+                            {/* Discount Badge */}
+                            {discountPercent > 0 && (
+                                <div className="absolute top-4 right-4 text-white px-3 py-2 rounded-lg font-bold" style={{ backgroundColor: accentColor }}>
+                                    -{discountPercent}%
+                                </div>
+                            )}
+                        </div>
+                        {/* Thumbnails */}
+                        {productData.productImages && productData.productImages.length > 1 && (
+                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                {productData.productImages.map((img, idx) => (
+                                    <button key={img.id} onClick={() => setSelectedImage(idx)} className={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${selectedImage === idx ? 'border-red-500 scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                                        <img src={img.url} alt="" className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right - Product Info */}
+                    <div>
+                        {/* Total Sold */}
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-yellow-500">★★★★★</span>
+                            <span className="text-sm text-slate-500">({(productData.totalSold || 0).toLocaleString()} terjual)</span>
+                        </div>
+
+                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">{productData.productName}</h1>
+
+                        {/* Price */}
+                        <div className="mb-4">
+                            <div className="flex items-baseline gap-3">
+                                <span className="text-3xl font-bold" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</span>
+                                {productData.productComparePrice && productData.productComparePrice > (productData.productPrice || 0) && (
+                                    <span className="text-xl text-slate-400 line-through">{formatPrice(productData.productComparePrice)}</span>
+                                )}
+                            </div>
+                            {savings > 0 && (
+                                <p className="text-green-600 font-medium mt-1">💰 Hemat {formatPrice(savings)}!</p>
+                            )}
+                        </div>
+
+                        {/* Stock Warning */}
+                        {urgency.stockActive && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                                <p className="text-yellow-800 font-medium flex items-center gap-2">
+                                    <span className="animate-bounce">⚠️</span>
+                                    Stok terbatas! Hanya tersisa <span className="font-bold text-red-600">{currentStock}</span> item
+                                </p>
+                                <div className="mt-2 bg-yellow-200 rounded-full h-2 overflow-hidden">
+                                    <div className="h-full bg-red-500 transition-all duration-500" style={{ width: `${(currentStock / urgency.stockInitial) * 100}%` }}></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Variants */}
+                        {productData.variants?.map(variant => (
+                            <div key={variant.id} className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">{variant.name}:</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {variant.options.map((option, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSelectedVariants(prev => ({ ...prev, [variant.id]: i }))}
+                                            className={`px-4 py-2 border-2 rounded-lg font-medium transition-all ${(selectedVariants[variant.id] || 0) === i ? 'border-red-500 bg-red-50' : 'border-slate-200 hover:border-slate-300'}`}
+                                        >
+                                            {variant.type === 'color' && option.colorHex && (
+                                                <span className="inline-block w-4 h-4 rounded-full mr-2 border" style={{ backgroundColor: option.colorHex }} />
+                                            )}
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* CTA Button */}
+                        <a
+                            href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                            className="block w-full py-4 rounded-xl text-white font-bold text-lg text-center shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] mb-2"
+                            style={{ backgroundColor: accentColor }}
+                        >
+                            {productData.ctaButtonText || '🛒 BELI SEKARANG'}
+                        </a>
+                        {productData.ctaSubtext && (
+                            <p className="text-center text-sm text-slate-500 mb-4">{productData.ctaSubtext}</p>
+                        )}
+
+                        {/* Trust Badges */}
+                        {productData.trustBadges && productData.trustBadges.length > 0 && (
+                            <div className="grid grid-cols-2 gap-3 mt-6">
+                                {productData.trustBadges.map(badge => (
+                                    <div key={badge.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                                        <span className="text-2xl">{badge.icon}</span>
+                                        <div>
+                                            <p className="font-medium text-slate-900 text-sm">{badge.title}</p>
+                                            <p className="text-xs text-slate-500">{badge.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Description */}
+                {productData.productDescription && (
+                    <div className="mt-8 bg-white rounded-xl p-6 shadow-sm">
+                        <h2 className="text-xl font-bold mb-4">📝 Deskripsi Produk</h2>
+                        <p className="text-slate-600 whitespace-pre-wrap">{productData.productDescription}</p>
+                    </div>
+                )}
+
+                {/* Reviews */}
+                {showReviews && reviews.length > 0 && (
+                    <div className="mt-8 bg-white rounded-xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold">⭐ Ulasan Pembeli</h2>
+                            <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map(n => <span key={n} className="text-yellow-400 text-xl">★</span>)}
+                                <span className="ml-2 text-slate-500">({reviews.length} ulasan)</span>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            {reviews.map(review => (
+                                <div key={review.id} className="border-b pb-4 last:border-0">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600">
+                                                {review.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium flex items-center gap-2">
+                                                    {review.name}
+                                                    {review.verified && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">✓ Verified</span>}
+                                                </p>
+                                                <div className="flex items-center gap-1">
+                                                    {[1, 2, 3, 4, 5].map(n => (
+                                                        <span key={n} className={n <= review.rating ? 'text-yellow-400' : 'text-slate-300'}>★</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span className="text-sm text-slate-400">{review.date}</span>
+                                    </div>
+                                    <p className="text-slate-600">{review.comment}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Sticky Mobile CTA */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 md:hidden z-40">
+                <div className="flex items-center gap-4">
+                    <div>
+                        {productData.productComparePrice && <p className="text-xs text-slate-500 line-through">{formatPrice(productData.productComparePrice)}</p>}
+                        <p className="font-bold text-lg" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</p>
+                    </div>
+                    <a
+                        href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                        className="flex-1 py-3 rounded-lg text-white font-bold text-center"
+                        style={{ backgroundColor: accentColor }}
+                    >
+                        {productData.ctaButtonText || '🛒 BELI SEKARANG'}
+                    </a>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <footer className="py-8 bg-slate-900 text-slate-400 text-center mt-8 mb-16 md:mb-0">
+                <p>{productData.footerText}</p>
+            </footer>
+
+            <style>{`
+                @keyframes slide-up {
+                    from { transform: translateY(100%); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-slide-up { animation: slide-up 0.3s ease-out; }
+            `}</style>
+        </div>
+    );
 };
 
 export default LandingPageViewer;
