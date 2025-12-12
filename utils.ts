@@ -147,7 +147,10 @@ export const normalizeForm = (formToEdit: Form): Form => {
             district: formToEdit.customerFields?.district || { visible: true, required: true },
             village: formToEdit.customerFields?.village || { visible: true, required: true },
             postalCode: formToEdit.customerFields?.postalCode || { visible: true, required: false },
-            address: formToEdit.customerFields?.address || { visible: true, required: true },
+            address: {
+                ...(formToEdit.customerFields?.address || { visible: true, required: true }),
+                minCharacters: formToEdit.customerFields?.address?.minCharacters ?? 30, // Default 30 karakter
+            },
         },
         shippingSettings: formToEdit.shippingSettings || defaultShippingSettings,
         paymentSettings: formToEdit.paymentSettings || {

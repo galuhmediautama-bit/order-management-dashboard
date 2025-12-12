@@ -1082,7 +1082,7 @@ const FormEditorPage: React.FC = () => {
                     // Buat form baru - langsung set dan tampilkan
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true } },
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true, minCharacters: 30 } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] }, },
                         countdownSettings: { active: true, duration: 300 },
@@ -2732,6 +2732,24 @@ const FormEditorPage: React.FC = () => {
                                                 </label>
                                             </div>
                                         </div>
+
+                                        {/* Min 30 characters checkbox for address field */}
+                                        {isAddress && form.customerFields.address.visible && (
+                                            <div className="ml-6 mt-1">
+                                                <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-amber-300 dark:border-amber-600">
+                                                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(form.customerFields.address.minCharacters || 0) >= 30}
+                                                            onChange={e => handleSubNestedFieldChange('customerFields', 'address', 'minCharacters', e.target.checked ? 30 : 0)}
+                                                            className="rounded"
+                                                        />
+                                                        <span>Minimal 30 karakter</span>
+                                                        <span className="text-amber-600 dark:text-amber-400 text-[10px]">(Validasi alamat lengkap)</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Show City, District, and Village as children of Province */}
                                         {isProvince && form.customerFields.province.visible && (

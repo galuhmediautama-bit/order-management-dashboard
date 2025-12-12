@@ -1229,6 +1229,8 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         
         if (form?.customerFields.address?.visible && form?.customerFields.address?.required && !addressFromInput) {
             next.address = 'Alamat Lengkap wajib diisi.';
+        } else if (form?.customerFields.address?.visible && form?.customerFields.address?.minCharacters && form.customerFields.address.minCharacters > 0 && addressFromInput.length < form.customerFields.address.minCharacters) {
+            next.address = `Alamat minimal ${form.customerFields.address.minCharacters} karakter (sekarang ${addressFromInput.length} karakter).`;
         }
 
         // Debug log untuk troubleshooting
