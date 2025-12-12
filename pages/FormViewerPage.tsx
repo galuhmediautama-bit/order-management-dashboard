@@ -1452,16 +1452,34 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                 const notificationTitle = `Pesanan Baru dari ${data.customer}`;
                 const notificationMessage = `Pesanan dari ${data.customer} (${data.customerPhone}) - ${data.productName} - Rp ${(data.totalPrice || 0).toLocaleString('id-ID')}`;
 
-                // Get users to notify
-                const { data: usersToNotify } = await supabase
+                // Collect all user IDs to notify
+                const userIdsToNotify = new Set<string>();
+
+                // 1. Get Admin & Super Admin users
+                const { data: adminUsers } = await supabase
                     .from('users')
                     .select('id, role')
                     .in('role', ['Super Admin', 'Admin'])
                     .eq('status', 'Aktif');
 
-                if (usersToNotify && usersToNotify.length > 0) {
-                    const notificationsToInsert = usersToNotify.map(user => ({
-                        user_id: user.id,
+                if (adminUsers) {
+                    adminUsers.forEach(u => userIdsToNotify.add(u.id));
+                }
+
+                // 2. Add assigned CS if exists
+                if (assignedCsId) {
+                    userIdsToNotify.add(assignedCsId);
+                }
+
+                // 3. Add assigned Advertiser if exists
+                if (form.assignedAdvertiserId) {
+                    userIdsToNotify.add(form.assignedAdvertiserId);
+                }
+
+                // Create notifications for all users
+                if (userIdsToNotify.size > 0) {
+                    const notificationsToInsert = Array.from(userIdsToNotify).map(userId => ({
+                        user_id: userId,
                         type: 'ORDER_NEW',
                         title: notificationTitle,
                         message: notificationMessage,
@@ -1470,12 +1488,17 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                             customerName: data.customer,
                             customerPhone: data.customerPhone,
                             totalPrice: data.totalPrice,
-                            productName: data.productName
+                            productName: data.productName,
+                            brandId: form.brandId || null
                         }
                     }));
 
-                    await supabase.from('notifications').insert(notificationsToInsert);
-                    console.log('[FormViewer] Notifications created for', usersToNotify.length, 'users');
+                    const { error: notifError } = await supabase.from('notifications').insert(notificationsToInsert);
+                    if (notifError) {
+                        console.error('[FormViewer] Error creating notifications:', notifError);
+                    } else {
+                        console.log('[FormViewer] Notifications created for', userIdsToNotify.size, 'users');
+                    }
                 }
             } catch (err) {
                 console.warn('Failed to create notification:', err);
