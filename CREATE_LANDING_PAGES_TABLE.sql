@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS landing_pages (
   "ctaButtonText" TEXT,
   "ctaFormId" UUID,
   
+  -- NEW: Elementor-style sections and widgets
+  "sections" JSONB DEFAULT '[]'::jsonb,
+  "globalStyles" JSONB DEFAULT '{"primaryColor": "#6366f1", "secondaryColor": "#f59e0b", "fontFamily": "Inter, sans-serif", "backgroundColor": "#ffffff"}'::jsonb,
+  
   -- Product Page specific fields
   "headerImage" TEXT,
   "headerTitle" TEXT,

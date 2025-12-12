@@ -266,19 +266,38 @@ const SalesPageEditor: React.FC = () => {
         setSaving(true);
         try {
             const slug = data.slug || generateSlug(data.title);
-            const payload = { ...data, slug, updatedAt: new Date().toISOString() };
-            if (!id || id === 'baru') payload.createdAt = new Date().toISOString();
+            const payload: any = {
+                title: data.title,
+                slug,
+                type: 'sales',
+                isPublished: data.isPublished,
+                footerText: data.footerText,
+                ctaFormId: data.ctaFormId && data.ctaFormId.trim() !== '' ? data.ctaFormId : null,
+                sections: data.sections,
+                globalStyles: data.globalStyles,
+                updatedAt: new Date().toISOString(),
+            };
+            
+            if (id && id !== 'baru') {
+                // For update, don't include id in payload
+            } else {
+                payload.createdAt = new Date().toISOString();
+            }
+
+            console.log('Saving payload:', payload);
 
             const result = id && id !== 'baru'
                 ? await supabase.from('landing_pages').update(payload).eq('id', id)
                 : await supabase.from('landing_pages').insert(payload).select().single();
 
+            console.log('Save result:', result);
+
             if (result.error) throw result.error;
             showToast('Sales page berhasil disimpan!', 'success');
             if (!id || id === 'baru') navigate('/landing-page');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving page:', error);
-            showToast('Gagal menyimpan halaman', 'error');
+            showToast(`Gagal menyimpan: ${error.message || 'Unknown error'}`, 'error');
         } finally {
             setSaving(false);
         }
