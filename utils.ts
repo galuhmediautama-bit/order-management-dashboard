@@ -154,6 +154,8 @@ export const normalizeForm = (formToEdit: Form): Form => {
                 minCharacters: (formToEdit.customerFields?.address?.minCharacters && formToEdit.customerFields.address.minCharacters > 0)
                     ? formToEdit.customerFields.address.minCharacters
                     : 30,
+                // Default showAddressGuide true jika tidak ada province dropdown
+                showAddressGuide: formToEdit.customerFields?.address?.showAddressGuide ?? true,
             },
         },
         shippingSettings: formToEdit.shippingSettings || defaultShippingSettings,

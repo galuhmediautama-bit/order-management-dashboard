@@ -252,6 +252,7 @@ export interface CustomerFieldSetting {
   visible: boolean;
   required: boolean;
   minCharacters?: number; // Minimum characters for field validation
+  showAddressGuide?: boolean; // Show address guide/tips for address field
 }
 
 export type VariantDisplayStyle = 'dropdown' | 'radio' | 'modern';

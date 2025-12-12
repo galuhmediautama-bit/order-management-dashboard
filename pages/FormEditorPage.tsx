@@ -1082,7 +1082,7 @@ const FormEditorPage: React.FC = () => {
                     // Buat form baru - langsung set dan tampilkan
                     const newForm = normalizeForm({
                         id: '', title: '', mainImage: '', description: '', descriptionAlign: 'left', productOptions: [],
-                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true, minCharacters: 30 } },
+                        variantCombinations: [], customerFields: { name: { visible: true, required: true }, whatsapp: { visible: true, required: true }, email: { visible: false, required: false }, province: { visible: false, required: false }, city: { visible: false, required: false }, district: { visible: false, required: false }, village: { visible: false, required: false }, address: { visible: true, required: true, minCharacters: 30, showAddressGuide: true } },
                         shippingSettings: { regular: { visible: true, cost: 10000 }, free: { visible: false, cost: 0 }, flat_jawa: { visible: false, cost: 15000 }, flat_bali: { visible: false, cost: 25000 }, flat_sumatra: { visible: false, cost: 35000 } },
                         paymentSettings: { cod: { visible: true, order: 1, handlingFeePercentage: 4, handlingFeeBase: 'product' }, qris: { visible: true, order: 2, qrImageUrl: '' }, bankTransfer: { visible: true, order: 3, accounts: [] }, },
                         countdownSettings: { active: true, duration: 300 },
@@ -1881,12 +1881,17 @@ const FormEditorPage: React.FC = () => {
 
             if (mainField === 'customerFields' && subField === 'province') {
                 if (prop === 'visible') {
-                    // If unchecking visible, also uncheck required
+                    // If enabling province dropdown, auto-off address minCharacters and addressGuide
+                    // If disabling province dropdown, auto-on addressGuide
                     const newRequired = val ? prev.customerFields.province.required : false;
+                    const updatedAddress = val 
+                        ? { ...prev.customerFields.address, minCharacters: 0, showAddressGuide: false } // Auto-off when dropdown enabled
+                        : { ...prev.customerFields.address, showAddressGuide: true }; // Auto-on when dropdown disabled
                     return {
                         ...prev,
                         customerFields: {
                             ...prev.customerFields,
+                            address: updatedAddress,
                             province: { ...prev.customerFields.province, visible: val, required: newRequired },
                             city: { ...prev.customerFields.city, visible: val, required: val ? prev.customerFields.city.required : false },
                             district: { ...prev.customerFields.district, visible: val, required: val ? prev.customerFields.district.required : false },
@@ -2733,19 +2738,43 @@ const FormEditorPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Min 30 characters checkbox for address field */}
+                                        {/* Min 30 characters checkbox for address field - disabled when province dropdown is active */}
                                         {isAddress && form.customerFields.address.visible && (
-                                            <div className="ml-6 mt-1">
-                                                <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-amber-300 dark:border-amber-600">
-                                                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                                            <div className="ml-6 mt-1 space-y-1">
+                                                {/* Minimal 30 karakter */}
+                                                <div className={`flex items-center gap-2 p-2 rounded-lg border-l-2 ${form.customerFields.province.visible ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600' : 'bg-slate-100 dark:bg-slate-800/50 border-amber-300 dark:border-amber-600'}`}>
+                                                    <label className={`flex items-center gap-2 text-xs ${form.customerFields.province.visible ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'text-slate-600 dark:text-slate-400 cursor-pointer'}`}>
                                                         <input
                                                             type="checkbox"
                                                             checked={(form.customerFields.address.minCharacters || 0) >= 30}
                                                             onChange={e => handleSubNestedFieldChange('customerFields', 'address', 'minCharacters', e.target.checked ? 30 : 0)}
-                                                            className="rounded"
+                                                            className="rounded disabled:opacity-50"
+                                                            disabled={form.customerFields.province.visible}
                                                         />
                                                         <span>Minimal 30 karakter</span>
-                                                        <span className="text-amber-600 dark:text-amber-400 text-[10px]">(Validasi alamat lengkap)</span>
+                                                        {form.customerFields.province.visible ? (
+                                                            <span className="text-slate-400 dark:text-slate-500 text-[10px]">(Otomatis off saat dropdown aktif)</span>
+                                                        ) : (
+                                                            <span className="text-amber-600 dark:text-amber-400 text-[10px]">(Validasi alamat lengkap)</span>
+                                                        )}
+                                                    </label>
+                                                </div>
+                                                {/* Panduan Pengisian Alamat */}
+                                                <div className={`flex items-center gap-2 p-2 rounded-lg border-l-2 ${form.customerFields.province.visible ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600' : 'bg-slate-100 dark:bg-slate-800/50 border-blue-300 dark:border-blue-600'}`}>
+                                                    <label className={`flex items-center gap-2 text-xs ${form.customerFields.province.visible ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'text-slate-600 dark:text-slate-400 cursor-pointer'}`}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={form.customerFields.address.showAddressGuide !== false}
+                                                            onChange={e => handleSubNestedFieldChange('customerFields', 'address', 'showAddressGuide', e.target.checked)}
+                                                            className="rounded disabled:opacity-50"
+                                                            disabled={form.customerFields.province.visible}
+                                                        />
+                                                        <span>Panduan Pengisian Alamat</span>
+                                                        {form.customerFields.province.visible ? (
+                                                            <span className="text-slate-400 dark:text-slate-500 text-[10px]">(Otomatis off saat dropdown aktif)</span>
+                                                        ) : (
+                                                            <span className="text-blue-600 dark:text-blue-400 text-[10px]">(Tampilkan tips pengisian alamat)</span>
+                                                        )}
                                                     </label>
                                                 </div>
                                             </div>
