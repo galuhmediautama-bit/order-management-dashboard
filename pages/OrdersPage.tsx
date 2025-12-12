@@ -147,7 +147,7 @@ const OrdersPage: React.FC = () => {
     const [columnVisibility, setColumnVisibility] = useState<ColumnConfig[]>([
         { key: 'orderId', label: 'Order ID & Tanggal', visible: true },
         { key: 'customer', label: 'Pelanggan', visible: true },
-        { key: 'address', label: 'Alamat Lengkap', visible: true },
+        { key: 'address', label: 'Kota/Kab', visible: true },
         { key: 'product', label: 'Produk & Total', visible: true },
         { key: 'status', label: 'Status & Pembayaran', visible: true },
         { key: 'platform', label: 'Platform', visible: true },
@@ -1696,7 +1696,7 @@ const OrdersPage: React.FC = () => {
                                         </th>
                                         {columnVisibility.find(c => c.key === 'orderId')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Order ID & Tanggal</th>}
                                         {columnVisibility.find(c => c.key === 'customer')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Pelanggan</th>}
-                                        {columnVisibility.find(c => c.key === 'address')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Alamat Lengkap</th>}
+                                        {columnVisibility.find(c => c.key === 'address')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Kota/Kab</th>}
                                         {columnVisibility.find(c => c.key === 'product')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Produk & Total</th>}
                                         {columnVisibility.find(c => c.key === 'status')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status & Pembayaran</th>}
                                         {columnVisibility.find(c => c.key === 'platform')?.visible && <th className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Platform</th>}
@@ -1774,11 +1774,38 @@ const OrdersPage: React.FC = () => {
                                                 {columnVisibility.find(c => c.key === 'address')?.visible && (
                                                     <td className="px-6 py-5 align-top">
                                                         <div className="max-w-xs text-sm text-slate-600 dark:text-slate-400">
-                                                            {order.city ? (
-                                                                <span className="text-slate-700 dark:text-slate-300">{order.city}</span>
-                                                            ) : (
-                                                                <span className="text-slate-400 italic">-</span>
-                                                            )}
+                                                            {(() => {
+                                                                // Check address completeness
+                                                                const addr = order.shippingAddress || '';
+                                                                const hasStreet = /(?:jl\.|jln\.|jalan|gang|gg\.|dusun|dsn\.|blok|perumahan|komp\.|komplek)/i.test(addr);
+                                                                const hasNumber = /(?:no\.|no |nomor|blok\s*[a-z0-9])/i.test(addr) || /\d+/.test(addr);
+                                                                const hasRtRw = /(?:rt\s*\.?\s*\d|rw\s*\.?\s*\d|rt\/rw|rt\s*\d+\s*\/\s*rw)/i.test(addr);
+                                                                const requiredCount = [hasStreet, hasNumber, hasRtRw].filter(Boolean).length;
+                                                                const isComplete = requiredCount >= 3;
+                                                                const isPartial = requiredCount > 0 && requiredCount < 3;
+
+                                                                return (
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span 
+                                                                            className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                                                                isComplete 
+                                                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                                                                    : isPartial
+                                                                                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                                            }`}
+                                                                            title={isComplete ? 'Alamat lengkap' : isPartial ? `Alamat kurang lengkap (${requiredCount}/3)` : 'Alamat tidak lengkap'}
+                                                                        >
+                                                                            {isComplete ? '✓' : isPartial ? '!' : '✗'}
+                                                                        </span>
+                                                                        {order.city ? (
+                                                                            <span className="text-slate-700 dark:text-slate-300">{order.city}</span>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 italic">-</span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </td>
                                                 )}
