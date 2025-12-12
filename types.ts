@@ -6,6 +6,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 export type Page =
   | 'Dasbor'
   | 'Profil Saya'
+  | 'Landing Page'
   | 'Pesanan' // Parent Menu
   | 'Daftar Pesanan'
   | 'Pesanan Tertinggal'

@@ -73,6 +73,7 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
 
 // Lazy load all pages to optimize bundle size and initial load time
 const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'));
+const LandingPageEditor = lazyWithRetry(() => import('./pages/LandingPageEditor'));
 const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
 const AbandonedCartsPage = lazyWithRetry(() => import('./pages/AbandonedCartsPage'));
 const AdReportsPage = lazyWithRetry(() => import('./pages/AdReportsPage'));
@@ -160,6 +161,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
           <Suspense fallback={<div className="flex justify-center items-center h-64"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
             <Routes>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/landing-page" element={<LandingPageEditor />} />
               <Route path="/profil" element={<MyProfilePage />} />
               <Route path="/pesanan" element={<OrdersPage />} />
               <Route path="/keranjang-terabaikan" element={<AbandonedCartsPage />} />

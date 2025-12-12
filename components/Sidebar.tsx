@@ -26,6 +26,7 @@ import TrashIcon from './icons/TrashIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import Squares2x2Icon from './icons/Squares2x2Icon';
 import DashboardIcon from './icons/DashboardIcon';
+import GlobeIcon from './icons/GlobeIcon';
 import ExclamationTriangleIcon from './icons/ExclamationTriangleIcon';
 import { supabase } from '../firebase';
 import { getNormalizedRole } from '../utils';
@@ -42,6 +43,7 @@ interface SidebarProps {
 const pageToPath: Record<string, string> = {
     // Landing page removed - root handled by auth/login
     'Dasbor': '/dashboard',
+    'Landing Page': '/landing-page',
     'Pesanan': '#',
     'Daftar Pesanan': '/pesanan',
     'Pesanan Tertinggal': '/keranjang-terabaikan',
@@ -73,6 +75,7 @@ const pageToPath: Record<string, string> = {
 // Map sidebar menu names to RBAC menu IDs from rolePermissions.ts
 const menuNameToRbacId: Record<string, string> = {
     'Dasbor': 'dashboard',
+    'Landing Page': 'landing_page',
     'Produk': 'products',
     'Daftar Produk': 'product_list',
     'Daftar Formulir': 'form_list',
@@ -236,6 +239,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         {
             name: 'Dasbor',
             icon: DashboardIcon
+        },
+        {
+            name: 'Landing Page',
+            icon: GlobeIcon
         },
         {
             name: 'Produk',
