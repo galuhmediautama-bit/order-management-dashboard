@@ -1846,16 +1846,26 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
                                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Informasi Pelanggan:</h3>
                                     {form.customerFields.name.visible && (
                                         <div>
-                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap {form.customerFields.name.required && <span className="text-red-500">*</span>}{form.customerFields.name.minCharacters && form.customerFields.name.minCharacters > 0 && <span className="text-xs text-slate-500"> (min. {form.customerFields.name.minCharacters} karakter)</span>}</label>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap {form.customerFields.name.required && <span className="text-red-500">*</span>}</label>
                                             <input type="text" name="name" value={customerData.name} onChange={handleCustomerDataChange} placeholder="Nama Lengkap" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.name.required} />
-                                            {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
+                                            <div className="flex justify-between items-center mt-1">
+                                                {fieldErrors.name ? <p className="text-xs text-red-500">{fieldErrors.name}</p> : <span></span>}
+                                                <span className={`text-xs ${customerData.name.length >= 3 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                    {customerData.name.length} karakter {customerData.name.length >= 3 && '✓'}
+                                                </span>
+                                            </div>
                                         </div>
                                     )}
                                     {form.customerFields.whatsapp.visible && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">No. WhatsApp {form.customerFields.whatsapp.required && <span className="text-red-500">*</span>}</label>
                                             <input type="tel" name="whatsapp" value={customerData.whatsapp} onChange={handleCustomerDataChange} placeholder="08xxxxxxxxxx" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" required={form.customerFields.whatsapp.required} />
-                                            {fieldErrors.whatsapp && <p className="text-xs text-red-500 mt-1">{fieldErrors.whatsapp}</p>}
+                                            <div className="flex justify-between items-center mt-1">
+                                                {fieldErrors.whatsapp ? <p className="text-xs text-red-500">{fieldErrors.whatsapp}</p> : <span></span>}
+                                                <span className={`text-xs ${customerData.whatsapp.length >= 10 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                    {customerData.whatsapp.length} digit {customerData.whatsapp.length >= 10 && customerData.whatsapp.length <= 15 && '✓'}
+                                                </span>
+                                            </div>
                                         </div>
                                     )}
                                     {form.customerFields.email.visible && (
