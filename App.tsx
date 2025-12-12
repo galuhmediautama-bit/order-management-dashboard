@@ -74,6 +74,9 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
 // Lazy load all pages to optimize bundle size and initial load time
 const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'));
 const LandingPageEditor = lazyWithRetry(() => import('./pages/LandingPageEditor'));
+const LandingPagesPage = lazyWithRetry(() => import('./pages/LandingPagesPage'));
+const SalesPageEditor = lazyWithRetry(() => import('./pages/SalesPageEditor'));
+const ProductPageEditor = lazyWithRetry(() => import('./pages/ProductPageEditor'));
 const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
 const AbandonedCartsPage = lazyWithRetry(() => import('./pages/AbandonedCartsPage'));
 const AdReportsPage = lazyWithRetry(() => import('./pages/AdReportsPage'));
@@ -103,6 +106,7 @@ const AnnouncementsPage = lazyWithRetry(() => import('./pages/AnnouncementsPage'
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
 const PerformanceDashboardPage = lazyWithRetry(() => import('./pages/PerformanceDashboardPage'));
 const ErrorLogsPage = lazyWithRetry(() => import('./pages/ErrorLogsPage'));
+const LandingPageViewer = lazyWithRetry(() => import('./pages/LandingPageViewer'));
 
 
 const FormViewerWrapper: React.FC = () => {
@@ -161,7 +165,11 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ user, currentTheme,
           <Suspense fallback={<div className="flex justify-center items-center h-64"><SpinnerIcon className="w-10 h-10 animate-spin text-indigo-500" /></div>}>
             <Routes>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/landing-page" element={<LandingPageEditor />} />
+              <Route path="/landing-page" element={<LandingPagesPage />} />
+              <Route path="/landing-page/sales/baru" element={<SalesPageEditor />} />
+              <Route path="/landing-page/sales/edit/:id" element={<SalesPageEditor />} />
+              <Route path="/landing-page/product/baru" element={<ProductPageEditor />} />
+              <Route path="/landing-page/product/edit/:id" element={<ProductPageEditor />} />
               <Route path="/profil" element={<MyProfilePage />} />
               <Route path="/pesanan" element={<OrdersPage />} />
               <Route path="/keranjang-terabaikan" element={<AbandonedCartsPage />} />
@@ -424,6 +432,15 @@ const AppContent: React.FC = () => {
           element={
             <Suspense fallback={<FormLoadingFallback />}>
               <FormViewerWrapper />
+            </Suspense>
+          }
+        />
+        {/* Public Landing Page Route */}
+        <Route
+          path="/lp/:slug"
+          element={
+            <Suspense fallback={<FormLoadingFallback />}>
+              <LandingPageViewer />
             </Suspense>
           }
         />
