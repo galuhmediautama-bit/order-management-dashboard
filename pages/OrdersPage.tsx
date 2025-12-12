@@ -1775,28 +1775,66 @@ const OrdersPage: React.FC = () => {
                                                     <td className="px-6 py-5 align-top">
                                                         <div className="max-w-xs text-sm text-slate-600 dark:text-slate-400">
                                                             {(() => {
-                                                                // Check address completeness
+                                                                // Check address completeness with comprehensive patterns
                                                                 const addr = order.shippingAddress || '';
-                                                                const hasStreet = /(?:jl\.|jln\.|jalan|gang|gg\.|dusun|dsn\.|blok|perumahan|komp\.|komplek)/i.test(addr);
-                                                                const hasNumber = /(?:no\.|no |nomor|blok\s*[a-z0-9])/i.test(addr) || /\d+/.test(addr);
-                                                                const hasRtRw = /(?:rt\s*\.?\s*\d|rw\s*\.?\s*\d|rt\/rw|rt\s*\d+\s*\/\s*rw)/i.test(addr);
+                                                                
+                                                                // Jalan/Dusun patterns: JL, JL., JLN, JALAN, GANG, GG, GG., DUSUN, DSN, DSN., DS, BLOK, PERUMAHAN, PERUM, KOMPLEK, KOMP, CLUSTER, GRIYA, TAMAN, RUKO
+                                                                const hasStreet = /(?:jl\.?|jln\.?|jalan|gang|gg\.?|dusun|dsn\.?|ds\.?|blok|perumahan|perum\.?|komp\.?|komplek|cluster|griya|taman|ruko|perum)/i.test(addr);
+                                                                
+                                                                // Nomor patterns: NO, NO., NOMOR, NOMER, NMR + any number in address
+                                                                const hasNumber = /(?:no\.?\s*\d|nomor|nomer|nmr\.?)/i.test(addr) || /\d+/.test(addr);
+                                                                
+                                                                // RT/RW patterns: RT, RT., RT/RW, RW, RW.
+                                                                const hasRtRw = /(?:rt\.?\s*\d|rw\.?\s*\d|rt\s*\/\s*rw|rt\s*\d+\s*\/?\s*rw)/i.test(addr);
+                                                                
+                                                                // Kelurahan/Desa patterns: KEL, KEL., KELURAHAN, DESA, DSA, DS., KAMPUNG, KP, KP.
+                                                                const hasKelDesa = /(?:kel\.?|kelurahan|desa|dsa|ds\.?|kampung|kp\.?)/i.test(addr);
+                                                                
+                                                                // Kecamatan patterns: KEC, KEC., KECAMATAN, KCMTN, CAMAT
+                                                                const hasKecamatan = /(?:kec\.?|kecamatan|kcmtn|camat)/i.test(addr);
+                                                                
+                                                                // Kota/Kabupaten patterns: KOTA, KOT., KAB, KAB., KABUPATEN
+                                                                const hasKotaKab = /(?:kota|kot\.?|kab\.?|kabupaten)/i.test(addr);
+                                                                
+                                                                // Provinsi patterns: PROV, PROV., PROVINSI, PROPINSI
+                                                                const hasProvinsi = /(?:prov\.?|provinsi|propinsi)/i.test(addr);
+                                                                
+                                                                // Kode Pos patterns: 5 digit number at end or standalone
+                                                                const hasKodePos = /\b\d{5}\b/.test(addr);
+                                                                
+                                                                // Patokan patterns: PATOKAN, DEKAT, DEPAN, SAMPING, BELAKANG, SEBERANG, SEBELAH, DI DEPAN, DI SAMPING
+                                                                const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah|di\s+depan|di\s+samping|di\s+belakang)/i.test(addr);
+                                                                
+                                                                // Calculate completeness score
                                                                 const requiredCount = [hasStreet, hasNumber, hasRtRw].filter(Boolean).length;
+                                                                const bonusCount = [hasKelDesa, hasKecamatan, hasKotaKab, hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
                                                                 const isComplete = requiredCount >= 3;
+                                                                const isPerfect = isComplete && bonusCount >= 2;
                                                                 const isPartial = requiredCount > 0 && requiredCount < 3;
 
                                                                 return (
                                                                     <div className="flex items-center gap-1.5">
                                                                         <span 
                                                                             className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                                                                                isComplete 
-                                                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
-                                                                                    : isPartial
-                                                                                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                                                isPerfect
+                                                                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                                                                    : isComplete 
+                                                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                                                                        : isPartial
+                                                                                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                                                             }`}
-                                                                            title={isComplete ? 'Alamat lengkap' : isPartial ? `Alamat kurang lengkap (${requiredCount}/3)` : 'Alamat tidak lengkap'}
+                                                                            title={
+                                                                                isPerfect 
+                                                                                    ? `Alamat super lengkap! (3/3 wajib + ${bonusCount} bonus)` 
+                                                                                    : isComplete 
+                                                                                        ? `Alamat lengkap (3/3 wajib${bonusCount > 0 ? ` + ${bonusCount} bonus` : ''})` 
+                                                                                        : isPartial 
+                                                                                            ? `Alamat kurang lengkap (${requiredCount}/3 wajib)` 
+                                                                                            : 'Alamat tidak lengkap'
+                                                                            }
                                                                         >
-                                                                            {isComplete ? '✓' : isPartial ? '!' : '✗'}
+                                                                            {isPerfect ? '★' : isComplete ? '✓' : isPartial ? '!' : '✗'}
                                                                         </span>
                                                                         {order.city ? (
                                                                             <span className="text-slate-700 dark:text-slate-300">{order.city}</span>

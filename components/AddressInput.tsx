@@ -470,18 +470,37 @@ const AddressInput: React.FC<AddressInputProps> = ({
           {(() => {
             const text = detailAddress.toLowerCase();
             
-            // Detect address components
-            const hasStreetName = /(?:jl\.|jln\.|jalan|gang|gg\.|dusun|dsn\.|blok|perumahan|komp\.|komplek)/i.test(detailAddress);
-            const hasNumber = /(?:no\.|no |nomor|blok\s*[a-z0-9])/i.test(detailAddress) || /\d+/.test(detailAddress);
-            const hasRtRw = /(?:rt\s*\.?\s*\d|rw\s*\.?\s*\d|rt\/rw|rt\s*\d+\s*\/\s*rw)/i.test(detailAddress);
-            const hasKelDesa = /(?:kel\.|kelurahan|desa|ds\.)/i.test(detailAddress);
-            const hasKecamatan = /(?:kec\.|kecamatan)/i.test(detailAddress);
-            const hasKotaKab = /(?:kota|kabupaten|kab\.)/i.test(detailAddress);
-            const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah)/i.test(detailAddress);
+            // Detect address components with comprehensive patterns
+            // Jalan/Dusun: JL, JL., JLN, JALAN, GANG, GG, GG., DUSUN, DSN, DSN., DS, BLOK, PERUMAHAN, PERUM, KOMPLEK, KOMP, CLUSTER, GRIYA, TAMAN, RUKO
+            const hasStreetName = /(?:jl\.?|jln\.?|jalan|gang|gg\.?|dusun|dsn\.?|ds\.?|blok|perumahan|perum\.?|komp\.?|komplek|cluster|griya|taman|ruko)/i.test(detailAddress);
             
-            // Required: 3 items, Optional bonus: 4 items
+            // Nomor: NO, NO., NOMOR, NOMER, NMR + any number
+            const hasNumber = /(?:no\.?\s*\d|nomor|nomer|nmr\.?)/i.test(detailAddress) || /\d+/.test(detailAddress);
+            
+            // RT/RW: RT, RT., RT/RW, RW, RW.
+            const hasRtRw = /(?:rt\.?\s*\d|rw\.?\s*\d|rt\s*\/\s*rw|rt\s*\d+\s*\/?\s*rw)/i.test(detailAddress);
+            
+            // Kelurahan/Desa: KEL, KEL., KELURAHAN, DESA, DSA, DS., KAMPUNG, KP, KP.
+            const hasKelDesa = /(?:kel\.?|kelurahan|desa|dsa|ds\.?|kampung|kp\.?)/i.test(detailAddress);
+            
+            // Kecamatan: KEC, KEC., KECAMATAN, KCMTN, CAMAT
+            const hasKecamatan = /(?:kec\.?|kecamatan|kcmtn|camat)/i.test(detailAddress);
+            
+            // Kota/Kabupaten: KOTA, KOT., KAB, KAB., KABUPATEN
+            const hasKotaKab = /(?:kota|kot\.?|kab\.?|kabupaten)/i.test(detailAddress);
+            
+            // Provinsi: PROV, PROV., PROVINSI, PROPINSI
+            const hasProvinsi = /(?:prov\.?|provinsi|propinsi)/i.test(detailAddress);
+            
+            // Kode Pos: 5 digit number
+            const hasKodePos = /\b\d{5}\b/.test(detailAddress);
+            
+            // Patokan: PATOKAN, DEKAT, DEPAN, SAMPING, BELAKANG, SEBERANG, SEBELAH
+            const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah|di\s+depan|di\s+samping|di\s+belakang)/i.test(detailAddress);
+            
+            // Required: 3 items, Optional bonus: 6 items
             const requiredCount = [hasStreetName, hasNumber, hasRtRw].filter(Boolean).length;
-            const bonusCount = [hasKelDesa, hasKecamatan, hasKotaKab, hasPatokan].filter(Boolean).length;
+            const bonusCount = [hasKelDesa, hasKecamatan, hasKotaKab, hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
             const totalCount = requiredCount + bonusCount;
             const isComplete = requiredCount >= 3;
             const isPerfect = isComplete && bonusCount >= 2;
@@ -571,7 +590,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
                 {/* Checklist - Bonus/Optional */}
                 <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Opsional (Bonus):</div>
-                <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-xs mb-2">
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs mb-2">
                   <div className={`flex items-center gap-1 ${hasKelDesa ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                     <span>{hasKelDesa ? '✓' : '○'}</span>
                     <span className="truncate">Kel/Desa</span>
@@ -583,6 +602,14 @@ const AddressInput: React.FC<AddressInputProps> = ({
                   <div className={`flex items-center gap-1 ${hasKotaKab ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                     <span>{hasKotaKab ? '✓' : '○'}</span>
                     <span className="truncate">Kota/Kab</span>
+                  </div>
+                  <div className={`flex items-center gap-1 ${hasProvinsi ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span>{hasProvinsi ? '✓' : '○'}</span>
+                    <span className="truncate">Provinsi</span>
+                  </div>
+                  <div className={`flex items-center gap-1 ${hasKodePos ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span>{hasKodePos ? '✓' : '○'}</span>
+                    <span className="truncate">Kode Pos</span>
                   </div>
                   <div className={`flex items-center gap-1 ${hasPatokan ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                     <span>{hasPatokan ? '✓' : '○'}</span>
