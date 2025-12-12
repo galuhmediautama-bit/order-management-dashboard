@@ -475,30 +475,49 @@ const AddressInput: React.FC<AddressInputProps> = ({
             const hasNumber = /(?:no\.|no |nomor|blok\s*[a-z0-9])/i.test(detailAddress) || /\d+/.test(detailAddress);
             const hasRtRw = /(?:rt\s*\.?\s*\d|rw\s*\.?\s*\d|rt\/rw|rt\s*\d+\s*\/\s*rw)/i.test(detailAddress);
             const hasKelDesa = /(?:kel\.|kelurahan|desa|ds\.)/i.test(detailAddress);
+            const hasKecamatan = /(?:kec\.|kecamatan)/i.test(detailAddress);
+            const hasKotaKab = /(?:kota|kabupaten|kab\.)/i.test(detailAddress);
             const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah)/i.test(detailAddress);
             
-            const completedCount = [hasStreetName, hasNumber, hasRtRw].filter(Boolean).length;
-            const isComplete = completedCount >= 3;
-            const isPartial = completedCount > 0 && completedCount < 3;
+            // Required: 3 items, Optional bonus: 4 items
+            const requiredCount = [hasStreetName, hasNumber, hasRtRw].filter(Boolean).length;
+            const bonusCount = [hasKelDesa, hasKecamatan, hasKotaKab, hasPatokan].filter(Boolean).length;
+            const totalCount = requiredCount + bonusCount;
+            const isComplete = requiredCount >= 3;
+            const isPerfect = isComplete && bonusCount >= 2;
+            const isPartial = requiredCount > 0 && requiredCount < 3;
 
-            // Generate suggestions
+            // Generate suggestions for required
             const suggestions: string[] = [];
             if (!hasStreetName) suggestions.push('Nama Jalan/Gang/Dusun');
             if (!hasNumber) suggestions.push('Nomor Rumah');
             if (!hasRtRw) suggestions.push('RT/RW');
             
+            // Generate bonus suggestions
+            const bonusSuggestions: string[] = [];
+            if (!hasKelDesa) bonusSuggestions.push('Kel/Desa');
+            if (!hasKecamatan) bonusSuggestions.push('Kecamatan');
+            if (!hasKotaKab) bonusSuggestions.push('Kota/Kab');
+            
             return (
               <div className={`mb-2 p-3 rounded-lg border ${
-                isComplete 
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                  : isPartial
-                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                isPerfect
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                  : isComplete 
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                    : isPartial
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
               }`}>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold flex items-center gap-1.5">
-                    {isComplete ? (
+                    {isPerfect ? (
+                      <>
+                        <span className="text-emerald-500">🏆</span>
+                        <span className="text-emerald-700 dark:text-emerald-300">Alamat Super Lengkap!</span>
+                      </>
+                    ) : isComplete ? (
                       <>
                         <span className="text-green-500">✅</span>
                         <span className="text-green-700 dark:text-green-300">Alamat Lengkap!</span>
@@ -510,45 +529,83 @@ const AddressInput: React.FC<AddressInputProps> = ({
                       </>
                     )}
                   </span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    isComplete 
-                      ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
-                      : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                  }`}>
-                    {completedCount}/3 Wajib
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      isComplete 
+                        ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                        : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                    }`}>
+                      {requiredCount}/3 Wajib
+                    </span>
+                    {isComplete && (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        bonusCount >= 2
+                          ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                      }`}>
+                        +{bonusCount} Bonus
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Checklist */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
-                  <div className={`flex items-center gap-1.5 ${hasStreetName ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {/* Checklist - Required */}
+                <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Wajib Diisi:</div>
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs mb-3">
+                  <div className={`flex items-center gap-1 ${hasStreetName ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasStreetName ? '✓' : '○'}</span>
-                    <span>Nama Jalan/Dusun/Gang</span>
+                    <span className="truncate">Jalan/Dusun</span>
                     {!hasStreetName && <span className="text-red-500">*</span>}
                   </div>
-                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                  <div className={`flex items-center gap-1 ${hasNumber ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasNumber ? '✓' : '○'}</span>
-                    <span>Nomor Rumah</span>
+                    <span className="truncate">No. Rumah</span>
                     {!hasNumber && <span className="text-red-500">*</span>}
                   </div>
-                  <div className={`flex items-center gap-1.5 ${hasRtRw ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                  <div className={`flex items-center gap-1 ${hasRtRw ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasRtRw ? '✓' : '○'}</span>
-                    <span>RT/RW</span>
+                    <span className="truncate">RT/RW</span>
                     {!hasRtRw && <span className="text-red-500">*</span>}
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${hasPatokan ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                    <span>{hasPatokan ? '✓' : '○'}</span>
-                    <span>Patokan</span>
-                    <span className="text-gray-400 text-[10px]">(opsional)</span>
                   </div>
                 </div>
 
-                {/* Suggestion */}
+                {/* Checklist - Bonus/Optional */}
+                <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Opsional (Bonus):</div>
+                <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-xs mb-2">
+                  <div className={`flex items-center gap-1 ${hasKelDesa ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span>{hasKelDesa ? '✓' : '○'}</span>
+                    <span className="truncate">Kel/Desa</span>
+                  </div>
+                  <div className={`flex items-center gap-1 ${hasKecamatan ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span>{hasKecamatan ? '✓' : '○'}</span>
+                    <span className="truncate">Kecamatan</span>
+                  </div>
+                  <div className={`flex items-center gap-1 ${hasKotaKab ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span>{hasKotaKab ? '✓' : '○'}</span>
+                    <span className="truncate">Kota/Kab</span>
+                  </div>
+                  <div className={`flex items-center gap-1 ${hasPatokan ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span>{hasPatokan ? '✓' : '○'}</span>
+                    <span className="truncate">Patokan</span>
+                  </div>
+                </div>
+
+                {/* Suggestion for required */}
                 {!isComplete && suggestions.length > 0 && (
                   <div className="pt-2 border-t border-amber-200 dark:border-amber-800">
                     <p className="text-xs text-amber-700 dark:text-amber-300">
-                      <span className="font-semibold">💡 Tambahkan:</span>{' '}
+                      <span className="font-semibold">⚠️ Wajib:</span>{' '}
                       {suggestions.join(', ')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Suggestion for bonus when required is complete */}
+                {isComplete && bonusSuggestions.length > 0 && bonusCount < 2 && (
+                  <div className="pt-2 border-t border-green-200 dark:border-green-800">
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      <span className="font-semibold">💡 Lebih lengkap:</span>{' '}
+                      Tambahkan {bonusSuggestions.slice(0, 2).join(', ')} untuk alamat super lengkap
                     </p>
                   </div>
                 )}
@@ -557,18 +614,23 @@ const AddressInput: React.FC<AddressInputProps> = ({
                 {!detailAddress && (
                   <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
                     <p className="text-xs text-blue-600 dark:text-blue-400 italic">
-                      Contoh: JL. Merdeka No. 12, RT 02/RW 03, Patokan: Depan Masjid
+                      Contoh: JL. Merdeka No. 12, RT 02/RW 03, Kel. Sukamaju, Kec. Cileungsi, Kab. Bogor
                     </p>
                   </div>
                 )}
 
                 {/* Success message */}
-                {isComplete && (
+                {isPerfect && (
+                  <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      🏆 Alamat super lengkap! Kurir pasti mudah menemukan lokasi Anda.
+                    </p>
+                  </div>
+                )}
+                {isComplete && !isPerfect && (
                   <div className="pt-2 border-t border-green-200 dark:border-green-800">
                     <p className="text-xs text-green-600 dark:text-green-400">
-                      {hasPatokan 
-                        ? '🎉 Alamat sudah lengkap dengan patokan! Pengiriman akan lebih mudah.' 
-                        : '✨ Alamat sudah lengkap! Tambahkan patokan agar kurir lebih mudah menemukan.'}
+                      ✨ Alamat sudah memenuhi syarat minimal. Tambahkan info bonus untuk hasil terbaik!
                     </p>
                   </div>
                 )}
@@ -583,7 +645,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
               setDetailAddress(e.target.value);
             }}
             disabled={disabled}
-            placeholder="Contoh: JL. Merdeka No. 12, RT 02/RW 03, Patokan: Depan Masjid Al-Ikhlas"
+            placeholder="Contoh: JL. Merdeka No. 12, RT 02/RW 03, Kel. Sukamaju, Kec. Cileungsi, Kab. Bogor"
             rows={3}
             maxLength={500}
             required={requiredDetailAddress || required}
