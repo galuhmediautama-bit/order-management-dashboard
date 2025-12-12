@@ -1815,14 +1815,14 @@ const OrdersPage: React.FC = () => {
                                                                 return (
                                                                     <div className="flex items-center gap-1.5">
                                                                         <span 
-                                                                            className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                                                            className={`text-sm px-1 rounded ${
                                                                                 isPerfect
-                                                                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                                                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
                                                                                     : isComplete 
-                                                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                                                                        ? 'bg-green-100 dark:bg-green-900/30' 
                                                                                         : isPartial
-                                                                                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                                                            ? 'bg-amber-100 dark:bg-amber-900/30'
+                                                                                            : 'bg-red-100 dark:bg-red-900/30'
                                                                             }`}
                                                                             title={
                                                                                 isPerfect 
@@ -1834,7 +1834,7 @@ const OrdersPage: React.FC = () => {
                                                                                             : 'Alamat tidak lengkap'
                                                                             }
                                                                         >
-                                                                            {isPerfect ? '★' : isComplete ? '✓' : isPartial ? '!' : '✗'}
+                                                                            {isPerfect ? '🏆' : isComplete ? '✅' : isPartial ? '⚠️' : '❌'}
                                                                         </span>
                                                                         {order.city ? (
                                                                             <span className="text-slate-700 dark:text-slate-300">{order.city}</span>
