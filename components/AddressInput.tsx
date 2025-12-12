@@ -465,6 +465,23 @@ const AddressInput: React.FC<AddressInputProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Alamat Lengkap {(requiredDetailAddress || required) && <span className="text-red-500">*</span>}
           </label>
+          
+          {/* Info Box - Contoh Format Alamat */}
+          <div className="mb-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-500 text-lg flex-shrink-0">💡</span>
+              <div className="text-xs text-blue-700 dark:text-blue-300">
+                <p className="font-semibold mb-1">Contoh penulisan alamat yang benar:</p>
+                <p className="text-blue-600 dark:text-blue-400 italic mb-1">
+                  JL. Merdeka No. 12, RT 02/RW 03, Kel. Sukamaju
+                </p>
+                <p className="text-blue-600 dark:text-blue-400 italic">
+                  Dusun Cempaka, RT 01/RW 02, Desa Karang Anyar
+                </p>
+              </div>
+            </div>
+          </div>
+
           <textarea
             value={detailAddress}
             onChange={(e) => {
@@ -472,7 +489,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
               setDetailAddress(e.target.value);
             }}
             disabled={disabled}
-            placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
+            placeholder="Contoh: JL. Merdeka No. 12, RT 02/RW 03, Kelurahan Sukamaju, Patokan: Depan Masjid Al-Ikhlas"
             rows={3}
             maxLength={500}
             required={requiredDetailAddress || required}
