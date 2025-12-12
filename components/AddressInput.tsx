@@ -90,10 +90,17 @@ const AddressInput: React.FC<AddressInputProps> = ({
   // Track if we're syncing from external value to avoid loops
   const isSyncing = useRef(false);
   const previousValueRef = useRef<string>('');
+  const isLocalChange = useRef(false);
 
-  // Sync detailAddress from prop when it changes
+  // Sync detailAddress from prop when it changes EXTERNALLY (not from user typing)
   useEffect(() => {
-    if (value.detailAddress !== detailAddress) {
+    // Skip if this is a local change (user typing)
+    if (isLocalChange.current) {
+      isLocalChange.current = false;
+      return;
+    }
+    // Only sync if the external value is different from current local state
+    if (value.detailAddress !== undefined && value.detailAddress !== detailAddress) {
       setDetailAddress(value.detailAddress);
     }
   }, [value.detailAddress]);
@@ -460,7 +467,10 @@ const AddressInput: React.FC<AddressInputProps> = ({
           </label>
           <textarea
             value={detailAddress}
-            onChange={(e) => setDetailAddress(e.target.value)}
+            onChange={(e) => {
+              isLocalChange.current = true;
+              setDetailAddress(e.target.value);
+            }}
             disabled={disabled}
             placeholder="Nama jalan, nomor rumah, RT/RW, patokan, dll"
             rows={3}
