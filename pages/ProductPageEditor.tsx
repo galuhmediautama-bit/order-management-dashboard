@@ -85,10 +85,15 @@ const ProductPageEditor: React.FC = () => {
   }, [id]);
 
   const fetchForms = async () => {
-    const { data: formsData } = await supabase
+    const { data: formsData, error } = await supabase
       .from('forms')
       .select('id, title, slug, variants')
       .order('title');
+    
+    if (error) {
+      console.error('Error fetching forms:', error);
+    }
+    console.log('Forms loaded:', formsData?.length || 0);
     setForms(formsData || []);
   };
 
@@ -372,7 +377,7 @@ const ProductPageEditor: React.FC = () => {
             <input
               type="text"
               value={data.title}
-              onChange={e => setData(prev => ({ ...prev, title: e.target.value, slug: prev.slug || generateSlug(e.target.value) }))}
+              onChange={e => setData(prev => ({ ...prev, title: e.target.value, slug: generateSlug(e.target.value) }))}
               placeholder="Nama Product Page"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
             />
@@ -526,20 +531,23 @@ const ProductPageEditor: React.FC = () => {
                     <button onClick={() => setShowAddProduct(false)} className="text-slate-400 hover:text-slate-600">✕</button>
                   </div>
                   <div className="p-4 overflow-y-auto max-h-[50vh] space-y-2">
-                    {forms.filter(f => !data.products.some(p => p.formId === f.id)).map(form => (
-                      <button
-                        key={form.id}
-                        onClick={() => addProduct(form)}
-                        className="w-full p-3 text-left bg-slate-50 dark:bg-slate-700/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg border border-slate-200 dark:border-slate-600 transition-colors"
-                      >
-                        <span className="font-medium">{form.title}</span>
-                        {form.variants && form.variants.length > 0 && (
-                          <span className="text-sm text-slate-500 ml-2">({form.variants.length} varian)</span>
-                        )}
-                      </button>
-                    ))}
-                    {forms.filter(f => !data.products.some(p => p.formId === f.id)).length === 0 && (
-                      <p className="text-center text-slate-500 py-4">Semua formulir sudah ditambahkan</p>
+                    {forms.length === 0 ? (
+                      <p className="text-center text-slate-500 py-4">Belum ada formulir. Buat formulir terlebih dahulu di menu Formulir.</p>
+                    ) : forms.filter(f => !data.products.some(p => p.formId === f.id)).length === 0 ? (
+                      <p className="text-center text-slate-500 py-4">Semua formulir ({forms.length}) sudah ditambahkan</p>
+                    ) : (
+                      forms.filter(f => !data.products.some(p => p.formId === f.id)).map(form => (
+                        <button
+                          key={form.id}
+                          onClick={() => addProduct(form)}
+                          className="w-full p-3 text-left bg-slate-50 dark:bg-slate-700/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg border border-slate-200 dark:border-slate-600 transition-colors"
+                        >
+                          <span className="font-medium">{form.title}</span>
+                          {form.variants && form.variants.length > 0 && (
+                            <span className="text-sm text-slate-500 ml-2">({form.variants.length} varian)</span>
+                          )}
+                        </button>
+                      ))
                     )}
                   </div>
                 </div>

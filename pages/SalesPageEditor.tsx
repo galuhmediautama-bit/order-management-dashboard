@@ -376,7 +376,7 @@ const SalesPageEditor: React.FC = () => {
             <input
               type="text"
               value={data.title}
-              onChange={e => setData(prev => ({ ...prev, title: e.target.value, slug: prev.slug || generateSlug(e.target.value) }))}
+              onChange={e => setData(prev => ({ ...prev, title: e.target.value, slug: generateSlug(e.target.value) }))}
               placeholder="Nama Sales Page"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
             />
