@@ -498,25 +498,28 @@ const AddressInput: React.FC<AddressInputProps> = ({
             // Patokan: PATOKAN, DEKAT, DEPAN, SAMPING, BELAKANG, SEBERANG, SEBELAH
             const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah|di\s+depan|di\s+samping|di\s+belakang)/i.test(detailAddress);
             
-            // Required: 3 items, Optional bonus: 6 items
-            const requiredCount = [hasStreetName, hasNumber, hasRtRw].filter(Boolean).length;
-            const bonusCount = [hasKelDesa, hasKecamatan, hasKotaKab, hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
+            // Required: 6 items, Optional bonus: 3 items
+            const requiredCount = [hasStreetName, hasNumber, hasRtRw, hasKelDesa, hasKecamatan, hasKotaKab].filter(Boolean).length;
+            const bonusCount = [hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
             const totalCount = requiredCount + bonusCount;
-            const isComplete = requiredCount >= 3;
+            const isComplete = requiredCount >= 6;
             const isPerfect = isComplete && bonusCount >= 2;
-            const isPartial = requiredCount > 0 && requiredCount < 3;
+            const isPartial = requiredCount > 0 && requiredCount < 6;
 
-            // Generate suggestions for required
+            // Generate suggestions for required (6 items now)
             const suggestions: string[] = [];
             if (!hasStreetName) suggestions.push('Nama Jalan/Gang/Dusun');
             if (!hasNumber) suggestions.push('Nomor Rumah');
             if (!hasRtRw) suggestions.push('RT/RW');
+            if (!hasKelDesa) suggestions.push('Kel/Desa');
+            if (!hasKecamatan) suggestions.push('Kecamatan');
+            if (!hasKotaKab) suggestions.push('Kota/Kab');
             
-            // Generate bonus suggestions
+            // Generate bonus suggestions (3 items)
             const bonusSuggestions: string[] = [];
-            if (!hasKelDesa) bonusSuggestions.push('Kel/Desa');
-            if (!hasKecamatan) bonusSuggestions.push('Kecamatan');
-            if (!hasKotaKab) bonusSuggestions.push('Kota/Kab');
+            if (!hasProvinsi) bonusSuggestions.push('Provinsi');
+            if (!hasKodePos) bonusSuggestions.push('Kode Pos');
+            if (!hasPatokan) bonusSuggestions.push('Patokan');
             
             return (
               <div className={`mb-2 p-3 rounded-lg border ${
@@ -554,7 +557,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
                         ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                         : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
                     }`}>
-                      {requiredCount}/3 Wajib
+                      {requiredCount}/6 Wajib
                     </span>
                     {isComplete && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -568,9 +571,9 @@ const AddressInput: React.FC<AddressInputProps> = ({
                   </div>
                 </div>
 
-                {/* Checklist - Required */}
+                {/* Checklist - Required (6 items) */}
                 <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Wajib Diisi:</div>
-                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs mb-3">
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs mb-2">
                   <div className={`flex items-center gap-1 ${hasStreetName ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasStreetName ? '✓' : '○'}</span>
                     <span className="truncate">Jalan/Dusun</span>
@@ -586,23 +589,26 @@ const AddressInput: React.FC<AddressInputProps> = ({
                     <span className="truncate">RT/RW</span>
                     {!hasRtRw && <span className="text-red-500">*</span>}
                   </div>
-                </div>
-
-                {/* Checklist - Bonus/Optional */}
-                <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Opsional (Bonus):</div>
-                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs mb-2">
-                  <div className={`flex items-center gap-1 ${hasKelDesa ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                  <div className={`flex items-center gap-1 ${hasKelDesa ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasKelDesa ? '✓' : '○'}</span>
                     <span className="truncate">Kel/Desa</span>
+                    {!hasKelDesa && <span className="text-red-500">*</span>}
                   </div>
-                  <div className={`flex items-center gap-1 ${hasKecamatan ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                  <div className={`flex items-center gap-1 ${hasKecamatan ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasKecamatan ? '✓' : '○'}</span>
                     <span className="truncate">Kecamatan</span>
+                    {!hasKecamatan && <span className="text-red-500">*</span>}
                   </div>
-                  <div className={`flex items-center gap-1 ${hasKotaKab ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                  <div className={`flex items-center gap-1 ${hasKotaKab ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                     <span>{hasKotaKab ? '✓' : '○'}</span>
                     <span className="truncate">Kota/Kab</span>
+                    {!hasKotaKab && <span className="text-red-500">*</span>}
                   </div>
+                </div>
+
+                {/* Checklist - Bonus/Optional (3 items) */}
+                <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Opsional (Bonus):</div>
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs mb-2">
                   <div className={`flex items-center gap-1 ${hasProvinsi ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                     <span>{hasProvinsi ? '✓' : '○'}</span>
                     <span className="truncate">Provinsi</span>

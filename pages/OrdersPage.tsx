@@ -1805,12 +1805,12 @@ const OrdersPage: React.FC = () => {
                                                                 // Patokan patterns: PATOKAN, DEKAT, DEPAN, SAMPING, BELAKANG, SEBERANG, SEBELAH, DI DEPAN, DI SAMPING
                                                                 const hasPatokan = /(?:patokan|dekat|depan|samping|belakang|seberang|sebelah|di\s+depan|di\s+samping|di\s+belakang)/i.test(addr);
                                                                 
-                                                                // Calculate completeness score
-                                                                const requiredCount = [hasStreet, hasNumber, hasRtRw].filter(Boolean).length;
-                                                                const bonusCount = [hasKelDesa, hasKecamatan, hasKotaKab, hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
-                                                                const isComplete = requiredCount >= 3;
+                                                                // Calculate completeness score (6 required items now)
+                                                                const requiredCount = [hasStreet, hasNumber, hasRtRw, hasKelDesa, hasKecamatan, hasKotaKab].filter(Boolean).length;
+                                                                const bonusCount = [hasProvinsi, hasKodePos, hasPatokan].filter(Boolean).length;
+                                                                const isComplete = requiredCount >= 6;
                                                                 const isPerfect = isComplete && bonusCount >= 2;
-                                                                const isPartial = requiredCount > 0 && requiredCount < 3;
+                                                                const isPartial = requiredCount > 0 && requiredCount < 6;
 
                                                                 return (
                                                                     <div className="flex items-center gap-1.5">
@@ -1826,11 +1826,11 @@ const OrdersPage: React.FC = () => {
                                                                             }`}
                                                                             title={
                                                                                 isPerfect 
-                                                                                    ? `Alamat super lengkap! (3/3 wajib + ${bonusCount} bonus)` 
+                                                                                    ? `Alamat super lengkap! (6/6 wajib + ${bonusCount} bonus)` 
                                                                                     : isComplete 
-                                                                                        ? `Alamat lengkap (3/3 wajib${bonusCount > 0 ? ` + ${bonusCount} bonus` : ''})` 
+                                                                                        ? `Alamat lengkap (6/6 wajib${bonusCount > 0 ? ` + ${bonusCount} bonus` : ''})` 
                                                                                         : isPartial 
-                                                                                            ? `Alamat kurang lengkap (${requiredCount}/3 wajib)` 
+                                                                                            ? `Alamat kurang lengkap (${requiredCount}/6 wajib)` 
                                                                                             : 'Alamat tidak lengkap'
                                                                             }
                                                                         >
