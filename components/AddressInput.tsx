@@ -682,18 +682,44 @@ const AddressInput: React.FC<AddressInputProps> = ({
             rows={3}
             maxLength={500}
             required={requiredDetailAddress || required}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${addressError ? 'border-red-500' : detailAddress.length > 0 && detailAddress.length < 30 ? 'border-amber-400 dark:border-amber-500' : 'border-gray-300 dark:border-gray-600'}`}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-900 resize-none ${
+              addressError 
+                ? 'border-red-500' 
+                : detailAddress.length >= 70 
+                  ? 'border-emerald-400 dark:border-emerald-500' 
+                  : detailAddress.length >= 50 
+                    ? 'border-green-400 dark:border-green-500' 
+                    : detailAddress.length >= 30 
+                      ? 'border-blue-400 dark:border-blue-500' 
+                      : detailAddress.length > 0 
+                        ? 'border-amber-400 dark:border-amber-500' 
+                        : 'border-gray-300 dark:border-gray-600'
+            }`}
           />
           <div className="flex justify-between items-center mt-1">
             {addressError ? (
               <p className="text-xs text-red-500">{addressError}</p>
-            ) : detailAddress.length > 0 && detailAddress.length < 30 ? (
-              <p className="text-xs text-amber-500">⚠️ Alamat terlalu pendek (min. 30 karakter)</p>
+            ) : detailAddress.length >= 70 ? (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">🏆 Sangat Lengkap! Kurir pasti mudah menemukan alamat Anda</p>
+            ) : detailAddress.length >= 50 ? (
+              <p className="text-xs text-green-600 dark:text-green-400">✅ Cukup Lengkap - Tambahkan detail untuk hasil terbaik</p>
+            ) : detailAddress.length >= 30 ? (
+              <p className="text-xs text-blue-600 dark:text-blue-400">👍 Memenuhi syarat minimal - Bisa lebih lengkap lagi</p>
+            ) : detailAddress.length > 0 ? (
+              <p className="text-xs text-amber-500">⚠️ Kurang Lengkap (min. 30 karakter)</p>
             ) : (
               <span></span>
             )}
-            <span className={`text-xs ${detailAddress.length >= 30 ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
-              {detailAddress.length}/500 karakter {detailAddress.length >= 30 && '✓'}
+            <span className={`text-xs font-medium ${
+              detailAddress.length >= 70 
+                ? 'text-emerald-600 dark:text-emerald-400' 
+                : detailAddress.length >= 50 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : detailAddress.length >= 30 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-slate-400 dark:text-slate-500'
+            }`}>
+              {detailAddress.length}/500
             </span>
           </div>
         </div>
