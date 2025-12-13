@@ -970,8 +970,8 @@ const HighConvertingProductPage: React.FC<{
     // Recent purchase popup
     useEffect(() => {
         if (!socialProof.active) return;
-        const names = socialProof.recentPurchaseNames.split('\n').filter(n => n.trim());
-        const cities = socialProof.recentPurchaseCities.split('\n').filter(c => c.trim());
+        const names = (socialProof.recentPurchaseNames || '').split('\n').filter(n => n.trim());
+        const cities = (socialProof.recentPurchaseCities || '').split('\n').filter(c => c.trim());
         if (names.length === 0 || cities.length === 0) return;
 
         const showNextPopup = () => {
