@@ -109,6 +109,10 @@ interface SocialProofSettings {
     liveViewersMax: number;
     recentPurchaseNames: string;
     recentPurchaseCities: string;
+    // Display settings per device
+    showOnDesktop?: boolean;
+    showOnTablet?: boolean;
+    showOnMobile?: boolean;
 }
 
 interface UrgencySettings {
@@ -123,6 +127,25 @@ interface DisplaySettings {
     showOnDesktop: boolean;
     showOnTablet: boolean;
     showOnMobile: boolean;
+}
+
+// Tracking Pixel Settings
+interface PixelEventSetting {
+    platform: 'meta' | 'google' | 'tiktok' | 'snack';
+    pixelIds: string[];
+    events: string[];
+}
+
+interface TrackingSettings {
+    pageView: PixelEventSetting[];
+    buttonClick: PixelEventSetting[];
+}
+
+interface GlobalPixelSettings {
+    meta: { pixels: { id: string; name: string }[]; active: boolean };
+    google: { pixels: { id: string; name: string }[]; active: boolean };
+    tiktok: { pixels: { id: string; name: string }[]; active: boolean };
+    snack: { pixels: { id: string; name: string }[]; active: boolean };
 }
 
 interface ProductPageData {
@@ -155,6 +178,7 @@ interface ProductPageData {
     socialProof?: SocialProofSettings;
     urgency?: UrgencySettings;
     displaySettings?: DisplaySettings;
+    trackingSettings?: TrackingSettings;
     accentColor?: string;
     backgroundColor: string;
     footerText: string;
@@ -619,10 +643,11 @@ const HighConvertingProductPage: React.FC<{
     formatPrice: (price: number) => string;
 }> = ({ productData, forms, getFormLink, formatPrice }) => {
     const urgency = productData.urgency || { countdownActive: false, countdownMinutes: 15, stockActive: false, stockInitial: 50, stockMin: 5 };
-    const socialProof = productData.socialProof || { active: false, liveViewersMin: 15, liveViewersMax: 45, recentPurchaseNames: '', recentPurchaseCities: '' };
+    const socialProof = productData.socialProof || { active: false, liveViewersMin: 15, liveViewersMax: 45, recentPurchaseNames: '', recentPurchaseCities: '', showOnDesktop: true, showOnTablet: true, showOnMobile: true };
     const reviews = productData.reviews || [];
     const showReviews = productData.showReviews !== false;
     const displaySettings = productData.displaySettings || { showOnDesktop: true, showOnTablet: true, showOnMobile: true };
+    const trackingSettings = productData.trackingSettings;
 
     const [countdown, setCountdown] = useState(urgency.countdownMinutes * 60);
     const [currentStock, setCurrentStock] = useState(urgency.stockInitial);
@@ -631,6 +656,88 @@ const HighConvertingProductPage: React.FC<{
     const [popupData, setPopupData] = useState({ name: '', city: '' });
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
+    const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings | null>(null);
+    const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+    // Detect device type
+    useEffect(() => {
+        const checkDevice = () => {
+            const width = window.innerWidth;
+            if (width < 768) setDeviceType('mobile');
+            else if (width < 1024) setDeviceType('tablet');
+            else setDeviceType('desktop');
+        };
+        checkDevice();
+        window.addEventListener('resize', checkDevice);
+        return () => window.removeEventListener('resize', checkDevice);
+    }, []);
+
+    // Check if social proof should show based on device
+    const showSocialProof = socialProof.active && (
+        (deviceType === 'desktop' && (socialProof.showOnDesktop ?? true)) ||
+        (deviceType === 'tablet' && (socialProof.showOnTablet ?? true)) ||
+        (deviceType === 'mobile' && (socialProof.showOnMobile ?? true))
+    );
+
+    // Fetch global pixels for tracking
+    useEffect(() => {
+        const fetchGlobalPixels = async () => {
+            try {
+                const { data } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').single();
+                if (data) setGlobalPixels(data);
+            } catch (e) { console.error('Error fetching global pixels:', e); }
+        };
+        fetchGlobalPixels();
+    }, []);
+
+    // Fire tracking pixels on page view
+    useEffect(() => {
+        if (!trackingSettings?.pageView || !globalPixels) return;
+
+        trackingSettings.pageView.forEach(config => {
+            if (!config.pixelIds?.length) return;
+            const platformData = globalPixels[config.platform];
+            if (!platformData?.active) return;
+
+            config.pixelIds.forEach(pixelId => {
+                config.events?.forEach(event => {
+                    firePixelEvent(config.platform, pixelId, event);
+                });
+            });
+        });
+    }, [trackingSettings, globalPixels]);
+
+    // Fire pixel event helper
+    const firePixelEvent = (platform: string, pixelId: string, event: string) => {
+        console.log(`🔥 Firing ${platform} pixel ${pixelId}: ${event}`);
+        
+        if (platform === 'meta' && typeof (window as any).fbq === 'function') {
+            (window as any).fbq('trackSingle', pixelId, event);
+        } else if (platform === 'google' && typeof (window as any).gtag === 'function') {
+            (window as any).gtag('event', event, { send_to: pixelId });
+        } else if (platform === 'tiktok' && typeof (window as any).ttq === 'object') {
+            (window as any).ttq.instance(pixelId).track(event);
+        } else if (platform === 'snack' && typeof (window as any).snaptr === 'function') {
+            (window as any).snaptr('track', event);
+        }
+    };
+
+    // Handle CTA button click with pixel tracking
+    const handleCtaClick = () => {
+        if (!trackingSettings?.buttonClick || !globalPixels) return;
+
+        trackingSettings.buttonClick.forEach(config => {
+            if (!config.pixelIds?.length) return;
+            const platformData = globalPixels[config.platform];
+            if (!platformData?.active) return;
+
+            config.pixelIds.forEach(pixelId => {
+                config.events?.forEach(event => {
+                    firePixelEvent(config.platform, pixelId, event);
+                });
+            });
+        });
+    };
 
     // Determine forced view mode based on display settings
     // If only mobile is enabled -> force mobile view on all devices
@@ -723,7 +830,7 @@ const HighConvertingProductPage: React.FC<{
                 )}
 
                 {/* Recent Purchase Popup */}
-                {showPopup && socialProof.active && (
+                {showPopup && showSocialProof && (
                     <div className={`fixed bottom-20 ${forceMobileView ? 'left-1/2 -translate-x-1/2 ml-[-180px]' : 'left-4'} z-40 animate-slide-up`}>
                         <div className="bg-white rounded-lg shadow-2xl p-4 max-w-xs border-l-4" style={{ borderColor: accentColor }}>
                             <p className="text-sm"><span className="font-bold">{popupData.name}</span> dari <span className="font-medium">{popupData.city}</span></p>
@@ -770,7 +877,7 @@ const HighConvertingProductPage: React.FC<{
                         {/* Right - Product Info */}
                         <div className="space-y-4">
                             {/* Live viewers */}
-                            {socialProof.active && (
+                            {showSocialProof && (
                                 <div className="flex items-center gap-2 text-sm">
                                     <span className="flex items-center gap-1 text-green-600">
                                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -847,6 +954,7 @@ const HighConvertingProductPage: React.FC<{
                             <div className={forceMobileView ? 'hidden' : 'hidden md:block'}>
                                 <a
                                     href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                                    onClick={handleCtaClick}
                                     className="block w-full py-4 rounded-xl text-white font-bold text-lg text-center transition-transform hover:scale-[1.02]"
                                     style={{ backgroundColor: accentColor }}
                                 >
@@ -920,6 +1028,7 @@ const HighConvertingProductPage: React.FC<{
                         </div>
                         <a
                             href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                            onClick={handleCtaClick}
                             className="flex-1 py-3 rounded-lg text-white font-bold text-center"
                             style={{ backgroundColor: accentColor }}
                         >

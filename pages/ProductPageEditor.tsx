@@ -48,6 +48,10 @@ interface SocialProofSettings {
     liveViewersMax: number;
     recentPurchaseNames: string;
     recentPurchaseCities: string;
+    // Display settings per device
+    showOnDesktop: boolean;
+    showOnTablet: boolean;
+    showOnMobile: boolean;
 }
 
 interface UrgencySettings {
@@ -164,6 +168,9 @@ const defaultSocialProof: SocialProofSettings = {
     liveViewersMax: 45,
     recentPurchaseNames: 'Rina Setyawati\nAndi Prasetyo\nSiti Marlina\nBudi Hartanto\nDella Anggraini\nFajar Nugraha',
     recentPurchaseCities: 'Jakarta\nBandung\nSurabaya\nYogyakarta\nSemarang\nBekasi\nDepok\nTangerang',
+    showOnDesktop: true,
+    showOnTablet: true,
+    showOnMobile: true,
 };
 
 const defaultUrgency: UrgencySettings = {
@@ -595,6 +602,24 @@ const ProductPageEditor: React.FC = () => {
                                     </label>
                                 </div>
                                 <div className="space-y-4">
+                                    {/* Device Display Settings */}
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                                        <label className="block text-sm font-medium mb-2">📱 Tampilkan di Perangkat:</label>
+                                        <div className="flex flex-wrap gap-4">
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={data.socialProof.showOnDesktop ?? true} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, showOnDesktop: e.target.checked } }))} className="rounded" />
+                                                <span className="text-sm">🖥️ Desktop</span>
+                                            </label>
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={data.socialProof.showOnTablet ?? true} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, showOnTablet: e.target.checked } }))} className="rounded" />
+                                                <span className="text-sm">📱 Tablet</span>
+                                            </label>
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={data.socialProof.showOnMobile ?? true} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, showOnMobile: e.target.checked } }))} className="rounded" />
+                                                <span className="text-sm">📲 Mobile</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Live Viewers Min</label>
