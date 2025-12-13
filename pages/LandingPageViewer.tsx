@@ -831,10 +831,19 @@ const HighConvertingProductPage: React.FC<{
 
                 {/* Recent Purchase Popup */}
                 {showPopup && showSocialProof && (
-                    <div className={`fixed bottom-20 ${forceMobileView ? 'left-1/2 -translate-x-1/2 ml-[-180px]' : 'left-4'} z-40 animate-slide-up`}>
-                        <div className="bg-white rounded-lg shadow-2xl p-4 max-w-xs border-l-4" style={{ borderColor: accentColor }}>
-                            <p className="text-sm"><span className="font-bold">{popupData.name}</span> dari <span className="font-medium">{popupData.city}</span></p>
-                            <p className="text-xs text-slate-500">Baru saja membeli produk ini 🛒</p>
+                    <div className={`fixed ${forceMobileView ? 'bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px]' : 'bottom-24 left-4 md:bottom-8'} z-50 animate-slide-up`}>
+                        <div className="bg-white rounded-xl shadow-2xl p-4 border-l-4 border border-slate-100" style={{ borderLeftColor: accentColor }}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                    {popupData.name.charAt(0)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-slate-900 truncate">
+                                        <span className="font-bold">{popupData.name}</span> dari <span className="text-slate-600">{popupData.city}</span>
+                                    </p>
+                                    <p className="text-xs text-slate-500">Baru saja membeli produk ini 🛒</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
