@@ -222,7 +222,9 @@ const ProductPageEditor: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [forms, setForms] = useState<Form[]>([]);
     const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings>({ meta: [], google: [], tiktok: [], snack: [] });
-    const [activeTab, setActiveTab] = useState<'product' | 'images' | 'variants' | 'urgency' | 'social' | 'reviews' | 'trust' | 'settings' | 'display' | 'pixels'>('product');
+    const [activeTab, setActiveTab] = useState<'product' | 'images' | 'variants' | 'marketing' | 'settings'>('product');
+    const [marketingSection, setMarketingSection] = useState<'urgency' | 'social' | 'reviews' | 'trust'>('urgency');
+    const [settingsSection, setSettingsSection] = useState<'general' | 'display' | 'pixels'>('general');
     const [previewMode, setPreviewMode] = useState(false);
 
     useEffect(() => {
@@ -238,9 +240,15 @@ const ProductPageEditor: React.FC = () => {
 
     const fetchGlobalPixels = async () => {
         try {
-            const { data: settingsData } = await supabase.from('settings').select('*').eq('key', 'trackingPixels').single();
-            if (settingsData?.value) {
-                setGlobalPixels(settingsData.value);
+            const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').single();
+            if (settingsData) {
+                // Data format from TrackingPage: { id, meta: { pixels: [], active }, google: { pixels: [], active }, ... }
+                setGlobalPixels({
+                    meta: (settingsData.meta?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                    google: (settingsData.google?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                    tiktok: (settingsData.tiktok?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                    snack: (settingsData.snack?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                });
             }
         } catch (error) {
             console.error('Error fetching global pixels:', error);
@@ -387,13 +395,13 @@ const ProductPageEditor: React.FC = () => {
             {/* Tabs */}
             <div className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 px-6 overflow-x-auto">
                 <div className="flex gap-1">
-                    {(['product', 'images', 'variants', 'urgency', 'social', 'reviews', 'trust', 'display', 'pixels', 'settings'] as const).map(tab => (
+                    {(['product', 'images', 'variants', 'marketing', 'settings'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-red-500 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                         >
-                            {tab === 'product' ? '📦 Produk' : tab === 'images' ? '🖼️ Gambar' : tab === 'variants' ? '🎨 Varian' : tab === 'urgency' ? '⏰ Urgency' : tab === 'social' ? '👥 Social Proof' : tab === 'reviews' ? '⭐ Reviews' : tab === 'trust' ? '✅ Trust' : tab === 'display' ? '📱 Tampilan' : tab === 'pixels' ? '📊 Pixel' : '⚙️ Settings'}
+                            {tab === 'product' ? '📦 Produk' : tab === 'images' ? '🖼️ Gambar' : tab === 'variants' ? '🎨 Varian' : tab === 'marketing' ? '🚀 Marketing' : '⚙️ Pengaturan'}
                         </button>
                     ))}
                 </div>
@@ -519,420 +527,454 @@ const ProductPageEditor: React.FC = () => {
                     </div>
                 )}
 
-                {/* Urgency Tab */}
-                {activeTab === 'urgency' && (
+                {/* Marketing Tab - Combined Urgency, Social Proof, Reviews, Trust */}
+                {activeTab === 'marketing' && (
                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold">⏰ Countdown Timer</h3>
-                                <label className="flex items-center gap-2">
-                                    <input type="checkbox" checked={data.urgency.countdownActive} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, countdownActive: e.target.checked } }))} className="rounded" />
-                                    <span className="text-sm">Aktif</span>
-                                </label>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Durasi (menit)</label>
-                                <input type="number" value={data.urgency.countdownMinutes} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, countdownMinutes: parseInt(e.target.value) || 15 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                        {/* Sub-tabs for Marketing */}
+                        <div className="bg-white dark:bg-slate-800 rounded-xl p-2 shadow-sm">
+                            <div className="flex gap-1 flex-wrap">
+                                {(['urgency', 'social', 'reviews', 'trust'] as const).map(section => (
+                                    <button
+                                        key={section}
+                                        onClick={() => setMarketingSection(section)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${marketingSection === section ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                    >
+                                        {section === 'urgency' ? '⏰ Urgency' : section === 'social' ? '👥 Social Proof' : section === 'reviews' ? '⭐ Reviews' : '✅ Trust'}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold">📦 Stok Terbatas</h3>
-                                <label className="flex items-center gap-2">
-                                    <input type="checkbox" checked={data.urgency.stockActive} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, stockActive: e.target.checked } }))} className="rounded" />
-                                    <span className="text-sm">Aktif</span>
-                                </label>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Stok Awal</label>
-                                    <input type="number" value={data.urgency.stockInitial} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, stockInitial: parseInt(e.target.value) || 50 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Stok Minimum</label>
-                                    <input type="number" value={data.urgency.stockMin} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, stockMin: parseInt(e.target.value) || 5 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Social Proof Tab */}
-                {activeTab === 'social' && (
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold">👥 Social Proof</h3>
-                                <label className="flex items-center gap-2">
-                                    <input type="checkbox" checked={data.socialProof.active} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, active: e.target.checked } }))} className="rounded" />
-                                    <span className="text-sm">Aktif</span>
-                                </label>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Live Viewers Min</label>
-                                        <input type="number" value={data.socialProof.liveViewersMin} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, liveViewersMin: parseInt(e.target.value) || 10 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                        {/* Urgency Section */}
+                        {marketingSection === 'urgency' && (
+                            <>
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-semibold">⏰ Countdown Timer</h3>
+                                        <label className="flex items-center gap-2">
+                                            <input type="checkbox" checked={data.urgency.countdownActive} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, countdownActive: e.target.checked } }))} className="rounded" />
+                                            <span className="text-sm">Aktif</span>
+                                        </label>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Live Viewers Max</label>
-                                        <input type="number" value={data.socialProof.liveViewersMax} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, liveViewersMax: parseInt(e.target.value) || 50 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        <label className="block text-sm font-medium mb-1">Durasi (menit)</label>
+                                        <input type="number" value={data.urgency.countdownMinutes} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, countdownMinutes: parseInt(e.target.value) || 15 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Nama Pembeli (satu per baris)</label>
-                                    <textarea value={data.socialProof.recentPurchaseNames} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, recentPurchaseNames: e.target.value } }))} rows={4} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 font-mono text-sm" />
+
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-semibold">📦 Stok Terbatas</h3>
+                                        <label className="flex items-center gap-2">
+                                            <input type="checkbox" checked={data.urgency.stockActive} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, stockActive: e.target.checked } }))} className="rounded" />
+                                            <span className="text-sm">Aktif</span>
+                                        </label>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Stok Awal</label>
+                                            <input type="number" value={data.urgency.stockInitial} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, stockInitial: parseInt(e.target.value) || 50 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Stok Minimum</label>
+                                            <input type="number" value={data.urgency.stockMin} onChange={e => setData(prev => ({ ...prev, urgency: { ...prev.urgency, stockMin: parseInt(e.target.value) || 5 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Kota (satu per baris)</label>
-                                    <textarea value={data.socialProof.recentPurchaseCities} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, recentPurchaseCities: e.target.value } }))} rows={4} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 font-mono text-sm" />
+                            </>
+                        )}
+
+                        {/* Social Proof Section */}
+                        {marketingSection === 'social' && (
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold">👥 Social Proof</h3>
+                                    <label className="flex items-center gap-2">
+                                        <input type="checkbox" checked={data.socialProof.active} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, active: e.target.checked } }))} className="rounded" />
+                                        <span className="text-sm">Aktif</span>
+                                    </label>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Live Viewers Min</label>
+                                            <input type="number" value={data.socialProof.liveViewersMin} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, liveViewersMin: parseInt(e.target.value) || 10 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Live Viewers Max</label>
+                                            <input type="number" value={data.socialProof.liveViewersMax} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, liveViewersMax: parseInt(e.target.value) || 50 } }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Nama Pembeli (satu per baris)</label>
+                                        <textarea value={data.socialProof.recentPurchaseNames} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, recentPurchaseNames: e.target.value } }))} rows={4} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 font-mono text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Kota (satu per baris)</label>
+                                        <textarea value={data.socialProof.recentPurchaseCities} onChange={e => setData(prev => ({ ...prev, socialProof: { ...prev.socialProof, recentPurchaseCities: e.target.value } }))} rows={4} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 font-mono text-sm" />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
+                        )}
 
-                {/* Reviews Tab */}
-                {activeTab === 'reviews' && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold">⭐ Reviews</h3>
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-2">
-                                    <input type="checkbox" checked={data.showReviews} onChange={e => setData(prev => ({ ...prev, showReviews: e.target.checked }))} className="rounded" />
-                                    <span className="text-sm">Tampilkan</span>
-                                </label>
-                                <button onClick={() => setData(prev => ({ ...prev, reviews: [...prev.reviews, { id: Date.now().toString(), name: '', rating: 5, comment: '', date: 'Baru saja', verified: true }] }))} className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm">+ Review</button>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            {data.reviews.map((review, idx) => (
-                                <div key={review.id} className="border rounded-lg p-4">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex-1 grid grid-cols-3 gap-2">
-                                            <input type="text" value={review.name} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, name: e.target.value } : r) }))} placeholder="Nama" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600" />
-                                            <select value={review.rating} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, rating: parseInt(e.target.value) } : r) }))} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600">
-                                                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} ⭐</option>)}
-                                            </select>
-                                            <input type="text" value={review.date} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, date: e.target.value } : r) }))} placeholder="Tanggal" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600" />
-                                        </div>
-                                        <button onClick={() => setData(prev => ({ ...prev, reviews: prev.reviews.filter((_, i) => i !== idx) }))} className="ml-2 p-2 text-red-500"><TrashIcon className="w-4 h-4" /></button>
-                                    </div>
-                                    <textarea value={review.comment} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, comment: e.target.value } : r) }))} placeholder="Komentar..." rows={2} className="w-full p-2 border rounded dark:bg-slate-700 dark:border-slate-600" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Trust Tab */}
-                {activeTab === 'trust' && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                        <h3 className="font-semibold mb-4">✅ Trust Badges</h3>
-                        <div className="space-y-4">
-                            {data.trustBadges.map((badge, idx) => (
-                                <div key={badge.id} className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                                    <input type="text" value={badge.icon} onChange={e => setData(prev => ({ ...prev, trustBadges: prev.trustBadges.map((b, i) => i === idx ? { ...b, icon: e.target.value } : b) }))} className="w-16 p-2 text-center text-2xl border rounded dark:bg-slate-600" />
-                                    <div className="flex-1 space-y-2">
-                                        <input type="text" value={badge.title} onChange={e => setData(prev => ({ ...prev, trustBadges: prev.trustBadges.map((b, i) => i === idx ? { ...b, title: e.target.value } : b) }))} placeholder="Judul" className="w-full p-2 border rounded dark:bg-slate-600" />
-                                        <input type="text" value={badge.description} onChange={e => setData(prev => ({ ...prev, trustBadges: prev.trustBadges.map((b, i) => i === idx ? { ...b, description: e.target.value } : b) }))} placeholder="Deskripsi" className="w-full p-2 border rounded dark:bg-slate-600" />
+                        {/* Reviews Section */}
+                        {marketingSection === 'reviews' && (
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold">⭐ Reviews</h3>
+                                    <div className="flex items-center gap-4">
+                                        <label className="flex items-center gap-2">
+                                            <input type="checkbox" checked={data.showReviews} onChange={e => setData(prev => ({ ...prev, showReviews: e.target.checked }))} className="rounded" />
+                                            <span className="text-sm">Tampilkan</span>
+                                        </label>
+                                        <button onClick={() => setData(prev => ({ ...prev, reviews: [...prev.reviews, { id: Date.now().toString(), name: '', rating: 5, comment: '', date: 'Baru saja', verified: true }] }))} className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm">+ Review</button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Settings Tab */}
-                {/* Display Settings Tab */}
-                {activeTab === 'display' && (
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold mb-4">📱 Pengaturan Tampilan</h3>
-                            <p className="text-sm text-slate-500 mb-4">Pilih perangkat mana yang dapat melihat halaman produk ini.</p>
-                            <div className="space-y-4">
-                                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.displaySettings?.showOnDesktop ?? true}
-                                        onChange={e => setData(prev => ({ ...prev, displaySettings: { ...prev.displaySettings, showOnDesktop: e.target.checked } }))}
-                                        className="w-5 h-5 rounded text-red-600"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl">🖥️</span>
-                                            <span className="font-medium">Desktop / PC</span>
-                                        </div>
-                                        <p className="text-sm text-slate-500">Tampilkan di layar komputer dan laptop (lebar &gt; 1024px)</p>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.displaySettings?.showOnTablet ?? true}
-                                        onChange={e => setData(prev => ({ ...prev, displaySettings: { ...prev.displaySettings, showOnTablet: e.target.checked } }))}
-                                        className="w-5 h-5 rounded text-red-600"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl">📱</span>
-                                            <span className="font-medium">Tablet</span>
-                                        </div>
-                                        <p className="text-sm text-slate-500">Tampilkan di tablet (lebar 768px - 1024px)</p>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.displaySettings?.showOnMobile ?? true}
-                                        onChange={e => setData(prev => ({ ...prev, displaySettings: { ...prev.displaySettings, showOnMobile: e.target.checked } }))}
-                                        className="w-5 h-5 rounded text-red-600"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl">📲</span>
-                                            <span className="font-medium">Mobile</span>
-                                        </div>
-                                        <p className="text-sm text-slate-500">Tampilkan di ponsel (lebar &lt; 768px)</p>
-                                    </div>
-                                </label>
-                            </div>
-                            {!(data.displaySettings?.showOnDesktop ?? true) && !(data.displaySettings?.showOnTablet ?? true) && !(data.displaySettings?.showOnMobile ?? true) && (
-                                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                    <p className="text-sm text-yellow-700 dark:text-yellow-400">⚠️ Perhatian: Halaman tidak akan ditampilkan di perangkat mana pun karena semua opsi dinonaktifkan.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Pixels Tab */}
-                {activeTab === 'pixels' && (
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold mb-2">📊 Tracking Pixel</h3>
-                            <p className="text-sm text-slate-500 mb-4">Konfigurasi pixel tracking untuk halaman produk ini. Pixel global diambil dari Pengaturan &gt; Tracking Pixels.</p>
-                            
-                            {/* PageView Events */}
-                            <div className="mb-6">
-                                <h4 className="font-medium mb-3 flex items-center gap-2">
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">PageView</span>
-                                    Event saat halaman dibuka
-                                </h4>
-                                <div className="space-y-3">
-                                    {['meta', 'google', 'tiktok', 'snack'].map(platform => {
-                                        const platformPixels = globalPixels[platform as keyof GlobalPixelSettings] || [];
-                                        const platformConfig = data.trackingSettings?.pageView?.find(p => p.platform === platform);
-                                        return (
-                                            <div key={platform} className="border rounded-lg p-4">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold ${platform === 'meta' ? 'bg-blue-600' : platform === 'google' ? 'bg-red-500' : platform === 'tiktok' ? 'bg-black' : 'bg-orange-500'}`}>
-                                                            {platform === 'meta' ? 'M' : platform === 'google' ? 'G' : platform === 'tiktok' ? 'T' : 'S'}
-                                                        </span>
-                                                        <span className="font-medium capitalize">{platform === 'meta' ? 'Meta (Facebook)' : platform === 'google' ? 'Google Ads' : platform === 'tiktok' ? 'TikTok' : 'Snack Video'}</span>
-                                                    </div>
+                                <div className="space-y-4">
+                                    {data.reviews.map((review, idx) => (
+                                        <div key={review.id} className="border rounded-lg p-4">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex-1 grid grid-cols-3 gap-2">
+                                                    <input type="text" value={review.name} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, name: e.target.value } : r) }))} placeholder="Nama" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600" />
+                                                    <select value={review.rating} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, rating: parseInt(e.target.value) } : r) }))} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600">
+                                                        {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} ⭐</option>)}
+                                                    </select>
+                                                    <input type="text" value={review.date} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, date: e.target.value } : r) }))} placeholder="Tanggal" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600" />
                                                 </div>
-                                                {platformPixels.length === 0 ? (
-                                                    <p className="text-sm text-slate-400 italic">Tidak ada pixel {platform} yang dikonfigurasi di pengaturan global</p>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm text-slate-600 dark:text-slate-400">Pilih Pixel ID:</label>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {platformPixels.map((pixel: GlobalPixel) => (
-                                                                <label key={pixel.id} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={platformConfig?.pixelIds?.includes(pixel.id) || false}
-                                                                        onChange={e => {
-                                                                            const currentSettings = data.trackingSettings?.pageView || [];
-                                                                            const existingIndex = currentSettings.findIndex(p => p.platform === platform);
-                                                                            let newPixelIds: string[];
-                                                                            if (e.target.checked) {
-                                                                                newPixelIds = [...(platformConfig?.pixelIds || []), pixel.id];
-                                                                            } else {
-                                                                                newPixelIds = (platformConfig?.pixelIds || []).filter(id => id !== pixel.id);
-                                                                            }
-                                                                            const newSettings = [...currentSettings];
-                                                                            if (existingIndex >= 0) {
-                                                                                newSettings[existingIndex] = { ...newSettings[existingIndex], pixelIds: newPixelIds };
-                                                                            } else {
-                                                                                newSettings.push({ platform: platform as any, pixelIds: newPixelIds, events: ['PageView'] });
-                                                                            }
-                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
-                                                                        }}
-                                                                        className="w-4 h-4 rounded"
-                                                                    />
-                                                                    <span className="text-sm">{pixel.name || pixel.id}</span>
-                                                                </label>
-                                                            ))}
-                                                        </div>
-                                                        {platformConfig?.pixelIds?.length ? (
-                                                            <div className="mt-2">
-                                                                <label className="text-sm text-slate-600 dark:text-slate-400">Events:</label>
-                                                                <div className="flex flex-wrap gap-2 mt-1">
-                                                                    {PIXEL_EVENTS[platform as keyof typeof PIXEL_EVENTS]?.map(event => (
-                                                                        <label key={event} className="flex items-center gap-1 px-2 py-1 border rounded text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={platformConfig?.events?.includes(event) || false}
-                                                                                onChange={e => {
-                                                                                    const currentSettings = data.trackingSettings?.pageView || [];
-                                                                                    const idx = currentSettings.findIndex(p => p.platform === platform);
-                                                                                    if (idx >= 0) {
-                                                                                        const newEvents = e.target.checked
-                                                                                            ? [...(currentSettings[idx].events || []), event]
-                                                                                            : (currentSettings[idx].events || []).filter(ev => ev !== event);
-                                                                                        const newSettings = [...currentSettings];
-                                                                                        newSettings[idx] = { ...newSettings[idx], events: newEvents };
-                                                                                        setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
-                                                                                    }
-                                                                                }}
-                                                                                className="w-3 h-3 rounded"
-                                                                            />
-                                                                            <span>{event}</span>
-                                                                        </label>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
-                                                )}
+                                                <button onClick={() => setData(prev => ({ ...prev, reviews: prev.reviews.filter((_, i) => i !== idx) }))} className="ml-2 p-2 text-red-500"><TrashIcon className="w-4 h-4" /></button>
                                             </div>
-                                        );
-                                    })}
+                                            <textarea value={review.comment} onChange={e => setData(prev => ({ ...prev, reviews: prev.reviews.map((r, i) => i === idx ? { ...r, comment: e.target.value } : r) }))} placeholder="Komentar..." rows={2} className="w-full p-2 border rounded dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
+                        )}
 
-                            {/* Button Click Events */}
-                            <div>
-                                <h4 className="font-medium mb-3 flex items-center gap-2">
-                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">ButtonClick</span>
-                                    Event saat tombol CTA diklik
-                                </h4>
-                                <div className="space-y-3">
-                                    {['meta', 'google', 'tiktok', 'snack'].map(platform => {
-                                        const platformPixels = globalPixels[platform as keyof GlobalPixelSettings] || [];
-                                        const platformConfig = data.trackingSettings?.buttonClick?.find(p => p.platform === platform);
-                                        return (
-                                            <div key={platform} className="border rounded-lg p-4">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold ${platform === 'meta' ? 'bg-blue-600' : platform === 'google' ? 'bg-red-500' : platform === 'tiktok' ? 'bg-black' : 'bg-orange-500'}`}>
-                                                            {platform === 'meta' ? 'M' : platform === 'google' ? 'G' : platform === 'tiktok' ? 'T' : 'S'}
-                                                        </span>
-                                                        <span className="font-medium capitalize">{platform === 'meta' ? 'Meta (Facebook)' : platform === 'google' ? 'Google Ads' : platform === 'tiktok' ? 'TikTok' : 'Snack Video'}</span>
-                                                    </div>
-                                                </div>
-                                                {platformPixels.length === 0 ? (
-                                                    <p className="text-sm text-slate-400 italic">Tidak ada pixel {platform} yang dikonfigurasi di pengaturan global</p>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm text-slate-600 dark:text-slate-400">Pilih Pixel ID:</label>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {platformPixels.map((pixel: GlobalPixel) => (
-                                                                <label key={pixel.id} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={platformConfig?.pixelIds?.includes(pixel.id) || false}
-                                                                        onChange={e => {
-                                                                            const currentSettings = data.trackingSettings?.buttonClick || [];
-                                                                            const existingIndex = currentSettings.findIndex(p => p.platform === platform);
-                                                                            let newPixelIds: string[];
-                                                                            if (e.target.checked) {
-                                                                                newPixelIds = [...(platformConfig?.pixelIds || []), pixel.id];
-                                                                            } else {
-                                                                                newPixelIds = (platformConfig?.pixelIds || []).filter(id => id !== pixel.id);
-                                                                            }
-                                                                            const newSettings = [...currentSettings];
-                                                                            if (existingIndex >= 0) {
-                                                                                newSettings[existingIndex] = { ...newSettings[existingIndex], pixelIds: newPixelIds };
-                                                                            } else {
-                                                                                newSettings.push({ platform: platform as any, pixelIds: newPixelIds, events: ['InitiateCheckout'] });
-                                                                            }
-                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
-                                                                        }}
-                                                                        className="w-4 h-4 rounded"
-                                                                    />
-                                                                    <span className="text-sm">{pixel.name || pixel.id}</span>
-                                                                </label>
-                                                            ))}
-                                                        </div>
-                                                        {platformConfig?.pixelIds?.length ? (
-                                                            <div className="mt-2">
-                                                                <label className="text-sm text-slate-600 dark:text-slate-400">Events:</label>
-                                                                <div className="flex flex-wrap gap-2 mt-1">
-                                                                    {PIXEL_EVENTS[platform as keyof typeof PIXEL_EVENTS]?.map(event => (
-                                                                        <label key={event} className="flex items-center gap-1 px-2 py-1 border rounded text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={platformConfig?.events?.includes(event) || false}
-                                                                                onChange={e => {
-                                                                                    const currentSettings = data.trackingSettings?.buttonClick || [];
-                                                                                    const idx = currentSettings.findIndex(p => p.platform === platform);
-                                                                                    if (idx >= 0) {
-                                                                                        const newEvents = e.target.checked
-                                                                                            ? [...(currentSettings[idx].events || []), event]
-                                                                                            : (currentSettings[idx].events || []).filter(ev => ev !== event);
-                                                                                        const newSettings = [...currentSettings];
-                                                                                        newSettings[idx] = { ...newSettings[idx], events: newEvents };
-                                                                                        setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
-                                                                                    }
-                                                                                }}
-                                                                                className="w-3 h-3 rounded"
-                                                                            />
-                                                                            <span>{event}</span>
-                                                                        </label>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
-                                                )}
+                        {/* Trust Section */}
+                        {marketingSection === 'trust' && (
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-4">✅ Trust Badges</h3>
+                                <div className="space-y-4">
+                                    {data.trustBadges.map((badge, idx) => (
+                                        <div key={badge.id} className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                                            <input type="text" value={badge.icon} onChange={e => setData(prev => ({ ...prev, trustBadges: prev.trustBadges.map((b, i) => i === idx ? { ...b, icon: e.target.value } : b) }))} className="w-16 p-2 text-center text-2xl border rounded dark:bg-slate-600" />
+                                            <div className="flex-1 space-y-2">
+                                                <input type="text" value={badge.title} onChange={e => setData(prev => ({ ...prev, trustBadges: prev.trustBadges.map((b, i) => i === idx ? { ...b, title: e.target.value } : b) }))} placeholder="Judul" className="w-full p-2 border rounded dark:bg-slate-600" />
+                                                <input type="text" value={badge.description} onChange={e => setData(prev => ({ ...prev, trustBadges: prev.trustBadges.map((b, i) => i === idx ? { ...b, description: e.target.value } : b) }))} placeholder="Deskripsi" className="w-full p-2 border rounded dark:bg-slate-600" />
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 
+                {/* Settings Tab - Combined General, Display, Pixels */}
                 {activeTab === 'settings' && (
                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold mb-4">Warna</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Warna Aksen (CTA)</label>
-                                    <div className="flex items-center gap-2">
-                                        <input type="color" value={data.accentColor} onChange={e => setData(prev => ({ ...prev, accentColor: e.target.value }))} className="w-12 h-12 rounded cursor-pointer" />
-                                        <input type="text" value={data.accentColor} onChange={e => setData(prev => ({ ...prev, accentColor: e.target.value }))} className="flex-1 p-2 border rounded dark:bg-slate-700" />
+                        {/* Sub-tabs for Settings */}
+                        <div className="bg-white dark:bg-slate-800 rounded-xl p-2 shadow-sm">
+                            <div className="flex gap-1 flex-wrap">
+                                {(['general', 'display', 'pixels'] as const).map(section => (
+                                    <button
+                                        key={section}
+                                        onClick={() => setSettingsSection(section)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${settingsSection === section ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                    >
+                                        {section === 'general' ? '⚙️ Umum' : section === 'display' ? '📱 Tampilan' : '📊 Pixel'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* General Settings Section */}
+                        {settingsSection === 'general' && (
+                            <>
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                    <h3 className="font-semibold mb-4">Warna</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Warna Aksen (CTA)</label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="color" value={data.accentColor} onChange={e => setData(prev => ({ ...prev, accentColor: e.target.value }))} className="w-12 h-12 rounded cursor-pointer" />
+                                                <input type="text" value={data.accentColor} onChange={e => setData(prev => ({ ...prev, accentColor: e.target.value }))} className="flex-1 p-2 border rounded dark:bg-slate-700" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Background</label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="color" value={data.backgroundColor} onChange={e => setData(prev => ({ ...prev, backgroundColor: e.target.value }))} className="w-12 h-12 rounded cursor-pointer" />
+                                                <input type="text" value={data.backgroundColor} onChange={e => setData(prev => ({ ...prev, backgroundColor: e.target.value }))} className="flex-1 p-2 border rounded dark:bg-slate-700" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                    <h3 className="font-semibold mb-4">Lainnya</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Custom Slug</label>
+                                            <input type="text" value={data.slug} onChange={e => setData(prev => ({ ...prev, slug: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700" placeholder="custom-url" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Footer</label>
+                                            <input type="text" value={data.footerText} onChange={e => setData(prev => ({ ...prev, footerText: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Display Settings Section */}
+                        {settingsSection === 'display' && (
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-4">📱 Pengaturan Tampilan</h3>
+                                <p className="text-sm text-slate-500 mb-4">Pilih perangkat mana yang dapat melihat halaman produk ini.</p>
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.displaySettings?.showOnDesktop ?? true}
+                                            onChange={e => setData(prev => ({ ...prev, displaySettings: { ...prev.displaySettings, showOnDesktop: e.target.checked } }))}
+                                            className="w-5 h-5 rounded text-red-600"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">🖥️</span>
+                                                <span className="font-medium">Desktop / PC</span>
+                                            </div>
+                                            <p className="text-sm text-slate-500">Tampilkan di layar komputer dan laptop (lebar &gt; 1024px)</p>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.displaySettings?.showOnTablet ?? true}
+                                            onChange={e => setData(prev => ({ ...prev, displaySettings: { ...prev.displaySettings, showOnTablet: e.target.checked } }))}
+                                            className="w-5 h-5 rounded text-red-600"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">📱</span>
+                                                <span className="font-medium">Tablet</span>
+                                            </div>
+                                            <p className="text-sm text-slate-500">Tampilkan di tablet (lebar 768px - 1024px)</p>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.displaySettings?.showOnMobile ?? true}
+                                            onChange={e => setData(prev => ({ ...prev, displaySettings: { ...prev.displaySettings, showOnMobile: e.target.checked } }))}
+                                            className="w-5 h-5 rounded text-red-600"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">📲</span>
+                                                <span className="font-medium">Mobile</span>
+                                            </div>
+                                            <p className="text-sm text-slate-500">Tampilkan di ponsel (lebar &lt; 768px)</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                {!(data.displaySettings?.showOnDesktop ?? true) && !(data.displaySettings?.showOnTablet ?? true) && !(data.displaySettings?.showOnMobile ?? true) && (
+                                    <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                        <p className="text-sm text-yellow-700 dark:text-yellow-400">⚠️ Perhatian: Halaman tidak akan ditampilkan di perangkat mana pun karena semua opsi dinonaktifkan.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Pixels Settings Section */}
+                        {settingsSection === 'pixels' && (
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-2">📊 Tracking Pixel</h3>
+                                <p className="text-sm text-slate-500 mb-4">Konfigurasi pixel tracking untuk halaman produk ini. Pixel global diambil dari Pengaturan &gt; Tracking Pixels.</p>
+                                
+                                {/* PageView Events */}
+                                <div className="mb-6">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">PageView</span>
+                                        Event saat halaman dibuka
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {['meta', 'google', 'tiktok', 'snack'].map(platform => {
+                                            const platformPixels = globalPixels[platform as keyof GlobalPixelSettings] || [];
+                                            const platformConfig = data.trackingSettings?.pageView?.find(p => p.platform === platform);
+                                            return (
+                                                <div key={platform} className="border rounded-lg p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold ${platform === 'meta' ? 'bg-blue-600' : platform === 'google' ? 'bg-red-500' : platform === 'tiktok' ? 'bg-black' : 'bg-orange-500'}`}>
+                                                                {platform === 'meta' ? 'M' : platform === 'google' ? 'G' : platform === 'tiktok' ? 'T' : 'S'}
+                                                            </span>
+                                                            <span className="font-medium capitalize">{platform === 'meta' ? 'Meta (Facebook)' : platform === 'google' ? 'Google Ads' : platform === 'tiktok' ? 'TikTok' : 'Snack Video'}</span>
+                                                        </div>
+                                                    </div>
+                                                    {platformPixels.length === 0 ? (
+                                                        <p className="text-sm text-slate-400 italic">Tidak ada pixel {platform} yang dikonfigurasi di pengaturan global</p>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm text-slate-600 dark:text-slate-400">Pilih Pixel ID:</label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {platformPixels.map((pixel: GlobalPixel) => (
+                                                                    <label key={pixel.id} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={platformConfig?.pixelIds?.includes(pixel.id) || false}
+                                                                            onChange={e => {
+                                                                                const currentSettings = data.trackingSettings?.pageView || [];
+                                                                                const existingIndex = currentSettings.findIndex(p => p.platform === platform);
+                                                                                let newPixelIds: string[];
+                                                                                if (e.target.checked) {
+                                                                                    newPixelIds = [...(platformConfig?.pixelIds || []), pixel.id];
+                                                                                } else {
+                                                                                    newPixelIds = (platformConfig?.pixelIds || []).filter(id => id !== pixel.id);
+                                                                                }
+                                                                                const newSettings = [...currentSettings];
+                                                                                if (existingIndex >= 0) {
+                                                                                    newSettings[existingIndex] = { ...newSettings[existingIndex], pixelIds: newPixelIds };
+                                                                                } else {
+                                                                                    newSettings.push({ platform: platform as any, pixelIds: newPixelIds, events: ['PageView'] });
+                                                                                }
+                                                                                setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
+                                                                            }}
+                                                                            className="w-4 h-4 rounded"
+                                                                        />
+                                                                        <span className="text-sm">{pixel.name || pixel.id}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                            {platformConfig?.pixelIds?.length ? (
+                                                                <div className="mt-2">
+                                                                    <label className="text-sm text-slate-600 dark:text-slate-400">Events:</label>
+                                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                                        {PIXEL_EVENTS[platform as keyof typeof PIXEL_EVENTS]?.map(event => (
+                                                                            <label key={event} className="flex items-center gap-1 px-2 py-1 border rounded text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={platformConfig?.events?.includes(event) || false}
+                                                                                    onChange={e => {
+                                                                                        const currentSettings = data.trackingSettings?.pageView || [];
+                                                                                        const idx = currentSettings.findIndex(p => p.platform === platform);
+                                                                                        if (idx >= 0) {
+                                                                                            const newEvents = e.target.checked
+                                                                                                ? [...(currentSettings[idx].events || []), event]
+                                                                                                : (currentSettings[idx].events || []).filter(ev => ev !== event);
+                                                                                            const newSettings = [...currentSettings];
+                                                                                            newSettings[idx] = { ...newSettings[idx], events: newEvents };
+                                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
+                                                                                        }
+                                                                                    }}
+                                                                                    className="w-3 h-3 rounded"
+                                                                                />
+                                                                                <span>{event}</span>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Button Click Events */}
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Background</label>
-                                    <div className="flex items-center gap-2">
-                                        <input type="color" value={data.backgroundColor} onChange={e => setData(prev => ({ ...prev, backgroundColor: e.target.value }))} className="w-12 h-12 rounded cursor-pointer" />
-                                        <input type="text" value={data.backgroundColor} onChange={e => setData(prev => ({ ...prev, backgroundColor: e.target.value }))} className="flex-1 p-2 border rounded dark:bg-slate-700" />
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">ButtonClick</span>
+                                        Event saat tombol CTA diklik
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {['meta', 'google', 'tiktok', 'snack'].map(platform => {
+                                            const platformPixels = globalPixels[platform as keyof GlobalPixelSettings] || [];
+                                            const platformConfig = data.trackingSettings?.buttonClick?.find(p => p.platform === platform);
+                                            return (
+                                                <div key={platform} className="border rounded-lg p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold ${platform === 'meta' ? 'bg-blue-600' : platform === 'google' ? 'bg-red-500' : platform === 'tiktok' ? 'bg-black' : 'bg-orange-500'}`}>
+                                                                {platform === 'meta' ? 'M' : platform === 'google' ? 'G' : platform === 'tiktok' ? 'T' : 'S'}
+                                                            </span>
+                                                            <span className="font-medium capitalize">{platform === 'meta' ? 'Meta (Facebook)' : platform === 'google' ? 'Google Ads' : platform === 'tiktok' ? 'TikTok' : 'Snack Video'}</span>
+                                                        </div>
+                                                    </div>
+                                                    {platformPixels.length === 0 ? (
+                                                        <p className="text-sm text-slate-400 italic">Tidak ada pixel {platform} yang dikonfigurasi di pengaturan global</p>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm text-slate-600 dark:text-slate-400">Pilih Pixel ID:</label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {platformPixels.map((pixel: GlobalPixel) => (
+                                                                    <label key={pixel.id} className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={platformConfig?.pixelIds?.includes(pixel.id) || false}
+                                                                            onChange={e => {
+                                                                                const currentSettings = data.trackingSettings?.buttonClick || [];
+                                                                                const existingIndex = currentSettings.findIndex(p => p.platform === platform);
+                                                                                let newPixelIds: string[];
+                                                                                if (e.target.checked) {
+                                                                                    newPixelIds = [...(platformConfig?.pixelIds || []), pixel.id];
+                                                                                } else {
+                                                                                    newPixelIds = (platformConfig?.pixelIds || []).filter(id => id !== pixel.id);
+                                                                                }
+                                                                                const newSettings = [...currentSettings];
+                                                                                if (existingIndex >= 0) {
+                                                                                    newSettings[existingIndex] = { ...newSettings[existingIndex], pixelIds: newPixelIds };
+                                                                                } else {
+                                                                                    newSettings.push({ platform: platform as any, pixelIds: newPixelIds, events: ['InitiateCheckout'] });
+                                                                                }
+                                                                                setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
+                                                                            }}
+                                                                            className="w-4 h-4 rounded"
+                                                                        />
+                                                                        <span className="text-sm">{pixel.name || pixel.id}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                            {platformConfig?.pixelIds?.length ? (
+                                                                <div className="mt-2">
+                                                                    <label className="text-sm text-slate-600 dark:text-slate-400">Events:</label>
+                                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                                        {PIXEL_EVENTS[platform as keyof typeof PIXEL_EVENTS]?.map(event => (
+                                                                            <label key={event} className="flex items-center gap-1 px-2 py-1 border rounded text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={platformConfig?.events?.includes(event) || false}
+                                                                                    onChange={e => {
+                                                                                        const currentSettings = data.trackingSettings?.buttonClick || [];
+                                                                                        const idx = currentSettings.findIndex(p => p.platform === platform);
+                                                                                        if (idx >= 0) {
+                                                                                            const newEvents = e.target.checked
+                                                                                                ? [...(currentSettings[idx].events || []), event]
+                                                                                                : (currentSettings[idx].events || []).filter(ev => ev !== event);
+                                                                                            const newSettings = [...currentSettings];
+                                                                                            newSettings[idx] = { ...newSettings[idx], events: newEvents };
+                                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
+                                                                                        }
+                                                                                    }}
+                                                                                    className="w-3 h-3 rounded"
+                                                                                />
+                                                                                <span>{event}</span>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold mb-4">Lainnya</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Custom Slug</label>
-                                    <input type="text" value={data.slug} onChange={e => setData(prev => ({ ...prev, slug: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700" placeholder="custom-url" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Footer</label>
-                                    <input type="text" value={data.footerText} onChange={e => setData(prev => ({ ...prev, footerText: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700" />
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
