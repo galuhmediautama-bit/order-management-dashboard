@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../firebase';
 import ShoppingBagIcon from '../components/icons/ShoppingBagIcon';
 import ImageIcon from '../components/icons/ImageIcon';
+import LandingPagePixelScript from '../components/LandingPagePixelScript';
 
 // New Elementor-style types
 type WidgetType = 'heading' | 'text' | 'image' | 'button' | 'spacer' | 'divider' | 'list' | 'testimonial' | 'video' | 'countdown' | 'features' | 'pricing' | 'faq' | 'gallery';
@@ -636,6 +637,55 @@ const WidgetRenderer: React.FC<{
 };
 
 // ==================== HIGH-CONVERTING PRODUCT PAGE COMPONENT ====================
+// Default dummy reviews for demo
+const DEFAULT_DUMMY_REVIEWS: Review[] = [
+    {
+        id: 'dummy-1',
+        name: 'Andi Prasetyo',
+        rating: 5,
+        comment: 'Kualitas bagus banget! Bahannya adem dan nyaman dipakai. Pengiriman juga cepat, cuma 2 hari sampai. Recommended!',
+        date: '2 hari lalu',
+        verified: true,
+        avatar: ''
+    },
+    {
+        id: 'dummy-2',
+        name: 'Siti Rahayu',
+        rating: 5,
+        comment: 'Sesuai ekspektasi! Ukurannya pas, warnanya juga sama persis kayak di foto. Packing rapi dan aman. Pasti order lagi!',
+        date: '3 hari lalu',
+        verified: true,
+        avatar: ''
+    },
+    {
+        id: 'dummy-3',
+        name: 'Budi Santoso',
+        rating: 4,
+        comment: 'Produknya bagus, jahitannya rapi. Cuma pengiriman agak lama karena weekend. Overall puas dengan pembelian ini.',
+        date: '5 hari lalu',
+        verified: true,
+        avatar: ''
+    },
+    {
+        id: 'dummy-4',
+        name: 'Dewi Lestari',
+        rating: 5,
+        comment: 'Udah kedua kalinya beli disini, selalu puas! Pelayanan CS nya juga ramah dan fast response. Top deh pokoknya!',
+        date: '1 minggu lalu',
+        verified: true,
+        avatar: ''
+    },
+    {
+        id: 'dummy-5',
+        name: 'Rizky Firmansyah',
+        rating: 5,
+        comment: 'Gak nyesel beli disini. Harganya murah tapi kualitasnya premium. Bahannya tebal dan gak gampang luntur. Mantap!',
+        date: '1 minggu lalu',
+        verified: true,
+        avatar: ''
+    }
+];
+
 const HighConvertingProductPage: React.FC<{
     productData: ProductPageData;
     forms: Form[];
@@ -644,7 +694,8 @@ const HighConvertingProductPage: React.FC<{
 }> = ({ productData, forms, getFormLink, formatPrice }) => {
     const urgency = productData.urgency || { countdownActive: false, countdownMinutes: 15, stockActive: false, stockInitial: 50, stockMin: 5 };
     const socialProof = productData.socialProof || { active: false, liveViewersMin: 15, liveViewersMax: 45, recentPurchaseNames: '', recentPurchaseCities: '', showOnDesktop: true, showOnTablet: true, showOnMobile: true };
-    const reviews = productData.reviews || [];
+    // Use saved reviews or fallback to dummy reviews
+    const reviews = (productData.reviews && productData.reviews.length > 0) ? productData.reviews : DEFAULT_DUMMY_REVIEWS;
     const showReviews = productData.showReviews !== false;
     const displaySettings = productData.displaySettings || { showOnDesktop: true, showOnTablet: true, showOnMobile: true };
     const trackingSettings = productData.trackingSettings;
@@ -690,29 +741,15 @@ const HighConvertingProductPage: React.FC<{
         fetchGlobalPixels();
     }, []);
 
-    // Fire tracking pixels on page view
-    useEffect(() => {
-        if (!trackingSettings?.pageView || !globalPixels) return;
-
-        trackingSettings.pageView.forEach(config => {
-            if (!config.pixelIds?.length) return;
-            const platformData = globalPixels[config.platform];
-            if (!platformData?.active) return;
-
-            config.pixelIds.forEach(pixelId => {
-                config.events?.forEach(event => {
-                    firePixelEvent(config.platform, pixelId, event);
-                });
-            });
-        });
-    }, [trackingSettings, globalPixels]);
-
-    // Fire pixel event helper
+    // Fire pixel event helper for button clicks
     const firePixelEvent = (platform: string, pixelId: string, event: string) => {
         console.log(`🔥 Firing ${platform} pixel ${pixelId}: ${event}`);
         
         if (platform === 'meta' && typeof (window as any).fbq === 'function') {
-            (window as any).fbq('trackSingle', pixelId, event);
+            (window as any).fbq('trackSingle', pixelId, event, {
+                content_name: productData.productName || 'Product',
+                currency: 'IDR'
+            });
         } else if (platform === 'google' && typeof (window as any).gtag === 'function') {
             (window as any).gtag('event', event, { send_to: pixelId });
         } else if (platform === 'tiktok' && typeof (window as any).ttq === 'object') {
@@ -822,6 +859,15 @@ const HighConvertingProductPage: React.FC<{
     function renderContent() {
         return (
             <>
+                {/* Pixel Tracking Script */}
+                {trackingSettings?.pageView && globalPixels && (
+                    <LandingPagePixelScript
+                        pageViewConfigs={trackingSettings.pageView}
+                        globalPixels={globalPixels}
+                        productName={productData.productName}
+                    />
+                )}
+
                 {/* Urgency Banner */}
                 {urgency.countdownActive && (
                     <div className="text-white text-center py-3 px-4" style={{ backgroundColor: accentColor }}>
