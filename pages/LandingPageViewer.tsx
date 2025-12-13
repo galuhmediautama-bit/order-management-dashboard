@@ -600,7 +600,9 @@ const WidgetRenderer: React.FC<{
         if (!trackingSettings?.buttonClick || !globalPixels) return;
         
         trackingSettings.buttonClick.forEach((setting) => {
-            const platformPixels = globalPixels[setting.platform]?.pixels || [];
+            const platformData = globalPixels[setting.platform];
+            const platformPixels = platformData?.pixels || [];
+            if (!Array.isArray(platformPixels)) return;
             const activePixelIds = platformPixels
                 .filter((p: { id: string }) => setting.pixelIds.includes(p.id))
                 .map((p: { id: string }) => p.id);
