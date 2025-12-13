@@ -499,54 +499,40 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         }
     }, [form?.assignedPlatform]);
 
-    // Fetch product variant options (source of truth) untuk hindari gabungan di UI
+    // Product options are now loaded in fetchForm, but keep fallback for edge cases
     useEffect(() => {
-        const loadProductOptions = async () => {
-            if (!form?.productId) {
-                setProductOptionsOverride([]);
-                return;
-            }
+        // Only run if form exists, has productId, but productOptionsOverride is empty
+        // This handles edge case where form was already loaded but product wasn't fetched
+        if (form?.productId && productOptionsOverride.length === 0) {
+            // Check if we need to fetch
+            const loadProductOptions = async () => {
+                try {
+                    const { data } = await supabase
+                        .from('products')
+                        .select('attributes')
+                        .eq('id', form.productId!)
+                        .maybeSingle();
 
-            try {
-                const { data, error } = await supabase
-                    .from('products')
-                    .select('attributes')
-                    .eq('id', form.productId)
-                    .maybeSingle();
-
-                if (error) {
-                    console.warn('Error fetching product:', error.message);
-                    setProductOptionsOverride([]);
-                    return;
+                    if (data?.attributes?.variantOptions) {
+                        const variantOptions = data.attributes.variantOptions as Array<{ name: string; values: string[] }>;
+                        if (Array.isArray(variantOptions) && variantOptions.length > 0) {
+                            const mapped = variantOptions.map((opt, idx) => ({
+                                id: idx + 1,
+                                name: opt.name || `Opsi ${idx + 1}`,
+                                values: Array.isArray(opt.values) ? opt.values : [],
+                                displayStyle: 'radio' as VariantDisplayStyle,
+                                showPrice: true
+                            }));
+                            setProductOptionsOverride(mapped);
+                        }
+                    }
+                } catch (error) {
+                    // Silently handle
                 }
-
-                if (!data) {
-                    console.warn('Product not found:', form.productId);
-                    setProductOptionsOverride([]);
-                    return;
-                }
-
-                const variantOptions = (data?.attributes?.variantOptions || []) as Array<{ name: string; values: string[] }>;
-                if (Array.isArray(variantOptions) && variantOptions.length > 0) {
-                    const mapped = variantOptions.map((opt, idx) => ({
-                        id: idx + 1,
-                        name: opt.name || `Opsi ${idx + 1}`,
-                        values: Array.isArray(opt.values) ? opt.values : [],
-                        displayStyle: 'radio' as VariantDisplayStyle,
-                        showPrice: true // Default show price from product
-                    }));
-                    setProductOptionsOverride(mapped);
-                } else {
-                    setProductOptionsOverride([]);
-                }
-            } catch (error) {
-                console.error('Error loading product variant options:', error);
-                setProductOptionsOverride([]);
-            }
-        };
-
-        loadProductOptions();
-    }, [form?.productId]);
+            };
+            loadProductOptions();
+        }
+    }, [form?.productId, productOptionsOverride.length]);
 
     // Derive options langsung dari variantCombinations untuk fallback
     const derivedOptions = useMemo(() => {
@@ -982,8 +968,33 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
 
             if (foundForm) {
                 const normalizedForm = normalizeForm(foundForm);
-                console.log('Normalized form customerFields:', normalizedForm.customerFields);
-                console.log('[FormViewer] Loaded variantCombinations:', normalizedForm.variantCombinations);
+
+                // Fetch product variant options in parallel if productId exists
+                if (normalizedForm.productId) {
+                    try {
+                        const { data: productData } = await supabase
+                            .from('products')
+                            .select('attributes')
+                            .eq('id', normalizedForm.productId)
+                            .maybeSingle();
+
+                        if (productData?.attributes?.variantOptions) {
+                            const variantOptions = productData.attributes.variantOptions as Array<{ name: string; values: string[] }>;
+                            if (Array.isArray(variantOptions) && variantOptions.length > 0) {
+                                const mapped = variantOptions.map((opt, idx) => ({
+                                    id: idx + 1,
+                                    name: opt.name || `Opsi ${idx + 1}`,
+                                    values: Array.isArray(opt.values) ? opt.values : [],
+                                    displayStyle: 'radio' as VariantDisplayStyle,
+                                    showPrice: true
+                                }));
+                                setProductOptionsOverride(mapped);
+                            }
+                        }
+                    } catch (err) {
+                        // Silently handle product fetch error
+                    }
+                }
 
                 // Remove productImages array untuk menghindari galeri foto
                 const cleanForm = { ...normalizedForm, productImages: [] };
