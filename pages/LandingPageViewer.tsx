@@ -631,28 +631,14 @@ const HighConvertingProductPage: React.FC<{
     const [popupData, setPopupData] = useState({ name: '', city: '' });
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
-    // Track window resize for responsive display settings
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    // Determine device type and if should force mobile view
-    const isMobileDevice = windowWidth < 768;
-    const isTabletDevice = windowWidth >= 768 && windowWidth < 1024;
-    const isDesktopDevice = windowWidth >= 1024;
-
-    // Check if current device is blocked
-    const isDeviceBlocked = 
-        (isDesktopDevice && !displaySettings.showOnDesktop) ||
-        (isTabletDevice && !displaySettings.showOnTablet) ||
-        (isMobileDevice && !displaySettings.showOnMobile);
-
-    // Force mobile view: when only mobile is enabled but viewing on desktop/tablet
+    // Determine forced view mode based on display settings
+    // If only mobile is enabled -> force mobile view on all devices
+    // If only tablet is enabled -> force tablet view on all devices  
+    // If only desktop is enabled -> force desktop view on all devices
     const forceMobileView = displaySettings.showOnMobile && !displaySettings.showOnDesktop && !displaySettings.showOnTablet;
+    const forceTabletView = displaySettings.showOnTablet && !displaySettings.showOnDesktop && !displaySettings.showOnMobile;
+    const forceDesktopView = displaySettings.showOnDesktop && !displaySettings.showOnMobile && !displaySettings.showOnTablet;
 
     const mainImage = productData.productImages?.[selectedImage] || productData.productImages?.[0];
     const accentColor = productData.accentColor || '#dc2626';
@@ -716,23 +702,6 @@ const HighConvertingProductPage: React.FC<{
 
     const savings = (productData.productComparePrice || 0) - (productData.productPrice || 0);
     const discountPercent = productData.productComparePrice ? Math.round((1 - (productData.productPrice || 0) / productData.productComparePrice) * 100) : 0;
-
-    // If device is blocked, show a message
-    if (isDeviceBlocked) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-100">
-                <div className="text-center p-8">
-                    <div className="text-6xl mb-4">📱</div>
-                    <h1 className="text-xl font-bold text-slate-700 mb-2">
-                        {isMobileDevice ? 'Halaman ini tidak tersedia di perangkat mobile' :
-                         isTabletDevice ? 'Halaman ini tidak tersedia di tablet' :
-                         'Halaman ini hanya tersedia di perangkat mobile'}
-                    </h1>
-                    <p className="text-slate-500">Silakan buka halaman ini menggunakan perangkat yang sesuai.</p>
-                </div>
-            </div>
-        );
-    }
 
     // Wrapper for forcing mobile view on desktop
     const mobileViewWrapper = forceMobileView ? (
