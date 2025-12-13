@@ -278,10 +278,13 @@ const SalesPageEditor: React.FC = () => {
                     const migrated = migrateOldFormat(pageData);
                     setData(migrated);
                 } else {
+                    // Get pageWidth from globalStyles if stored there
+                    const loadedGlobalStyles = (pageData as any).globalStyles || defaultData.globalStyles;
+                    const pageWidth = loadedGlobalStyles?.pageWidth || '1024px';
                     setData({
                         ...defaultData,
                         ...pageData,
-                        pageWidth: (pageData as any).pageWidth || '1024px',
+                        pageWidth,
                         trackingSettings: (pageData as any).trackingSettings || { pageView: [], buttonClick: [] },
                     } as SalesPageData);
                 }
@@ -339,6 +342,11 @@ const SalesPageEditor: React.FC = () => {
         setSaving(true);
         try {
             const slug = data.slug || generateSlug(data.title);
+            // Store pageWidth inside globalStyles to avoid needing new column
+            const globalStylesWithWidth = {
+                ...data.globalStyles,
+                pageWidth: data.pageWidth || '1024px',
+            };
             const payload: any = {
                 title: data.title,
                 slug,
@@ -347,8 +355,7 @@ const SalesPageEditor: React.FC = () => {
                 footerText: data.footerText,
                 ctaFormId: data.ctaFormId && data.ctaFormId.trim() !== '' ? data.ctaFormId : null,
                 sections: data.sections,
-                globalStyles: data.globalStyles,
-                pageWidth: data.pageWidth || '1024px',
+                globalStyles: globalStylesWithWidth,
                 trackingSettings: data.trackingSettings || { pageView: [], buttonClick: [] },
                 updatedAt: new Date().toISOString(),
             };

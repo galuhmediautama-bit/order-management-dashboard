@@ -375,7 +375,8 @@ const LandingPageViewer: React.FC = () => {
             fontFamily: 'Inter, sans-serif',
             backgroundColor: '#ffffff',
         };
-        const pageWidth = salesData.pageWidth || '1024px';
+        // Get pageWidth from globalStyles (where it's stored) or from pageWidth field or default
+        const pageWidth = (globalStyles as any).pageWidth || salesData.pageWidth || '1024px';
 
         // New format with sections
         if (salesData.sections && salesData.sections.length > 0) {
