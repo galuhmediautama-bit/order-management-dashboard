@@ -38,7 +38,7 @@ class PerformanceMonitor {
      */
     start(): void {
         if (typeof window === 'undefined') return;
-        
+
         // CRITICAL: Prevent multiple intervals from starting
         if (this.isRunning) {
             return;

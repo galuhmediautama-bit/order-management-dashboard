@@ -572,8 +572,8 @@ const CustomersPage: React.FC = () => {
                                         key={segment.value}
                                         onClick={() => setScoreFilter(segment.value as any)}
                                         className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${isActive
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                             }`}
                                     >
                                         {segment.label}
@@ -667,8 +667,8 @@ const CustomersPage: React.FC = () => {
                                         <tr
                                             key={customer.id}
                                             className={`transition-colors ${isSelected
-                                                    ? 'bg-indigo-50 dark:bg-indigo-900/20'
-                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                                ? 'bg-indigo-50 dark:bg-indigo-900/20'
+                                                : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
                                                 }`}
                                         >
                                             <td className="px-6 py-4">

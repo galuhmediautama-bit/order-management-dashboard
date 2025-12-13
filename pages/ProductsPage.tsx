@@ -248,7 +248,7 @@ const ProductsPage: React.FC = () => {
 
             // OPTIMIZED: Batch fetch all forms and orders instead of N+1 queries
             const productIds = productsToCheck.map(p => p.id);
-            
+
             if (productIds.length > 0) {
                 // Fetch all forms and orders for all products in ONE query each
                 const [formsResult, ordersResult] = await Promise.all([

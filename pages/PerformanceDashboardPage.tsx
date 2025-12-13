@@ -122,17 +122,17 @@ const PerformanceDashboardPage: React.FC = () => {
         // start() is now safe to call multiple times (has isRunning guard)
         performanceMonitor.start?.();
         setLoading(true);
-        
+
         // Initial fetch
         setSummary(performanceMonitor.getSummary());
         setRecentMetrics(performanceMonitor.getMetrics(20));
         setLoading(false);
-        
+
         const interval = setInterval(() => {
             setSummary(performanceMonitor.getSummary());
             setRecentMetrics(performanceMonitor.getMetrics(20));
         }, 5000); // Reduced from 2s to 5s to lower CPU usage
-        
+
         return () => clearInterval(interval);
     }, []);
 

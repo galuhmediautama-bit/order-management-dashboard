@@ -1525,8 +1525,8 @@ const OrdersPage: React.FC = () => {
                     <button
                         onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
                         className={`px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${showDuplicatesOnly
-                                ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-md'
-                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                            ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-md'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                         title={showDuplicatesOnly ? 'Tampilkan semua order' : 'Tampilkan hanya order duplikat (nomor HP yang sama)'}
                     >
@@ -1536,8 +1536,8 @@ const OrdersPage: React.FC = () => {
                         </span>
                         {duplicateCount > 0 && (
                             <span className={`px-1.5 py-0.5 text-xs rounded-full font-bold ${showDuplicatesOnly
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                ? 'bg-white/20 text-white'
+                                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                                 }`}>
                                 {duplicateCount}
                             </span>
@@ -1791,12 +1791,12 @@ const OrdersPage: React.FC = () => {
                                                                     <div className="flex items-center gap-1.5">
                                                                         <span
                                                                             className={`text-sm px-1 rounded ${isPerfect
-                                                                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                                                                    : isComplete
-                                                                                        ? 'bg-green-100 dark:bg-green-900/30'
-                                                                                        : isPartial
-                                                                                            ? 'bg-amber-100 dark:bg-amber-900/30'
-                                                                                            : 'bg-red-100 dark:bg-red-900/30'
+                                                                                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                                                                : isComplete
+                                                                                    ? 'bg-green-100 dark:bg-green-900/30'
+                                                                                    : isPartial
+                                                                                        ? 'bg-amber-100 dark:bg-amber-900/30'
+                                                                                        : 'bg-red-100 dark:bg-red-900/30'
                                                                                 }`}
                                                                             title={
                                                                                 isPerfect

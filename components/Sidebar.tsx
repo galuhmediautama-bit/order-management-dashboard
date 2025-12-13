@@ -219,11 +219,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             subItems: [
                 { name: 'Daftar Produk', icon: Squares2x2Icon },
                 { name: 'Daftar Formulir', icon: FormsIcon },
+                { name: 'Landing Page', icon: GlobeIcon },
             ]
-        },
-        {
-            name: 'Landing Page',
-            icon: GlobeIcon
         },
         {
             name: 'Pesanan',

@@ -373,7 +373,7 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
         supabase.from('users').select('*'),
         supabase.from('brands').select('id, name, logo')
       ]);
-      
+
       // Process reports
       const reportsList = (reportsResult.data || []).map(data => {
         if (
@@ -388,7 +388,7 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
         return { ...data } as AdCampaignReport;
       }).filter(Boolean) as AdCampaignReport[];
       setReports(reportsList);
-      
+
       setUsers((usersResult.data || []) as User[]);
       setBrands((brandsResult.data || []) as Brand[]);
       setLoading(false);
@@ -877,8 +877,8 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${summary.averageRoas >= 3 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                            summary.averageRoas >= 2 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          summary.averageRoas >= 2 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           }`}>
                           {summary.averageRoas.toFixed(2)}x
                         </span>
@@ -945,17 +945,17 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold ${report.platform === 'Meta' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                              report.platform === 'Google' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                report.platform === 'TikTok' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                            report.platform === 'Google' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                              report.platform === 'TikTok' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                             }`}>
                             {report.platform}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${report.status === 'Aktif' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                              report.status === 'Dijeda' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                            report.status === 'Dijeda' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                              'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
                             }`}>
                             {report.status}
                           </span>
@@ -991,8 +991,8 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${report.roas >= 3 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                              report.roas >= 2 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            report.roas >= 2 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                             }`}>
                             {report.roas.toFixed(2)}x
                           </span>

@@ -66,7 +66,7 @@ export class ConnectionPoolManager {
         // Start cleanup interval - only if not already running
         if (this.cleanupIntervalId === null) {
             this.cleanupIntervalId = setInterval(() => this.cleanupIdleConnections(), 60 * 1000); // Every minute
-            
+
             // CRITICAL: Cleanup on page unload to prevent lingering intervals
             if (typeof window !== 'undefined') {
                 window.addEventListener('beforeunload', () => {

@@ -985,8 +985,8 @@ const FormsPage: React.FC = () => {
                                         key={option.type}
                                         onClick={() => setEmbedType(option.type)}
                                         className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${embedType === option.type
-                                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                                            : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
                                             }`}
                                     >
                                         <div className={`text-sm font-bold ${embedType === option.type ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>

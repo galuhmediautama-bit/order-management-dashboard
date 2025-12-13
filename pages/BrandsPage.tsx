@@ -14,375 +14,375 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import BrandSettingsModal from '../components/BrandSettingsModal';
 
 
-const BrandModal: React.FC<{ 
-    brand?: Brand | null; 
-    onClose: () => void; 
-    onSave: (brand: Brand, file: File | null) => void; 
-    isSaving: boolean;
+const BrandModal: React.FC<{
+  brand?: Brand | null;
+  onClose: () => void;
+  onSave: (brand: Brand, file: File | null) => void;
+  isSaving: boolean;
 }> = ({ brand, onClose, onSave, isSaving }) => {
-    // ... BrandModal content remains the same ...
-    const [formData, setFormData] = useState<Brand>(
-        brand || { id: '', name: '', description: '', logo: '', productCount: 0 }
-    );
-    const [logoFile, setLogoFile] = useState<File | null>(null);
-    const [logoPreview, setLogoPreview] = useState(brand?.logo || '');
-    const { showToast } = useToast();
+  // ... BrandModal content remains the same ...
+  const [formData, setFormData] = useState<Brand>(
+    brand || { id: '', name: '', description: '', logo: '', productCount: 0 }
+  );
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState(brand?.logo || '');
+  const { showToast } = useToast();
 
-     useEffect(() => {
-        return () => {
-            if (logoPreview && logoPreview.startsWith('blob:')) {
-                URL.revokeObjectURL(logoPreview);
-            }
-        };
-    }, [logoPreview]);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const previewUrl = URL.createObjectURL(file);
-            
-            setLogoFile(file);
-            setLogoPreview(previewUrl);
-        }
+  useEffect(() => {
+    return () => {
+      if (logoPreview && logoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(logoPreview);
+      }
     };
+  }, [logoPreview]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const previewUrl = URL.createObjectURL(file);
 
-    const handleSave = () => {
-        if (!formData.name) {
-            showToast("Nama Merek harus diisi.", 'warning');
-            return;
-        }
-        onSave(formData, logoFile);
-    };
+      setLogoFile(file);
+      setLogoPreview(previewUrl);
+    }
+  };
 
-    return (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
-                <div className="p-5 border-b dark:border-slate-700 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{brand ? 'Edit Merek' : 'Tambah Merek Baru'}</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-500">
-                        <span className="sr-only">Close</span>
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <div className="p-6 space-y-5">
-                     <div>
-                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Logo Merek</label>
-                        <div className="flex items-center gap-4">
-                            <div className="relative w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden">
-                                {logoPreview ? (
-                                    <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" />
-                                ) : (
-                                    <span className="text-xs text-slate-400 text-center px-1">No Image</span>
-                                )}
-                            </div>
-                            <label className="cursor-pointer px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
-                                <span>Pilih Gambar</span>
-                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                            </label>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Merek*</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Contoh: Nike, Adidas"/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Deskripsi</label>
-                        <textarea name="description" value={formData.description} onChange={e => handleChange(e)} rows={3} className="w-full p-2.5 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Deskripsi singkat merek..."></textarea>
-                    </div>
-                </div>
-                <div className="p-5 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-xl border-t dark:border-slate-700">
-                    <button onClick={onClose} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors">Batal</button>
-                    <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium shadow-lg shadow-indigo-500/30 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2">
-                        {isSaving && <SpinnerIcon className="w-4 h-4 animate-spin"/>}
-                        {isSaving ? 'Menyimpan...' : 'Simpan'}
-                    </button>
-                </div>
-            </div>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = () => {
+    if (!formData.name) {
+      showToast("Nama Merek harus diisi.", 'warning');
+      return;
+    }
+    onSave(formData, logoFile);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+        <div className="p-5 border-b dark:border-slate-700 flex justify-between items-center">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{brand ? 'Edit Merek' : 'Tambah Merek Baru'}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-500">
+            <span className="sr-only">Close</span>
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
-    );
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Logo Merek</label>
+            <div className="flex items-center gap-4">
+              <div className="relative w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs text-slate-400 text-center px-1">No Image</span>
+                )}
+              </div>
+              <label className="cursor-pointer px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                <span>Pilih Gambar</span>
+                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Merek*</label>
+            <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Contoh: Nike, Adidas" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Deskripsi</label>
+            <textarea name="description" value={formData.description} onChange={e => handleChange(e)} rows={3} className="w-full p-2.5 border rounded-lg bg-white dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Deskripsi singkat merek..."></textarea>
+          </div>
+        </div>
+        <div className="p-5 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-xl border-t dark:border-slate-700">
+          <button onClick={onClose} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors">Batal</button>
+          <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium shadow-lg shadow-indigo-500/30 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2">
+            {isSaving && <SpinnerIcon className="w-4 h-4 animate-spin" />}
+            {isSaving ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const BrandsPage: React.FC = () => {
-    const [brands, setBrands] = useState<Brand[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setModalOpen] = useState(false);
-    const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [brandToDelete, setBrandToDelete] = useState<string | null>(null);
-    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-    const [selectedBrandForSettings, setSelectedBrandForSettings] = useState<Brand | null>(null);
-    const { showToast } = useToast();
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState<string | null>(null);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [selectedBrandForSettings, setSelectedBrandForSettings] = useState<Brand | null>(null);
+  const { showToast } = useToast();
 
-    // Robust error message extractor
-    const getErrorMessage = (error: any): string => {
-        if (!error) return 'Terjadi kesalahan yang tidak diketahui.';
-        if (typeof error === 'string') return error;
-        if (error.message && typeof error.message === 'string') return error.message;
-        if (error instanceof Error) return error.message;
-        if (error.error_description) return error.error_description;
-        if (error.error && typeof error.error === 'string') return error.error;
-        if (error.details) return error.details;
-        
-        try {
-            const json = JSON.stringify(error);
-            if (json !== '{}') return json;
-        } catch {}
+  // Robust error message extractor
+  const getErrorMessage = (error: any): string => {
+    if (!error) return 'Terjadi kesalahan yang tidak diketahui.';
+    if (typeof error === 'string') return error;
+    if (error.message && typeof error.message === 'string') return error.message;
+    if (error instanceof Error) return error.message;
+    if (error.error_description) return error.error_description;
+    if (error.error && typeof error.error === 'string') return error.error;
+    if (error.details) return error.details;
 
-        if (error.code) return `Code: ${error.code}`;
-        if (error.statusText) return error.statusText;
-        if (error.status) return `Status: ${error.status}`;
-        
-        return String(error); 
-    };
+    try {
+      const json = JSON.stringify(error);
+      if (json !== '{}') return json;
+    } catch { }
 
-    // Helper to sync state to local storage
-    const syncToLocalStorage = (currentBrands: Brand[]) => {
-        localStorage.setItem('brands_local_data', JSON.stringify(currentBrands));
-    };
+    if (error.code) return `Code: ${error.code}`;
+    if (error.statusText) return error.statusText;
+    if (error.status) return `Status: ${error.status}`;
 
-    const fetchBrands = async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase.from('brands').select('*');
-            
-            // Fallback Logic
-            if (error) {
-                console.warn("DB Error fetching brands, using LocalStorage:", error.message);
-                const localData = localStorage.getItem('brands_local_data');
-                if (localData) {
-                    setBrands(JSON.parse(localData));
-                } else {
-                    setBrands([]);
-                }
+    return String(error);
+  };
+
+  // Helper to sync state to local storage
+  const syncToLocalStorage = (currentBrands: Brand[]) => {
+    localStorage.setItem('brands_local_data', JSON.stringify(currentBrands));
+  };
+
+  const fetchBrands = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from('brands').select('*');
+
+      // Fallback Logic
+      if (error) {
+        console.warn("DB Error fetching brands, using LocalStorage:", error.message);
+        const localData = localStorage.getItem('brands_local_data');
+        if (localData) {
+          setBrands(JSON.parse(localData));
+        } else {
+          setBrands([]);
+        }
+      } else {
+        if (data && data.length > 0) {
+          const brandsList = data.map(doc => ({ ...doc } as Brand));
+          setBrands(brandsList);
+          syncToLocalStorage(brandsList);
+        } else {
+          const localData = localStorage.getItem('brands_local_data');
+          if (localData) {
+            const parsed = JSON.parse(localData);
+            if (parsed.length > 0) {
+              setBrands(parsed);
             } else {
-                if (data && data.length > 0) {
-                    const brandsList = data.map(doc => ({ ...doc } as Brand));
-                    setBrands(brandsList);
-                    syncToLocalStorage(brandsList);
-                } else {
-                    const localData = localStorage.getItem('brands_local_data');
-                    if (localData) {
-                        const parsed = JSON.parse(localData);
-                        if (parsed.length > 0) {
-                            setBrands(parsed);
-                        } else {
-                            setBrands([]);
-                        }
-                    } else {
-                        setBrands([]);
-                    }
-                }
+              setBrands([]);
             }
-        } catch (error: any) {
-            console.error("Unexpected error fetching brands:", getErrorMessage(error));
-            const localData = localStorage.getItem('brands_local_data');
-            if (localData) setBrands(JSON.parse(localData));
-        } finally {
-            setLoading(false);
+          } else {
+            setBrands([]);
+          }
         }
-    };
+      }
+    } catch (error: any) {
+      console.error("Unexpected error fetching brands:", getErrorMessage(error));
+      const localData = localStorage.getItem('brands_local_data');
+      if (localData) setBrands(JSON.parse(localData));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchBrands();
-        recalculateProductCounts();
-    }, []);
+  useEffect(() => {
+    fetchBrands();
+    recalculateProductCounts();
+  }, []);
 
-    const recalculateProductCounts = async () => {
+  const recalculateProductCounts = async () => {
+    try {
+      // OPTIMIZED: Batch fetch all brands and products at once instead of N+1 queries
+      const [brandsResult, productsResult] = await Promise.all([
+        supabase.from('brands').select('id'),
+        supabase.from('products').select('id, brand_id')
+      ]);
+
+      const allBrands = brandsResult.data;
+      const allProducts = productsResult.data || [];
+
+      if (!allBrands) return;
+
+      // Aggregate counts in JavaScript (much faster than N queries)
+      const brandCounts: Record<string, number> = {};
+      for (const product of allProducts) {
+        if (product.brand_id) {
+          brandCounts[product.brand_id] = (brandCounts[product.brand_id] || 0) + 1;
+        }
+      }
+
+      // Batch update all brands with their counts
+      const updates = allBrands.map(brand => ({
+        id: brand.id,
+        productCount: brandCounts[brand.id] || 0
+      }));
+
+      // Update in batches of 10 to avoid overwhelming the database
+      for (let i = 0; i < updates.length; i += 10) {
+        const batch = updates.slice(i, i + 10);
+        await Promise.all(
+          batch.map(update =>
+            supabase.from('brands').update({ productCount: update.productCount }).eq('id', update.id)
+          )
+        );
+      }
+
+      // Re-fetch brands to show updated counts
+      await fetchBrands();
+    } catch (error) {
+      console.warn('Warning: Could not recalculate product counts:', error);
+    }
+  };
+
+  const filteredBrands = brands.filter(brand =>
+    brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleOpenModal = (brand?: Brand) => {
+    setEditingBrand(brand || null);
+    setModalOpen(true);
+  };
+
+  const handleSaveBrand = async (brandData: Brand, logoFile: File | null) => {
+    setIsSaving(true);
+    try {
+      let finalData = { ...brandData };
+
+      if (logoFile) {
         try {
-            // OPTIMIZED: Batch fetch all brands and products at once instead of N+1 queries
-            const [brandsResult, productsResult] = await Promise.all([
-                supabase.from('brands').select('id'),
-                supabase.from('products').select('id, brand_id')
-            ]);
-            
-            const allBrands = brandsResult.data;
-            const allProducts = productsResult.data || [];
-            
-            if (!allBrands) return;
-
-            // Aggregate counts in JavaScript (much faster than N queries)
-            const brandCounts: Record<string, number> = {};
-            for (const product of allProducts) {
-                if (product.brand_id) {
-                    brandCounts[product.brand_id] = (brandCounts[product.brand_id] || 0) + 1;
-                }
-            }
-
-            // Batch update all brands with their counts
-            const updates = allBrands.map(brand => ({
-                id: brand.id,
-                productCount: brandCounts[brand.id] || 0
-            }));
-
-            // Update in batches of 10 to avoid overwhelming the database
-            for (let i = 0; i < updates.length; i += 10) {
-                const batch = updates.slice(i, i + 10);
-                await Promise.all(
-                    batch.map(update => 
-                        supabase.from('brands').update({ productCount: update.productCount }).eq('id', update.id)
-                    )
-                );
-            }
-
-            // Re-fetch brands to show updated counts
-            await fetchBrands();
-        } catch (error) {
-            console.warn('Warning: Could not recalculate product counts:', error);
+          const logoUrl = await uploadFileAndGetURL(logoFile);
+          finalData.logo = logoUrl;
+        } catch (uploadError: any) {
+          console.error("Upload failed:", uploadError);
+          showToast(`Gagal mengunggah gambar: ${getErrorMessage(uploadError)}. Menggunakan placeholder.`, 'warning');
+          finalData.logo = `https://placehold.co/100x100/cccccc/ffffff?text=${(finalData.name || 'BR').substring(0, 2).toUpperCase()}`;
         }
-    };
+      } else if (!finalData.logo) {
+        finalData.logo = `https://placehold.co/100x100/cccccc/ffffff?text=${(finalData.name || 'BR').substring(0, 2).toUpperCase()}`;
+      }
 
-    const filteredBrands = brands.filter(brand =>
-        brand.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      const payload: any = { ...finalData };
+      if (!payload.id) delete payload.id;
+      delete payload.productCount;
 
-    const handleOpenModal = (brand?: Brand) => {
-        setEditingBrand(brand || null);
-        setModalOpen(true);
-    };
+      let savedBrand: Brand | null = null;
+      let usedLocalStorage = false;
 
-    const handleSaveBrand = async (brandData: Brand, logoFile: File | null) => {
-        setIsSaving(true);
-        try {
-            let finalData = { ...brandData };
-
-            if (logoFile) {
-                try {
-                    const logoUrl = await uploadFileAndGetURL(logoFile);
-                    finalData.logo = logoUrl;
-                } catch (uploadError: any) {
-                    console.error("Upload failed:", uploadError);
-                    showToast(`Gagal mengunggah gambar: ${getErrorMessage(uploadError)}. Menggunakan placeholder.`, 'warning');
-                    finalData.logo = `https://placehold.co/100x100/cccccc/ffffff?text=${(finalData.name || 'BR').substring(0,2).toUpperCase()}`;
-                }
-            } else if (!finalData.logo) {
-                finalData.logo = `https://placehold.co/100x100/cccccc/ffffff?text=${(finalData.name || 'BR').substring(0,2).toUpperCase()}`;
-            }
-
-            const payload: any = { ...finalData };
-            if (!payload.id) delete payload.id;
-            delete payload.productCount; 
-
-            let savedBrand: Brand | null = null;
-            let usedLocalStorage = false;
-
-            if (finalData.id && !finalData.id.startsWith('local-')) { 
-                // Update Existing DB Record
-                const { error } = await supabase.from('brands').update(payload).eq('id', finalData.id);
-                if (error) usedLocalStorage = true;
-            } else { 
-                // Insert New Record
-                const { data, error } = await supabase.from('brands').insert(payload).select().single();
-                if (error) {
-                    usedLocalStorage = true;
-                } else if (data) {
-                    savedBrand = data as Brand;
-                }
-            }
-
-            setBrands(prev => {
-                let newBrands;
-                if (savedBrand) {
-                    newBrands = [...prev, savedBrand];
-                } else if (usedLocalStorage) {
-                    if (finalData.id) {
-                        newBrands = prev.map(b => b.id === finalData.id ? { ...b, ...finalData } : b);
-                    } else {
-                        const newLocalBrand = { ...finalData, id: `local-${Date.now()}`, productCount: 0 };
-                        newBrands = [...prev, newLocalBrand];
-                    }
-                    if(!savedBrand && !finalData.id) showToast("Data disimpan ke penyimpanan browser (Database tidak merespon/error).", 'warning');
-                } else {
-                    if (finalData.id) {
-                        newBrands = prev.map(b => b.id === finalData.id ? { ...b, ...finalData } : b);
-                    } else {
-                        newBrands = prev;
-                    }
-                }
-                syncToLocalStorage(newBrands);
-                return newBrands;
-            });
-
-            showToast("Data merek berhasil disimpan.", 'success');
-            setModalOpen(false);
-            setEditingBrand(null);
-        } catch (error: any) {
-            console.error("Full error object:", error);
-            const msg = getErrorMessage(error);
-            showToast(`Gagal menyimpan merek: ${msg}`, 'error');
-        } finally {
-            setIsSaving(false);
+      if (finalData.id && !finalData.id.startsWith('local-')) {
+        // Update Existing DB Record
+        const { error } = await supabase.from('brands').update(payload).eq('id', finalData.id);
+        if (error) usedLocalStorage = true;
+      } else {
+        // Insert New Record
+        const { data, error } = await supabase.from('brands').insert(payload).select().single();
+        if (error) {
+          usedLocalStorage = true;
+        } else if (data) {
+          savedBrand = data as Brand;
         }
-    };
+      }
 
-    const confirmDeleteBrand = async () => {
-        if (!brandToDelete) return;
-        
-        const brandId = brandToDelete;
-
-        try {
-            // Only attempt DB delete if it's not a local ID
-            if (!brandId.startsWith('local-')) {
-                
-                // 1. Check Dependencies (Parallel Check)
-                // We check Forms and Orders to ensure data integrity
-                const [formsRes, ordersRes] = await Promise.all([
-                    supabase.from('forms').select('id', { count: 'exact', head: true }).eq('brandId', brandId),
-                    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('brandId', brandId)
-                ]);
-
-                // Ignore "table not found" errors for initial setups
-                if (formsRes.error && formsRes.error.code !== '42P01') console.warn("Forms check error:", formsRes.error);
-                if (ordersRes.error && ordersRes.error.code !== '42P01') console.warn("Orders check error:", ordersRes.error);
-
-                const formsCount = formsRes.count || 0;
-                const ordersCount = ordersRes.count || 0;
-
-                if (formsCount > 0 || ordersCount > 0) {
-                    let msg = "Gagal menghapus merek karena sedang digunakan:\n";
-                    if (formsCount > 0) msg += `- ${formsCount} Formulir Produk\n`;
-                    if (ordersCount > 0) msg += `- ${ordersCount} Riwayat Pesanan\n`;
-                    msg += "Silakan hapus data terkait atau ubah merek pada data tersebut terlebih dahulu.";
-                    showToast(msg, 'error');
-                    setDeleteModalOpen(false);
-                    return; // STOP execution
-                }
-
-                // 2. Perform Delete
-                const { error } = await supabase.from('brands').delete().eq('id', brandId);
-                
-                if (error) {
-                    throw error; 
-                }
-            }
-
-            // 3. Update State
-            setBrands(prev => {
-                const newBrands = prev.filter(b => b.id !== brandId);
-                syncToLocalStorage(newBrands);
-                return newBrands;
-            });
-            showToast("Merek berhasil dihapus.", 'success');
-
-        } catch (error: any) {
-            console.error("Error deleting brand:", error);
-            showToast(`Gagal menghapus merek: ${getErrorMessage(error)}`, 'error');
-        } finally {
-            setDeleteModalOpen(false);
-            setBrandToDelete(null);
+      setBrands(prev => {
+        let newBrands;
+        if (savedBrand) {
+          newBrands = [...prev, savedBrand];
+        } else if (usedLocalStorage) {
+          if (finalData.id) {
+            newBrands = prev.map(b => b.id === finalData.id ? { ...b, ...finalData } : b);
+          } else {
+            const newLocalBrand = { ...finalData, id: `local-${Date.now()}`, productCount: 0 };
+            newBrands = [...prev, newLocalBrand];
+          }
+          if (!savedBrand && !finalData.id) showToast("Data disimpan ke penyimpanan browser (Database tidak merespon/error).", 'warning');
+        } else {
+          if (finalData.id) {
+            newBrands = prev.map(b => b.id === finalData.id ? { ...b, ...finalData } : b);
+          } else {
+            newBrands = prev;
+          }
         }
-    };
+        syncToLocalStorage(newBrands);
+        return newBrands;
+      });
 
-    const handleDeleteClick = (id: string) => {
-        setBrandToDelete(id);
-        setDeleteModalOpen(true);
-    };
+      showToast("Data merek berhasil disimpan.", 'success');
+      setModalOpen(false);
+      setEditingBrand(null);
+    } catch (error: any) {
+      console.error("Full error object:", error);
+      const msg = getErrorMessage(error);
+      showToast(`Gagal menyimpan merek: ${msg}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const confirmDeleteBrand = async () => {
+    if (!brandToDelete) return;
+
+    const brandId = brandToDelete;
+
+    try {
+      // Only attempt DB delete if it's not a local ID
+      if (!brandId.startsWith('local-')) {
+
+        // 1. Check Dependencies (Parallel Check)
+        // We check Forms and Orders to ensure data integrity
+        const [formsRes, ordersRes] = await Promise.all([
+          supabase.from('forms').select('id', { count: 'exact', head: true }).eq('brandId', brandId),
+          supabase.from('orders').select('id', { count: 'exact', head: true }).eq('brandId', brandId)
+        ]);
+
+        // Ignore "table not found" errors for initial setups
+        if (formsRes.error && formsRes.error.code !== '42P01') console.warn("Forms check error:", formsRes.error);
+        if (ordersRes.error && ordersRes.error.code !== '42P01') console.warn("Orders check error:", ordersRes.error);
+
+        const formsCount = formsRes.count || 0;
+        const ordersCount = ordersRes.count || 0;
+
+        if (formsCount > 0 || ordersCount > 0) {
+          let msg = "Gagal menghapus merek karena sedang digunakan:\n";
+          if (formsCount > 0) msg += `- ${formsCount} Formulir Produk\n`;
+          if (ordersCount > 0) msg += `- ${ordersCount} Riwayat Pesanan\n`;
+          msg += "Silakan hapus data terkait atau ubah merek pada data tersebut terlebih dahulu.";
+          showToast(msg, 'error');
+          setDeleteModalOpen(false);
+          return; // STOP execution
+        }
+
+        // 2. Perform Delete
+        const { error } = await supabase.from('brands').delete().eq('id', brandId);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      // 3. Update State
+      setBrands(prev => {
+        const newBrands = prev.filter(b => b.id !== brandId);
+        syncToLocalStorage(newBrands);
+        return newBrands;
+      });
+      showToast("Merek berhasil dihapus.", 'success');
+
+    } catch (error: any) {
+      console.error("Error deleting brand:", error);
+      showToast(`Gagal menghapus merek: ${getErrorMessage(error)}`, 'error');
+    } finally {
+      setDeleteModalOpen(false);
+      setBrandToDelete(null);
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setBrandToDelete(id);
+    setDeleteModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -396,18 +396,18 @@ const BrandsPage: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-300">Kelola semua merek produk yang Anda tawarkan</p>
           </div>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={recalculateProductCounts}
               className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 font-medium transition-colors text-sm"
               title="Sinkronisasi jumlah produk dari database"
             >
               🔄 Sinkronisasi
             </button>
-            <button 
-              onClick={() => handleOpenModal()} 
+            <button
+              onClick={() => handleOpenModal()}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:scale-105 transition-all"
             >
-              <PlusIcon className="w-5 h-5"/>
+              <PlusIcon className="w-5 h-5" />
               <span>Tambah Merek</span>
             </button>
           </div>
@@ -467,16 +467,16 @@ const BrandsPage: React.FC = () => {
           <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input 
-            type="text" 
-            placeholder="Cari nama merek..." 
-            value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)} 
+          <input
+            type="text"
+            placeholder="Cari nama merek..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
           />
         </div>
       </div>
-      
+
       {/* Brands Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
@@ -511,10 +511,10 @@ const BrandsPage: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center ring-2 ring-pink-200 dark:ring-pink-700">
-                          <img 
-                            src={brand.logo || `https://placehold.co/100x100/cccccc/ffffff?text=${(brand.name || 'BR').substring(0,2).toUpperCase()}`} 
-                            alt={`${brand.name} logo`} 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={brand.logo || `https://placehold.co/100x100/cccccc/ffffff?text=${(brand.name || 'BR').substring(0, 2).toUpperCase()}`}
+                            alt={`${brand.name} logo`}
+                            className="w-full h-full object-cover"
                           />
                         </div>
                         <span className="font-semibold text-slate-800 dark:text-slate-200">{brand.name}</span>
@@ -530,12 +530,12 @@ const BrandsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-1">
-                        <button 
+                        <button
                           onClick={() => {
                             setSelectedBrandForSettings(brand);
                             setSettingsModalOpen(true);
                           }}
-                          title="Pengaturan Brand" 
+                          title="Pengaturan Brand"
                           className="p-2 text-slate-500 hover:text-white hover:bg-indigo-600 rounded-lg transition-all"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -543,16 +543,16 @@ const BrandsPage: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                         </button>
-                        <button 
-                          onClick={() => handleOpenModal(brand)} 
-                          title="Edit Merek" 
+                        <button
+                          onClick={() => handleOpenModal(brand)}
+                          title="Edit Merek"
                           className="p-2 text-slate-500 hover:text-white hover:bg-pink-600 rounded-lg transition-all"
                         >
                           <PencilIcon className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDeleteClick(brand.id)} 
-                          title="Hapus Merek" 
+                        <button
+                          onClick={() => handleDeleteClick(brand.id)}
+                          title="Hapus Merek"
                           className="p-2 text-slate-500 hover:text-white hover:bg-red-600 rounded-lg transition-all"
                         >
                           <TrashIcon className="w-4 h-4" />
@@ -568,10 +568,10 @@ const BrandsPage: React.FC = () => {
       </div>
 
       {isModalOpen && <BrandModal brand={editingBrand} onClose={() => setModalOpen(false)} onSave={handleSaveBrand} isSaving={isSaving} />}
-      
+
       {settingsModalOpen && selectedBrandForSettings && (
-        <BrandSettingsModal 
-          brandId={selectedBrandForSettings.id} 
+        <BrandSettingsModal
+          brandId={selectedBrandForSettings.id}
           brandName={selectedBrandForSettings.name}
           onClose={() => {
             setSettingsModalOpen(false);
@@ -579,17 +579,17 @@ const BrandsPage: React.FC = () => {
           }}
         />
       )}
-      
+
       {deleteModalOpen && (
-          <ConfirmationModal 
-            isOpen={deleteModalOpen}
-            title="Hapus Merek"
-            message="Apakah Anda yakin ingin menghapus merek ini? Tindakan ini tidak dapat dibatalkan."
-            variant="danger"
-            confirmLabel="Ya, Hapus"
-            onConfirm={confirmDeleteBrand}
-            onClose={() => setDeleteModalOpen(false)}
-          />
+        <ConfirmationModal
+          isOpen={deleteModalOpen}
+          title="Hapus Merek"
+          message="Apakah Anda yakin ingin menghapus merek ini? Tindakan ini tidak dapat dibatalkan."
+          variant="danger"
+          confirmLabel="Ya, Hapus"
+          onConfirm={confirmDeleteBrand}
+          onClose={() => setDeleteModalOpen(false)}
+        />
       )}
     </div>
   );
