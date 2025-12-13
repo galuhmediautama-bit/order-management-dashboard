@@ -45,6 +45,48 @@ interface Section {
     widgets: Widget[];
 }
 
+// Tracking Pixel Settings
+interface PixelEventSetting {
+    platform: 'meta' | 'google' | 'tiktok' | 'snack';
+    pixelIds: string[];
+    events: string[];
+}
+
+interface TrackingSettings {
+    pageView: PixelEventSetting[];
+    buttonClick: PixelEventSetting[];
+}
+
+// Global Pixel from settings
+interface GlobalPixel {
+    id: string;
+    name: string;
+}
+interface GlobalPixelSettings {
+    meta: GlobalPixel[];
+    google: GlobalPixel[];
+    tiktok: GlobalPixel[];
+    snack: GlobalPixel[];
+}
+
+const PIXEL_EVENTS = {
+    meta: ['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'Lead', 'Purchase'],
+    google: ['page_view', 'view_item', 'add_to_cart', 'begin_checkout', 'purchase', 'generate_lead'],
+    tiktok: ['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'CompletePayment'],
+    snack: ['PageView', 'ViewContent', 'AddToCart', 'Checkout', 'Purchase'],
+};
+
+// Page width options
+const PAGE_WIDTH_OPTIONS = [
+    { value: '100%', label: 'Full Width (100%)' },
+    { value: '1400px', label: 'Extra Large (1400px)' },
+    { value: '1200px', label: 'Large (1200px)' },
+    { value: '1024px', label: 'Medium (1024px)' },
+    { value: '900px', label: 'Compact (900px)' },
+    { value: '768px', label: 'Narrow (768px)' },
+    { value: '640px', label: 'Mobile (640px)' },
+];
+
 interface SalesPageData {
     id?: string;
     title: string;
@@ -58,6 +100,8 @@ interface SalesPageData {
         fontFamily: string;
         backgroundColor: string;
     };
+    pageWidth: string;
+    trackingSettings: TrackingSettings;
     footerText: string;
     isPublished: boolean;
     createdAt?: string;
@@ -159,6 +203,11 @@ const defaultData: SalesPageData = {
         fontFamily: 'Inter, sans-serif',
         backgroundColor: '#ffffff',
     },
+    pageWidth: '1024px',
+    trackingSettings: {
+        pageView: [],
+        buttonClick: [],
+    },
     footerText: '© 2025 All rights reserved.',
     isPublished: false,
 };
@@ -171,15 +220,18 @@ const SalesPageEditor: React.FC = () => {
     const [loading, setLoading] = useState(!!id);
     const [saving, setSaving] = useState(false);
     const [forms, setForms] = useState<Form[]>([]);
+    const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings>({ meta: [], google: [], tiktok: [], snack: [] });
     const [previewMode, setPreviewMode] = useState(false);
     const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
     const [selectedSection, setSelectedSection] = useState<string | null>(null);
     const [leftPanel, setLeftPanel] = useState<'widgets' | 'settings'>('widgets');
     const [draggedWidget, setDraggedWidget] = useState<WidgetType | null>(null);
     const [showSettings, setShowSettings] = useState(false);
+    const [settingsTab, setSettingsTab] = useState<'general' | 'pixels'>('general');
 
     useEffect(() => {
         fetchForms();
+        fetchGlobalPixels();
         if (id && id !== 'baru') {
             fetchPage();
         }
@@ -197,6 +249,22 @@ const SalesPageEditor: React.FC = () => {
         }
     };
 
+    const fetchGlobalPixels = async () => {
+        try {
+            const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').single();
+            if (settingsData) {
+                setGlobalPixels({
+                    meta: (settingsData.meta?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                    google: (settingsData.google?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                    tiktok: (settingsData.tiktok?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                    snack: (settingsData.snack?.pixels || []).map((p: any) => ({ id: p.id, name: p.name })),
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching global pixels:', error);
+        }
+    };
+
     const fetchPage = async () => {
         try {
             const { data: pageData, error } = await supabase
@@ -210,7 +278,12 @@ const SalesPageEditor: React.FC = () => {
                     const migrated = migrateOldFormat(pageData);
                     setData(migrated);
                 } else {
-                    setData(pageData as SalesPageData);
+                    setData({
+                        ...defaultData,
+                        ...pageData,
+                        pageWidth: (pageData as any).pageWidth || '1024px',
+                        trackingSettings: (pageData as any).trackingSettings || { pageView: [], buttonClick: [] },
+                    } as SalesPageData);
                 }
             }
         } catch (error) {
@@ -275,6 +348,8 @@ const SalesPageEditor: React.FC = () => {
                 ctaFormId: data.ctaFormId && data.ctaFormId.trim() !== '' ? data.ctaFormId : null,
                 sections: data.sections,
                 globalStyles: data.globalStyles,
+                pageWidth: data.pageWidth || '1024px',
+                trackingSettings: data.trackingSettings || { pageView: [], buttonClick: [] },
                 updatedAt: new Date().toISOString(),
             };
             
@@ -538,33 +613,273 @@ const SalesPageEditor: React.FC = () => {
 
                         {leftPanel === 'settings' && (
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug URL</label>
-                                    <div className="flex items-center gap-1 text-sm">
-                                        <span className="text-slate-400">/lp/</span>
-                                        <input
-                                            type="text"
-                                            value={data.slug}
-                                            onChange={e => setData(prev => ({ ...prev, slug: generateSlug(e.target.value) }))}
-                                            className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                        />
+                                {/* Settings Tabs */}
+                                <div className="flex border-b border-slate-200 dark:border-slate-600">
+                                    <button
+                                        onClick={() => setSettingsTab('general')}
+                                        className={`px-3 py-2 text-sm font-medium ${settingsTab === 'general' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        General
+                                    </button>
+                                    <button
+                                        onClick={() => setSettingsTab('pixels')}
+                                        className={`px-3 py-2 text-sm font-medium ${settingsTab === 'pixels' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        Pixel Tracking
+                                    </button>
+                                </div>
+
+                                {settingsTab === 'general' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug URL</label>
+                                            <div className="flex items-center gap-1 text-sm">
+                                                <span className="text-slate-400">/lp/</span>
+                                                <input
+                                                    type="text"
+                                                    value={data.slug}
+                                                    onChange={e => setData(prev => ({ ...prev, slug: generateSlug(e.target.value) }))}
+                                                    className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lebar Halaman</label>
+                                            <select
+                                                value={data.pageWidth}
+                                                onChange={e => setData(prev => ({ ...prev, pageWidth: e.target.value }))}
+                                                className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                            >
+                                                {PAGE_WIDTH_OPTIONS.map(opt => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Warna Utama</label>
+                                            <input type="color" value={data.globalStyles.primaryColor} onChange={e => setData(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, primaryColor: e.target.value } }))} className="w-full h-10 rounded cursor-pointer" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Link Tombol ke Formulir</label>
+                                            <select value={data.ctaFormId} onChange={e => setData(prev => ({ ...prev, ctaFormId: e.target.value }))} className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm">
+                                                <option value="">-- Pilih Formulir --</option>
+                                                {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Footer Text</label>
+                                            <input type="text" value={data.footerText} onChange={e => setData(prev => ({ ...prev, footerText: e.target.value }))} className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Warna Utama</label>
-                                    <input type="color" value={data.globalStyles.primaryColor} onChange={e => setData(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, primaryColor: e.target.value } }))} className="w-full h-10 rounded cursor-pointer" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Link Tombol ke Formulir</label>
-                                    <select value={data.ctaFormId} onChange={e => setData(prev => ({ ...prev, ctaFormId: e.target.value }))} className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm">
-                                        <option value="">-- Pilih Formulir --</option>
-                                        {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Footer Text</label>
-                                    <input type="text" value={data.footerText} onChange={e => setData(prev => ({ ...prev, footerText: e.target.value }))} className="w-full px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm" />
-                                </div>
+                                )}
+
+                                {settingsTab === 'pixels' && (
+                                    <div className="space-y-4">
+                                        {/* PageView Events */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">PageView Events</h4>
+                                                <button
+                                                    onClick={() => setData(prev => ({
+                                                        ...prev,
+                                                        trackingSettings: {
+                                                            ...prev.trackingSettings,
+                                                            pageView: [...prev.trackingSettings.pageView, { platform: 'meta', pixelIds: [], events: ['PageView'] }]
+                                                        }
+                                                    }))}
+                                                    className="text-xs text-purple-600 hover:text-purple-700"
+                                                >
+                                                    + Tambah
+                                                </button>
+                                            </div>
+                                            {data.trackingSettings.pageView.length === 0 && (
+                                                <p className="text-xs text-slate-400 italic">Belum ada pixel PageView</p>
+                                            )}
+                                            {data.trackingSettings.pageView.map((setting, idx) => (
+                                                <div key={idx} className="p-2 bg-slate-50 dark:bg-slate-700 rounded mb-2 text-xs">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <select
+                                                            value={setting.platform}
+                                                            onChange={e => {
+                                                                const newSettings = [...data.trackingSettings.pageView];
+                                                                newSettings[idx] = { ...setting, platform: e.target.value as any, pixelIds: [], events: [PIXEL_EVENTS[e.target.value as keyof typeof PIXEL_EVENTS][0]] };
+                                                                setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
+                                                            }}
+                                                            className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-600 text-xs flex-1"
+                                                        >
+                                                            <option value="meta">Meta (Facebook)</option>
+                                                            <option value="google">Google</option>
+                                                            <option value="tiktok">TikTok</option>
+                                                            <option value="snack">Snack</option>
+                                                        </select>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newSettings = data.trackingSettings.pageView.filter((_, i) => i !== idx);
+                                                                setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
+                                                            }}
+                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                        >
+                                                            <TrashIcon className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="mb-2">
+                                                        <label className="text-slate-500 dark:text-slate-400 block mb-1">Pixel IDs:</label>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {globalPixels[setting.platform].map(pixel => (
+                                                                <label key={pixel.id} className="flex items-center gap-1 bg-white dark:bg-slate-600 px-2 py-0.5 rounded border">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={setting.pixelIds.includes(pixel.id)}
+                                                                        onChange={e => {
+                                                                            const newSettings = [...data.trackingSettings.pageView];
+                                                                            const ids = e.target.checked
+                                                                                ? [...setting.pixelIds, pixel.id]
+                                                                                : setting.pixelIds.filter(id => id !== pixel.id);
+                                                                            newSettings[idx] = { ...setting, pixelIds: ids };
+                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
+                                                                        }}
+                                                                        className="w-3 h-3"
+                                                                    />
+                                                                    <span className="truncate max-w-[80px]" title={pixel.name}>{pixel.name}</span>
+                                                                </label>
+                                                            ))}
+                                                            {globalPixels[setting.platform].length === 0 && (
+                                                                <span className="text-slate-400 italic">Tidak ada pixel {setting.platform}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-slate-500 dark:text-slate-400 block mb-1">Events:</label>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {PIXEL_EVENTS[setting.platform].map(event => (
+                                                                <label key={event} className="flex items-center gap-1 bg-white dark:bg-slate-600 px-2 py-0.5 rounded border">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={setting.events.includes(event)}
+                                                                        onChange={e => {
+                                                                            const newSettings = [...data.trackingSettings.pageView];
+                                                                            const events = e.target.checked
+                                                                                ? [...setting.events, event]
+                                                                                : setting.events.filter(ev => ev !== event);
+                                                                            newSettings[idx] = { ...setting, events };
+                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, pageView: newSettings } }));
+                                                                        }}
+                                                                        className="w-3 h-3"
+                                                                    />
+                                                                    {event}
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* ButtonClick Events */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Button Click Events</h4>
+                                                <button
+                                                    onClick={() => setData(prev => ({
+                                                        ...prev,
+                                                        trackingSettings: {
+                                                            ...prev.trackingSettings,
+                                                            buttonClick: [...prev.trackingSettings.buttonClick, { platform: 'meta', pixelIds: [], events: ['Lead'] }]
+                                                        }
+                                                    }))}
+                                                    className="text-xs text-purple-600 hover:text-purple-700"
+                                                >
+                                                    + Tambah
+                                                </button>
+                                            </div>
+                                            {data.trackingSettings.buttonClick.length === 0 && (
+                                                <p className="text-xs text-slate-400 italic">Belum ada pixel Button Click</p>
+                                            )}
+                                            {data.trackingSettings.buttonClick.map((setting, idx) => (
+                                                <div key={idx} className="p-2 bg-slate-50 dark:bg-slate-700 rounded mb-2 text-xs">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <select
+                                                            value={setting.platform}
+                                                            onChange={e => {
+                                                                const newSettings = [...data.trackingSettings.buttonClick];
+                                                                newSettings[idx] = { ...setting, platform: e.target.value as any, pixelIds: [], events: [PIXEL_EVENTS[e.target.value as keyof typeof PIXEL_EVENTS][4] || PIXEL_EVENTS[e.target.value as keyof typeof PIXEL_EVENTS][0]] };
+                                                                setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
+                                                            }}
+                                                            className="px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-600 text-xs flex-1"
+                                                        >
+                                                            <option value="meta">Meta (Facebook)</option>
+                                                            <option value="google">Google</option>
+                                                            <option value="tiktok">TikTok</option>
+                                                            <option value="snack">Snack</option>
+                                                        </select>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newSettings = data.trackingSettings.buttonClick.filter((_, i) => i !== idx);
+                                                                setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
+                                                            }}
+                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                        >
+                                                            <TrashIcon className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="mb-2">
+                                                        <label className="text-slate-500 dark:text-slate-400 block mb-1">Pixel IDs:</label>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {globalPixels[setting.platform].map(pixel => (
+                                                                <label key={pixel.id} className="flex items-center gap-1 bg-white dark:bg-slate-600 px-2 py-0.5 rounded border">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={setting.pixelIds.includes(pixel.id)}
+                                                                        onChange={e => {
+                                                                            const newSettings = [...data.trackingSettings.buttonClick];
+                                                                            const ids = e.target.checked
+                                                                                ? [...setting.pixelIds, pixel.id]
+                                                                                : setting.pixelIds.filter(id => id !== pixel.id);
+                                                                            newSettings[idx] = { ...setting, pixelIds: ids };
+                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
+                                                                        }}
+                                                                        className="w-3 h-3"
+                                                                    />
+                                                                    <span className="truncate max-w-[80px]" title={pixel.name}>{pixel.name}</span>
+                                                                </label>
+                                                            ))}
+                                                            {globalPixels[setting.platform].length === 0 && (
+                                                                <span className="text-slate-400 italic">Tidak ada pixel {setting.platform}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-slate-500 dark:text-slate-400 block mb-1">Events:</label>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {PIXEL_EVENTS[setting.platform].map(event => (
+                                                                <label key={event} className="flex items-center gap-1 bg-white dark:bg-slate-600 px-2 py-0.5 rounded border">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={setting.events.includes(event)}
+                                                                        onChange={e => {
+                                                                            const newSettings = [...data.trackingSettings.buttonClick];
+                                                                            const events = e.target.checked
+                                                                                ? [...setting.events, event]
+                                                                                : setting.events.filter(ev => ev !== event);
+                                                                            newSettings[idx] = { ...setting, events };
+                                                                            setData(prev => ({ ...prev, trackingSettings: { ...prev.trackingSettings, buttonClick: newSettings } }));
+                                                                        }}
+                                                                        className="w-3 h-3"
+                                                                    />
+                                                                    {event}
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <p className="text-xs text-slate-400">
+                                            Pixel IDs diambil dari Pengaturan &gt; Tracking Pixels
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -572,7 +887,10 @@ const SalesPageEditor: React.FC = () => {
 
                 {/* Canvas / Preview */}
                 <div className="flex-1 overflow-y-auto bg-slate-200 dark:bg-slate-900 p-6">
-                    <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800 shadow-xl rounded-lg overflow-hidden min-h-[600px]">
+                    <div 
+                        className="mx-auto bg-white dark:bg-slate-800 shadow-xl rounded-lg overflow-hidden min-h-[600px]"
+                        style={{ maxWidth: data.pageWidth || '1024px' }}
+                    >
                         {data.sections.map((section, sIdx) => (
                             <div
                                 key={section.id}

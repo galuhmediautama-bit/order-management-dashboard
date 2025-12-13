@@ -53,6 +53,8 @@ interface SalesPageData {
         fontFamily: string;
         backgroundColor: string;
     };
+    pageWidth?: string;
+    trackingSettings?: TrackingSettings;
     footerText: string;
     isPublished: boolean;
 }
@@ -209,16 +211,26 @@ const LandingPageViewer: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [forms, setForms] = useState<Form[]>([]);
     const [retryCount, setRetryCount] = useState(0);
+    const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings | null>(null);
 
     useEffect(() => {
         if (slug) {
             fetchPage();
             fetchForms();
+            fetchGlobalPixels();
         } else {
             setLoading(false);
             setError('Slug tidak ditemukan');
         }
     }, [slug, retryCount]);
+
+    // Fetch global pixels for tracking
+    const fetchGlobalPixels = async () => {
+        try {
+            const { data } = await supabase.from('settings').select('*').eq('id', 'trackingPixels').single();
+            if (data) setGlobalPixels(data);
+        } catch (e) { console.error('Error fetching global pixels:', e); }
+    };
 
     // Timeout safety - if loading takes too long, show error with retry option
     useEffect(() => {
@@ -363,11 +375,19 @@ const LandingPageViewer: React.FC = () => {
             fontFamily: 'Inter, sans-serif',
             backgroundColor: '#ffffff',
         };
+        const pageWidth = salesData.pageWidth || '1024px';
 
         // New format with sections
         if (salesData.sections && salesData.sections.length > 0) {
             return (
                 <div className="min-h-screen" style={{ fontFamily: globalStyles.fontFamily, backgroundColor: globalStyles.backgroundColor }}>
+                    {/* Pixel Script for Sales Page */}
+                    {globalPixels && salesData.trackingSettings && (
+                        <LandingPagePixelScript
+                            globalPixels={globalPixels}
+                            pageTrackingSettings={salesData.trackingSettings}
+                        />
+                    )}
                     {salesData.sections.map(section => (
                         <section
                             key={section.id}
@@ -379,7 +399,7 @@ const LandingPageViewer: React.FC = () => {
                                 backgroundPosition: 'center',
                             }}
                         >
-                            <div className="max-w-6xl mx-auto">
+                            <div className="mx-auto" style={{ maxWidth: pageWidth }}>
                                 {section.widgets.map(widget => (
                                     <WidgetRenderer
                                         key={widget.id}
@@ -387,6 +407,8 @@ const LandingPageViewer: React.FC = () => {
                                         globalStyles={globalStyles}
                                         forms={forms}
                                         ctaFormId={salesData.ctaFormId}
+                                        trackingSettings={salesData.trackingSettings}
+                                        globalPixels={globalPixels}
                                     />
                                 ))}
                             </div>
@@ -556,7 +578,9 @@ const WidgetRenderer: React.FC<{
     globalStyles: { primaryColor: string; secondaryColor: string; fontFamily: string; backgroundColor: string };
     forms: Form[];
     ctaFormId: string;
-}> = ({ widget, globalStyles, forms, ctaFormId }) => {
+    trackingSettings?: TrackingSettings;
+    globalPixels?: GlobalPixelSettings | null;
+}> = ({ widget, globalStyles, forms, ctaFormId, trackingSettings, globalPixels }) => {
     const style: React.CSSProperties = {
         padding: widget.style.padding,
         textAlign: widget.style.alignment as any,
@@ -568,6 +592,34 @@ const WidgetRenderer: React.FC<{
     const getFormLink = (formId: string) => {
         const form = forms.find(f => f.id === formId);
         return form ? `/#/f/${form.slug || form.id}` : '#';
+    };
+
+    // Fire button click tracking events
+    const fireButtonClickEvents = () => {
+        if (!trackingSettings?.buttonClick || !globalPixels) return;
+        
+        trackingSettings.buttonClick.forEach((setting) => {
+            const platformPixels = globalPixels[setting.platform]?.pixels || [];
+            const activePixelIds = platformPixels
+                .filter((p: { id: string }) => setting.pixelIds.includes(p.id))
+                .map((p: { id: string }) => p.id);
+
+            if (activePixelIds.length === 0) return;
+
+            setting.events.forEach((eventName) => {
+                activePixelIds.forEach((pixelId: string) => {
+                    if (setting.platform === 'meta' && typeof (window as any).fbq === 'function') {
+                        (window as any).fbq('trackSingle', pixelId, eventName);
+                    } else if (setting.platform === 'google' && typeof (window as any).gtag === 'function') {
+                        (window as any).gtag('event', eventName, { send_to: pixelId });
+                    } else if (setting.platform === 'tiktok' && typeof (window as any).ttq === 'object') {
+                        (window as any).ttq.instance(pixelId).track(eventName);
+                    } else if (setting.platform === 'snack' && typeof (window as any).snaq === 'function') {
+                        (window as any).snaq('track', eventName, { pixel_id: pixelId });
+                    }
+                });
+            });
+        });
     };
 
     switch (widget.type) {
@@ -599,6 +651,7 @@ const WidgetRenderer: React.FC<{
                 <div style={style}>
                     <a
                         href={ctaFormId ? getFormLink(ctaFormId) : widget.content.link || '#'}
+                        onClick={fireButtonClickEvents}
                         className={`inline-block px-8 py-3 rounded-lg font-semibold transition-all ${widget.content.style === 'primary' ? 'text-white shadow-lg hover:shadow-xl' : 'border-2'}`}
                         style={{ backgroundColor: widget.content.style === 'primary' ? globalStyles.primaryColor : 'transparent', borderColor: globalStyles.primaryColor, color: widget.content.style === 'primary' ? '#fff' : globalStyles.primaryColor }}
                     >
