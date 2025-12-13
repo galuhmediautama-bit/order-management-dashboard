@@ -118,14 +118,21 @@ const PerformanceDashboardPage: React.FC = () => {
     };
 
     useEffect(() => {
-        // Ensure monitor running
+        // Monitor auto-starts in dev mode with proper guard
+        // start() is now safe to call multiple times (has isRunning guard)
         performanceMonitor.start?.();
         setLoading(true);
+        
+        // Initial fetch
+        setSummary(performanceMonitor.getSummary());
+        setRecentMetrics(performanceMonitor.getMetrics(20));
+        setLoading(false);
+        
         const interval = setInterval(() => {
             setSummary(performanceMonitor.getSummary());
             setRecentMetrics(performanceMonitor.getMetrics(20));
-            setLoading(false);
-        }, 2000);
+        }, 5000); // Reduced from 2s to 5s to lower CPU usage
+        
         return () => clearInterval(interval);
     }, []);
 

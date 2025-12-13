@@ -115,7 +115,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
     useEffect(() => {
         const fetchUserRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            console.log('🔐 Sidebar - Auth user:', user?.email);
 
             if (user) {
                 try {
@@ -127,7 +126,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                     const retryDelay = 500; // ms
 
                     while (retries < maxRetries && !userDoc) {
-                        console.log(`📝 Sidebar - Query attempt ${retries + 1}/${maxRetries} for user ${user.id}`);
                         const result = await supabase.from('users').select('*').eq('id', user.id).single();
                         error = result.error;
                         userDoc = result.data;
@@ -142,31 +140,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                     }
 
                     if (error || !userDoc) {
-                        console.error('⚠️ User profile not found in DB after retries. Auth user:', user.email, 'Error:', error);
                         // Fallback: Check if this is likely a super admin (first user or owner)
-                        // Super Admin typically has specific email pattern or is registered first
                         const isSuperAdmin = user.email?.includes('admin') || user.email?.includes('owner');
                         const fallbackRole = isSuperAdmin ? 'Super Admin' : 'Advertiser';
-                        console.log('⚠️ Using fallback role:', fallbackRole);
                         setCurrentUserRole(fallbackRole);
                     } else {
                         const normalized = getNormalizedRole(userDoc.role, user.email);
-                        console.log('✅ Sidebar - User role from DB:', {
-                            raw: userDoc.role,
-                            normalized: normalized,
-                            email: user.email,
-                            userId: user.id
-                        });
-                        console.log('🔑 Role will be used for permissions:', normalized);
-                        console.log('📊 Setting currentUserRole state to:', normalized);
                         setCurrentUserRole(normalized);
                     }
                 } catch (error) {
-                    console.error('❌ Error fetching user role:', error);
                     setCurrentUserRole(null);
                 }
-            } else {
-                console.warn('⚠️ No auth user found in Sidebar useEffect');
             }
         };
         fetchUserRole();
@@ -197,11 +181,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
         // If role not loaded yet, show most items except admin-only ones
         if (!currentUserRole) {
-            console.log(`⏭️ Role loading for "${item.name}" - using fallback visibility`);
             // Show common items to all users while role loads
             const commonItems = ['Produk', 'Pesanan', 'Pelanggan', 'Laporan', 'Penghasilan', 'Daftar Produk', 'Daftar Formulir', 'Pesanan Tertinggal', 'Daftar Pesanan', 'Laporan Iklan', 'Laporan CS', 'Laporan Stock', 'Laporan Keuangan'];
             if (commonItems.includes(item.name)) {
-                console.log(`✅ Showing "${item.name}" (common item, role loading)`);
                 return true;
             }
             // Hide sensitive items while role loads
@@ -210,7 +192,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
 
         // Super Admin sees everything
         if (currentUserRole === 'Super Admin') {
-            console.log(`✅ Showing "${item.name}" - Super Admin has access to all`);
             return true;
         }
 
@@ -218,20 +199,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
         const rbacMenuId = menuNameToRbacId[item.name];
 
         if (!rbacMenuId) {
-            console.warn(`⚠️ No RBAC mapping for: "${item.name}"`);
             return false;
         }
 
         // Check dynamic permissions via RBAC
-        const hasAccess = canAccessMenu(rbacMenuId, currentUserRole);
-
-        console.log(`🔍 canSee "${item.name}" for role "${currentUserRole}":`, hasAccess, {
-            rbacMenuId,
-            userRole: currentUserRole,
-            hasAccess
-        });
-
-        return hasAccess;
+        return canAccessMenu(rbacMenuId, currentUserRole);
     };
 
     // Declarative Navigation Structure - NO hardcoded allowedRoles, use RBAC only!
@@ -241,10 +213,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
             icon: DashboardIcon
         },
         {
-            name: 'Landing Page',
-            icon: GlobeIcon
-        },
-        {
             name: 'Produk',
             label: 'Produk',
             icon: Squares2x2Icon,
@@ -252,6 +220,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, websiteName }) => 
                 { name: 'Daftar Produk', icon: Squares2x2Icon },
                 { name: 'Daftar Formulir', icon: FormsIcon },
             ]
+        },
+        {
+            name: 'Landing Page',
+            icon: GlobeIcon
         },
         {
             name: 'Pesanan',

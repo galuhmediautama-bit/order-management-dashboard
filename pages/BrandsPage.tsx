@@ -196,24 +196,39 @@ const BrandsPage: React.FC = () => {
 
     const recalculateProductCounts = async () => {
         try {
-            // Fetch all brands
-            const { data: allBrands } = await supabase.from('brands').select('id');
+            // OPTIMIZED: Batch fetch all brands and products at once instead of N+1 queries
+            const [brandsResult, productsResult] = await Promise.all([
+                supabase.from('brands').select('id'),
+                supabase.from('products').select('id, brand_id')
+            ]);
+            
+            const allBrands = brandsResult.data;
+            const allProducts = productsResult.data || [];
+            
             if (!allBrands) return;
 
-            // For each brand, count products and update
-            for (const brand of allBrands) {
-                const { count } = await supabase
-                    .from('products')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('brand_id', brand.id);
-                
-                const productCount = count || 0;
-                
-                // Update brand with correct product count
-                await supabase
-                    .from('brands')
-                    .update({ productCount })
-                    .eq('id', brand.id);
+            // Aggregate counts in JavaScript (much faster than N queries)
+            const brandCounts: Record<string, number> = {};
+            for (const product of allProducts) {
+                if (product.brand_id) {
+                    brandCounts[product.brand_id] = (brandCounts[product.brand_id] || 0) + 1;
+                }
+            }
+
+            // Batch update all brands with their counts
+            const updates = allBrands.map(brand => ({
+                id: brand.id,
+                productCount: brandCounts[brand.id] || 0
+            }));
+
+            // Update in batches of 10 to avoid overwhelming the database
+            for (let i = 0; i < updates.length; i += 10) {
+                const batch = updates.slice(i, i + 10);
+                await Promise.all(
+                    batch.map(update => 
+                        supabase.from('brands').update({ productCount: update.productCount }).eq('id', update.id)
+                    )
+                );
             }
 
             // Re-fetch brands to show updated counts

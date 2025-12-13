@@ -343,7 +343,12 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
   });
 
   const fetchReports = async () => {
-    const { data: reportsData } = await supabase.from('ad_reports').select('*');
+    // OPTIMIZED: Select only required columns + limit
+    const { data: reportsData } = await supabase
+      .from('ad_reports')
+      .select('id, platform, brandId, status, amountSpent, conversions, roas, startDate, clicks, impressions, adDate, responsibleUserId, responsibleUserName, campaignId, objective')
+      .order('adDate', { ascending: false })
+      .limit(2000);
     const reportsList = (reportsData || []).map(data => {
       if (
         typeof data.amountSpent !== 'number' ||
@@ -362,11 +367,30 @@ const AdReportsPage: React.FC<{ user: FirebaseUser }> = ({ user }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
-      await fetchReports();
-      const { data: usersData } = await supabase.from('users').select('*');
-      setUsers((usersData || []).map(u => ({ ...u }) as User));
-      const { data: brandsData } = await supabase.from('brands').select('*');
-      setBrands((brandsData || []).map(b => ({ ...b }) as Brand));
+      // OPTIMIZED: Fetch all data in parallel with specific columns
+      const [reportsResult, usersResult, brandsResult] = await Promise.all([
+        supabase.from('ad_reports').select('*').order('adDate', { ascending: false }).limit(2000),
+        supabase.from('users').select('*'),
+        supabase.from('brands').select('id, name, logo')
+      ]);
+      
+      // Process reports
+      const reportsList = (reportsResult.data || []).map(data => {
+        if (
+          typeof data.amountSpent !== 'number' ||
+          typeof data.conversions !== 'number' ||
+          typeof data.roas !== 'number' ||
+          typeof data.startDate !== 'string' ||
+          typeof data.clicks !== 'number'
+        ) {
+          return null;
+        }
+        return { ...data } as AdCampaignReport;
+      }).filter(Boolean) as AdCampaignReport[];
+      setReports(reportsList);
+      
+      setUsers((usersResult.data || []) as User[]);
+      setBrands((brandsResult.data || []) as Brand[]);
       setLoading(false);
     }
     fetchAllData();

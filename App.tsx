@@ -111,13 +111,9 @@ const LandingPageViewer = lazyWithRetry(() => import('./pages/LandingPageViewer'
 
 const FormViewerWrapper: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
-  console.log('[FormViewerWrapper] Rendering with identifier:', identifier);
-  console.log('[FormViewerWrapper] Current location:', window.location.href);
   if (!identifier) {
-    console.warn('[FormViewerWrapper] No identifier found, redirecting to home');
     return <Navigate to="/" />;
   }
-  console.log('[FormViewerWrapper] ✅ Passing identifier to FormViewerPage:', identifier);
   return <FormViewerPage identifier={identifier} />;
 };
 
@@ -269,17 +265,15 @@ const AppContent: React.FC = () => {
     const hash = window.location.hash;
     if (hash.includes('%2F')) {
       // Detect double-encoded hash (e.g., #%2Ff%2Fparfum-khalifah-oud)
-      console.log('[AppContent] Detected double-encoded hash, normalizing:', hash);
       try {
         const decodedHash = decodeURIComponent(hash);
-        console.log('[AppContent] Decoded hash:', decodedHash);
         if (decodedHash.startsWith('#/')) {
           const normalizedHash = decodedHash.substring(1); // Remove leading #
           // Use replaceState to avoid reload, let React Router handle routing
           window.history.replaceState(null, '', '#' + normalizedHash);
         }
       } catch (error) {
-        console.error('[AppContent] Error decoding hash:', error);
+        // Silent fail for decoding errors
       }
     }
   }, []);
@@ -339,11 +333,8 @@ const AppContent: React.FC = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔐 Global Auth Event:', event);
-
       // Handle password recovery flow
       if (event === 'PASSWORD_RECOVERY') {
-        console.log('✅ PASSWORD_RECOVERY event detected globally, redirecting to reset password');
         window.location.hash = '#/reset-password';
         return;
       }
@@ -362,10 +353,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     return () => {
       // Cleanup: Clear any pending timers
-      if (typeof window !== 'undefined') {
-        // Clear any lingering timers (the cache cleanup interval will be cleared by beforeunload)
-        console.log('[App] Cleaning up intervals on unmount');
-      }
     };
   }, []);
 
@@ -384,21 +371,13 @@ const AppContent: React.FC = () => {
         // Sign out if user is not active
         await supabase.auth.signOut();
         setUser(null);
-        // You can set an error message here to show why logout happened
-        console.warn('User akun belum disetujui oleh admin');
       } else {
         setUser(authUser); // Default: allow access if status unknown
       }
     } catch (error) {
-      console.error('Error validating user status:', error);
       setUser(authUser); // Default: allow access on error
     }
   };
-
-  // Debug logging for routing - MUST be before any early returns!
-  useEffect(() => {
-    console.log('[AppContent] Hash changed:', window.location.hash);
-  }, []);
 
   if (loadingAuthState) {
     return (

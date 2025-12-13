@@ -193,11 +193,11 @@ const EarningsPage: React.FC = () => {
                     }
                 }
 
-                // Parallel fetching
+                // OPTIMIZED: Parallel fetching with specific columns and limits
                 const [usersSnap, ordersSnap, adsSnap, rankSnap] = await Promise.all([
                     supabase.from('users').select('*'),
-                    supabase.from('orders').select('*'),
-                    supabase.from('ad_reports').select('*'),
+                    supabase.from('orders').select('id, customer, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, csCommission, advCommission').order('date', { ascending: false }).limit(5000),
+                    supabase.from('ad_reports').select('*').order('date', { ascending: false }).limit(2000),
                     supabase.from('settings').select('*').eq('id', 'cuanRank').single()
                 ]);
 

@@ -156,32 +156,35 @@ const FormsPage: React.FC = () => {
             if (user) {
                 const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
                 if (userDoc) {
-                    setCurrentUser({ id: user.id, ...userDoc } as User);
+                    setCurrentUser({ ...userDoc } as User);
                 } else {
                     // Fallback for super admin
                     setCurrentUser({ id: user.id, role: 'Super Admin', name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
                 }
             }
 
-            const { data: formsData } = await supabase.from('forms').select('*');
-            const formsList = (formsData || []).map(doc => ({ ...doc } as Form));
+            // OPTIMIZED: Fetch forms, users, cs_agents, and templates in PARALLEL
+            const [formsResult, usersResult, csAgentsResult, templatesResult] = await Promise.all([
+                supabase.from('forms').select('*').order('created_at', { ascending: false }).limit(500),
+                supabase.from('users').select('*'),
+                supabase.from('cs_agents').select('id, name, whatsapp, isActive'),
+                supabase.from('settings').select('*').eq('id', 'messageTemplates').single()
+            ]);
+
+            // Process results
+            const formsList = (formsResult.data || []).map(doc => ({ ...doc } as Form));
             setForms(formsList);
 
-            // Fetch all users for name lookups
-            const { data: usersData } = await supabase.from('users').select('*');
-            if (usersData) {
-                setUsers(usersData as User[]);
+            if (usersResult.data) {
+                setUsers(usersResult.data as User[]);
             }
 
-            // Fetch CS agents for name lookups
-            const { data: csAgentsData } = await supabase.from('cs_agents').select('*');
-            if (csAgentsData) {
-                setCsAgents(csAgentsData);
+            if (csAgentsResult.data) {
+                setCsAgents(csAgentsResult.data);
             }
 
-            const { data: templatesData } = await supabase.from('settings').select('*').eq('id', 'messageTemplates').single();
-            if (templatesData) {
-                setGlobalTemplates(templatesData as MessageTemplates);
+            if (templatesResult.data) {
+                setGlobalTemplates(templatesResult.data as MessageTemplates);
             } else {
                 setGlobalTemplates({
                     followUp1: 'Halo [CUSTOMER_NAME], kami mengingatkan kembali tentang pesanan Anda dengan ID [ORDER_ID]. Mohon segera lakukan pembayaran ya.',

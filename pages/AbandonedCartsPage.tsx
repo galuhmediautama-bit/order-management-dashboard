@@ -83,11 +83,10 @@ const AbandonedCartsPage: React.FC = () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const { data: userDoc } = await supabase.from('users').select('*').eq('id', user.id).single();
+                const { data: userDoc } = await supabase.from('users').select('id, name, role, email, brandId, assignedBrandIds, status, lastLogin').eq('id', user.id).single();
                 if (userDoc) {
-                    const userData = userDoc as User;
-                    const role = getNormalizedRole(userData.role, user.email);
-                    setCurrentUser({ id: user.id, ...userData, role });
+                    const role = getNormalizedRole(userDoc.role, user.email);
+                    setCurrentUser({ ...userDoc, role } as User);
                 } else {
                     const role = getNormalizedRole(undefined, user.email);
                     setCurrentUser({ id: user.id, role, name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
@@ -104,7 +103,12 @@ const AbandonedCartsPage: React.FC = () => {
                 .delete()
                 .lt('timestamp', isoDate);
 
-            const { data: cartsData } = await supabase.from('abandoned_carts').select('*').order('timestamp', { ascending: false });
+            // OPTIMIZED: Select specific columns + limit
+            const { data: cartsData } = await supabase
+                .from('abandoned_carts')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(1000);
 
             const cartsList = (cartsData || []).map(cart => {
                 return {
@@ -204,8 +208,6 @@ const AbandonedCartsPage: React.FC = () => {
                             // Consider adding filtering logic if needed
                         },
                         async (payload: any) => {
-                            console.log('[Real-time] New abandoned cart:', payload.new);
-
                             const newCart = payload.new as AbandonedCart;
 
                             // ✅ JANGAN auto-refresh! Simpan ke pending dan tampilkan banner
@@ -230,7 +232,7 @@ const AbandonedCartsPage: React.FC = () => {
                                     metadata: { cart_id: newCart.id },
                                 });
                             } catch (err) {
-                                console.warn('Failed to insert cart notification:', err);
+                                // Silent fail for notification insert
                             }
 
                             // Update counter
@@ -239,11 +241,9 @@ const AbandonedCartsPage: React.FC = () => {
                             }
                         }
                     )
-                    .subscribe((status: any) => {
-                        console.log('[Real-time] Abandoned carts subscription status:', status);
-                    });
+                    .subscribe();
             } catch (err) {
-                console.error('Error setting up abandoned carts listener:', err);
+                // Error setting up abandoned carts listener
             }
         };
 
@@ -251,7 +251,6 @@ const AbandonedCartsPage: React.FC = () => {
 
         return () => {
             if (subscription) {
-                console.log(`[Real-time] Unsubscribing from abandoned-carts-channel-${currentUser?.id}`);
                 supabase.removeChannel(subscription);
             }
         };
@@ -297,9 +296,7 @@ const AbandonedCartsPage: React.FC = () => {
 
             const previousIds = lastCartIdsRef.current;
             const newOnes = cartsList.filter(c => !previousIds.has(c.id));
-            console.log('[Polling Carts] Previous:', previousIds.size, 'New:', newOnes.length);
             if (previousIds.size > 0 && newOnes.length > 0) {
-                console.log('[Notification Carts] Showing toast for', newOnes.length, 'new carts');
                 showToast(`🛒 ${newOnes.length} keranjang baru tercatat`, 'info');
                 playTone(660);
             }
@@ -312,7 +309,7 @@ const AbandonedCartsPage: React.FC = () => {
 
             lastCartIdsRef.current = new Set(cartsList.map(c => c.id));
         } catch (err) {
-            console.error('Silent refresh abandoned carts failed:', err);
+            // Silent fail for refresh
         }
     }, [showToast, playTone, setNewAbandonedCount]);
 

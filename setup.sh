@@ -70,7 +70,7 @@ module.exports = {
   apps: [{
     name: 'order-dashboard',
     script: 'npx',
-    args: 'vite preview --host 0.0.0.0 --port 3000',
+    args: 'serve -s dist -l 3000',
     instances: 1,
     exec_mode: 'fork',
     env: {

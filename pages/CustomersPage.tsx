@@ -191,8 +191,12 @@ const CustomersPage: React.FC = () => {
     const fetchCustomersAndOrders = async () => {
         setLoading(true);
         try {
-            // Fetch Orders to aggregate customer data
-            const { data: ordersData } = await supabase.from('orders').select('*');
+            // OPTIMIZED: Fetch Orders with only required columns + limit
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select('id, customer, customerPhone, customerEmail, shippingAddress, totalPrice, status, date, paymentMethod')
+                .order('date', { ascending: false })
+                .limit(5000);
             const ordersList = (ordersData || []) as Order[];
             setOrders(ordersList);
 

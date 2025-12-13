@@ -649,12 +649,6 @@ const UserModal: React.FC<{
     onClose: () => void;
     onSave: (user: User) => void;
 }> = ({ user, brands, currentUserRole, onClose, onSave }) => {
-    console.log('🔍 USERMODAL RENDER:', {
-        brandsCount: brands.length,
-        brands: brands,
-        userAssignedBrands: user?.assignedBrandIds
-    });
-
     const [formData, setFormData] = useState<User>(
         user || { id: '', name: '', email: '', phone: '', address: '', role: 'Customer service', status: 'Aktif', lastLogin: '', assignedBrandIds: [] }
     );
@@ -663,12 +657,6 @@ const UserModal: React.FC<{
     // Update formData when user prop changes (e.g., editing different user)
     useEffect(() => {
         if (user) {
-            console.log('🔍 MODAL OPENED WITH USER:', {
-                userId: user.id,
-                userName: user.name,
-                assignedBrandIds: user.assignedBrandIds,
-                fullUser: user
-            });
             setFormData(user);
         } else {
             setFormData({ id: '', name: '', email: '', phone: '', address: '', role: 'Customer service', status: 'Aktif', lastLogin: '', assignedBrandIds: [] });
@@ -686,25 +674,12 @@ const UserModal: React.FC<{
             const newBrands = currentBrands.includes(brandId)
                 ? currentBrands.filter(id => id !== brandId)
                 : [...currentBrands, brandId];
-
-            console.log('🔍 BRAND TOGGLE:', {
-                brandId,
-                before: currentBrands,
-                after: newBrands
-            });
-
             return { ...prev, assignedBrandIds: newBrands };
         });
     };
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Debug: Check what's in formData before saving
-        console.log('🔍 FORM DATA BEFORE SAVE:', {
-            assignedBrandIds: formData.assignedBrandIds,
-            fullFormData: formData
-        });
 
         // SECURITY: Prevent anyone from creating/modifying Super Admin
         if (formData.role === 'Super Admin' && formData.email !== 'galuhmediautama@gmail.com') {
@@ -1095,13 +1070,6 @@ const UserManagement: React.FC = () => {
                     }
                 });
 
-                // Debug: Log what we're sending
-                console.log('🔍 UPDATE PAYLOAD:', {
-                    userId: userData.id,
-                    assignedBrandIds: updateData["assignedBrandIds"],
-                    fullPayload: updateData
-                });
-
                 // Update user data
                 const { error, data } = await supabase
                     .from('users')
@@ -1109,10 +1077,7 @@ const UserManagement: React.FC = () => {
                     .eq('id', userData.id)
                     .select();
 
-                console.log('✅ UPDATE RESULT:', { error, data });
-
                 if (error) {
-                    console.error('Update error:', error);
                     if (error.code === '42P01') {
                         showToast("Tabel Database belum siap. Perubahan hanya tersimpan sementara.", 'warning');
                     } else if (error.code === '42703') {

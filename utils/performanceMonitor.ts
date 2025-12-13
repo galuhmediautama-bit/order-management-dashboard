@@ -31,12 +31,19 @@ class PerformanceMonitor {
     private latencies: number[] = [];
     private maxEntries = 100;
     private memoryIntervalId: NodeJS.Timer | null = null;
+    private isRunning = false;
 
     /**
      * Start monitoring
      */
     start(): void {
         if (typeof window === 'undefined') return;
+        
+        // CRITICAL: Prevent multiple intervals from starting
+        if (this.isRunning) {
+            return;
+        }
+        this.isRunning = true;
 
         // Monitor memory usage
         this.memoryIntervalId = setInterval(() => {
@@ -56,10 +63,8 @@ class PerformanceMonitor {
         if (this.memoryIntervalId !== null) {
             clearInterval(this.memoryIntervalId);
             this.memoryIntervalId = null;
-            if (import.meta.env.DEV) {
-                console.log('[PerformanceMonitor] Stopped and interval cleared');
-            }
         }
+        this.isRunning = false;
     }
 
     /**

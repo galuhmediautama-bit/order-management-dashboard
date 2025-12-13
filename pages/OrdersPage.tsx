@@ -190,7 +190,6 @@ const OrdersPage: React.FC = () => {
 
                     // Fetch pending deletions count for admin
                     if (role === 'Admin' || role === 'Super Admin') {
-                        console.log('🔍 Fetching pending deletions for role:', role);
                         const { count } = await withRetry(() =>
                             supabase
                                 .from('pending_deletions')
@@ -198,10 +197,8 @@ const OrdersPage: React.FC = () => {
                                 .eq('status', 'pending')
                                 .then(r => ({ count: r.count, error: r.error }))
                         );
-                        console.log('🔍 Pending deletions result:', { count });
                         if (count !== null) {
                             setPendingDeletionsCount(count);
-                            console.log('✅ Set pending deletions count:', count);
                         }
                     }
                 } else {
@@ -320,12 +317,10 @@ const OrdersPage: React.FC = () => {
     // Load column visibility preferences from currentUser
     const loadColumnPreferences = async () => {
         if (!currentUser?.id) {
-            console.log('⏭️ Skipping load column preferences - no currentUser');
             return;
         }
         setIsLoadingColumnPrefs(true);
         try {
-            console.log('📂 Loading column preferences for user:', currentUser.id);
             const { data, error } = await supabase
                 .from('users')
                 .select('columnVisibility')
@@ -334,16 +329,10 @@ const OrdersPage: React.FC = () => {
 
             if (error) {
                 // Column might not exist yet - that's OK, just use defaults
-                if (error.message?.includes('columnVisibility') || error.message?.includes('column')) {
-                    console.warn('⚠️ columnVisibility column not found, using defaults. Run migration: ADD_COLUMN_VISIBILITY_FIELD.sql');
-                } else {
-                    console.warn('⚠️ Failed to load column preferences:', error);
-                }
                 return;
             }
 
             if (data?.columnVisibility) {
-                console.log('✅ Loaded column preferences:', data.columnVisibility);
                 // Merge saved preferences with default columns
                 const saved = data.columnVisibility as Record<string, boolean>;
                 const updated = columnVisibility.map(col => ({
@@ -351,11 +340,9 @@ const OrdersPage: React.FC = () => {
                     visible: saved[col.key] !== undefined ? saved[col.key] : col.visible,
                 }));
                 setColumnVisibility(updated);
-            } else {
-                console.log('ℹ️ No saved column preferences found, using defaults');
             }
         } catch (error) {
-            console.warn('Failed to load column preferences:', error);
+            // Silent fail - use defaults
         } finally {
             setIsLoadingColumnPrefs(false);
         }
@@ -374,15 +361,12 @@ const OrdersPage: React.FC = () => {
                 visibility[col.key] = col.visible;
             });
 
-            console.log('💾 Saving column preferences:', { userId: currentUser.id, visibility });
-
             const { error } = await supabase
                 .from('users')
                 .update({ columnVisibility: visibility })
                 .eq('id', currentUser.id);
 
             if (error) {
-                console.error('❌ Save error:', error);
                 // Check if error is about missing column
                 if (error.message?.includes('columnVisibility') || error.message?.includes('column')) {
                     showToast('Database belum diupdate. Hubungi admin untuk menjalankan migration.', 'error');
@@ -392,12 +376,11 @@ const OrdersPage: React.FC = () => {
                 throw error;
             }
 
-            console.log('✅ Column preferences saved successfully');
             setColumnVisibility(columns);
             showToast('Pengaturan kolom berhasil disimpan', 'success');
             setIsColumnVisibilityModalOpen(false);
         } catch (error) {
-            console.error('Failed to save column preferences:', error);
+            // Silent error - toast already shown
         } finally {
             setIsSavingColumnPrefs(false);
         }
@@ -515,8 +498,6 @@ const OrdersPage: React.FC = () => {
                     .channel(`orders-channel-${currentUser.id}`)
                     .on('postgres_changes', filterConfig,
                         async (payload: any) => {
-                            console.log('[Real-time] New order detected:', payload.new);
-
                             // Add new order
                             const newOrder = {
                                 ...payload.new,
@@ -556,7 +537,7 @@ const OrdersPage: React.FC = () => {
                                     metadata: { order_id: newOrder.id },
                                 });
                             } catch (err) {
-                                console.warn('Failed to insert notification:', err);
+                                // Silent fail for notification insert
                             }
 
                             // Update counter
@@ -565,11 +546,9 @@ const OrdersPage: React.FC = () => {
                             }
                         }
                     )
-                    .subscribe((status: any) => {
-                        console.log('[Real-time] Subscription status:', status);
-                    });
+                    .subscribe();
             } catch (err) {
-                console.error('Error setting up real-time listener:', err);
+                // Error setting up real-time listener
             }
         };
 
@@ -577,7 +556,6 @@ const OrdersPage: React.FC = () => {
 
         return () => {
             if (subscription) {
-                console.log(`[Real-time] Unsubscribing from orders-channel-${currentUser?.id}`);
                 supabase.removeChannel(subscription);
             }
         };
@@ -609,7 +587,6 @@ const OrdersPage: React.FC = () => {
             const newOnes = ordersList.filter(o => !previousIds.has(o.id));
 
             if (previousIds.size > 0 && newOnes.length > 0) {
-                console.log('[Polling] New orders detected:', newOnes.length);
                 showToast(`📦 ${newOnes.length} pesanan baru masuk`, 'success');
                 playNotificationSound();
             }
@@ -622,7 +599,7 @@ const OrdersPage: React.FC = () => {
 
             lastOrderIdsRef.current = new Set(ordersList.map(o => o.id));
         } catch (err) {
-            console.error('Polling refresh failed:', err);
+            // Silent fail for polling refresh
         }
     }, [showToast, playNotificationSound, setNewOrdersCount]);
 

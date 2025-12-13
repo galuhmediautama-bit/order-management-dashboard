@@ -39,10 +39,8 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
           ...DEFAULT_ROLE_PERMISSIONS,
           ...data.role_permissions
         };
-        console.log('📋 Role Permissions - Loaded from DB and merged with defaults:', Object.keys(merged));
         setRolePermissions(merged as RolePermissionMap);
       } else {
-        console.log('📋 Role Permissions - Using defaults only (no DB data):', Object.keys(DEFAULT_ROLE_PERMISSIONS));
         setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
       }
     } catch (err) {
@@ -63,7 +61,6 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
   // Listen for manual refresh events from permission manager
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('🔄 Role permissions update event received, reloading...');
       loadPermissions();
     };
     window.addEventListener('rolePermissionsUpdated', handleRefresh);
@@ -82,19 +79,13 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
 
     const permissions = rolePermissions[normalizedRole as keyof RolePermissionMap];
     if (!permissions) {
-      console.warn(`⚠️ No permissions found for role: "${normalizedRole}"`, {
-        availableRoles: Object.keys(rolePermissions),
-        menuId,
-        rawRole: userRole
-      });
+      // Only warn once in dev mode
+      if (import.meta.env.DEV) {
+        console.warn(`⚠️ No permissions found for role: "${normalizedRole}"`);
+      }
       return false;
     }
-    const hasAccess = permissions.menus.includes(menuId);
-    console.log(`🔍 canAccessMenu("${menuId}", "${normalizedRole}"):`, hasAccess, {
-      allowedMenus: permissions.menus,
-      totalMenus: permissions.menus.length
-    });
-    return hasAccess;
+    return permissions.menus.includes(menuId);
   }, [rolePermissions]);
 
   const canUseFeature = useCallback((featureId: string, userRole: string): boolean => {
@@ -103,7 +94,6 @@ export const RolePermissionsProvider: React.FC<{ children: React.ReactNode }> = 
 
     const permissions = rolePermissions[normalizedRole as keyof RolePermissionMap];
     if (!permissions) {
-      console.warn(`⚠️ No permissions found for role: "${normalizedRole}" when checking feature: "${featureId}"`);
       return false;
     }
     return permissions.features.includes(featureId);

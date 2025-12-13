@@ -242,11 +242,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Load notifications dari database
   const loadNotifications = useCallback(async () => {
     if (!user?.id) {
-      console.warn('[NotificationContext] ⚠️ loadNotifications called without user ID');
       return;
     }
-
-    console.log('[NotificationContext] 📥 Loading notifications for user:', user.id);
 
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -254,23 +251,19 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
       // Fetch notifications
       const data = await getNotifications({ limit: 50 });
-      console.log('[NotificationContext] ✅ Fetched notifications:', data.length);
 
       const filtered = filterNotificationsByRole(data, userRole || '');
       dispatch({ type: 'SET_NOTIFICATIONS', payload: filtered });
 
       // Fetch unread count
       const count = await getUnreadCount();
-      console.log('[NotificationContext] 🔢 Unread count:', count);
       dispatch({ type: 'SET_UNREAD_COUNT', payload: count });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load notifications';
       dispatch({ type: 'SET_ERROR', payload: message });
-      console.error('[NotificationContext] ❌ Error loading notifications:', {
-        error: err,
-        userId: user.id,
-        userRole: userRole,
-      });
+      if (import.meta.env.DEV) {
+        console.error('[NotificationContext] Error loading notifications:', err);
+      }
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -279,20 +272,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Setup realtime subscriptions
   useEffect(() => {
     if (!user?.id) {
-      console.log('[NotificationContext] ⏳ Waiting for user ID to setup subscriptions');
       return;
     }
 
-    console.log('[NotificationContext] 🔌 Setting up realtime subscriptions for user:', user.id);
-
     // Subscribe to new notifications
     const insertChannel = subscribeToNotifications(user.id, (newNotification) => {
-      console.log('[NotificationContext] 🆕 New notification received:', {
-        id: newNotification.id,
-        type: newNotification.type,
-        title: newNotification.title,
-        userId: newNotification.userId,
-      });
       const filtered = filterNotificationsByRole([newNotification], userRole || '');
       if (filtered.length > 0) {
         dispatch({ type: 'ADD_NOTIFICATION', payload: newNotification });
@@ -301,36 +285,19 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         if (soundEnabled) {
           const notifType = newNotification.type || 'new_order';
           playNotificationSound(notifType);
-          console.log('[NotificationContext] 🔊 Playing sound for:', notifType);
         }
-      } else {
-        console.log('[NotificationContext] ⚠️ Notification filtered out by role');
       }
     });
 
-    if (insertChannel) {
-      console.log('[NotificationContext] ✅ Insert subscription created');
-    } else {
-      console.error('[NotificationContext] ❌ Failed to create insert subscription');
-    }
-
     // Subscribe to updates (mark as read, etc)
     const updateChannel = subscribeToNotificationUpdates(user.id, (updatedNotification) => {
-      console.log('[NotificationContext] 🔄 Notification updated:', updatedNotification.id);
       dispatch({ type: 'UPDATE_NOTIFICATION', payload: updatedNotification });
     });
-
-    if (updateChannel) {
-      console.log('[NotificationContext] ✅ Update subscription created');
-    } else {
-      console.error('[NotificationContext] ❌ Failed to create update subscription');
-    }
 
     channelsRef.current = { insert: insertChannel, update: updateChannel };
 
     // Cleanup
     return () => {
-      console.log('[NotificationContext] 🧹 Cleaning up subscriptions');
       insertChannel?.unsubscribe();
       updateChannel?.unsubscribe();
     };

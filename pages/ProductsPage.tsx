@@ -246,22 +246,24 @@ const ProductsPage: React.FC = () => {
 
             const stats: ProductStats = {};
 
-            for (const product of productsToCheck) {
-                // Hitung jumlah form yang diassign
-                const forms = await productService.getProductForms(product.id);
+            // OPTIMIZED: Batch fetch all forms and orders instead of N+1 queries
+            const productIds = productsToCheck.map(p => p.id);
+            
+            if (productIds.length > 0) {
+                // Fetch all forms and orders for all products in ONE query each
+                const [formsResult, ordersResult] = await Promise.all([
+                    supabase.from('forms').select('id, product_id').in('product_id', productIds),
+                    supabase.from('orders').select('id, product_id').in('product_id', productIds).eq('status', 'Delivered')
+                ]);
 
-                // Hitung jumlah terjual (dari orders table)
-                const { data: orders, error } = await supabase
-                    .from('orders')
-                    .select('id')
-                    .eq('product_id', product.id)
-                    .eq('status', 'Delivered');
+                const allForms = formsResult.data || [];
+                const allOrders = ordersResult.data || [];
 
-                if (!error) {
-                    stats[product.id] = {
-                        salesCount: orders?.length || 0,
-                        formCount: forms?.length || 0,
-                    };
+                // Aggregate counts in JavaScript (much faster than N queries)
+                for (const product of productsToCheck) {
+                    const formCount = allForms.filter(f => f.product_id === product.id).length;
+                    const salesCount = allOrders.filter(o => o.product_id === product.id).length;
+                    stats[product.id] = { salesCount, formCount };
                 }
             }
 

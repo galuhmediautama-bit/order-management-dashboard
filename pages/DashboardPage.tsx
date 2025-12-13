@@ -85,36 +85,33 @@ const DashboardPage: React.FC = () => {
 
           if (userDoc) {
             setCurrentUser(userDoc as User);
-            console.log('✅ DashboardPage - User loaded:', {
-              id: userDoc.id,
-              role: userDoc.role,
-              normalizedRole: getNormalizedRole(userDoc.role, user.email),
-              name: userDoc.name
-            });
           } else {
             // Fallback for super admin owner who might not be in users collection yet
             setCurrentUser({ id: user.id, role: 'Super Admin', name: 'Owner', email: user.email || '', status: 'Aktif', lastLogin: '' });
-            console.log('⚠️ DashboardPage - Using fallback Super Admin');
           }
         }
 
         // Fetch Orders - exclude soft deleted orders
+        // OPTIMIZED: Select only required columns + limit for dashboard performance
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, customer, customerPhone, productName, totalPrice, status, date, assignedCsId, assignedAdvertiserId, brandId, formId')
           .is('deletedAt', null)
-          .order('date', { ascending: false });
+          .order('date', { ascending: false })
+          .limit(2000);
+
+        // OPTIMIZED: Fetch forms and users in parallel (outside the error check)
+        const [formsResult, usersResult] = await Promise.all([
+          supabase.from('forms').select('id'),
+          supabase.from('users').select('*')
+        ]);
 
         if (ordersError) {
           console.error("⚠️ Error fetching orders:", ordersError);
           // Don't throw - continue with empty data
           setAllOrders([]);
         } else {
-          // Fetch active form IDs to filter out orders from deleted forms
-          const { data: activeForms } = await supabase
-            .from('forms')
-            .select('id');
-
+          const activeForms = formsResult.data;
           const activeFormIds = new Set((activeForms || []).map(f => f.id));
 
           // Mapper Supabase data to Order Type
@@ -133,16 +130,12 @@ const DashboardPage: React.FC = () => {
           setAllOrders(allOrdersList);
         }
 
-        // Fetch Users for CS ranking
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('*');
-
-        if (usersError) {
-          console.error("⚠️ Error fetching users:", usersError);
+        // Users already fetched in parallel above
+        if (usersResult.error) {
+          console.error("⚠️ Error fetching users:", usersResult.error);
           setUsers([]);
-        } else if (usersData) {
-          setUsers(usersData as User[]);
+        } else if (usersResult.data) {
+          setUsers(usersResult.data as User[]);
         }
 
       } catch (error) {
