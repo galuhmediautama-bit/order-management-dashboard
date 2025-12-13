@@ -200,23 +200,48 @@ const LandingPageViewer: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [forms, setForms] = useState<Form[]>([]);
+    const [retryCount, setRetryCount] = useState(0);
 
     useEffect(() => {
         if (slug) {
             fetchPage();
             fetchForms();
+        } else {
+            setLoading(false);
+            setError('Slug tidak ditemukan');
         }
-    }, [slug]);
+    }, [slug, retryCount]);
+
+    // Timeout safety - if loading takes too long, show error with retry option
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (loading) {
+                console.error('Loading timeout - page took too long to load');
+                setLoading(false);
+                setError('Koneksi timeout. Silakan coba lagi.');
+            }
+        }, 15000); // 15 second timeout
+
+        return () => clearTimeout(timeout);
+    }, [loading, retryCount]);
 
     const fetchPage = async () => {
+        setLoading(true);
+        setError(null);
+        
         try {
             // First try to get published page
-            let { data: pageData, error } = await supabase
+            let { data: pageData, error: fetchError } = await supabase
                 .from('landing_pages')
                 .select('*')
                 .eq('slug', slug)
                 .eq('isPublished', true)
                 .maybeSingle();
+
+            if (fetchError) {
+                console.error('Supabase error:', fetchError);
+                throw new Error(fetchError.message);
+            }
 
             // If not found and user might be previewing, try without isPublished filter
             if (!pageData) {
@@ -225,6 +250,11 @@ const LandingPageViewer: React.FC = () => {
                     .select('*')
                     .eq('slug', slug)
                     .maybeSingle();
+                
+                if (result.error) {
+                    console.error('Supabase error (retry):', result.error);
+                    throw new Error(result.error.message);
+                }
                 
                 if (result.data) {
                     pageData = result.data;
@@ -237,13 +267,14 @@ const LandingPageViewer: React.FC = () => {
 
             if (!pageData) {
                 setError('Halaman tidak ditemukan');
+                setLoading(false);
                 return;
             }
             setData(pageData as LandingPageData);
-        } catch (error) {
-            console.error('Error fetching page:', error);
-            setError('Halaman tidak ditemukan');
-        } finally {
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching page:', err);
+            setError(err instanceof Error ? err.message : 'Gagal memuat halaman. Silakan coba lagi.');
             setLoading(false);
         }
     };
@@ -269,8 +300,9 @@ const LandingPageViewer: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-100">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                <p className="text-slate-500">Memuat...</p>
             </div>
         );
     }
@@ -278,10 +310,30 @@ const LandingPageViewer: React.FC = () => {
     if (error || !data) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-100">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-slate-700 mb-2">404</h1>
-                    <p className="text-slate-500">{error || 'Halaman tidak ditemukan'}</p>
-                    <a href="/" className="mt-4 inline-block text-indigo-600 hover:underline">Kembali ke beranda</a>
+                <div className="text-center p-6">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-xl font-bold text-slate-700 mb-2">
+                        {error?.includes('timeout') ? 'Koneksi Bermasalah' : 'Halaman Tidak Ditemukan'}
+                    </h1>
+                    <p className="text-slate-500 mb-4">{error || 'Halaman tidak ditemukan'}</p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button 
+                            onClick={() => setRetryCount(c => c + 1)}
+                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                        >
+                            🔄 Coba Lagi
+                        </button>
+                        <a 
+                            href="/" 
+                            className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition"
+                        >
+                            Kembali ke beranda
+                        </a>
+                    </div>
                 </div>
             </div>
         );
