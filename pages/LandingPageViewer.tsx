@@ -236,7 +236,7 @@ const LandingPageViewer: React.FC = () => {
     const fetchPage = async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
             // First try to get published page
             let { data: pageData, error: fetchError } = await supabase
@@ -258,12 +258,12 @@ const LandingPageViewer: React.FC = () => {
                     .select('*')
                     .eq('slug', slug)
                     .maybeSingle();
-                
+
                 if (result.error) {
                     console.error('Supabase error (retry):', result.error);
                     throw new Error(result.error.message);
                 }
-                
+
                 if (result.data) {
                     pageData = result.data;
                     // Show preview notice for unpublished pages
@@ -298,7 +298,7 @@ const LandingPageViewer: React.FC = () => {
     const getFormLink = (formId: string, variantParams?: Record<string, string>) => {
         const form = forms.find(f => f.id === formId);
         const baseUrl = form ? `/#/f/${form.slug || form.id}` : `/#/f/${formId}`;
-        
+
         if (variantParams && Object.keys(variantParams).length > 0) {
             const params = new URLSearchParams();
             Object.entries(variantParams).forEach(([key, value]) => {
@@ -336,14 +336,14 @@ const LandingPageViewer: React.FC = () => {
                     </h1>
                     <p className="text-slate-500 mb-4">{error || 'Halaman tidak ditemukan'}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button 
+                        <button
                             onClick={() => setRetryCount(c => c + 1)}
                             className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                         >
                             🔄 Coba Lagi
                         </button>
-                        <a 
-                            href="/" 
+                        <a
+                            href="/"
                             className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition"
                         >
                             Kembali ke beranda
@@ -474,7 +474,7 @@ const LandingPageViewer: React.FC = () => {
     // Render Product Page
     if (data.type === 'product') {
         const productData = data as ProductPageData;
-        
+
         // Check if it's new Teespring-style format (has productName) or old catalog format (has products array)
         const isTeespringStyle = productData.productName && !productData.products?.length;
 
@@ -838,7 +838,7 @@ const HighConvertingProductPage: React.FC<{
     // Fire pixel event helper for button clicks
     const firePixelEvent = (platform: string, pixelId: string, event: string) => {
         console.log(`🔥 Firing ${platform} pixel ${pixelId}: ${event}`);
-        
+
         if (platform === 'meta' && typeof (window as any).fbq === 'function') {
             (window as any).fbq('trackSingle', pixelId, event, {
                 content_name: productData.productName || 'Product',

@@ -28,12 +28,12 @@ interface LandingPagePixelScriptProps {
  * - TikTok: PageView, ViewContent, ClickButton
  * - Snack: PAGE_VIEW, VIEW_CONTENT
  */
-const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({ 
-    pageViewConfigs, 
+const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
+    pageViewConfigs,
     globalPixels,
-    productName 
+    productName
 }) => {
-    
+
     // Track Meta Pixel
     useEffect(() => {
         const metaConfigs = pageViewConfigs.filter(c => c.platform === 'meta');
@@ -41,7 +41,7 @@ const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
 
         const fireMetaPixel = () => {
             const fbq = (window as any).fbq;
-            
+
             if (typeof fbq !== 'function') {
                 console.log('[Landing Page Pixel] fbq tidak ditemukan, skipping Meta pixel');
                 return;
@@ -71,7 +71,7 @@ const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
                                 currency: 'IDR',
                                 content_type: 'product'
                             };
-                            
+
                             setTimeout(() => {
                                 fbq('trackSingle', pixelId, event, params);
                                 console.log(`[Landing Page Pixel] 🎯 Meta ${event} tracked for ${pixelId}`);
@@ -93,7 +93,7 @@ const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
 
         const fireGooglePixel = () => {
             const gtag = (window as any).gtag;
-            
+
             if (typeof gtag !== 'function') {
                 console.log('[Landing Page Pixel] gtag tidak ditemukan, skipping Google pixel');
                 return;
@@ -110,7 +110,7 @@ const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
                                 currency: 'IDR'
                             }]
                         };
-                        
+
                         gtag('event', event, params);
                         console.log(`[Landing Page Pixel] 🎯 Google ${event} tracked for ${pixelId}`);
                     });
@@ -129,7 +129,7 @@ const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
 
         const fireTikTokPixel = () => {
             const ttq = (window as any).ttq;
-            
+
             if (typeof ttq !== 'object') {
                 console.log('[Landing Page Pixel] ttq tidak ditemukan, skipping TikTok pixel');
                 return;
@@ -163,7 +163,7 @@ const LandingPagePixelScript: React.FC<LandingPagePixelScriptProps> = ({
 
         const fireSnackPixel = () => {
             const snaptr = (window as any).snaptr;
-            
+
             if (typeof snaptr !== 'function') {
                 console.log('[Landing Page Pixel] snaptr tidak ditemukan, skipping Snack pixel');
                 return;

@@ -12,89 +12,89 @@ interface RolePermissionManagerProps {
 
 // Group menus by category
 const MENU_GROUPS = [
-  { 
-    id: 'main', 
-    name: '📊 Menu Utama', 
-    items: ['dashboard'] 
+  {
+    id: 'main',
+    name: '📊 Menu Utama',
+    items: ['dashboard']
   },
-  { 
-    id: 'products', 
-    name: '📦 Produk', 
-    items: ['products', 'product_list', 'form_list', 'landing_page'] 
+  {
+    id: 'products',
+    name: '📦 Produk',
+    items: ['products', 'product_list', 'form_list', 'landing_page']
   },
-  { 
-    id: 'orders', 
-    name: '🛒 Pesanan', 
-    items: ['orders', 'order_list', 'abandoned_carts'] 
+  {
+    id: 'orders',
+    name: '🛒 Pesanan',
+    items: ['orders', 'order_list', 'abandoned_carts']
   },
-  { 
-    id: 'customers', 
-    name: '👥 Pelanggan', 
-    items: ['customers'] 
+  {
+    id: 'customers',
+    name: '👥 Pelanggan',
+    items: ['customers']
   },
-  { 
-    id: 'reports', 
-    name: '📈 Laporan', 
-    items: ['reports', 'ad_reports', 'cs_reports', 'stock_reports', 'finance_reports'] 
+  {
+    id: 'reports',
+    name: '📈 Laporan',
+    items: ['reports', 'ad_reports', 'cs_reports', 'stock_reports', 'finance_reports']
   },
-  { 
-    id: 'earnings', 
-    name: '💰 Penghasilan', 
-    items: ['earnings'] 
+  {
+    id: 'earnings',
+    name: '💰 Penghasilan',
+    items: ['earnings']
   },
-  { 
-    id: 'settings', 
-    name: '⚙️ Pengaturan', 
-    items: ['settings', 'website_settings', 'brands', 'user_management', 'role_management', 'cs_management', 'cuan_rank', 'tracking', 'error_logs', 'performance_dashboard', 'announcements', 'deletion_requests'] 
+  {
+    id: 'settings',
+    name: '⚙️ Pengaturan',
+    items: ['settings', 'website_settings', 'brands', 'user_management', 'role_management', 'cs_management', 'cuan_rank', 'tracking', 'error_logs', 'performance_dashboard', 'announcements', 'deletion_requests']
   },
 ];
 
 // Group features by category
 const FEATURE_GROUPS = [
-  { 
-    id: 'data', 
-    name: '📄 Export Data', 
-    items: ['export_csv'] 
+  {
+    id: 'data',
+    name: '📄 Export Data',
+    items: ['export_csv']
   },
-  { 
-    id: 'product_mgmt', 
-    name: '📦 Manajemen Produk', 
-    items: ['edit_product', 'delete_product', 'edit_form', 'edit_landing_page'] 
+  {
+    id: 'product_mgmt',
+    name: '📦 Manajemen Produk',
+    items: ['edit_product', 'delete_product', 'edit_form', 'edit_landing_page']
   },
-  { 
-    id: 'order_mgmt', 
-    name: '🛒 Manajemen Pesanan', 
-    items: ['delete_order', 'change_order_status', 'manual_order_creation'] 
+  {
+    id: 'order_mgmt',
+    name: '🛒 Manajemen Pesanan',
+    items: ['delete_order', 'change_order_status', 'manual_order_creation']
   },
-  { 
-    id: 'financial', 
-    name: '💰 Keuangan', 
-    items: ['view_earnings'] 
+  {
+    id: 'financial',
+    name: '💰 Keuangan',
+    items: ['view_earnings']
   },
-  { 
-    id: 'user_mgmt', 
-    name: '👤 Manajemen User & Role', 
-    items: ['manage_users', 'manage_roles'] 
+  {
+    id: 'user_mgmt',
+    name: '👤 Manajemen User & Role',
+    items: ['manage_users', 'manage_roles']
   },
-  { 
-    id: 'reports', 
-    name: '📈 Laporan', 
-    items: ['view_reports'] 
+  {
+    id: 'reports',
+    name: '📈 Laporan',
+    items: ['view_reports']
   },
-  { 
-    id: 'settings', 
-    name: '⚙️ Pengaturan', 
-    items: ['edit_settings', 'manage_tracking'] 
+  {
+    id: 'settings',
+    name: '⚙️ Pengaturan',
+    items: ['edit_settings', 'manage_tracking']
   },
-  { 
-    id: 'dashboard_widgets', 
-    name: '📊 Widget Dashboard', 
-    items: ['view_sales_stats', 'view_charts', 'view_top_products', 'view_top_advertisers', 'view_top_cs', 'view_recent_orders'] 
+  {
+    id: 'dashboard_widgets',
+    name: '📊 Widget Dashboard',
+    items: ['view_sales_stats', 'view_charts', 'view_top_products', 'view_top_advertisers', 'view_top_cs', 'view_recent_orders']
   },
-  { 
-    id: 'system', 
-    name: '🔧 Sistem', 
-    items: ['sound_notifications', 'manage_error_logs', 'view_performance'] 
+  {
+    id: 'system',
+    name: '🔧 Sistem',
+    items: ['sound_notifications', 'manage_error_logs', 'view_performance']
   },
 ];
 
@@ -268,11 +268,11 @@ const RolePermissionManager: React.FC<RolePermissionManagerProps> = ({ roleName,
                 if (validItems.length === 0) return null;
                 const allSelected = validItems.every(id => selectedMenus.has(id));
                 const someSelected = validItems.some(id => selectedMenus.has(id));
-                
+
                 return (
                   <div key={group.id} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                     {/* Group Header */}
-                    <div 
+                    <div
                       className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-900/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                       onClick={() => handleToggleMenuGroup(validItems)}
                     >
@@ -298,13 +298,12 @@ const RolePermissionManager: React.FC<RolePermissionManagerProps> = ({ roleName,
                         if (!menu) return null;
                         const isSubmenu = menu.category === 'submenu';
                         return (
-                          <label 
-                            key={menu.id} 
-                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
-                              selectedMenus.has(menu.id) 
-                                ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' 
+                          <label
+                            key={menu.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedMenus.has(menu.id)
+                                ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
                                 : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                            } ${isSubmenu ? 'pl-8' : ''}`}
+                              } ${isSubmenu ? 'pl-8' : ''}`}
                           >
                             <input
                               type="checkbox"
@@ -341,11 +340,11 @@ const RolePermissionManager: React.FC<RolePermissionManagerProps> = ({ roleName,
                 if (validItems.length === 0) return null;
                 const allSelected = validItems.every(id => selectedFeatures.has(id));
                 const someSelected = validItems.some(id => selectedFeatures.has(id));
-                
+
                 return (
                   <div key={group.id} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                     {/* Group Header */}
-                    <div 
+                    <div
                       className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-900/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                       onClick={() => handleToggleFeatureGroup(validItems)}
                     >
@@ -370,13 +369,12 @@ const RolePermissionManager: React.FC<RolePermissionManagerProps> = ({ roleName,
                         const feature = getFeatureById(featureId);
                         if (!feature) return null;
                         return (
-                          <label 
-                            key={feature.id} 
-                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
-                              selectedFeatures.has(feature.id) 
-                                ? 'border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30' 
+                          <label
+                            key={feature.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedFeatures.has(feature.id)
+                                ? 'border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30'
                                 : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                            }`}
+                              }`}
                           >
                             <input
                               type="checkbox"

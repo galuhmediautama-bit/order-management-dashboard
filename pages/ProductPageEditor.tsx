@@ -438,23 +438,23 @@ const ProductPageEditor: React.FC = () => {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Nama Produk <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="text" 
-                                            value={data.productName} 
-                                            onChange={e => handleProductNameChange(e.target.value)} 
+                                        <input
+                                            type="text"
+                                            value={data.productName}
+                                            onChange={e => handleProductNameChange(e.target.value)}
                                             placeholder="Masukkan nama produk..."
-                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500" 
+                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                         />
                                         <p className="text-xs text-slate-500 mt-1">💡 Judul halaman & slug otomatis terisi dari nama produk</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Deskripsi Produk</label>
-                                        <textarea 
-                                            value={data.productDescription} 
-                                            onChange={e => setData(prev => ({ ...prev, productDescription: e.target.value }))} 
-                                            rows={5} 
+                                        <textarea
+                                            value={data.productDescription}
+                                            onChange={e => setData(prev => ({ ...prev, productDescription: e.target.value }))}
+                                            rows={5}
                                             placeholder="Jelaskan keunggulan dan fitur produk Anda..."
-                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500" 
+                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                         />
                                     </div>
                                 </div>
@@ -880,7 +880,7 @@ const ProductPageEditor: React.FC = () => {
                             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
                                 <h3 className="font-semibold mb-2">📊 Tracking Pixel</h3>
                                 <p className="text-sm text-slate-500 mb-4">Konfigurasi pixel tracking untuk halaman produk ini. Pixel global diambil dari Pengaturan &gt; Tracking Pixels.</p>
-                                
+
                                 {/* PageView Events */}
                                 <div className="mb-6">
                                     <h4 className="font-medium mb-3 flex items-center gap-2">

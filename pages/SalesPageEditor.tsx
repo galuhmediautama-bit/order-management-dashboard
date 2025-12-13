@@ -491,16 +491,20 @@ const SalesPageEditor: React.FC = () => {
                                 <p className="text-xs text-slate-500 uppercase font-medium">Drag widget ke canvas</p>
                                 <div className="grid grid-cols-3 gap-2">
                                     {widgetList.map(w => (
-                                        <button
+                                        <div
                                             key={w.type}
-                                            draggable
-                                            onDragStart={() => setDraggedWidget(w.type)}
+                                            draggable={true}
+                                            onDragStart={(e) => {
+                                                e.dataTransfer.setData('text/plain', w.type);
+                                                e.dataTransfer.effectAllowed = 'copy';
+                                                setDraggedWidget(w.type);
+                                            }}
                                             onDragEnd={() => setDraggedWidget(null)}
-                                            className="p-3 bg-slate-50 dark:bg-slate-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg text-center transition-colors border border-transparent hover:border-purple-300"
+                                            className="p-3 bg-slate-50 dark:bg-slate-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg text-center transition-colors border border-transparent hover:border-purple-300 cursor-grab active:cursor-grabbing"
                                         >
                                             <span className="text-xl">{w.icon}</span>
                                             <p className="text-xs mt-1 text-slate-600 dark:text-slate-300">{w.label}</p>
-                                        </button>
+                                        </div>
                                     ))}
                                 </div>
 
@@ -573,9 +577,20 @@ const SalesPageEditor: React.FC = () => {
                             <div
                                 key={section.id}
                                 onClick={() => { setSelectedSection(section.id); setSelectedWidget(null); }}
-                                onDragOver={e => e.preventDefault()}
-                                onDrop={() => { if (draggedWidget) { addWidget(section.id, draggedWidget); setDraggedWidget(null); } }}
-                                className={`relative group ${selectedSection === section.id ? 'ring-2 ring-purple-500' : ''}`}
+                                onDragOver={(e) => { 
+                                    e.preventDefault(); 
+                                    e.stopPropagation();
+                                    e.dataTransfer.dropEffect = 'copy';
+                                }}
+                                onDrop={(e) => { 
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (draggedWidget) { 
+                                        addWidget(section.id, draggedWidget); 
+                                        setDraggedWidget(null); 
+                                    } 
+                                }}
+                                className={`relative group ${selectedSection === section.id ? 'ring-2 ring-purple-500' : ''} ${draggedWidget ? 'ring-2 ring-dashed ring-purple-400 bg-purple-50/50' : ''}`}
                                 style={{ backgroundColor: section.backgroundColor, padding: section.padding, backgroundImage: section.backgroundImage ? `url(${section.backgroundImage})` : undefined, backgroundSize: 'cover' }}
                             >
                                 {/* Section controls */}

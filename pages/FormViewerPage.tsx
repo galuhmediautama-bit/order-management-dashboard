@@ -481,7 +481,7 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
 
     const debounceTimer = useRef<number | null>(null);
-    
+
     // Store URL variant params for later application
     const [urlVariantParams, setUrlVariantParams] = useState<Record<string, string>>({});
 
