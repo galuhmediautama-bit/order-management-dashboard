@@ -196,7 +196,7 @@ const defaultData: ProductPageData = {
     title: '',
     slug: '',
     type: 'product',
-    productName: 'Nama Produk Anda',
+    productName: '',
     productDescription: 'Deskripsi produk yang menarik dan meyakinkan pembeli untuk segera checkout.',
     productPrice: 199000,
     productComparePrice: 399000,
@@ -288,17 +288,32 @@ const ProductPageEditor: React.FC = () => {
         }
     };
 
-    const generateSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+    const generateSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+
+    // Auto-fill title and slug from productName
+    const handleProductNameChange = (newProductName: string) => {
+        setData(prev => {
+            const shouldUpdateTitle = !prev.title || prev.title === prev.productName || prev.title === generateSlug(prev.productName);
+            const shouldUpdateSlug = !prev.slug || prev.slug === generateSlug(prev.productName);
+            return {
+                ...prev,
+                productName: newProductName,
+                title: shouldUpdateTitle ? newProductName : prev.title,
+                slug: shouldUpdateSlug ? generateSlug(newProductName) : prev.slug,
+            };
+        });
+    };
 
     const handleSave = async () => {
-        if (!data.title.trim()) { showToast('Judul halaman wajib diisi', 'error'); return; }
         if (!data.productName.trim()) { showToast('Nama produk wajib diisi', 'error'); return; }
+        // Title defaults to productName if empty
+        const finalTitle = data.title.trim() || data.productName;
 
         setSaving(true);
         try {
-            const slug = data.slug || generateSlug(data.title);
+            const slug = data.slug || generateSlug(data.productName);
             const payload: any = {
-                title: data.title, slug, type: 'product',
+                title: finalTitle, slug, type: 'product',
                 productName: data.productName, productDescription: data.productDescription,
                 productPrice: data.productPrice, productComparePrice: data.productComparePrice || null,
                 totalSold: data.totalSold, productImages: data.productImages, variants: data.variants,
@@ -374,15 +389,12 @@ const ProductPageEditor: React.FC = () => {
                     <button onClick={() => navigate('/landing-page')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                         <ArrowLeftIcon className="w-5 h-5" />
                     </button>
-                    <div>
-                        <input
-                            type="text"
-                            value={data.title}
-                            onChange={e => setData(prev => ({ ...prev, title: e.target.value, slug: prev.slug || generateSlug(e.target.value) }))}
-                            placeholder="Judul Halaman..."
-                            className="text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 w-full"
-                        />
-                        <p className="text-sm text-slate-500">Slug: /{data.slug || 'auto-generate'}</p>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">📦</span>
+                            <span className="text-xl font-bold truncate">{data.productName || 'Produk Baru'}</span>
+                        </div>
+                        <p className="text-sm text-slate-500">/{data.slug || generateSlug(data.productName) || 'auto-slug'}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -415,55 +427,107 @@ const ProductPageEditor: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="max-w-4xl mx-auto p-6">
+            <div className="max-w-5xl mx-auto p-6">
                 {/* Product Tab */}
                 {activeTab === 'product' && (
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold mb-4">Informasi Produk</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Nama Produk</label>
-                                    <input type="text" value={data.productName} onChange={e => setData(prev => ({ ...prev, productName: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Deskripsi</label>
-                                    <textarea value={data.productDescription} onChange={e => setData(prev => ({ ...prev, productDescription: e.target.value }))} rows={4} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left Column - Main Info */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-4 flex items-center gap-2">📦 Informasi Produk</h3>
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Harga Jual</label>
-                                        <input type="number" value={data.productPrice} onChange={e => setData(prev => ({ ...prev, productPrice: parseInt(e.target.value) || 0 }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        <label className="block text-sm font-medium mb-1">Nama Produk <span className="text-red-500">*</span></label>
+                                        <input 
+                                            type="text" 
+                                            value={data.productName} 
+                                            onChange={e => handleProductNameChange(e.target.value)} 
+                                            placeholder="Masukkan nama produk..."
+                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500" 
+                                        />
+                                        <p className="text-xs text-slate-500 mt-1">💡 Judul halaman & slug otomatis terisi dari nama produk</p>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Harga Coret</label>
-                                        <input type="number" value={data.productComparePrice || ''} onChange={e => setData(prev => ({ ...prev, productComparePrice: parseInt(e.target.value) || undefined }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Opsional" />
+                                        <label className="block text-sm font-medium mb-1">Deskripsi Produk</label>
+                                        <textarea 
+                                            value={data.productDescription} 
+                                            onChange={e => setData(prev => ({ ...prev, productDescription: e.target.value }))} 
+                                            rows={5} 
+                                            placeholder="Jelaskan keunggulan dan fitur produk Anda..."
+                                            className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500" 
+                                        />
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-4 flex items-center gap-2">🛒 Tombol CTA</h3>
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Total Terjual</label>
-                                        <input type="number" value={data.totalSold} onChange={e => setData(prev => ({ ...prev, totalSold: parseInt(e.target.value) || 0 }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        <label className="block text-sm font-medium mb-1">Form Order</label>
+                                        <select value={data.ctaFormId} onChange={e => setData(prev => ({ ...prev, ctaFormId: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                            <option value="">-- Pilih Form --</option>
+                                            {forms.map(form => (<option key={form.id} value={form.id}>{form.title}</option>))}
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Teks Tombol</label>
+                                            <input type="text" value={data.ctaButtonText} onChange={e => setData(prev => ({ ...prev, ctaButtonText: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Sub-teks</label>
+                                            <input type="text" value={data.ctaSubtext} onChange={e => setData(prev => ({ ...prev, ctaSubtext: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold mb-4">Tombol CTA</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Form Order</label>
-                                    <select value={data.ctaFormId} onChange={e => setData(prev => ({ ...prev, ctaFormId: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600">
-                                        <option value="">-- Pilih Form --</option>
-                                        {forms.map(form => (<option key={form.id} value={form.id}>{form.title}</option>))}
-                                    </select>
+                        {/* Right Column - Price & Stats */}
+                        <div className="space-y-6">
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-4 flex items-center gap-2">💰 Harga</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Harga Jual <span className="text-red-500">*</span></label>
+                                        <input type="number" value={data.productPrice} onChange={e => setData(prev => ({ ...prev, productPrice: parseInt(e.target.value) || 0 }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500" />
+                                        <p className="text-xs text-slate-500 mt-1">Format: tanpa titik/koma (contoh: 199000)</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Harga Coret</label>
+                                        <input type="number" value={data.productComparePrice || ''} onChange={e => setData(prev => ({ ...prev, productComparePrice: parseInt(e.target.value) || undefined }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" placeholder="Opsional" />
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+                                <h3 className="font-semibold mb-4 flex items-center gap-2">📊 Statistik</h3>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Teks Tombol</label>
-                                    <input type="text" value={data.ctaButtonText} onChange={e => setData(prev => ({ ...prev, ctaButtonText: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                    <label className="block text-sm font-medium mb-1">Total Terjual</label>
+                                    <input type="number" value={data.totalSold} onChange={e => setData(prev => ({ ...prev, totalSold: parseInt(e.target.value) || 0 }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                                    <p className="text-xs text-slate-500 mt-1">Tampil di halaman produk</p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Sub-teks (di bawah tombol)</label>
-                                    <input type="text" value={data.ctaSubtext} onChange={e => setData(prev => ({ ...prev, ctaSubtext: e.target.value }))} className="w-full p-3 border rounded-lg dark:bg-slate-700 dark:border-slate-600" />
+                            </div>
+
+                            {/* Page Info Preview */}
+                            <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 rounded-xl p-6 shadow-sm border-2 border-dashed border-slate-300 dark:border-slate-600">
+                                <h3 className="font-semibold mb-3 flex items-center gap-2 text-slate-600 dark:text-slate-400">📄 Info Halaman</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div>
+                                        <span className="text-slate-500">Judul:</span>
+                                        <p className="font-medium truncate">{data.title || data.productName || '(belum diisi)'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500">URL Slug:</span>
+                                        <p className="font-mono text-xs bg-white dark:bg-slate-800 p-2 rounded mt-1 truncate">/{data.slug || generateSlug(data.productName) || 'auto-generate'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500">Status:</span>
+                                        <span className={`ml-2 px-2 py-1 rounded-full text-xs ${data.isPublished ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                            {data.isPublished ? '✅ Published' : '⏸️ Draft'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

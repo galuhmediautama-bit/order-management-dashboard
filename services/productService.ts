@@ -21,8 +21,8 @@ const transformProduct = (row: any): Product => {
         imageUrl: row.image_url,
         sku: row.attributes?.sku,
         category: row.category,
-        stockMode: row.stock_mode || 'auto',
-        initialStock: row.initial_stock,
+        stockMode: row.attributes?.stockMode || 'auto',
+        initialStock: row.initial_stock || row.attributes?.initialStock || 0,
         stockTracking: row.stock_tracking || { enabled: false, current: 0 },
         basePrice: row.base_price,
         comparePrice: row.attributes?.comparePrice,
@@ -147,17 +147,17 @@ export const productService = {
                     description: product.description,
                     image_url: product.imageUrl,
                     category: product.category,
-                    stock_mode: product.stockMode,
-                    initial_stock: product.initialStock || 0,
                     base_price: product.basePrice,
                     cost_price: product.costPrice,
                     status: product.status,
                     is_featured: product.isFeatured,
                     seo_title: product.seoTitle,
                     seo_description: product.seoDescription,
-                    // Simpan varian data di attributes JSONB
+                    // Simpan varian data dan stockMode di attributes JSONB
                     attributes: {
                         sku: product.sku || null,
+                        stockMode: product.stockMode || 'auto',
+                        initialStock: product.initialStock || 0,
                         variants: product.variants || [],
                         variantOptions: product.variantOptions || [],
                         comparePrice: product.comparePrice || null,
@@ -192,8 +192,6 @@ export const productService = {
         if (updates.description) updateData.description = updates.description;
         if (updates.imageUrl) updateData.image_url = updates.imageUrl;
         if (updates.category) updateData.category = updates.category;
-        if (updates.stockMode) updateData.stock_mode = updates.stockMode;
-        if (updates.initialStock !== undefined) updateData.initial_stock = updates.initialStock;
         if (updates.basePrice !== undefined) updateData.base_price = updates.basePrice;
         if (updates.costPrice !== undefined) updateData.cost_price = updates.costPrice;
         if (updates.status) updateData.status = updates.status;
@@ -201,9 +199,11 @@ export const productService = {
         if (updates.seoTitle) updateData.seo_title = updates.seoTitle;
         if (updates.seoDescription) updateData.seo_description = updates.seoDescription;
 
-        // Simpan variant data di attributes JSONB
+        // Simpan variant data dan stockMode di attributes JSONB
         updateData.attributes = {
             sku: updates.sku || null,
+            stockMode: updates.stockMode || 'auto',
+            initialStock: updates.initialStock || 0,
             variants: updates.variants || [],
             variantOptions: updates.variantOptions || [],
             comparePrice: updates.comparePrice || null,
