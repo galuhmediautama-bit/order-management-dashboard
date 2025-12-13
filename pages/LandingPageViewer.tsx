@@ -119,6 +119,12 @@ interface UrgencySettings {
     stockMin: number;
 }
 
+interface DisplaySettings {
+    showOnDesktop: boolean;
+    showOnTablet: boolean;
+    showOnMobile: boolean;
+}
+
 interface ProductPageData {
     id: string;
     title: string;
@@ -148,6 +154,7 @@ interface ProductPageData {
     showReviews?: boolean;
     socialProof?: SocialProofSettings;
     urgency?: UrgencySettings;
+    displaySettings?: DisplaySettings;
     accentColor?: string;
     backgroundColor: string;
     footerText: string;
@@ -615,6 +622,7 @@ const HighConvertingProductPage: React.FC<{
     const socialProof = productData.socialProof || { active: false, liveViewersMin: 15, liveViewersMax: 45, recentPurchaseNames: '', recentPurchaseCities: '' };
     const reviews = productData.reviews || [];
     const showReviews = productData.showReviews !== false;
+    const displaySettings = productData.displaySettings || { showOnDesktop: true, showOnTablet: true, showOnMobile: true };
 
     const [countdown, setCountdown] = useState(urgency.countdownMinutes * 60);
     const [currentStock, setCurrentStock] = useState(urgency.stockInitial);
@@ -623,6 +631,28 @@ const HighConvertingProductPage: React.FC<{
     const [popupData, setPopupData] = useState({ name: '', city: '' });
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+    // Track window resize for responsive display settings
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Determine device type and if should force mobile view
+    const isMobileDevice = windowWidth < 768;
+    const isTabletDevice = windowWidth >= 768 && windowWidth < 1024;
+    const isDesktopDevice = windowWidth >= 1024;
+
+    // Check if current device is blocked
+    const isDeviceBlocked = 
+        (isDesktopDevice && !displaySettings.showOnDesktop) ||
+        (isTabletDevice && !displaySettings.showOnTablet) ||
+        (isMobileDevice && !displaySettings.showOnMobile);
+
+    // Force mobile view: when only mobile is enabled but viewing on desktop/tablet
+    const forceMobileView = displaySettings.showOnMobile && !displaySettings.showOnDesktop && !displaySettings.showOnTablet;
 
     const mainImage = productData.productImages?.[selectedImage] || productData.productImages?.[0];
     const accentColor = productData.accentColor || '#dc2626';
@@ -687,227 +717,272 @@ const HighConvertingProductPage: React.FC<{
     const savings = (productData.productComparePrice || 0) - (productData.productPrice || 0);
     const discountPercent = productData.productComparePrice ? Math.round((1 - (productData.productPrice || 0) / productData.productComparePrice) * 100) : 0;
 
-    return (
-        <div className="min-h-screen" style={{ backgroundColor: productData.backgroundColor }}>
-            {/* Urgency Banner */}
-            {urgency.countdownActive && (
-                <div className="text-white text-center py-3 px-4" style={{ backgroundColor: accentColor }}>
-                    <p className="font-bold text-sm animate-pulse">🔥 PROMO TERBATAS! Berakhir dalam <span className="font-mono">{formatTime(countdown)}</span></p>
+    // If device is blocked, show a message
+    if (isDeviceBlocked) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-100">
+                <div className="text-center p-8">
+                    <div className="text-6xl mb-4">📱</div>
+                    <h1 className="text-xl font-bold text-slate-700 mb-2">
+                        {isMobileDevice ? 'Halaman ini tidak tersedia di perangkat mobile' :
+                         isTabletDevice ? 'Halaman ini tidak tersedia di tablet' :
+                         'Halaman ini hanya tersedia di perangkat mobile'}
+                    </h1>
+                    <p className="text-slate-500">Silakan buka halaman ini menggunakan perangkat yang sesuai.</p>
                 </div>
-            )}
+            </div>
+        );
+    }
 
-            {/* Recent Purchase Popup */}
-            {showPopup && socialProof.active && (
-                <div className="fixed bottom-20 left-4 z-40 animate-slide-up">
-                    <div className="bg-white rounded-lg shadow-2xl p-4 max-w-xs border-l-4" style={{ borderColor: accentColor }}>
-                        <p className="text-sm"><span className="font-bold">{popupData.name}</span> dari <span className="font-medium">{popupData.city}</span></p>
-                        <p className="text-xs text-slate-500">Baru saja membeli produk ini 🛒</p>
-                    </div>
-                </div>
-            )}
+    // Wrapper for forcing mobile view on desktop
+    const mobileViewWrapper = forceMobileView ? (
+        <div className="min-h-screen flex justify-center" style={{ backgroundColor: '#f1f5f9' }}>
+            <div className="w-full max-w-[430px] min-h-screen shadow-2xl" style={{ backgroundColor: productData.backgroundColor }}>
+                {renderContent()}
+            </div>
+        </div>
+    ) : null;
 
-            {/* Main Content */}
-            <div className="max-w-6xl mx-auto px-4 py-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                    {/* Left - Images */}
-                    <div>
-                        <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden mb-4 relative">
-                            {mainImage ? (
-                                <img src={mainImage.url} alt={productData.productName} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                    <ImageIcon className="w-24 h-24" />
-                                </div>
-                            )}
-                            {/* Live Viewers Badge */}
-                            {socialProof.active && (
-                                <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                                    {liveViewers} orang sedang melihat
-                                </div>
-                            )}
-                            {/* Discount Badge */}
-                            {discountPercent > 0 && (
-                                <div className="absolute top-4 right-4 text-white px-3 py-2 rounded-lg font-bold" style={{ backgroundColor: accentColor }}>
-                                    -{discountPercent}%
-                                </div>
-                            )}
-                        </div>
-                        {/* Thumbnails */}
-                        {productData.productImages && productData.productImages.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto pb-2">
-                                {productData.productImages.map((img, idx) => (
-                                    <button key={img.id} onClick={() => setSelectedImage(idx)} className={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${selectedImage === idx ? 'border-red-500 scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                                        <img src={img.url} alt="" className="w-full h-full object-cover" />
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right - Product Info */}
-                    <div>
-                        {/* Total Sold */}
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-yellow-500">★★★★★</span>
-                            <span className="text-sm text-slate-500">({(productData.totalSold || 0).toLocaleString()} terjual)</span>
-                        </div>
-
-                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">{productData.productName}</h1>
-
-                        {/* Price */}
-                        <div className="mb-4">
-                            <div className="flex items-baseline gap-3">
-                                <span className="text-3xl font-bold" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</span>
-                                {productData.productComparePrice && productData.productComparePrice > (productData.productPrice || 0) && (
-                                    <span className="text-xl text-slate-400 line-through">{formatPrice(productData.productComparePrice)}</span>
-                                )}
-                            </div>
-                            {savings > 0 && (
-                                <p className="text-green-600 font-medium mt-1">💰 Hemat {formatPrice(savings)}!</p>
-                            )}
-                        </div>
-
-                        {/* Stock Warning */}
-                        {urgency.stockActive && (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                                <p className="text-yellow-800 font-medium flex items-center gap-2">
-                                    <span className="animate-bounce">⚠️</span>
-                                    Stok terbatas! Hanya tersisa <span className="font-bold text-red-600">{currentStock}</span> item
-                                </p>
-                                <div className="mt-2 bg-yellow-200 rounded-full h-2 overflow-hidden">
-                                    <div className="h-full bg-red-500 transition-all duration-500" style={{ width: `${(currentStock / urgency.stockInitial) * 100}%` }}></div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Variants */}
-                        {productData.variants?.map(variant => (
-                            <div key={variant.id} className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">{variant.name}:</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {variant.options.map((option, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setSelectedVariants(prev => ({ ...prev, [variant.id]: i }))}
-                                            className={`px-4 py-2 border-2 rounded-lg font-medium transition-all ${(selectedVariants[variant.id] || 0) === i ? 'border-red-500 bg-red-50' : 'border-slate-200 hover:border-slate-300'}`}
-                                        >
-                                            {variant.type === 'color' && option.colorHex && (
-                                                <span className="inline-block w-4 h-4 rounded-full mr-2 border" style={{ backgroundColor: option.colorHex }} />
-                                            )}
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-
-                        {/* CTA Button */}
-                        <a
-                            href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
-                            className="block w-full py-4 rounded-xl text-white font-bold text-lg text-center shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] mb-2"
-                            style={{ backgroundColor: accentColor }}
-                        >
-                            {productData.ctaButtonText || '🛒 BELI SEKARANG'}
-                        </a>
-                        {productData.ctaSubtext && (
-                            <p className="text-center text-sm text-slate-500 mb-4">{productData.ctaSubtext}</p>
-                        )}
-
-                        {/* Trust Badges */}
-                        {productData.trustBadges && productData.trustBadges.length > 0 && (
-                            <div className="grid grid-cols-2 gap-3 mt-6">
-                                {productData.trustBadges.map(badge => (
-                                    <div key={badge.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                        <span className="text-2xl">{badge.icon}</span>
-                                        <div>
-                                            <p className="font-medium text-slate-900 text-sm">{badge.title}</p>
-                                            <p className="text-xs text-slate-500">{badge.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Description */}
-                {productData.productDescription && (
-                    <div className="mt-8 bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="text-xl font-bold mb-4">📝 Deskripsi Produk</h2>
-                        <p className="text-slate-600 whitespace-pre-wrap">{productData.productDescription}</p>
+    function renderContent() {
+        return (
+            <>
+                {/* Urgency Banner */}
+                {urgency.countdownActive && (
+                    <div className="text-white text-center py-3 px-4" style={{ backgroundColor: accentColor }}>
+                        <p className="font-bold text-sm animate-pulse">🔥 PROMO TERBATAS! Berakhir dalam <span className="font-mono">{formatTime(countdown)}</span></p>
                     </div>
                 )}
 
-                {/* Reviews */}
-                {showReviews && reviews.length > 0 && (
-                    <div className="mt-8 bg-white rounded-xl p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold">⭐ Ulasan Pembeli</h2>
-                            <div className="flex items-center gap-1">
-                                {[1, 2, 3, 4, 5].map(n => <span key={n} className="text-yellow-400 text-xl">★</span>)}
-                                <span className="ml-2 text-slate-500">({reviews.length} ulasan)</span>
-                            </div>
+                {/* Recent Purchase Popup */}
+                {showPopup && socialProof.active && (
+                    <div className={`fixed bottom-20 ${forceMobileView ? 'left-1/2 -translate-x-1/2 ml-[-180px]' : 'left-4'} z-40 animate-slide-up`}>
+                        <div className="bg-white rounded-lg shadow-2xl p-4 max-w-xs border-l-4" style={{ borderColor: accentColor }}>
+                            <p className="text-sm"><span className="font-bold">{popupData.name}</span> dari <span className="font-medium">{popupData.city}</span></p>
+                            <p className="text-xs text-slate-500">Baru saja membeli produk ini 🛒</p>
                         </div>
+                    </div>
+                )}
+
+                {/* Main Content */}
+                <div className={forceMobileView ? 'px-4 py-6' : 'max-w-6xl mx-auto px-4 py-6'}>
+                    <div className={forceMobileView ? 'space-y-6' : 'grid md:grid-cols-2 gap-8'}>
+                        {/* Left - Images */}
+                        <div>
+                            <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden mb-4 relative">
+                                {mainImage ? (
+                                    <img src={mainImage.url} alt={productData.productName} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                        <ImageIcon className="w-24 h-24" />
+                                    </div>
+                                )}
+                                {discountPercent > 0 && (
+                                    <div className="absolute top-4 left-4 text-white text-sm font-bold px-3 py-1 rounded-full" style={{ backgroundColor: accentColor }}>
+                                        -{discountPercent}%
+                                    </div>
+                                )}
+                            </div>
+                            {/* Thumbnails */}
+                            {productData.productImages && productData.productImages.length > 1 && (
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                    {productData.productImages.map((img, idx) => (
+                                        <button
+                                            key={img.id}
+                                            onClick={() => setSelectedImage(idx)}
+                                            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-slate-900 scale-105' : 'border-slate-200'}`}
+                                        >
+                                            <img src={img.url} alt="" className="w-full h-full object-cover" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Right - Product Info */}
                         <div className="space-y-4">
-                            {reviews.map(review => (
-                                <div key={review.id} className="border-b pb-4 last:border-0">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600">
-                                                {review.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium flex items-center gap-2">
-                                                    {review.name}
-                                                    {review.verified && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">✓ Verified</span>}
-                                                </p>
-                                                <div className="flex items-center gap-1">
-                                                    {[1, 2, 3, 4, 5].map(n => (
-                                                        <span key={n} className={n <= review.rating ? 'text-yellow-400' : 'text-slate-300'}>★</span>
-                                                    ))}
-                                                </div>
+                            {/* Live viewers */}
+                            {socialProof.active && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="flex items-center gap-1 text-green-600">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                        <span className="font-medium">{liveViewers} orang</span>
+                                    </span>
+                                    <span className="text-slate-500">sedang melihat produk ini</span>
+                                </div>
+                            )}
+
+                            <h1 className="text-2xl font-bold text-slate-900">{productData.productName}</h1>
+
+                            {/* Rating & Sold */}
+                            <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-yellow-400">★★★★★</span>
+                                    <span className="text-slate-600">(4.9)</span>
+                                </div>
+                                <span className="text-slate-400">|</span>
+                                <span className="text-slate-600">{(productData.totalSold || 0).toLocaleString()}+ Terjual</span>
+                            </div>
+
+                            {/* Price */}
+                            <div className="bg-red-50 p-4 rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-3xl font-bold" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</span>
+                                    {productData.productComparePrice && (
+                                        <span className="text-lg text-slate-400 line-through">{formatPrice(productData.productComparePrice)}</span>
+                                    )}
+                                </div>
+                                {savings > 0 && (
+                                    <p className="text-sm text-green-600 mt-1">Hemat {formatPrice(savings)}!</p>
+                                )}
+                            </div>
+
+                            {/* Stock Warning */}
+                            {urgency.stockActive && (
+                                <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-3 rounded-lg">
+                                    <span className="text-xl">⚠️</span>
+                                    <span className="text-sm font-medium">Stok terbatas! Hanya tersisa <span className="font-bold">{currentStock}</span> unit</span>
+                                </div>
+                            )}
+
+                            {/* Variants */}
+                            {productData.variants && productData.variants.length > 0 && (
+                                <div className="space-y-4">
+                                    {productData.variants.map(variant => (
+                                        <div key={variant.id}>
+                                            <p className="text-sm font-medium text-slate-700 mb-2">{variant.name}:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {variant.options.map((opt, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setSelectedVariants(prev => ({ ...prev, [variant.id]: idx }))}
+                                                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${selectedVariants[variant.id] === idx ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        {variant.type === 'color' && opt.colorHex && (
+                                                            <span className="inline-block w-4 h-4 rounded-full mr-2" style={{ backgroundColor: opt.colorHex }}></span>
+                                                        )}
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-                                        <span className="text-sm text-slate-400">{review.date}</span>
-                                    </div>
-                                    <p className="text-slate-600">{review.comment}</p>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Description */}
+                            <div className="prose prose-sm max-w-none text-slate-600">
+                                <p className="whitespace-pre-wrap">{productData.productDescription}</p>
+                            </div>
+
+                            {/* CTA Button - Desktop */}
+                            <div className={forceMobileView ? 'hidden' : 'hidden md:block'}>
+                                <a
+                                    href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                                    className="block w-full py-4 rounded-xl text-white font-bold text-lg text-center transition-transform hover:scale-[1.02]"
+                                    style={{ backgroundColor: accentColor }}
+                                >
+                                    {productData.ctaButtonText || '🛒 BELI SEKARANG'}
+                                </a>
+                                {productData.ctaSubtext && (
+                                    <p className="text-center text-sm text-slate-500 mt-2">{productData.ctaSubtext}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Trust Badges */}
+                {productData.trustBadges && productData.trustBadges.length > 0 && (
+                    <div className={forceMobileView ? 'px-4 py-8 bg-slate-50' : 'max-w-6xl mx-auto px-4 py-8 bg-slate-50'}>
+                        <div className={forceMobileView ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-2 md:grid-cols-4 gap-6'}>
+                            {productData.trustBadges.map(badge => (
+                                <div key={badge.id} className="text-center">
+                                    <div className="text-3xl mb-2">{badge.icon}</div>
+                                    <h4 className="font-semibold text-sm text-slate-900">{badge.title}</h4>
+                                    <p className="text-xs text-slate-500">{badge.description}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Sticky Mobile CTA */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 md:hidden z-40">
-                <div className="flex items-center gap-4">
-                    <div>
-                        {productData.productComparePrice && <p className="text-xs text-slate-500 line-through">{formatPrice(productData.productComparePrice)}</p>}
-                        <p className="font-bold text-lg" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</p>
+                {/* Reviews */}
+                {showReviews && reviews.length > 0 && (
+                    <div className={forceMobileView ? 'px-4 py-8' : 'max-w-6xl mx-auto px-4 py-8'}>
+                        <h2 className="text-xl font-bold mb-6">Ulasan Pelanggan</h2>
+                        <div className="space-y-4">
+                            {reviews.map(review => (
+                                <div key={review.id} className="bg-white rounded-xl p-4 shadow-sm border">
+                                    <div className="flex items-start gap-3">
+                                        {review.avatar ? (
+                                            <img src={review.avatar} alt={review.name} className="w-10 h-10 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                                                {review.name.charAt(0)}
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-slate-900">{review.name}</span>
+                                                {review.verified && <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">✓ Terverifikasi</span>}
+                                            </div>
+                                            <div className="flex items-center gap-1 text-sm text-yellow-400 my-1">
+                                                {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                                            </div>
+                                            <p className="text-sm text-slate-600">{review.comment}</p>
+                                            {review.photo && (
+                                                <img src={review.photo} alt="Review" className="mt-2 w-24 h-24 rounded-lg object-cover" />
+                                            )}
+                                            <p className="text-xs text-slate-400 mt-2">{review.date}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <a
-                        href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
-                        className="flex-1 py-3 rounded-lg text-white font-bold text-center"
-                        style={{ backgroundColor: accentColor }}
-                    >
-                        {productData.ctaButtonText || '🛒 BELI SEKARANG'}
-                    </a>
+                )}
+
+                {/* Sticky Mobile CTA */}
+                <div className={`fixed bottom-0 ${forceMobileView ? 'left-1/2 -translate-x-1/2 w-full max-w-[430px]' : 'left-0 right-0'} bg-white border-t shadow-lg p-4 ${forceMobileView ? '' : 'md:hidden'} z-40`}>
+                    <div className="flex items-center gap-4">
+                        <div>
+                            {productData.productComparePrice && <p className="text-xs text-slate-500 line-through">{formatPrice(productData.productComparePrice)}</p>}
+                            <p className="font-bold text-lg" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</p>
+                        </div>
+                        <a
+                            href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                            className="flex-1 py-3 rounded-lg text-white font-bold text-center"
+                            style={{ backgroundColor: accentColor }}
+                        >
+                            {productData.ctaButtonText || '🛒 BELI SEKARANG'}
+                        </a>
+                    </div>
                 </div>
-            </div>
 
-            {/* Footer */}
-            <footer className="py-8 bg-slate-900 text-slate-400 text-center mt-8 mb-16 md:mb-0">
-                <p>{productData.footerText}</p>
-            </footer>
+                {/* Footer */}
+                <footer className={`py-8 bg-slate-900 text-slate-400 text-center mt-8 ${forceMobileView ? 'mb-16' : 'mb-16 md:mb-0'}`}>
+                    <p>{productData.footerText}</p>
+                </footer>
 
-            <style>{`
-                @keyframes slide-up {
-                    from { transform: translateY(100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-                .animate-slide-up { animation: slide-up 0.3s ease-out; }
-            `}</style>
+                <style>{`
+                    @keyframes slide-up {
+                        from { transform: translateY(100%); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    .animate-slide-up { animation: slide-up 0.3s ease-out; }
+                `}</style>
+            </>
+        );
+    }
+
+    // Return mobile view wrapper or normal view
+    if (forceMobileView) {
+        return mobileViewWrapper;
+    }
+
+    return (
+        <div className="min-h-screen" style={{ backgroundColor: productData.backgroundColor }}>
+            {renderContent()}
         </div>
     );
 };
