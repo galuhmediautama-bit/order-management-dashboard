@@ -188,10 +188,18 @@ interface ProductPageData {
 
 type LandingPageData = SalesPageData | ProductPageData;
 
+interface FormProductOption {
+    id: number;
+    name: string;
+    values: string[];
+    displayStyle?: 'dropdown' | 'radio' | 'modern';
+}
+
 interface Form {
     id: string;
     title: string;
     slug?: string;
+    productOptions?: FormProductOption[];
 }
 
 const LandingPageViewer: React.FC = () => {
@@ -282,16 +290,23 @@ const LandingPageViewer: React.FC = () => {
     const fetchForms = async () => {
         const { data: formsData } = await supabase
             .from('forms')
-            .select('id, title, slug');
+            .select('id, title, slug, productOptions');
         setForms(formsData || []);
     };
 
-    const getFormLink = (formId: string) => {
+    // Get form link with variant params
+    const getFormLink = (formId: string, variantParams?: Record<string, string>) => {
         const form = forms.find(f => f.id === formId);
-        if (form) {
-            return `/#/f/${form.slug || form.id}`;
+        const baseUrl = form ? `/#/f/${form.slug || form.id}` : `/#/f/${formId}`;
+        
+        if (variantParams && Object.keys(variantParams).length > 0) {
+            const params = new URLSearchParams();
+            Object.entries(variantParams).forEach(([key, value]) => {
+                params.append(key, value);
+            });
+            return `${baseUrl}?${params.toString()}`;
         }
-        return `/#/f/${formId}`;
+        return baseUrl;
     };
 
     const formatPrice = (price: number) => {
@@ -465,7 +480,9 @@ const LandingPageViewer: React.FC = () => {
 
         if (isTeespringStyle) {
             // New Teespring-style single product page with HIGH-CONVERTING features
-            return <HighConvertingProductPage productData={productData} forms={forms} getFormLink={getFormLink} formatPrice={formatPrice} />;
+            // Find the linked form to get its productOptions
+            const linkedForm = productData.ctaFormId ? forms.find(f => f.id === productData.ctaFormId) : null;
+            return <HighConvertingProductPage productData={productData} forms={forms} linkedForm={linkedForm} getFormLink={getFormLink} formatPrice={formatPrice} />;
         }
 
         // Old catalog format
@@ -741,9 +758,10 @@ const DEFAULT_DUMMY_REVIEWS: Review[] = [
 const HighConvertingProductPage: React.FC<{
     productData: ProductPageData;
     forms: Form[];
-    getFormLink: (formId: string) => string;
+    linkedForm?: Form | null;
+    getFormLink: (formId: string, variantParams?: Record<string, string>) => string;
     formatPrice: (price: number) => string;
-}> = ({ productData, forms, getFormLink, formatPrice }) => {
+}> = ({ productData, forms, linkedForm, getFormLink, formatPrice }) => {
     const urgency = productData.urgency || { countdownActive: false, countdownMinutes: 15, stockActive: false, stockInitial: 50, stockMin: 5 };
     const socialProof = productData.socialProof || { active: false, liveViewersMin: 15, liveViewersMax: 45, recentPurchaseNames: '', recentPurchaseCities: '', showOnDesktop: true, showOnTablet: true, showOnMobile: true };
     // Use saved reviews or fallback to dummy reviews
@@ -752,15 +770,39 @@ const HighConvertingProductPage: React.FC<{
     const displaySettings = productData.displaySettings || { showOnDesktop: true, showOnTablet: true, showOnMobile: true };
     const trackingSettings = productData.trackingSettings;
 
+    // Use form's productOptions if linked form exists, otherwise fall back to product page variants
+    const formProductOptions = linkedForm?.productOptions || [];
+    const hasFormVariants = formProductOptions.length > 0;
+
     const [countdown, setCountdown] = useState(urgency.countdownMinutes * 60);
     const [currentStock, setCurrentStock] = useState(urgency.stockInitial);
     const [liveViewers, setLiveViewers] = useState(Math.floor(Math.random() * (socialProof.liveViewersMax - socialProof.liveViewersMin + 1)) + socialProof.liveViewersMin);
     const [showPopup, setShowPopup] = useState(false);
     const [popupData, setPopupData] = useState({ name: '', city: '' });
     const [selectedImage, setSelectedImage] = useState(0);
-    const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
+    // For form variants: key is option name (e.g., "Warna"), value is selected value (e.g., "Merah")
+    const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
     const [globalPixels, setGlobalPixels] = useState<GlobalPixelSettings | null>(null);
     const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+    // Initialize selected variants from form productOptions (select first option by default)
+    useEffect(() => {
+        if (hasFormVariants) {
+            const initialSelection: Record<string, string> = {};
+            formProductOptions.forEach(opt => {
+                if (opt.values.length > 0) {
+                    initialSelection[opt.name] = opt.values[0];
+                }
+            });
+            setSelectedVariants(initialSelection);
+        }
+    }, [hasFormVariants, linkedForm?.id]);
+
+    // Build variant params for form URL
+    const buildVariantParams = (): Record<string, string> => {
+        if (!hasFormVariants) return {};
+        return selectedVariants;
+    };
 
     // Detect device type
     useEffect(() => {
@@ -1027,8 +1069,30 @@ const HighConvertingProductPage: React.FC<{
                                 </div>
                             )}
 
-                            {/* Variants */}
-                            {productData.variants && productData.variants.length > 0 && (
+                            {/* Variants from Form (if linked form has productOptions) */}
+                            {hasFormVariants && (
+                                <div className="space-y-4">
+                                    {formProductOptions.map(option => (
+                                        <div key={option.id}>
+                                            <p className="text-sm font-medium text-slate-700 mb-2">{option.name}:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {option.values.map((value, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setSelectedVariants(prev => ({ ...prev, [option.name]: value }))}
+                                                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${selectedVariants[option.name] === value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 hover:border-slate-300'}`}
+                                                    >
+                                                        {value}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Fallback: Local Variants (if no linked form) */}
+                            {!hasFormVariants && productData.variants && productData.variants.length > 0 && (
                                 <div className="space-y-4">
                                     {productData.variants.map(variant => (
                                         <div key={variant.id}>
@@ -1037,8 +1101,8 @@ const HighConvertingProductPage: React.FC<{
                                                 {variant.options.map((opt, idx) => (
                                                     <button
                                                         key={idx}
-                                                        onClick={() => setSelectedVariants(prev => ({ ...prev, [variant.id]: idx }))}
-                                                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${selectedVariants[variant.id] === idx ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 hover:border-slate-300'}`}
+                                                        onClick={() => setSelectedVariants(prev => ({ ...prev, [variant.name]: opt.label }))}
+                                                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${selectedVariants[variant.name] === opt.label ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 hover:border-slate-300'}`}
                                                     >
                                                         {variant.type === 'color' && opt.colorHex && (
                                                             <span className="inline-block w-4 h-4 rounded-full mr-2" style={{ backgroundColor: opt.colorHex }}></span>
@@ -1060,7 +1124,7 @@ const HighConvertingProductPage: React.FC<{
                             {/* CTA Button - Desktop */}
                             <div className={forceMobileView ? 'hidden' : 'hidden md:block'}>
                                 <a
-                                    href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                                    href={productData.ctaFormId ? getFormLink(productData.ctaFormId, buildVariantParams()) : '#'}
                                     onClick={handleCtaClick}
                                     className="block w-full py-4 rounded-xl text-white font-bold text-lg text-center transition-transform hover:scale-[1.02]"
                                     style={{ backgroundColor: accentColor }}
@@ -1134,7 +1198,7 @@ const HighConvertingProductPage: React.FC<{
                             <p className="font-bold text-lg" style={{ color: accentColor }}>{formatPrice(productData.productPrice || 0)}</p>
                         </div>
                         <a
-                            href={productData.ctaFormId ? getFormLink(productData.ctaFormId) : '#'}
+                            href={productData.ctaFormId ? getFormLink(productData.ctaFormId, buildVariantParams()) : '#'}
                             onClick={handleCtaClick}
                             className="flex-1 py-3 rounded-lg text-white font-bold text-center"
                             style={{ backgroundColor: accentColor }}

@@ -481,8 +481,11 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     const [selectedPaymentKey, setSelectedPaymentKey] = useState<keyof PaymentSettings | undefined>();
 
     const debounceTimer = useRef<number | null>(null);
+    
+    // Store URL variant params for later application
+    const [urlVariantParams, setUrlVariantParams] = useState<Record<string, string>>({});
 
-    // Parse platform parameter dari URL
+    // Parse platform and variant parameters from URL
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const platformParam = params.get('platform') as 'meta' | 'tiktok' | 'google' | 'snack' | null;
@@ -496,6 +499,19 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
         } else {
             setActivePlatform(null);
             console.log('[FormViewer] No platform specified - will load all platforms');
+        }
+
+        // Parse variant params from URL (e.g., ?Warna=Merah&Ukuran=L)
+        const variantParams: Record<string, string> = {};
+        params.forEach((value, key) => {
+            // Skip known non-variant params
+            if (!['platform', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'ttclid'].includes(key)) {
+                variantParams[key] = decodeURIComponent(value);
+            }
+        });
+        if (Object.keys(variantParams).length > 0) {
+            console.log('[FormViewer] Variant params from URL:', variantParams);
+            setUrlVariantParams(variantParams);
         }
     }, [form?.assignedPlatform]);
 
@@ -1084,20 +1100,29 @@ const FormViewerPage: React.FC<{ identifier: string }> = ({ identifier }) => {
     }, [form]);
 
     // Seed selectedOptions when displayOptions change (ensures grouping UI even tanpa productOptions)
+    // Also apply URL variant params if available
     useEffect(() => {
         if (!displayOptions || displayOptions.length === 0) return;
         setSelectedOptions(prev => {
             const next = { ...prev } as Record<string, string>;
             let changed = false;
             displayOptions.forEach(opt => {
-                if (!next[opt.name] && opt.values.length > 0) {
+                // First check if URL has this variant param
+                if (urlVariantParams[opt.name] && opt.values.includes(urlVariantParams[opt.name])) {
+                    if (next[opt.name] !== urlVariantParams[opt.name]) {
+                        next[opt.name] = urlVariantParams[opt.name];
+                        changed = true;
+                        console.log(`[FormViewer] Pre-selecting ${opt.name}: ${urlVariantParams[opt.name]} from URL`);
+                    }
+                } else if (!next[opt.name] && opt.values.length > 0) {
+                    // Default to first option
                     next[opt.name] = opt.values[0];
                     changed = true;
                 }
             });
             return changed ? next : prev;
         });
-    }, [displayOptions]);
+    }, [displayOptions, urlVariantParams]);
 
     const currentCombination = useMemo(() => {
         if (!form) return null;
